@@ -1,0 +1,8 @@
+{
+  "$comment": "Bara för editor-typecheck av vite.config.ts. Ingår inte i build-scriptet.",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["vite.config.ts"]
+}

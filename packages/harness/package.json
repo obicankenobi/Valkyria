@@ -1,0 +1,14 @@
+{
+  "name": "@seventh-front/harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Balansverktyg. Kör N partier headless med enkla botstrategier, skriver CSV. Se ETAPP1_TEKNISK_SPEC.md avsnitt 7.3.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@seventh-front/core": "*"
+  }
+}
