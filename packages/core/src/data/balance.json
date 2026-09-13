@@ -81,5 +81,10 @@
   "doomsdayCrisisWatchThreshold": 60,
   "doomsdayCrisisEventThreshold": 75,
   "doomsdayNuclearExchangeThreshold": 95,
-  "crisisBackDownDoomsdayTarget": 40
+  "crisisBackDownDoomsdayTarget": 40,
+
+  "_p8_note": "boardReviewCreditPenalty är en nödvändig komplettering (specen kräver 'skärpta lånevillkor' vid en underkänd kontroll men ger ingen siffra). rivalPassiveGrowthCapital/-MarketShare är PROVISORISKA -- DESIGN.md avsnitt 12 säger bara 'rivalhusen växer om du är passiv', ingen takt. Se ANDRINGSLOGG.md, som även loggar de två rivalbeteenden (leverantörskapacitet, iscensatta incidenter) som medvetet lämnas obyggda i P8.",
+  "boardReviewCreditPenalty": 0.5,
+  "rivalPassiveGrowthCapital": 40000,
+  "rivalPassiveGrowthMarketShare": 0.5
 }

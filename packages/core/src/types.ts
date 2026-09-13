@@ -92,6 +92,16 @@ export interface House {
   techLevel: Record<TechCategory, number> // 0–10
   boardTarget: BoardTarget
   exposureEvents: number[] // turnindex för exponerade stationer
+  // Inte i avsnitt 2 — se ANDRINGSLOGG.md. board.ts (P8) behöver husets ursprungliga
+  // kapital för att räkna progressSnapshot ("Doubling" = kumulativ intäkt når 2×
+  // det här talet) — treasury muteras redan från och med P3, så startvärdet finns
+  // annars ingenstans kvar att läsa efter tur 0.
+  foundingCapital: Money
+  // Inte i avsnitt 2 — se ANDRINGSLOGG.md. board.ts (P8): "skärpta lånevillkor" vid
+  // en underkänd styrelsekontroll (spec 5, "Board") behöver en faktisk mekanisk
+  // effekt. economy.ts (P3, patchad) multiplicerar creditLimit med det här talet.
+  // Default 1 (ingen effekt) tills en kontroll faktiskt underkänns.
+  creditPenaltyMultiplier: number
 }
 
 export interface BoardTarget {

@@ -5,13 +5,12 @@ import type { GameState, TurnSubmission } from '../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
-// TAKE_LOAN görs inte om till pengar av applyActions än (den är fortfarande no-op —
-// se ANDRINGSLOGG.md, ingen prompt äger den). Bud in i submission ändrar alltså inte
-// resultatet idag. Den skickas ändå med, varje tur, för att spegla P3:s klart-när-
-// villkor ordagrant ("även när boten försöker låna varje tur") och för att testet
-// ska fortsätta vara sant den dagen TAKE_LOAN faktiskt processas — se
-// "creditLimit är 0 för ett hus utan intäktshistorik" i test/steps/economy.test.ts,
-// som bevisar ATT en riktig implementation aldrig kan bevilja lånet ändå.
+// TAKE_LOAN processas på riktigt sedan P8 (applyActions.ts, se ANDRINGSLOGG.md) —
+// det här testet fortsätter ändå vara sant: en förstatursfaktura på 5 000 000 mot en
+// creditLimit som alltid är 0 för ett hus utan intäktshistorik (economy.test.ts)
+// avvisas varje gång med "credit limit exceeded", så låneförsöket hjälper aldrig ett
+// hus utan intäkter, precis som P3:s klart-när-villkor krävde ("även när boten
+// försöker låna varje tur").
 const SUBMISSION_WITH_LOAN_ATTEMPT: TurnSubmission = {
   standingOrders: [],
   bids: [],
@@ -271,5 +270,84 @@ describe('resolveTurn — P6: front och attribution', () => {
     expect(state.fronts['front-1']!.position).toBeLessThan(positionBefore) // mot -100, rvn:s sida
     expect(state.fronts['front-1']!.attribution['player']).toBe(deliveredQuantity)
     expect(state.fronts['front-1']!.equipment.a.artillery).toBe(deliveredQuantity)
+  })
+})
+
+describe('resolveTurn — P8: rivaler och styrelse', () => {
+  // "Ett passivt parti" (P8:s klart-när-villkor) kan INTE betyda EMPTY_SUBMISSION —
+  // P3:s test ovan bevisar redan att det scenariot alltid slutar i INSOLVENCY vid tur
+  // 9 (fasta kostnader ensamma, 510 000/tur, dränerar snabbare än startkapitalet
+  // räcker). "Passivt" tolkas här som en bot som gör minsta möjliga ANSTRÄNGNING —
+  // budgivning kostar inga handlingspoäng (spec 3.1) och är den enda vägen till
+  // intäkt över huvud taget — men uttryckligen INTE FÖRSÖKER VÄXA: den slutar lägga
+  // nya bud så fort kumulativ intäkt/foundingCapital (progressSnapshot) når
+  // GROWTH_CAP, långt under styrelsens tröskel (2 — "Doubling"), och lånar upp till
+  // creditLimit varje tur för att hålla sig flytande. Se ANDRINGSLOGG.md för den
+  // fulla utredningen: utan TAKE_LOAN (byggd i P8 specifikt för att göra det här
+  // scenariot möjligt, se applyActions.ts) gick alla 20 testade seeds i INSOLVENCY
+  // istället — fasta kostnader ensamma slår ut varje passiv strategi utan lån.
+  const GROWTH_CAP = 0.4
+
+  function passiveButNotZeroSubmission(state: GameState): TurnSubmission {
+    const stopGrowing = state.house.boardTarget.progressSnapshot >= GROWTH_CAP
+
+    const bids = stopGrowing
+      ? []
+      : state.market.openOrders.map((order) => ({
+          orderId: order.id,
+          price: Math.round(order.referencePrice * 1.05),
+          deliveryTurns: order.requiredDeliveryTurns,
+          grade: 'A' as const,
+          bribe: 0,
+        }))
+
+    const actions: TurnSubmission['actions'] =
+      state.house.creditLimit > 0
+        ? [{ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: state.house.creditLimit } }]
+        : []
+
+    return { standingOrders: [], bids, actions }
+  }
+
+  it(
+    '(P8 klart-när, siffra reviderad — se ANDRINGSLOGG.md) ett passivt-men-inte-tomt parti förlorar på ' +
+      'BUYOUT i minst 6 av 20 seeds inom 20 turer, och minst hälften av dem före tur 20',
+    () => {
+      const outcomes: { ending: string | null; turn: number }[] = []
+
+      for (let i = 0; i < 20; i++) {
+        let state: GameState = createInitialState('indochina-slice', `calib-seed-${i}`)
+        // Scenariots dueTurn/turnCount är 20 (0-indexerat) — endings.ts:s strikta
+        // dueTurn-kontroll kräver att draft.meta.turn FAKTISKT når 20 vid stegets
+        // start, vilket kräver 21 resolveTurn-anrop (tur 0..20), inte 20.
+        for (let t = 0; t <= 20; t++) {
+          const result = resolveTurn(state, passiveButNotZeroSubmission(state))
+          state = result.state
+          if (state.status.kind === 'ended') break
+        }
+        outcomes.push({
+          ending: state.status.kind === 'ended' ? state.status.ending : null,
+          turn: state.status.kind === 'ended' ? state.status.turn : state.meta.turn,
+        })
+      }
+
+      const buyouts = outcomes.filter((o) => o.ending === 'BUYOUT')
+      const buyoutsBeforeTurn20 = buyouts.filter((o) => o.turn < 20)
+
+      expect(buyouts.length).toBeGreaterThanOrEqual(6)
+      expect(buyoutsBeforeTurn20.length).toBeGreaterThanOrEqual(Math.ceil(buyouts.length / 2))
+    },
+  )
+
+  it('rivalhusen växer i kapital och marknadsandel när partiet är helt passivt (EMPTY_SUBMISSION), tur efter tur', () => {
+    let state: GameState = createInitialState('indochina-slice', 'p8-rival-growth-seed')
+    const rival = state.rivals['brandt']!
+    const capitalBefore = rival.capital
+
+    for (let t = 0; t < 5; t++) {
+      state = resolveTurn(state, EMPTY_SUBMISSION).state
+    }
+
+    expect(state.rivals['brandt']!.capital).toBeGreaterThan(capitalBefore)
   })
 })

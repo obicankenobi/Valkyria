@@ -61,7 +61,14 @@ function computeCreditLimit(house: House, currentTurn: number): Money {
   const trailingRevenue = computeTrailingRevenue(house, currentTurn)
   const reliabilityMult = 0.5 + (house.reputation.reliability / 100) * 1.0
   const homeStateMult = HOME_STATE_CREDIT_MULT[house.homeState]
-  return Math.max(0, round(trailingRevenue * BALANCE.creditMultiple * reliabilityMult * homeStateMult) - house.debt)
+  // P8-tillägg: house.creditPenaltyMultiplier (default 1, sänks av board.ts vid en
+  // underkänd styrelsekontroll) — "skärpta lånevillkor" (spec 5, "Board") behöver en
+  // faktisk effekt på just den här formeln, inte bara en headline. Se ANDRINGSLOGG.md.
+  return Math.max(
+    0,
+    round(trailingRevenue * BALANCE.creditMultiple * reliabilityMult * homeStateMult * house.creditPenaltyMultiplier) -
+      house.debt,
+  )
 }
 
 export const economy: ResolveStep = (ctx) => {

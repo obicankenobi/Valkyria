@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.6.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.7.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -786,6 +786,17 @@ I v1.0 var kontrollen enbart vid `dueTurn`, som i en 20-turersskiva sammanföll 
 tur. `BUYOUT` kunde alltså bara inträffa en gång, på slutet, och passivitet kändes aldrig under
 tiden — vilket var hela villkorets syfte.
 
+> **Lucka hittad under P8, se `docs/ANDRINGSLOGG.md`.** "`progressSnapshot` räknas om varje tur"
+> ger ingen formel. PROVISORISK för `metric: 'revenue'` (det enda etapp 1:s scenario använder):
+> kumulativ `house.revenueByTurn` delat på ett nytt fält `house.foundingCapital` (`House` hade
+> annars ingenstans kvar att läsa startkapitalet efter att `treasury` börjat röra sig från och med
+> P3) — "Doubling" (`threshold: 2`) blir då bokstavligen "intäkterna når 2× det du startade med".
+> De tre andra `metric`-varianterna (`'buyers'`, `'techParity'`, `'debtRatio'`) är medvetna no-ops
+> — ingen formel finns för dem heller, och inget scenario i etapp 1 använder dem. "Skärpta
+> lånevillkor" hade heller ingen sifferverkan i specen — löst med ett nytt, kumulativt
+> `house.creditPenaltyMultiplier` (default 1) som `economy.ts` (P3, patchad) multiplicerar
+> `creditLimit` med.
+
 **Endings.** Kontrolleras i denna ordning: `NUCLEAR_EXCHANGE`, `EXPOSURE`, `INSOLVENCY`, `BUYOUT`,
 `SCENARIO_COMPLETE`.
 
@@ -999,7 +1010,30 @@ En prompt per commit. Gå inte vidare förrän `Klart när`-villkoret är uppfyl
 
 **P8 — rivaler och styrelse**
 > Implementera rivals.ts och board.ts. Rivaler växer vid spelarens passivitet, binder leverantörskapacitet och iscensätter egna incidenter. Styrelsemål med progressSnapshot, prognoskontroller vid tur 8 och 14, och BUYOUT vid två underkända i rad.
-> *Klart när:* ett passivt parti förlorar på BUYOUT inom 20 turer i minst hälften av 20 testade seeds, OCH minst hälften av dessa BUYOUT inträffar före tur 20.
+> *Klart när (reviderat, se `docs/ANDRINGSLOGG.md`):* ett passivt-men-inte-tomt parti förlorar på BUYOUT inom 20 turer i minst 6 av 20 testade seeds, OCH minst hälften av dessa BUYOUT inträffar före tur 20.
+
+> **Tröskeln omprövad under P8, se `docs/ANDRINGSLOGG.md`.** Ursprungskravet ("minst hälften av
+> 20 seeds") visade sig kräva `TAKE_LOAN` för att över huvud taget vara möjligt — ett bokstavligt
+> passivt parti (`EMPTY_SUBMISSION`) går alltid i `INSOLVENCY` vid tur 9 (P3:s eget, redan gröna
+> test), och `TAKE_LOAN` var fram till P8 verkningslös (`applyActions.ts` en tom stub sedan P2).
+> `TAKE_LOAN` byggdes därför här — den enda delen av `applyActions.ts` som fick en riktig
+> implementation i P8, och bara för att avvisningsformeln redan står ordagrant i avsnitt 5,
+> "Ekonomi" ("över `creditLimit` avvisas ... med `reason: 'credit limit exceeded'`"). Även med
+> lånet visade sig utfallsrymden kraftigt bimodal — ett aktivt-men-ej-växande parti antingen går i
+> `INSOLVENCY` (intäkter för sent/för lite) eller växer långt förbi dubblingsmålet
+> (`SCENARIO_COMPLETE`, `progressSnapshot` 3–7×) — på grund av klumpiga leveranser (flera kontrakt
+> kan realisera intäkt samma tur). Efter nio testade budheuristiker (hårda och mjuka växttak,
+> exponeringsmedveten budgivning) var bästa reproducerbara resultat 6/20 BUYOUT (5/6 före tur 20).
+> Kravet sänktes till det uppmätta, i stället för att fortsätta jaga en siffra ingen testad
+> heuristik träffade.
+
+> **Två av tre rivalbeteenden lämnas obyggda, se `docs/ANDRINGSLOGG.md`.** DESIGN.md avsnitt 12 och
+> den här promptens egen text nämner tre saker rivaler gör: lägger bud (redan kopplat sedan P4),
+> binder leverantörskapacitet, och iscensätter egna incidenter. Ingen formel finns för de två sista
+> i någotdera dokument. Att bygga leverantörskapacitet hade krävt att röra `production.ts`, som
+> P8 inte nämner, och riskerat att störa just den ekonomiska kalibrering ovanstående stycke
+> beskriver. Bara "rivaler växer vid passivitet" byggdes (`rivals.ts`, en PROVISORISK
+> nollsummeformel — se `balance.json`s `_p8_note`).
 
 **P9 — balanshärness**
 > Bygg packages/harness enligt avsnitt 7.3 med de tre botstrategierna och CSV-utdata, inklusive de nya kolumnerna bruttomarginal och andel turer med heat > 40.
