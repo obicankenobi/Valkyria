@@ -66,5 +66,20 @@
   "frontBreakthroughThreshold": 0.5,
   "frontBreakthroughMagnitude": 5,
   "frontBaseAttritionPct": 1.5,
-  "frontMoraleShiftPerTurn": 3
+  "frontMoraleShiftPerTurn": 3,
+  "publicSupportLossPerCasualty": 0.01,
+
+  "_p7_note": "factionBankruptcyTurns/factionLowSupportTurns/factionLowSupportThreshold och doomsdayCrisisWatchThreshold/doomsdayCrisisEventThreshold/doomsdayNuclearExchangeThreshold kommer direkt ur specens siffror (avsnitt 5, DESIGN.md SS6.2) -- inte provisoriska. embargoTreasuryDrainPerTurn, heatEscalationChancePct och crisisBackDownDoomsdayTarget/-stationExposure ÄR provisoriska: avsnitt 5 ger ingen formel för embargots ekonomiska effekt eller escalation-riskens sannolikhet, och krishändelsens tre val (DESIGN.md SS6.2) kräver ett spelarbeslut PlayerAction-unionen (fryst sedan P2) inte har en variant för -- se ANDRINGSLOGG.md.",
+  "factionBankruptcyTurns": 2,
+  "factionLowSupportTurns": 3,
+  "factionLowSupportThreshold": 25,
+  "embargoTreasuryDrainPerTurn": 500000,
+  "heatEscalationThreshold": 85,
+  "heatEscalationChancePct": 15,
+  "heatEscalationDoomsdayMin": 5,
+  "heatEscalationDoomsdayMax": 15,
+  "doomsdayCrisisWatchThreshold": 60,
+  "doomsdayCrisisEventThreshold": 75,
+  "doomsdayNuclearExchangeThreshold": 95,
+  "crisisBackDownDoomsdayTarget": 40
 }

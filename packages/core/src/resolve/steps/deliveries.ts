@@ -88,6 +88,13 @@ export const deliveries: ResolveStep = (ctx) => {
       const { front, side } = frontMatch
       front.equipment[side][product.category] += shipment.units
       front.attribution[PLAYER_ATTRIBUTION_KEY] = (front.attribution[PLAYER_ATTRIBUTION_KEY] ?? 0) + shipment.units
+
+      // P7-tillägg: heatFromDeliveries (spec 5, "Heat") behöver "denna turs
+      // leveranser in i aktiv konflikt" — en transient räknare på Theatre som
+      // heat.ts läser och nollställer i samma steg. Se types.ts och ANDRINGSLOGG.md.
+      const theatre = draft.theatres[front.theatreId]
+      if (theatre) theatre.deliveriesIntoActiveWarThisTurn += shipment.units
+
       emit({
         severity: 'ticker',
         scope: 'front',

@@ -213,6 +213,8 @@ function buildFactions(scenario: ScenarioFile): Record<FactionId, Faction> {
       relationToPlayer: seed.relationToPlayer,
       embargoed: false,
       bankrupt: false,
+      negativeTreasuryTurns: 0,
+      lowSupportTurns: 0,
     }
   }
   return factions
@@ -256,6 +258,7 @@ function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } 
     name: scenario.theatre.name,
     heat: scenario.theatre.heat,
     frontIds: [front.id],
+    deliveriesIntoActiveWarThisTurn: 0,
   }
 
   return { theatre, front }

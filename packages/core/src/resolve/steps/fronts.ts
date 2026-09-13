@@ -15,9 +15,13 @@
 // En front utan materiel på NÅGON sida stagnerar helt (P6 klart-när) — ingen
 // beräkning görs alls för den, inte bara "position rör sig inte". Det är den
 // säkraste läsningen av "stagnerar" och kräver inget särfall i formlerna nedan.
+//
+// P7-tillägg: "Förluster drar manpower och publicSupport" (spec 5, "Faktion") körs
+// också här, inte i factions.ts — samma skäl som attribution i deliveries.ts: datan
+// (denna turs förluster per sida) finns bara i det ögonblick den beräknas.
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type { Front } from '../../types.js'
+import type { Faction, FactionId, Front } from '../../types.js'
 
 interface Balance {
   frontEquipmentWeight: number
@@ -26,6 +30,7 @@ interface Balance {
   frontBreakthroughMagnitude: number
   frontBaseAttritionPct: number
   frontMoraleShiftPerTurn: number
+  publicSupportLossPerCasualty: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -44,6 +49,12 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
 }
 
+function applyCasualtiesToFaction(faction: Faction | undefined, casualties: number): void {
+  if (!faction || casualties <= 0) return
+  faction.manpower = Math.max(0, faction.manpower - casualties)
+  faction.publicSupport = clamp(faction.publicSupport - casualties * BALANCE.publicSupportLossPerCasualty, 0, 100)
+}
+
 export const fronts: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
 
@@ -59,11 +70,17 @@ export const fronts: ResolveStep = (ctx) => {
       continue
     }
 
-    resolveFront(front, attacker, defender, emit)
+    resolveFront(front, attacker, defender, draft.factions, emit)
   }
 }
 
-function resolveFront(front: Front, attacker: 'a' | 'b', defender: 'a' | 'b', emit: ResolveContext['emit']): void {
+function resolveFront(
+  front: Front,
+  attacker: 'a' | 'b',
+  defender: 'a' | 'b',
+  factions: Record<FactionId, Faction>,
+  emit: ResolveContext['emit'],
+): void {
   const equipmentAdvantage = ratioAdvantage(front.equipment[attacker].artillery, front.equipment[defender].artillery)
   const manpowerAdvantage = ratioAdvantage(front.strength[attacker], front.strength[defender])
   // terrainBonus gynnar FÖRSVARAREN (spec 2.3), alltså subtraheras den från
@@ -91,6 +108,12 @@ function resolveFront(front: Front, attacker: 'a' | 'b', defender: 'a' | 'b', em
   front.strength[defender] = Math.max(0, front.strength[defender] - defenderCasualties)
   front.casualtiesTotal[attacker] += attackerCasualties
   front.casualtiesTotal[defender] += defenderCasualties
+
+  // "Förluster drar manpower och publicSupport" (spec 5, "Faktion") — den datan finns
+  // bara här, i samma ögonblick förlusterna faktiskt beräknas, så den appliceras
+  // direkt på respektive sidas faktion. Se ANDRINGSLOGG.md.
+  applyCasualtiesToFaction(factions[front.sideA], attacker === 'a' ? attackerCasualties : defenderCasualties)
+  applyCasualtiesToFaction(factions[front.sideB], attacker === 'b' ? attackerCasualties : defenderCasualties)
 
   const moraleShift = BALANCE.frontMoraleShiftPerTurn * clampedAdvantage
   front.morale[attacker] = clamp(front.morale[attacker] + moraleShift, 0, 100)

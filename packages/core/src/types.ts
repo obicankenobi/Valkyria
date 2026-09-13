@@ -227,6 +227,11 @@ export interface Faction {
   relationToPlayer: Pct
   embargoed: boolean
   bankrupt: boolean
+  // Inte i avsnitt 2 — se ANDRINGSLOGG.md. House har insolventTurns för samma syfte
+  // (spec 2.3); Faction saknade motsvarande räknare trots att avsnitt 5 kräver dem
+  // ("treasury < 0 i två turer", "publicSupport < 25 i tre turer").
+  negativeTreasuryTurns: number
+  lowSupportTurns: number
 }
 
 export interface Theatre {
@@ -234,6 +239,12 @@ export interface Theatre {
   name: string
   heat: Pct
   frontIds: FrontId[]
+  // Inte i avsnitt 2 — se ANDRINGSLOGG.md. Transient, självnollställande räknare:
+  // deliveries.ts fyller på den när materiel når en front i den här teatern,
+  // heat.ts läser och nollställer den i samma steg. Enda sättet att ge
+  // heatFromDeliveries-formeln (spec 5) det den behöver ("denna turs leveranser")
+  // utan en resolveTurn-intern scratch-kanal ResolveContext inte har.
+  deliveriesIntoActiveWarThisTurn: number
 }
 
 export interface Front {

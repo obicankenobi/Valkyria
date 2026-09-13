@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.5.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.6.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -708,6 +708,17 @@ Attribution bokförs per levererande hus vid varje sammandrabbning.
 triggar `forced peace`. `treasury < 0` i två turer triggar `bankrupt`, vilket sätter alla dess
 kontrakt till `voided` och emittar en `headline` med `causeId` bakåt till orsaken.
 
+> **Två luckor hittade under P7, se `docs/ANDRINGSLOGG.md`.** (1) `forced peace` har ingen
+> mekanisk konsekvens specificerad någonstans utöver triggernamnet — varken avsnitt 5 eller
+> DESIGN.md säger vad som faktiskt händer. `factions.ts` implementerar bara detektion och en
+> engångsnotis (headline vid korsningsturen, inte upprepad varje tur stödet förblir lågt).
+> (2) Embargo (`Faction.embargoed`, avsnitt 2.5) har ingen egen ekonomisk mekanik i det här
+> stycket, och ingen `PlayerAction` kan sätta fältet — samma `applyActions`-lucka som loggats
+> sedan P2. `factions.ts` ger embargo en PROVISORISK kvartalsvis kassadränering
+> (`embargoTreasuryDrainPerTurn`) så att kedjan embargo → bankrutt → annullerat kontrakt går att
+> pröva (ett test sätter `embargoed: true` direkt på en handbyggd faktion, spec 7.1). Båda är
+> öppna frågor, inte beslut.
+
 **Heat.**
 
 ```
@@ -731,6 +742,22 @@ uppdaterar `doomsdayPeak`. Inget annat steg rör `state.doomsday` direkt — all
 och emittar. Rutinleveranser rör den aldrig. Drivarna i etapp 1 är fyra: `restricted`-leverans,
 styrsystem över blocklinjen, iscensatt incident med supermaktsenhet, och eskalering från
 `heat > 85`.
+
+> **Tre fynd från P7, se `docs/ANDRINGSLOGG.md`.** (1) **Rättelse:** `endings.ts` läste sedan P3
+> en hårdkodad `95` för `NUCLEAR_EXCHANGE` i stället för `balance.json` — ett brott mot CLAUDE.md
+> hård regel 5 som ingen tidigare prompt fångade. `doomsdayNuclearExchangeThreshold` tillagd i
+> `balance.json`, `endings.ts` läser den nu. (2) Av etapp 1:s fyra drivare kopplas bara tre i
+> praktiken: `restricted`-leverans och styrsystem över blocklinjen är samma generiska mekanism,
+> redan kopplad i P5, och `heat > 85`-eskalering är P7:s eget nya arbete. Iscensatt incident med
+> supermaktsenhet går INTE att koppla — den beror av `applyActions`/en `STAGE_INCIDENT`-handling,
+> och `applyActions.ts` saknar fortfarande en ägande prompt i avsnitt 10 (loggat sedan P2).
+> (3) Krisevent vid `>= 75` (DESIGN.md §6.2: PUSH / BACK DOWN / SELL THE FILE) kräver ett
+> spelarbeslut `PlayerAction`-unionen (fryst sedan P2) inte har någon variant för. Löst med en
+> uttryckligt flaggad, PROVISORISK automatisk fallback: BACK DOWN väljs alltid (doomsday sätts
+> till `crisisBackDownDoomsdayTarget`, en exponeringshändelse registreras), med ett eget
+> wire-headline som ärligt anger att valet är automatiskt i väntan på en riktig mekanism. CRISIS
+> WATCH-notisen vid `60` kan dessutom missa en korsning som redan skett tidigare samma tur via
+> `deliveries.ts` — en dokumenterad, kosmetisk begränsning utan mekanisk konsekvens.
 
 **Ekonomi.** Fasta kostnader dras varje tur. Ränta på skuld. `treasury < 0` ökar `insolventTurns`,
 annars nollställs den. Därefter skrivs kreditgränsen om:

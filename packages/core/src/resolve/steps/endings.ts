@@ -15,6 +15,7 @@ interface Balance {
   insolvencyTurns: number
   exposureEventsForEnding: number
   exposureWindowTurns: number
+  doomsdayNuclearExchangeThreshold: number
 }
 const BALANCE = balance as unknown as Balance
 
@@ -38,7 +39,9 @@ function isBoardTargetMet(target: GameState['house']['boardTarget']): boolean {
 }
 
 function decideEnding(draft: GameState): EndingCode | null {
-  if (draft.doomsday >= 95) return 'NUCLEAR_EXCHANGE'
+  // P7-rättelse (se ANDRINGSLOGG.md): läste tidigare en hårdkodad 95, ett brott mot
+  // CLAUDE.md hård regel 5 ("inga magiska tal i kod") ingen tidigare prompt fångade.
+  if (draft.doomsday >= BALANCE.doomsdayNuclearExchangeThreshold) return 'NUCLEAR_EXCHANGE'
 
   const recentExposures = draft.house.exposureEvents.filter(
     (t) => t > draft.meta.turn - BALANCE.exposureWindowTurns,
