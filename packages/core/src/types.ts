@@ -94,7 +94,13 @@ export interface BoardTarget {
   dueTurn: number
   metric: 'revenue' | 'buyers' | 'techParity' | 'debtRatio'
   threshold: number
-  progressSnapshot: number // uppdateras varje tur, visas i UI
+  // Uppdateras varje tur av board.ts (P8), visas i UI. KONTRAKT (utnyttjat redan av
+  // endings.ts, P3): normaliserat så att `progressSnapshot >= threshold` alltid
+  // betyder "målet nått", oavsett metric. För 'debtRatio', där en LÄGRE siffra är
+  // bättre, är det board.ts:s jobb att räkna om till den gemensamma riktningen (t.ex.
+  // spara avståndet till målet, inte den råa kvoten) — inte att invertera jämförelsen
+  // hos varje konsument.
+  progressSnapshot: number
   reviewTurns: number[] // [8, 14] i 20-turersskivan
   reviewsFailed: number // två i rad → BUYOUT
   lastReviewTurn: number | null

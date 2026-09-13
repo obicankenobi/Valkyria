@@ -5,6 +5,19 @@ import type { GameState, TurnSubmission } from '../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
+// TAKE_LOAN görs inte om till pengar av applyActions än (den är fortfarande no-op —
+// se ANDRINGSLOGG.md, ingen prompt äger den). Bud in i submission ändrar alltså inte
+// resultatet idag. Den skickas ändå med, varje tur, för att spegla P3:s klart-när-
+// villkor ordagrant ("även när boten försöker låna varje tur") och för att testet
+// ska fortsätta vara sant den dagen TAKE_LOAN faktiskt processas — se
+// "creditLimit är 0 för ett hus utan intäktshistorik" i test/steps/economy.test.ts,
+// som bevisar ATT en riktig implementation aldrig kan bevilja lånet ändå.
+const SUBMISSION_WITH_LOAN_ATTEMPT: TurnSubmission = {
+  standingOrders: [],
+  bids: [],
+  actions: [{ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 5000000 } }],
+}
+
 describe('resolveTurn — P2: pipeline och wire', () => {
   it('20 turer kan köras utan handlingar utan att kasta', () => {
     let state: GameState = createInitialState('indochina-slice', 'p2-seed')
@@ -92,9 +105,66 @@ describe('resolveTurn — P2: pipeline och wire', () => {
     expect(() => resolveTurn(state, { standingOrders: [], bids: [], actions: [] })).not.toThrow()
   })
 
-  it('result.wire innehåller bara den här turens händelser (tomt i P2, eftersom inget steg emittar än)', () => {
+  it('result.wire innehåller bara den här turens händelser, inte tidigare turers', () => {
+    // Från och med P3 emittar economy.ts på riktigt varje tur (fasta kostnader,
+    // eventuell ränta), så wire är inte längre tomt. Det som faktiskt ska hålla är
+    // att result.wire bara innehåller DENNA turs händelser (turn === den tur som
+    // löstes), inte ackumulerad historik från tidigare turer.
     const state = createInitialState('indochina-slice', 'p2-seed')
     const result = resolveTurn(state, EMPTY_SUBMISSION)
-    expect(result.wire).toEqual([])
+
+    expect(result.wire.length).toBeGreaterThan(0)
+    for (const event of result.wire) {
+      expect(event.turn).toBe(state.meta.turn)
+    }
+
+    const secondResult = resolveTurn(result.state, EMPTY_SUBMISSION)
+    expect(secondResult.wire.length).toBeGreaterThan(0)
+    for (const event of secondResult.wire) {
+      expect(event.turn).toBe(result.state.meta.turn)
+    }
+  })
+})
+
+describe('resolveTurn — P3: ekonomi och slut', () => {
+  it('ett hus utan intäkter går i INSOLVENCY på en förutsägbar tur, även när boten försöker låna varje tur', () => {
+    // indochina-slice: founding capital 4 000 000, fasta kostnader 510 000/tur,
+    // ingen skuld → ingen ränta. Ingen leverans sker (production/deliveries är
+    // fortfarande no-ops, P5), så det finns aldrig någon intäkt att låna mot —
+    // creditLimit blir därför alltid 0 (bevisat separat i economy.test.ts), vilket
+    // är VARFÖR lånförsöket inte hjälper, inte bara för att TAKE_LOAN råkar vara
+    // otrådad än.
+    //
+    // 4 000 000 / 510 000 ≈ 7,84 → treasury blir negativt första gången i den 8:e
+    // resolveTurn-anropet (kumulativ dragning 8×510 000 = 4 080 000 > 4 000 000).
+    // Tre negativa turer i rad (insolvencyTurns = 3) ger INSOLVENCY i det 10:e
+    // anropet — förutsägbart, inte bara "inom 20 turer".
+    let state: GameState = createInitialState('indochina-slice', 'insolvency-seed')
+    expect(state.house.treasury).toBe(4000000)
+
+    let callsUntilEnded = 0
+    for (let i = 0; i < 20; i++) {
+      const result = resolveTurn(state, SUBMISSION_WITH_LOAN_ATTEMPT)
+      state = result.state
+      callsUntilEnded++
+      if (state.status.kind === 'ended') break
+    }
+
+    expect(callsUntilEnded).toBe(10)
+    expect(state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 9 })
+    expect(state.house.insolventTurns).toBe(3)
+    expect(state.house.creditLimit).toBe(0)
+  })
+
+  it('endings.ts kör efter economy.ts i samma tur: INSOLVENCY syns direkt den tur insolventTurns når tröskeln, utan en extra resolveTurn-omgång', () => {
+    let state: GameState = createInitialState('indochina-slice', 'insolvency-seed-2')
+    for (let i = 0; i < 9; i++) {
+      state = resolveTurn(state, EMPTY_SUBMISSION).state
+      expect(state.status.kind).toBe('active')
+    }
+    // Nionde anropet (i=8, 0-indexerat) lämnade insolventTurns på 2. Det tionde
+    // (denna) för den till 3 och ska avgöra partiet i SAMMA pipelinepassage.
+    const finalResult = resolveTurn(state, EMPTY_SUBMISSION)
+    expect(finalResult.state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 9 })
   })
 })

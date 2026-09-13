@@ -25,11 +25,15 @@ describe('wire-chains invariant', () => {
       state = result.state
     }
 
-    // P2:s pipeline är no-ops rakt igenom, så wire är tom hela vägen — invarianten
-    // är sann men provocerad, inte prövad. Se den syntetiska, flerturers historiken
-    // nedan för den delen som faktiskt utmanar pruneWire. Från och med den prompt
-    // som låter ett steg emitta på riktigt (P3+) blir det här ett skarpt test.
-    expect(state.wire).toEqual([])
+    // Från och med P3 emittar economy.ts på riktigt varje tur, så det här är inte
+    // längre ett tomt, provocerat test — pruneWire har faktiskt något att beskära
+    // (economy.ts:s egna händelser har alla causeId: null, så kedjedjupet prövas
+    // fortfarande huvudsakligen av den syntetiska historiken nedan, men mängden
+    // riktiga händelser och en riktig 20-turers körning prövas här).
+    expect(state.wire.length).toBeGreaterThan(0)
+    // Fönstret är 8 turer — en 20-turerskörning ska ha beskurit bort de äldsta.
+    const oldestKeptTurn = Math.min(...state.wire.map((e) => e.turn))
+    expect(oldestKeptTurn).toBeGreaterThan(state.meta.turn - 1 - 8)
   })
 
   it('en syntetisk historik som spänner över långt fler än 8 turer, med grenande orsakskedjor: pruneWire lämnar aldrig en hängande referens', () => {
