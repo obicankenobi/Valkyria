@@ -168,3 +168,62 @@ describe('resolveTurn — P3: ekonomi och slut', () => {
     expect(finalResult.state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 9 })
   })
 })
+
+describe('resolveTurn — P5: produktion, kostnad och leverans', () => {
+  it('(P5 klart-när) ett scriptat parti tar ett kontrakt, producerar, levererar och får betalt — hela kedjan går att läsa i wire', () => {
+    let state: GameState = createInitialState('indochina-slice', 'p5-happy-path-seed')
+    // Ackumulera varje turs händelser separat — wire.ts:s rullande 8-turersfönster
+    // (state.wire) garanterar INTE att tidiga händelser (WINS CONTRACT) fortfarande
+    // finns kvar när ett långt scriptat parti väl är klart, så "hela kedjan går att
+    // läsa i wire" verifieras mot vad som faktiskt EMITTERADES turn för turn, inte
+    // mot den beskurna slutsnapshoten.
+    const allWireEvents: WireEvent[] = []
+
+    // Spela tills en order dyker upp.
+    let order = undefined as GameState['market']['openOrders'][number] | undefined
+    for (let i = 0; i < 10 && !order; i++) {
+      const result = resolveTurn(state, EMPTY_SUBMISSION)
+      allWireEvents.push(...result.wire)
+      state = result.state
+      order = state.market.openOrders[0]
+    }
+    expect(order).toBeDefined()
+
+    // Lägg ett bud som bör vinna: gott om marginal under trueBudget.
+    const bidPrice = Math.round(order!.trueBudget * 0.75)
+    const submission: TurnSubmission = {
+      standingOrders: [],
+      bids: [{ orderId: order!.id, price: bidPrice, deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
+      actions: [],
+    }
+    const winResult = resolveTurn(state, submission)
+    allWireEvents.push(...winResult.wire)
+    state = winResult.state
+    expect(state.market.contracts).toHaveLength(1)
+    const contractId = state.market.contracts[0]!.id
+
+    // Spela tills kontraktet är fulfilled (eller ge upp — då har testet ett verkligt
+    // fel att visa, inte en timeout).
+    let turns = 0
+    while (state.market.contracts.find((c) => c.id === contractId)?.status !== 'fulfilled' && turns < 20) {
+      const result = resolveTurn(state, EMPTY_SUBMISSION)
+      allWireEvents.push(...result.wire)
+      state = result.state
+      turns++
+    }
+    const finalContract = state.market.contracts.find((c) => c.id === contractId)!
+    expect(finalContract.status).toBe('fulfilled')
+    expect(finalContract.unitsDelivered).toBe(finalContract.quantity)
+
+    // Betalt: revenueByTurn summerar till minst kontraktets fulla pris minus en
+    // försumbar avrundningsdifferens (spec 5: "proportionellt mot levererad andel").
+    const totalRevenue = state.house.revenueByTurn.reduce((sum: number, r) => sum + (r ?? 0), 0)
+    expect(totalRevenue).toBeGreaterThanOrEqual(finalContract.price - 5)
+
+    // Hela kedjan — vunnet, producerat, levererat, fullgjort — går att läsa i wire.
+    expect(allWireEvents.some((e) => e.headline.includes('WINS CONTRACT'))).toBe(true)
+    expect(allWireEvents.some((e) => e.headline.includes('PRODUCES') && e.headline.includes(contractId))).toBe(true)
+    expect(allWireEvents.some((e) => e.headline.includes('DELIVERED'))).toBe(true)
+    expect(allWireEvents.some((e) => e.headline.includes('FULFILLED') && e.headline.includes(contractId))).toBe(true)
+  })
+})

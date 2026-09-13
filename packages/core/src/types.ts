@@ -46,6 +46,11 @@ export interface GameState {
   market: {
     openOrders: Order[]
     contracts: Contract[]
+    // shipments: inte i avsnitt 2 — se ANDRINGSLOGG.md. Krävs för att implementera
+    // "Leveranser anländer 1–3 turer efter produktionen" (avsnitt 5), som inte har
+    // någon egen datamodell i specen. Producerade-men-inte-levererade enheter,
+    // borttagna ur listan när de anländer (deliveries.ts).
+    shipments: Shipment[]
     supplyCostIndex: number // 100 = baseline. Multiplicerar KOSTNAD, inte pris.
   }
   doomsday: Pct
@@ -195,6 +200,17 @@ export interface Contract {
   grade: Grade
   dueTurn: number
   status: 'active' | 'fulfilled' | 'late' | 'voided'
+}
+
+// Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när
+// en linje producerar enheter mot ett kontrakt; deliveries.ts (P5) tar bort den när
+// arrivalTurn nås och bokför leveransen. Contract.unitsDelivered räknar bara det som
+// FAKTISKT anlänt — enheter i transit finns bara här, aldrig dubbelräknade.
+export interface Shipment {
+  id: string
+  contractId: string
+  units: number
+  arrivalTurn: number
 }
 
 // ── 2.5 Värld ─────────────────────────────────────────────────────────────

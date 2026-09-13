@@ -283,6 +283,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
     market: {
       openOrders: [],
       contracts: [],
+      shipments: [],
       supplyCostIndex: 100,
     },
     doomsday: 0,

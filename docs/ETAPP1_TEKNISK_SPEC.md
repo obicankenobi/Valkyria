@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.3.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.4.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -673,6 +673,17 @@ nya kostnadstryck och det som gör prissättning till ett riktigt beslut.
 mot levererad andel och läggs i `house.revenueByTurn[turn]`. Passeras `dueTurn` sätts kontraktet
 `late`, `reliability` faller, och en `headline` emitteras. Levereras en `restricted`-produkt över
 blocklinjen anropas `doomsdayGate` med produktens `doomsdayOnDelivery`-intervall.
+
+> **Lucka hittad under P5, se `docs/ANDRINGSLOGG.md`.** "1–3 turers fördröjning" har ingen egen
+> datamodell i avsnitt 2 — `Contract.unitsDelivered` räcker inte för att skilja "producerat" från
+> "levererat" när de två är förskjutna i tiden. `types.ts` har fått en `Shipment`-typ (producerade-
+> men-inte-levererade enheter, i `market.shipments`) för att göra fördröjningen implementerbar
+> alls. `doomsdayGate.ts` byggs också här — den föll inte på någon tilldelad prompt i avsnitt 10,
+> bara på min egen preliminära P0-gissning ("P7"), vilket inte är auktoritativt. `resolve/steps/
+> doomsday.ts` (avkylning, trösklar, krisevent) förblir oförändrat P7:s jobb. **Observation, ingen
+> kodändring:** `gradeScandalChance` i balance.json (satt i P1 direkt ur specens avsnitt 6-utdrag)
+> konsumeras fortfarande ingenstans — "quality scandal" (DESIGN.md §5.1) nämns inte i P5:s
+> instruktionstext och hör hemma i en framtida, ännu inte tilldelad prompt.
 
 **Front.** `equipmentRatio = attackerArtillery / max(1, defenderArtillery)`, `manpowerRatio`,
 `terrainBonus`, `supplyStress`. Förluster fördelas, moral skiftar, position flyttas vid genombrott.
