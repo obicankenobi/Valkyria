@@ -1,5 +1,6 @@
 // Alla interfaces. Inga funktioner — se CLAUDE.md, arbetssätt, och avsnitt 1 i
-// ETAPP1_TEKNISK_SPEC.md. Innehållet är avsnitt 2 i den specen, ordagrant.
+// ETAPP1_TEKNISK_SPEC.md. Innehållet är avsnitt 2 (P1) och avsnitt 3.1/3
+// (resolveTurns kontrakt, P2), ordagrant där specen ger en form.
 
 // ── 2.1 Grundtyper ──────────────────────────────────────────────────────────
 
@@ -255,4 +256,48 @@ export interface WireEvent {
   delta: Record<string, number> // faktiska modelländringar, för felsökning och UI
   actorIsPlayer: boolean
   subjectId: string | null // faction/front/rival som händelsen rör
+}
+
+// ── 3. resolveTurn — kontraktet, 3.1 Handlingar ──────────────────────────────
+
+export type PlayerAction =
+  | { type: 'BROKER'; buyerId: FactionId; productId: ProductId; quantity: number; price: Money }
+  | { type: 'INTEL'; op: IntelOp; stationId: string; targetId?: string }
+  | { type: 'POLITICAL'; op: PoliticalOp; targetFactionId: FactionId; spend: Money }
+  | { type: 'MARKET'; op: 'BUY_FORWARD' | 'RELEASE'; spend: Money }
+  | { type: 'INTERNAL'; op: InternalOp; payload: Record<string, unknown> }
+
+export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
+export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL'
+export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY'
+
+// QUOTE är inte en PlayerAction. Bud ligger i TurnSubmission.bids och kostar inga
+// handlingspoäng. Se spec 3.1. ASSASSINATE finns inte i IntelOp i etapp 1 och ska
+// inte läggas till (spec 3.1, DESIGN.md avsnitt 9).
+
+// StandingOrderChange nämns i TurnSubmission (spec 3, "standingOrders:
+// StandingOrderChange[]") men definieras aldrig — varken formen eller vilken prompt
+// som ska bearbeta den anges i avsnitt 10:s promptsekvens. Se ANDRINGSLOGG.md
+// 2026-09-13 "StandingOrderChange saknar definition". applyActions är ett no-op i
+// P2 och läser aldrig innehållet, så den här platshållaren låser bara typen
+// tillräckligt för att TurnSubmission ska gå att bygga och skicka ett tomt fält —
+// den riktiga formen (troligen en diskriminerad union per DESIGN.md §4:
+// produktionslinjer, R&D-kö, leverantörsavtal, prisgolv, stationers
+// underhållsläge) är en design­fråga som ska beslutas separat innan en prompt
+// faktiskt bearbetar standing orders.
+export interface StandingOrderChange {
+  kind: string
+  payload: Record<string, unknown>
+}
+
+export interface TurnSubmission {
+  standingOrders: StandingOrderChange[]
+  bids: Bid[] // obegränsat antal, kostar inga action points
+  actions: PlayerAction[] // max house.actionPoints st
+}
+
+export interface TurnResult {
+  state: GameState
+  wire: WireEvent[] // endast denna turs händelser
+  rejected: { action: PlayerAction | Bid; reason: string }[]
 }

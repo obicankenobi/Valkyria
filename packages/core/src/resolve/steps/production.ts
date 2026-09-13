@@ -1,4 +1,5 @@
-// Linjer producerar mot kontrakt; bokför styckkostnad. Spec avsnitt 4.1, 5.
-// Implementeras i P5, se ETAPP1_TEKNISK_SPEC.md avsnitt 10. Tom i P0 med flit —
-// "en uppgift i taget" (CLAUDE.md).
-export {}
+// production — linjer producerar mot kontrakt; styckkostnad bokförs här (spec 4.1, 5).
+// No-op i P2 (implementeras i P5). Se ETAPP1_TEKNISK_SPEC.md avsnitt 3.2, 10.
+import type { ResolveStep } from '../index.js'
+
+export const production: ResolveStep = () => {}

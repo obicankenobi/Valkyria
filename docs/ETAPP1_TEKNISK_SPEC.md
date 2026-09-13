@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.1.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.2.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -433,6 +433,17 @@ vid budtillfället — spelaren får övertrassera medvetet, och betala för det
 Etapp 1 implementerar bud, `INTEL`, `POLITICAL` (utan `FUND_COUP`) och `INTERNAL`. `BROKER` och
 `MARKET` stubbas med `rejected`-svar tills etapp 2. `ASSASSINATE` finns inte i `IntelOp` i etapp
 1 och ska inte läggas till.
+
+> **Två luckor hittade under P2, se `docs/ANDRINGSLOGG.md`.** (1) `StandingOrderChange` namnges
+> i `TurnSubmission` men definieras aldrig — varken här eller i `DESIGN.md`. `types.ts` har fått
+> en minimal, uttryckligt provisorisk platshållare (`{ kind: string; payload: Record<string,
+> unknown> }`) som bara låser typen tillräckligt för att bygga; den riktiga formen (troligen en
+> diskriminerad union per produktionslinjer/R&D-kö/leverantörsavtal/prisgolv/stationers
+> underhållsläge, DESIGN.md §4) är obeslutad. (2) Ingen prompt i avsnitt 10 tilldelar vem som
+> implementerar `applyActions` på riktigt — den är no-op i P2 liksom de andra tolv, men saknar
+> en framtida hemprompt så som `orders`→P4, `fronts`→P6 etc. har. Ingetdera blockerade P2 (alla
+> steg är no-ops där), men båda behöver ett beslut innan en prompt faktiskt ska bearbeta
+> standing orders eller riktiga spelarhandlingar.
 
 ### 3.2 Stegpipeline
 

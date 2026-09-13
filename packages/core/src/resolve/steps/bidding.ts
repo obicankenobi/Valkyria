@@ -1,4 +1,5 @@
-// Avgör anbud som löper ut denna tur. Spec avsnitt 4.2, 4.4.
-// Implementeras i P4, se ETAPP1_TEKNISK_SPEC.md avsnitt 10. Tom i P0 med flit —
-// "en uppgift i taget" (CLAUDE.md).
-export {}
+// bidding — avgör anbud som löper ut denna tur (spec 4.2, 4.4).
+// No-op i P2 (implementeras i P4). Se ETAPP1_TEKNISK_SPEC.md avsnitt 3.2, 10.
+import type { ResolveStep } from '../index.js'
+
+export const bidding: ResolveStep = () => {}
