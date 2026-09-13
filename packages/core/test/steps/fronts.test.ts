@@ -1,0 +1,124 @@
+import { describe, expect, it } from 'vitest'
+import { fronts } from '../../src/resolve/steps/fronts.js'
+import { createRng } from '../../src/rng.js'
+import { createInitialState } from '../../src/state.js'
+import type { ResolveContext } from '../../src/resolve/index.js'
+import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
+
+const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
+
+function makeCtx(state: GameState, seed: string): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
+  const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
+  let seq = 0
+  const ctx: ResolveContext = {
+    draft: state,
+    submission: EMPTY_SUBMISSION,
+    rng: createRng(seed, 0),
+    emit: (e) => {
+      emitted.push(e)
+      return `test-${seq++}`
+    },
+    rejected: [],
+  }
+  return { ctx, emitted }
+}
+
+describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
+  it('(P6 klart-när) en front utan materiel på någon sida stagnerar helt — position, styrka, moral och förluster orörda', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    const before = JSON.parse(JSON.stringify(front))
+
+    const { ctx, emitted } = makeCtx(state, 'front-seed')
+    fronts(ctx)
+
+    expect(front).toEqual(before)
+    expect(emitted).toEqual([]) // inget att emitta — fronten rördes aldrig
+  })
+
+  it('(P6 klart-när) materiel levererat till sida A flyttar position mot -100 (A vunnit)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.equipment.a.artillery = 200 // gott om övertag, garanterar genombrott
+    const positionBefore = front.position
+
+    fronts(makeCtx(state, 'front-seed').ctx)
+
+    expect(front.position).toBeLessThan(positionBefore)
+  })
+
+  it('(P6 klart-när) materiel levererat till sida B flyttar position mot +100 (B vunnit)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.equipment.b.artillery = 200
+    const positionBefore = front.position
+
+    fronts(makeCtx(state, 'front-seed').ctx)
+
+    expect(front.position).toBeGreaterThan(positionBefore)
+  })
+
+  it('position rör sig aldrig utanför [-100, 100]', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.position = 98
+    front.equipment.b.artillery = 500 // extremt övertag åt B
+
+    for (let i = 0; i < 5; i++) {
+      fronts(makeCtx(state, `front-seed-${i}`).ctx)
+    }
+
+    expect(front.position).toBeLessThanOrEqual(100)
+  })
+
+  it('den missgynnade sidan tar fler förluster', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.equipment.a.artillery = 300 // sida A kraftigt överlägsen
+
+    fronts(makeCtx(state, 'front-seed').ctx)
+
+    expect(front.casualtiesTotal.b).toBeGreaterThan(front.casualtiesTotal.a)
+  })
+
+  it('moralen stiger för den gynnade sidan och faller för den missgynnade, klampad till [0,100]', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    const moraleABefore = front.morale.a
+    const moraleBBefore = front.morale.b
+    front.equipment.a.artillery = 300
+
+    fronts(makeCtx(state, 'front-seed').ctx)
+
+    expect(front.morale.a).toBeGreaterThan(moraleABefore)
+    expect(front.morale.b).toBeLessThan(moraleBBefore)
+    expect(front.morale.a).toBeLessThanOrEqual(100)
+    expect(front.morale.b).toBeGreaterThanOrEqual(0)
+  })
+
+  it('emittar minst en händelse när fronten faktiskt förändras (CLAUDE.md hård regel 4)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.fronts['front-1']!.equipment.a.artillery = 50
+
+    const { ctx, emitted } = makeCtx(state, 'front-seed')
+    fronts(ctx)
+
+    expect(emitted.length).toBeGreaterThan(0)
+  })
+
+  it('flera fronter löses oberoende av varandra', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front1 = state.fronts['front-1']!
+    state.fronts['front-2'] = {
+      ...JSON.parse(JSON.stringify(front1)),
+      id: 'front-2',
+      position: 0,
+    }
+    front1.equipment.a.artillery = 200 // bara front-1 har materiel
+
+    fronts(makeCtx(state, 'front-seed').ctx)
+
+    expect(front1.position).not.toBe(5) // rörde sig
+    expect(state.fronts['front-2']!.position).toBe(0) // stagnerade — ingen materiel där
+  })
+})

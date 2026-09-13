@@ -58,5 +58,13 @@
 
   "deliveryDelayMinTurns": 1,
   "deliveryDelayMaxTurns": 3,
-  "reliabilityLatePenalty": 8
+  "reliabilityLatePenalty": 8,
+
+  "_p6_note": "fronts.ts-fälten nedan är PROVISORISKA i sin helhet -- se docs/ANDRINGSLOGG.md. Avsnitt 5 ger bara en formel (equipmentRatio) och lös prosa för resten (manpowerRatio, moral, position, förluster). Inget av det här är ett spelbalansbeslut som redan är fattat.",
+  "frontEquipmentWeight": 0.6,
+  "frontManpowerWeight": 0.4,
+  "frontBreakthroughThreshold": 0.5,
+  "frontBreakthroughMagnitude": 5,
+  "frontBaseAttritionPct": 1.5,
+  "frontMoraleShiftPerTurn": 3
 }

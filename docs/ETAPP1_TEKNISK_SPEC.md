@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.4.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.5.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -688,6 +688,21 @@ blocklinjen anropas `doomsdayGate` med produktens `doomsdayOnDelivery`-intervall
 **Front.** `equipmentRatio = attackerArtillery / max(1, defenderArtillery)`, `manpowerRatio`,
 `terrainBonus`, `supplyStress`. Förluster fördelas, moral skiftar, position flyttas vid genombrott.
 Attribution bokförs per levererande hus vid varje sammandrabbning.
+
+> **Störst lucka hittad hittills, se `docs/ANDRINGSLOGG.md`.** Det här stycket ger EN formel
+> (`equipmentRatio`, och bara för artillerikategorin) och lös prosa för allt annat: `manpowerRatio`
+> saknar formel helt, liksom hur `terrainBonus`/`supplyStress` faktiskt vägs in, hur stora
+> förluster blir, hur mycket moral skiftar, och vad som räknas som "genombrott". `fronts.ts` har
+> fått en fullständig, uttryckligt PROVISORISK modell (viktad kombination av materiel- och
+> manskapsfördel, terräng och försörjningsstress; förluster/moral proportionella mot obalansen;
+> position flyttas bara vid en tröskelöverskridande "genombrott"), med alla koefficienter i
+> `balance.json`. Till skillnad från etapp 1:s övriga provisoriska bitar (som var enskilda,
+> avgränsade termer) är det här HELA stridsmodellen — det är den delen av bygget som mest
+> förtjänar en blick från någon med ett designbeslut att fatta, inte bara P10:s balanspass.
+> Dessutom: `Front.attribution`s "houseId"-halva förutsätter ett fält `House` inte har (bara
+> `RivalHouse` har `id`) — löst med en reserverad nyckel `'player'` i koden. Och "materiel in på
+> front" visade sig aldrig ha byggts i P5 trots att PIPELINE-kommentaren (avsnitt 3.2) alltid sagt
+> det — en nödvändig komplettering av redan committad kod, inte en ny P6-uppgift.
 
 **Faktion.** Förluster drar `manpower` och `publicSupport`. `publicSupport < 25` i tre turer
 triggar `forced peace`. `treasury < 0` i två turer triggar `bankrupt`, vilket sätter alla dess

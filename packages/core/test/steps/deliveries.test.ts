@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deliveries } from '../../src/resolve/steps/deliveries.js'
+import { deliveries, PLAYER_ATTRIBUTION_KEY } from '../../src/resolve/steps/deliveries.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import type { ResolveContext } from '../../src/resolve/index.js'
@@ -170,5 +170,82 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
 
     expect(contract.unitsDelivered).toBe(5) // orört
     expect(state.market.shipments).toHaveLength(0) // skeppningen konsumeras ändå (inget mer att göra med den)
+  })
+
+  describe('materiel in på front + attribution (PIPELINE-kommentaren i spec 3.2, avsnitt 5)', () => {
+    it('en leverans till en köpare som står på en front ökar front.equipment för rätt sida och kategori', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']! // sideA: rvn, sideB: nlf
+      const contract = activeContract({ buyerId: 'rvn', productId: '105mm_field_gun' }) // artillery
+      state.market.contracts = [contract]
+      state.market.shipments = [shipment({ units: 20, arrivalTurn: 2 })]
+      state.meta.turn = 2
+
+      deliveries(makeCtx(state, 'del-seed').ctx)
+
+      expect(front.equipment.a.artillery).toBe(20)
+      expect(front.equipment.b.artillery).toBe(0) // andra sidan orörd
+    })
+
+    it('(P6 klart-när) attribution summerar till levererade enheter, under en reserverad nyckel för spelarens hus', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      const contract = activeContract({ buyerId: 'nlf', productId: '105mm_field_gun' })
+      state.market.contracts = [contract]
+      state.market.shipments = [
+        shipment({ id: 's1', units: 15, arrivalTurn: 3 }),
+        shipment({ id: 's2', units: 10, arrivalTurn: 3 }),
+      ]
+      state.meta.turn = 3
+
+      deliveries(makeCtx(state, 'del-seed').ctx)
+
+      expect(front.attribution[PLAYER_ATTRIBUTION_KEY]).toBe(25)
+      expect(front.equipment.b.artillery).toBe(25)
+    })
+
+    it('attribution ackumuleras över flera turer, inte bara den senaste', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      const contract = activeContract({ buyerId: 'rvn', productId: '105mm_field_gun' })
+      state.market.contracts = [contract]
+
+      state.market.shipments = [shipment({ units: 10, arrivalTurn: 1 })]
+      state.meta.turn = 1
+      deliveries(makeCtx(state, 'del-seed-1').ctx)
+
+      state.market.shipments = [shipment({ id: 's2', units: 7, arrivalTurn: 2 })]
+      state.meta.turn = 2
+      deliveries(makeCtx(state, 'del-seed-2').ctx)
+
+      expect(front.attribution[PLAYER_ATTRIBUTION_KEY]).toBe(17)
+    })
+
+    it('en leverans till en köpare som INTE står på någon front rör ingen front', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const contract = activeContract({ buyerId: 'laos', productId: '105mm_field_gun' }) // laos står inte på front-1
+      state.market.contracts = [contract]
+      state.market.shipments = [shipment({ units: 20, arrivalTurn: 1 })]
+      state.meta.turn = 1
+      const frontBefore = JSON.parse(JSON.stringify(state.fronts['front-1']))
+
+      deliveries(makeCtx(state, 'del-seed').ctx)
+
+      expect(state.fronts['front-1']).toEqual(frontBefore)
+    })
+
+    it('olika produktkategorier hamnar i rätt fack i equipment', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      const contract = activeContract({ buyerId: 'rvn', productId: 'ch3_transport_helicopter' }) // aviation
+      state.market.contracts = [contract]
+      state.market.shipments = [shipment({ units: 5, arrivalTurn: 1 })]
+      state.meta.turn = 1
+
+      deliveries(makeCtx(state, 'del-seed').ctx)
+
+      expect(front.equipment.a.aviation).toBe(5)
+      expect(front.equipment.a.artillery).toBe(0)
+    })
   })
 })

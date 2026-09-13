@@ -227,3 +227,49 @@ describe('resolveTurn — P5: produktion, kostnad och leverans', () => {
     expect(allWireEvents.some((e) => e.headline.includes('FULFILLED') && e.headline.includes(contractId))).toBe(true)
   })
 })
+
+describe('resolveTurn — P6: front och attribution', () => {
+  it('(P6 klart-när) en front utan leveranser stagnerar över 15 turer: position, styrka, moral, förluster helt orörda', () => {
+    let state: GameState = createInitialState('indochina-slice', 'p6-stagnation-seed')
+    const before = JSON.parse(JSON.stringify(state.fronts['front-1']))
+
+    for (let i = 0; i < 15; i++) {
+      state = resolveTurn(state, EMPTY_SUBMISSION).state
+    }
+
+    expect(state.fronts['front-1']).toEqual(before)
+  })
+
+  it('(P6 klart-när) en front dit spelaren levererar artilleri flyttar position i rätt riktning, och attribution summerar till levererade enheter', () => {
+    // rvn = sideA (position ska röra sig mot -100 när rvn får materiel).
+    let state: GameState = createInitialState('indochina-slice', 'p6-direction-seed')
+    const positionBefore = state.fronts['front-1']!.position
+
+    let order = undefined as GameState['market']['openOrders'][number] | undefined
+    for (let i = 0; i < 15 && !order; i++) {
+      state = resolveTurn(state, EMPTY_SUBMISSION).state
+      order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')
+    }
+    expect(order).toBeDefined()
+
+    const submission: TurnSubmission = {
+      standingOrders: [],
+      bids: [{ orderId: order!.id, price: Math.round(order!.trueBudget * 0.75), deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
+      actions: [],
+    }
+    state = resolveTurn(state, submission).state
+    const contract = state.market.contracts.find((c) => c.buyerId === 'rvn')!
+    const deliveredQuantity = contract.quantity
+
+    let turns = 0
+    while (state.market.contracts.find((c) => c.id === contract.id)?.status !== 'fulfilled' && turns < 15) {
+      state = resolveTurn(state, EMPTY_SUBMISSION).state
+      turns++
+    }
+    expect(state.market.contracts.find((c) => c.id === contract.id)?.status).toBe('fulfilled')
+
+    expect(state.fronts['front-1']!.position).toBeLessThan(positionBefore) // mot -100, rvn:s sida
+    expect(state.fronts['front-1']!.attribution['player']).toBe(deliveredQuantity)
+    expect(state.fronts['front-1']!.equipment.a.artillery).toBe(deliveredQuantity)
+  })
+})
