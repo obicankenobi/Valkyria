@@ -1,6 +1,9 @@
 // Publikt paketgränssnitt för @seventh-front/core.
 //
-// P0: exporterar bara den ännu icke-implementerade resolveTurn. Fler exports (typer,
-// createInitialState, createRng, bidEstimate, …) läggs till allteftersom respektive
+// Fler exports (bidEstimate, wire-hjälpare, …) läggs till allteftersom respektive
 // prompt i ETAPP1_TEKNISK_SPEC.md avsnitt 10 bygger dem.
+export * from './types.js'
+export * from './rng.js'
+export { round } from './money.js'
+export { createInitialState, cloneState } from './state.js'
 export { resolveTurn } from './resolve/index.js'

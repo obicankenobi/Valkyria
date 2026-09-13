@@ -1,3 +1,32 @@
 {
-  "_status": "stub — populeras i P1 enligt ETAPP1_TEKNISK_SPEC.md avsnitt 6"
+  "brandt": {
+    "id": "brandt",
+    "name": "Brandt",
+    "specialisation": "artillery",
+    "aggression": 55,
+    "temperament": "opportunist",
+    "capital": 5000000,
+    "marketShare": 30,
+    "sabotagedUntilTurn": null
+  },
+  "costigan": {
+    "id": "costigan",
+    "name": "Costigan Ordnance",
+    "specialisation": "infantry",
+    "aggression": 40,
+    "temperament": "cautious",
+    "capital": 6500000,
+    "marketShare": 35,
+    "sabotagedUntilTurn": null
+  },
+  "meridian": {
+    "id": "meridian",
+    "name": "Meridian Defence Group",
+    "specialisation": "aviation",
+    "aggression": 65,
+    "temperament": "patriot",
+    "capital": 4200000,
+    "marketShare": 25,
+    "sabotagedUntilTurn": null
+  }
 }

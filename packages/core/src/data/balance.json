@@ -1,3 +1,24 @@
 {
-  "_status": "stub — populeras i P1 enligt ETAPP1_TEKNISK_SPEC.md avsnitt 6"
+  "heatPriceElasticity": 0.6,
+  "heatPerUnit": 0.35,
+  "heatDecayActive": 2,
+  "heatDecayIdle": 8,
+  "doomsdayDecayPerTurn": 3,
+  "gradePriceFactor": { "A": 1.0, "B": 0.86, "C": 0.72 },
+  "gradeCostFactor": { "A": 1.0, "B": 0.82, "C": 0.61 },
+  "gradeScandalChance": { "A": 0, "B": 4, "C": 14 },
+  "fixedCosts": {
+    "payrollBase": 180000,
+    "payrollPerExtraLine": 45000,
+    "lineUpkeep": 60000,
+    "stationUpkeep": 90000,
+    "rndOverhead": 120000
+  },
+  "creditMultiple": 1.6,
+  "boardReviewTolerance": 0.15,
+  "insolvencyTurns": 3,
+  "exposureEventsForEnding": 3,
+  "exposureWindowTurns": 6,
+  "rivalCashFloor": 1200000,
+  "bidWeightsDefault": { "price": 0.55, "delivery": 0.3, "relationship": 0.15 }
 }

@@ -1,3 +1,95 @@
 {
-  "_status": "stub — populeras i P1. INDOCHINA_SLICE är ett eget 20-turersscenario, inte en avkortning av INDOCHINA. Se DESIGN.md avsnitt 16."
+  "id": "indochina-slice",
+  "name": "INDOCHINA_SLICE",
+  "startYear": 1964,
+  "startQuarter": 1,
+  "turnCount": 20,
+  "rivalIds": ["brandt", "costigan", "meridian"],
+  "house": {
+    "name": "Halvorsen & Voss",
+    "homeState": "neutral",
+    "specialisation": "artillery",
+    "foundingCapital": 4000000,
+    "debtRateAnnual": 0.07,
+    "lineCount": 4,
+    "unitsPerLineTurnDefault": 40,
+    "staff": { "chiefEngineer": 45, "chiefSalesman": 45, "chiefOfStaff": 45 },
+    "reputation": { "quality": 50, "reliability": 50, "westStanding": 50, "eastStanding": 50 },
+    "techLevelDefault": 1,
+    "techLevelSpecialisationBonus": 3,
+    "station": {
+      "city": "SAIGON",
+      "nation": "rvn",
+      "depth": 1,
+      "coverage": ["procurement"]
+    },
+    "boardTarget": {
+      "label": "Doubling",
+      "dueTurn": 20,
+      "metric": "revenue",
+      "threshold": 2,
+      "reviewTurns": [8, 14]
+    }
+  },
+  "factions": [
+    {
+      "id": "rvn",
+      "name": "Republic of Vietnam",
+      "treasury": 18000000,
+      "militaryBudget": 6000000,
+      "manpower": 450000,
+      "publicSupport": 55,
+      "alignment": 70,
+      "relationToPlayer": 40,
+      "techLevelDefault": 2
+    },
+    {
+      "id": "nlf",
+      "name": "National Liberation Front",
+      "treasury": 6000000,
+      "militaryBudget": 2500000,
+      "manpower": 200000,
+      "publicSupport": 60,
+      "alignment": -70,
+      "relationToPlayer": 10,
+      "techLevelDefault": 1
+    },
+    {
+      "id": "laos",
+      "name": "Kingdom of Laos",
+      "treasury": 4000000,
+      "militaryBudget": 1200000,
+      "manpower": 60000,
+      "publicSupport": 50,
+      "alignment": 20,
+      "relationToPlayer": 30,
+      "techLevelDefault": 1
+    }
+  ],
+  "theatre": {
+    "id": "indochina",
+    "name": "INDOCHINA",
+    "heat": 25
+  },
+  "front": {
+    "id": "front-1",
+    "sideA": "rvn",
+    "sideB": "nlf",
+    "attacker": "b",
+    "position": 5,
+    "moraleA": 55,
+    "moraleB": 60,
+    "strengthA": 100,
+    "strengthB": 80,
+    "terrainBonus": 5
+  },
+  "scriptedEvents": [
+    {
+      "turn": 10,
+      "type": "RESTRICTED_ORDER",
+      "buyerId": "rvn",
+      "productId": "mk9_longhand_shell",
+      "quantity": 8
+    }
+  ]
 }
