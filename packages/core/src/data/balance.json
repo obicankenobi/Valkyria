@@ -20,5 +20,39 @@
   "exposureEventsForEnding": 3,
   "exposureWindowTurns": 6,
   "rivalCashFloor": 1200000,
-  "bidWeightsDefault": { "price": 0.55, "delivery": 0.3, "relationship": 0.15 }
+  "bidWeightsDefault": { "price": 0.55, "delivery": 0.3, "relationship": 0.15 },
+
+  "_p4_note": "Fälten nedan krävs av formlerna i spec avsnitt 4.1/4.2/4.4, som uttryckligen säger 'Detta är siffrorna att skruva på först. De ligger i balance.json, inte i koden.' Se docs/ANDRINGSLOGG.md för blocPenaltyScale, orderGeneration* och rivalDeliveryJitterTurns, som är provisoriska (ingen formel/kadens gavs i specen för dem).",
+
+  "scarcityPriceDivisor": 400,
+
+  "rivalMarginBase": 0.3,
+  "rivalMarginAggressionScale": 0.22,
+  "rivalCashPressurePenalty": 0.05,
+  "rivalSpecialisationBonus": 0.04,
+  "rivalJitterRange": 0.06,
+  "rivalDeliveryJitterTurns": 2,
+
+  "scoreBase": 100,
+  "priceTermWeight": 120,
+  "deliveryTermWeight": 25,
+  "relationTermWeight": 40,
+  "bribeTermScale": 100,
+  "bribeTermMultiplier": 1.5,
+  "repTermReliabilityDivisor": 5,
+  "repTermQualityDivisor": 8,
+  "blocPenaltyScale": 15,
+
+  "relationBoostMin": 4,
+  "relationBoostMax": 8,
+
+  "orderGenerationChancePct": 35,
+  "orderQuantityMin": 20,
+  "orderQuantityMax": 150,
+  "orderDeliverySlackTurns": 3,
+  "orderBiddingWindowTurns": 1,
+  "statedBudgetMinFactor": 0.6,
+  "statedBudgetMaxFactor": 0.95,
+  "trueBudgetMinFactor": 0.9,
+  "trueBudgetMaxFactor": 1.3
 }

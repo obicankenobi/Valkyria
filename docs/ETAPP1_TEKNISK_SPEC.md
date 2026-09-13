@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.2.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.3.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -85,6 +85,13 @@ seventh-front/
 
 `core` får aldrig importera något från `app`. `core` får inte importera `react`, `Date`,
 `Math.random` eller något I/O. Detta är den enskilt viktigaste regeln i projektet.
+
+> **Tillägg under P4:** `core/src/pricing.ts`, inte namngiven ovan. Delar de rena formlerna i
+> avsnitt 4 (referenspris, styckkostnad, rivalbud, poängsättning) mellan `orders.ts`,
+> `bidding.ts` och `queries.ts`. Motivet är inte bekvämlighet: `bidEstimate` måste approximera
+> exakt vad `bidding.ts` faktiskt gör (hela poängen med `winBand`, avsnitt 4.3), och två
+> handkopierade implementationer av samma formler hade varit en tyst driftrisk. Se
+> `docs/ANDRINGSLOGG.md`.
 
 ---
 
@@ -637,6 +644,20 @@ Högst poäng vinner. Vid vinst skapas `Contract` med `unitCostAtSigning`, `rela
 4–8, och köparens `militaryBudget` minskar med priset.
 
 **Detta är siffrorna att skruva på först.** De ligger i `balance.json`, inte i koden.
+
+> **Tre luckor hittade under P4, se `docs/ANDRINGSLOGG.md`.** (1) `alignmentPenalty(faction.
+> alignment, house)` namnges men definieras aldrig — varken formel eller vad `house` bidrar med.
+> `pricing.ts` har fått en minimal, uttryckligt provisorisk formel skalad mot husets
+> west-/eastStanding, kalibrerad mot repTerms storleksordning. Den riktiga formeln är en
+> designfråga. (2) "Rivaler poängsätts med samma formel men med relationTerm och repTerm från
+> deras egna värden" förutsätter data `RivalHouse` (avsnitt 2.5) inte har — inget
+> rykte/relationsfält finns på en rival. Löst genom att rivaler får relationTerm 0, repTerm 0,
+> bribeTerm 0 och blocTerm 0: de konkurrerar bara på pris och leveranstid, precis det avsnitt
+> 4.2:s formel faktiskt modellerar för dem. (3) Ordergenereringens kadens (hur ofta, vilka
+> köpare, vilka kvantiteter) ges aldrig — bara prissättningsformeln för en redan beslutad order.
+> `orders.ts` har en minimal, uttryckligt provisorisk kadens (en chans per faktion och tur).
+> Ingen av de tre blockerade P4:s klart när-villkor (a)–(e), som alla verifierats oberoende av
+> exakt hur dessa tre avgörs.
 
 ---
 

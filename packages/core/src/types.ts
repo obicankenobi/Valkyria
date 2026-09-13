@@ -307,3 +307,13 @@ export interface TurnResult {
   wire: WireEvent[] // endast denna turs händelser
   rejected: { action: PlayerAction | Bid; reason: string }[]
 }
+
+// ── 4.3 Vad spelaren får se ──────────────────────────────────────────────────
+
+export interface BidEstimate {
+  rivalPriceLow: Money
+  rivalPriceHigh: Money
+  lowestRivalHouse: RivalId | null // endast depth >= 4
+  winBand: { price: Money; confidence: Pct }[]
+  yourUnitCost: Money // alltid exakt — du känner din egen verkstad
+}
