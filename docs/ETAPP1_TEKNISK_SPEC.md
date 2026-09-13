@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.7.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.8.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -892,6 +892,21 @@ Botstrategier behöver inte vara smarta. De behöver vara olika:
 
 Utdata per parti: ending, sluttur, kassa, `doomsdayPeak`, antal kontrakt, marknadsandel,
 bruttomarginal, andel turer med `heat > 40`.
+
+> **Fyra vägval gjorda under P9, se `docs/ANDRINGSLOGG.md`.** (1) `marknadsandel` saknar formel —
+> läses som andelen "WINS CONTRACT"-händelser i wire som är spelarens (`actorIsPlayer`), av alla
+> avgjorda ordrar. (2) `bruttomarginal` räknas EXAKT ur redan bokförda fält
+> (`unitCostAtSigning × unitsDelivered` per kontrakt mot kumulativ `revenueByTurn`), ingen
+> uppskattning. (3) CSV:n skrivs till en riktig fil (`--out`, default `harness-results.csv`), inte
+> stdout — `npm run <script>` skriver sina egna livscykelbanderoller till stdout, vilket hade
+> förstört en `> out.csv`-omdirigering enligt exempelkommandot ovan, ordagrant. (4) `--runs N`
+> tolkas som N partier PER policy, inte N totalt fördelat på policies.
+>
+> Botstrategiernas beskrivningar nämner inga `INTERNAL`-handlingar (t.ex. `TAKE_LOAN`, byggd i
+> P8) för någon av de tre — de byggs därför inte in. Det innebär att alla tre kan gå i
+> `INSOLVENCY` i praktiken (se P8:s egen utredning i ANDRINGSLOGG.md om hur avgörande lån var för
+> överlevnad) tills P10 väger in det. Det är P10:s jobb att upptäcka och åtgärda, inte P9:s att
+> gissa sig runt i förväg.
 
 **Mål för etapp 1 innan balansen får kallas färdig:**
 

@@ -1,5 +1,7 @@
 // packages/harness — balansverktyg. Kör N partier headless med botstrategierna passive,
 // aggressive, balanced och skriver CSV. Se ETAPP1_TEKNISK_SPEC.md avsnitt 7.3.
 //
-// Tom i P0 med flit. Byggs i P9, efter att hela resolve-pipelinen finns att spela mot.
-export {}
+// Byggs i P9. Se policies.ts, runGame.ts, csv.ts, cli.ts.
+import { main } from './cli.js'
+
+main(process.argv.slice(2))
