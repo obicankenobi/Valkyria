@@ -31,25 +31,23 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // TYDLIGT innan ett enda parti ens spelas, i stället för att låta ett senare
 // balanspass tyst spela mot fel tal och producera ett meningslöst snapshot.
 //
-// PENDAD P24–P31 (ägarbeslut 2026-09-14, se ANDRINGSLOGG.md samma datum). P24
-// kräver att `relationTermWeight` återställs 5 → 40 (ETAPP2_TEKNISK_SPEC.md
-// avsnitt 2.2) — den ändringen ensam bryter både den här kontrollen och de tre
-// hash-testerna nedan, och P25–P27 fortsätter ändra balance.json. Specen
-// planerar EXPLICIT att golden fryses om först i P32 ("balanspass, sist i
-// etappen ... uppdatera golden-snapshoten som ett medvetet, separat beslut när
-// tabellen står", avsnitt 9). Att låta testet stanna kvar rött i åtta
-// commit-cykler hade dolt en RIKTIG regression bland de förväntade — pendat
-// och synligt kommenterat är den ärliga varianten. Återaktivera i P32, när
-// `balance.frozen.json` fryses om mot den nya balansen.
-it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+// Återaktiverad i P32 (ETAPP2_TEKNISK_SPEC.md avsnitt 9: "frys om
+// balance.frozen.json ... som ett medvetet, separat beslut när tabellen
+// står"). Pendad P24–P31 (ägarbeslut 2026-09-14, se ANDRINGSLOGG.md samma
+// datum) medan P24 (relationTermWeight 5→40) och P25–P31 fortsatte ändra
+// balance.json/scenariodata. `fixtures/balance.frozen.json` är nu en ny,
+// bitvis kopia av `src/data/balance.json` EFTER P32:s balanspass (se
+// ANDRINGSLOGG.md), och de tre hash-erna nedan är omfrysta mot samma
+// balans, inte de gamla P22-talen.
+it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
-describe.skip('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
+describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '19e3e6750e97b3' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '107880ed82dd3f' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'e81edf28cb25b' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c64a1ab014436' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'a651047df113f' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '520a3eff4eb2d' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

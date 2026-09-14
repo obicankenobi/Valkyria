@@ -547,25 +547,56 @@ levererade.
 
 ### 6.3 Måltabell för etapp 2
 
-| Kriterium | Målvärde | Mätt nu (n=2000/policy) |
+> **Nio av sjutton rader omprövade under P32, se `docs/ANDRINGSLOGG.md`.** Balanspasset (egen
+> instrumenterad härnesskörning, n=500/policy, `tsx` mot källan för snabb iteration — se
+> ANDRINGSLOGG för hela metodologin) testade sex olika balansfält
+> (`rivalMarginBase`/`priceTermWeight`/`orderGenerationChancePct`/`fixedCosts.lineUpkeep`/
+> `boardTarget.threshold`/`heatDecayActive`) systematiskt, var och en över flera värden. **Ingen
+> ändring skickades in** — varje testad spak flyttade `aggressive`/`balanced`/`capacity` i
+> LÅSTA STEG i samma riktning (aldrig isär), eftersom skillnaden mellan dem är
+> vinstfrekvensen/volymen deras EGNA, kodfixerade budstrategier ger (`aggressive`s
+> underbudsfaktor, `balanced`s 60 %-konfidensmål, `capacity`s kapacitetsspärr + inga lån) — inte
+> något `balance.json` eller scenariodata ensamt styr. `docs/ANDRINGSLOGG.md` har hela
+> sviten av mätningar per spak. `balance.json`/scenariodata lämnas därför OFÖRÄNDRADE av P32:s
+> eget balanspass — de fem rader nedan där `Mätt nu`-kolumnen ändå rört sig gjorde det tack
+> vare P24–P31:s KOD (rivalpoängsättning, styrelsegranskningar, dynamisk grade), inte tack vare
+> P32.
+>
+> Tre av de fyra ursprungligen fetstilta rader som inte nås (`capacity` mot `aggressive`,
+> `aggressive`/`balanced` `SCENARIO_COMPLETE`) är samma rotorsak som ovan — se respektive
+> radnot. `EXPOSURE totalt` och `aggressive` `NUCLEAR_EXCHANGE` (båda ej fetstilta) är en ANNAN
+> strukturell brist: ingen härnessbot anropar någonsin `INTEL RECRUIT`/`EXPAND` (EXPOSURE,
+> flaggat redan i P29) eller skickar en `CRISIS`-handling (`PUSH`) (NUCLEAR_EXCHANGE, ny
+> upptäckt i P32) — båda kräver kod i `policies.ts`, utanför P32:s egna "ingen kod"-mandat.
+>
+> **Rättelse av tabellens egen bokföring:** avsnitt 9:s P32-prompt säger "de sex fetstilta
+> raderna" — den ursprungliga tabellen (innan denna omprövning) hade FAKTISKT åtta rader där
+> både kriterium- och målvärde-cellen var fetstilta (`capacity`/`aggressive`-slutkassa,
+> `aggressive`-rivalWinPct, `Front.attribution`-andel, `aggressive`/`balanced`
+> `SCENARIO_COMPLETE`, tidigaste `EXPOSURE`, tur-14/20-andel, grade-dominans), inte sex. "Sex"
+> var alltså redan fel när prompten skrevs — samma sorts tidiga, aldrig omräknade prosasiffra
+> som andra redan loggade avsteg i den här filen. Alla åtta behandlade här, den fullständigare
+> läsningen, inte den snävare.
+
+| Kriterium | Målvärde | Mätt nu (n=500/policy, P32) |
 |---|---|---|
-| **`capacity` mot `aggressive`, median slutkassa** | **`capacity` högre** | `capacity` −£308 817, `aggressive` £28 379 166 |
-| **Rivalerna vinner ordrar, `aggressive`** | **> 15 %** | 1,6 % (median 0,0 %) |
-| Rivalerna vinner ordrar, `balanced` | 25–45 % | 15,0 % |
-| **Rivalernas andel av `Front.attribution`** | **> 25 %** | 0 % (fältet har aldrig haft en rivalnyckel) |
-| **`aggressive` `SCENARIO_COMPLETE`** | **< 35 %** | 53,8 % |
-| **`balanced` `SCENARIO_COMPLETE`** | **50–75 %** | 92,1 % |
-| `passive` överlever 20 turer | 25–45 % | 47,2 % |
-| `passive` förlorar på `BUYOUT` | > 50 % | 58,0 % |
-| **Tidigaste `EXPOSURE`-parti** | **ingen före tur 8** | tur 2 (101 partier) |
-| `EXPOSURE` totalt | 5–15 % | 8,1 % |
-| `aggressive` når `NUCLEAR_EXCHANGE` | 5–20 % | 13,4 % |
-| Andel partier avgjorda före tur 8 | **< 2 %** | 7,70 % |
-| **Andel partier som slutar på tur 14 eller 20** | **< 60 %** | 80,7 % |
-| Turer med `heat > 40`, medel per policy | 30–60 % | 45,3 / 54,0 / **70,4** / **65,5** |
+| **`capacity` mot `aggressive`, median slutkassa** | **`capacity` högre** | Reviderat, se blockquote. `capacity` −£419 969, `aggressive` £758 025 — samma riktning som P22:s ursprungliga fynd, nu djupare: `capacity` tar aldrig lån och är kapacitetsspärrad (spec 10.2, kod), `aggressive` vinner ~2× fler kontrakt (mätt: 14 mot `balanced`s 6 vid samma jämförelse) |
+| **Rivalerna vinner ordrar, `aggressive`** | **> 15 %** | 23,0 % (median 20,0 %) ✓ |
+| Rivalerna vinner ordrar, `balanced` | 25–45 % | 55,4 % (median 57,1 %) — över, ej fetstilt, samma rotorsak som ovan (en svagare budstrategi förlorar oftare till rivaler också) |
+| **Rivalernas andel av `Front.attribution`** | **> 25 %** | 30,5 % ✓ (P25/P29 gjorde fältet meningsfullt första gången) |
+| **`aggressive` `SCENARIO_COMPLETE`** | **< 35 %** | Reviderat, se blockquote. 64,2 % |
+| **`balanced` `SCENARIO_COMPLETE`** | **50–75 %** | Reviderat, se blockquote. 23,8 % |
+| `passive` överlever 20 turer | 25–45 % | 1,2 % — långt under, ej fetstilt, samma rotorsak (låg vinstfrekvens ⇒ underkänd granskning redan vid tur 10, `BUYOUT` långt före tur 20) |
+| `passive` förlorar på `BUYOUT` | > 50 % | 99,0 % ✓ |
+| **Tidigaste `EXPOSURE`-parti** | **ingen före tur 8** | ✓, men vakuöst — 0 av 2000 partier slutade på `EXPOSURE` alls (P29:s redan flaggade lucka, se blockquote) |
+| `EXPOSURE` totalt | 5–15 % | Reviderat, se blockquote. 0,00 % |
+| `aggressive` når `NUCLEAR_EXCHANGE` | 5–20 % | Reviderat, se blockquote. 1,0 % |
+| Andel partier avgjorda före tur 8 | **< 2 %** | 0,15 % ✓ |
+| **Andel partier som slutar på tur 14 eller 20** | **< 60 %** | 24,6 % ✓ (P30:s spridda granskningsturer) |
+| Turer med `heat > 40`, medel per policy | 30–60 % | passive 58,1 / balanced 60,7 / capacity 56,0 (alla inom eller nära) / **aggressive 71,4** (över, ej fetstilt, samma rotorsak: hög leveransvolym driver heat) |
 | Rivalbud diskvalificerade | < 10 % | 0,00 % ✓ |
-| Spridning slutkassa `balanced` (positiv kassa) | ≥ 3× | 8,7× ✓ |
-| **Andel partier där någon grade väljs > 70 % av gångerna** | **< 60 %** | ~96 % |
+| Spridning slutkassa `balanced` (positiv kassa) | ≥ 3× | 72,2× ✓ |
+| **Andel partier där någon grade väljs > 70 % av gångerna** | **< 60 %** | 43,5 % ✓ (P31:s dynamiska grade-val, per PARTI — skiljer sig från P31:s eget klart-när, som mäter per POLICY över alla bud, se P31:s egen ANDRINGSLOGG-rad) |
 
 Fetstilta rader är de som etappen finns för. Övriga är med för att fånga regressioner.
 
