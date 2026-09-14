@@ -36,6 +36,9 @@ interface Balance {
   qualityScandalPenalty: number
   qualityScandalTurns: number
   rivalDeliveryUnitsPerTurn: number
+  reliabilityLateEscalationPerTurn: number
+  contractGracePeriodTurns: number
+  voidedContractRelationPenalty: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -189,21 +192,54 @@ export const deliveries: ResolveStep = (ctx) => {
 
   draft.market.shipments = stillInTransit
 
-  // 2) Försenade kontrakt — en engångsövergång 'active' → 'late', inte en
-  //    återkommande straffavgift varje tur den förblir försenad.
+  // 2) Försenade kontrakt. Engångsövergång 'active' → 'late' (oförändrad sedan
+  //    P7), plus (P27, avsnitt 3.1) ett NYTT, eskalerande straff varje tur
+  //    kontraktet FÖRBLIR 'late', och 'voided' om det passerar sin nådaperiod
+  //    (contractGracePeriodTurns) utan att bli klart — "spelaren får
+  //    övertrassera medvetet, och betala för det" (spec 3.1), en betalning som
+  //    saknades fram till nu.
   for (const contract of draft.market.contracts) {
-    if (contract.status !== 'active') continue
-    if (draft.meta.turn <= contract.dueTurn) continue
+    if (contract.status === 'active' && draft.meta.turn > contract.dueTurn) {
+      contract.status = 'late'
+      house.reputation.reliability = Math.max(0, house.reputation.reliability - BALANCE.reliabilityLatePenalty)
 
-    contract.status = 'late'
-    house.reputation.reliability = Math.max(0, house.reputation.reliability - BALANCE.reliabilityLatePenalty)
+      contract.lateEventId = emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `CONTRACT ${contract.id} LATE — ${house.name.toUpperCase()}'S RELIABILITY FALLS`,
+        causeId: null,
+        delta: { reliability: -BALANCE.reliabilityLatePenalty },
+        actorIsPlayer: true,
+        subjectId: contract.buyerId,
+      })
+    }
 
+    if (contract.status !== 'late') continue
+
+    if (draft.meta.turn > contract.dueTurn + BALANCE.contractGracePeriodTurns) {
+      contract.status = 'voided'
+      const buyer = draft.factions[contract.buyerId]
+      if (buyer) buyer.relationToPlayer = Math.max(0, buyer.relationToPlayer - BALANCE.voidedContractRelationPenalty)
+
+      emit({
+        severity: 'headline',
+        scope: 'market',
+        headline: `CONTRACT ${contract.id} VOIDED — TOO LATE TO SALVAGE, NO FURTHER PAYMENT`,
+        causeId: contract.lateEventId,
+        delta: buyer ? { relationToPlayer: -BALANCE.voidedContractRelationPenalty } : {},
+        actorIsPlayer: true,
+        subjectId: contract.buyerId,
+      })
+      continue
+    }
+
+    house.reputation.reliability = Math.max(0, house.reputation.reliability - BALANCE.reliabilityLateEscalationPerTurn)
     emit({
-      severity: 'headline',
+      severity: 'report',
       scope: 'house',
-      headline: `CONTRACT ${contract.id} LATE — ${house.name.toUpperCase()}'S RELIABILITY FALLS`,
-      causeId: null,
-      delta: { reliability: -BALANCE.reliabilityLatePenalty },
+      headline: `CONTRACT ${contract.id} STILL LATE — ${house.name.toUpperCase()}'S RELIABILITY KEEPS FALLING`,
+      causeId: contract.lateEventId,
+      delta: { reliability: -BALANCE.reliabilityLateEscalationPerTurn },
       actorIsPlayer: true,
       subjectId: contract.buyerId,
     })
@@ -281,21 +317,56 @@ export const deliveries: ResolveStep = (ctx) => {
     }
 
     // Försenade rivalkontrakt — samma engångsövergång 'active' → 'late' som
-    // spelarens egen (steg 2 ovan), samma reliabilityLatePenalty (avsnitt 2.3
-    // ger ingen egen konstant, bara "reputation.reliability faller").
+    // spelarens egen (steg 2 ovan), samma reliabilityLatePenalty. P27 (avsnitt
+    // 3.1): samma eskalering och 'voided' som spelarens Contract, TILLÄMPAD PÅ
+    // en RivalContract — annars uppstår en ny asymmetri i stället för den
+    // etappen just ska ta bort (avsnitt 2.1/3.1:s egen motivering). Skillnaden
+    // mot spelarens gren: relationsstraffet drar rival.relations[buyerId], inte
+    // en Faction.relationToPlayer (avsnitt 2.1: "en rivals annullerade kontrakt
+    // drar relations[buyerId] med samma tal").
     for (const contract of rival.contracts) {
-      if (contract.status !== 'active') continue
-      if (draft.meta.turn <= contract.dueTurn) continue
+      if (contract.status === 'active' && draft.meta.turn > contract.dueTurn) {
+        contract.status = 'late'
+        rival.reputation.reliability = Math.max(0, rival.reputation.reliability - BALANCE.reliabilityLatePenalty)
 
-      contract.status = 'late'
-      rival.reputation.reliability = Math.max(0, rival.reputation.reliability - BALANCE.reliabilityLatePenalty)
+        contract.lateEventId = emit({
+          severity: 'report',
+          scope: 'market',
+          headline: `RIVAL CONTRACT ${contract.id} LATE — ${rival.name.toUpperCase()}'S RELIABILITY FALLS`,
+          causeId: null,
+          delta: { reliability: -BALANCE.reliabilityLatePenalty },
+          actorIsPlayer: false,
+          subjectId: contract.buyerId,
+        })
+      }
 
+      if (contract.status !== 'late') continue
+
+      if (draft.meta.turn > contract.dueTurn + BALANCE.contractGracePeriodTurns) {
+        contract.status = 'voided'
+        const before = rival.relations[contract.buyerId] ?? 0
+        const after = Math.max(0, before - BALANCE.voidedContractRelationPenalty)
+        rival.relations[contract.buyerId] = after
+
+        emit({
+          severity: 'headline',
+          scope: 'market',
+          headline: `RIVAL CONTRACT ${contract.id} VOIDED — TOO LATE TO SALVAGE (${rival.name.toUpperCase()})`,
+          causeId: contract.lateEventId,
+          delta: { [`relations.${contract.buyerId}`]: after - before },
+          actorIsPlayer: false,
+          subjectId: contract.buyerId,
+        })
+        continue
+      }
+
+      rival.reputation.reliability = Math.max(0, rival.reputation.reliability - BALANCE.reliabilityLateEscalationPerTurn)
       emit({
         severity: 'report',
         scope: 'market',
-        headline: `RIVAL CONTRACT ${contract.id} LATE — ${rival.name.toUpperCase()}'S RELIABILITY FALLS`,
-        causeId: null,
-        delta: { reliability: -BALANCE.reliabilityLatePenalty },
+        headline: `RIVAL CONTRACT ${contract.id} STILL LATE — ${rival.name.toUpperCase()}'S RELIABILITY KEEPS FALLING`,
+        causeId: contract.lateEventId,
+        delta: { reliability: -BALANCE.reliabilityLateEscalationPerTurn },
         actorIsPlayer: false,
         subjectId: contract.buyerId,
       })

@@ -147,6 +147,7 @@ function buildHouse(scenario: ScenarioFile): House {
     assignedContractId: null,
     status: 'idle',
     blockedReason: null,
+    retoolingUntilTurn: null,
   }))
 
   const station: Station = {

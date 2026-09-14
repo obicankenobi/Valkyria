@@ -149,5 +149,10 @@
   "rivalSupplyPlayCost": 300000,
   "rivalIncidentAttemptChancePct": 15,
   "rivalIncidentMisattributionPct": 30,
-  "rivalSabotageCooldownTurns": 3
+  "rivalSabotageCooldownTurns": 3,
+  "_p27_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 3.1 ger reliabilityLateEscalationPerTurn(3)/contractGracePeriodTurns(3)/voidedContractRelationPenalty(15) ordagrant. Avsnitt 3.2 ger retoolingTurns(1) ordagrant.",
+  "reliabilityLateEscalationPerTurn": 3,
+  "contractGracePeriodTurns": 3,
+  "voidedContractRelationPenalty": 15,
+  "retoolingTurns": 1
 }

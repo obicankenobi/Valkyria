@@ -6,7 +6,13 @@ import balanceData from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { Contract, GameState, RivalContract, Shipment, TurnSubmission, WireEvent } from '../../src/types.js'
 
-const BALANCE = balanceData as unknown as { rivalDeliveryUnitsPerTurn: number; reliabilityLatePenalty: number }
+const BALANCE = balanceData as unknown as {
+  rivalDeliveryUnitsPerTurn: number
+  reliabilityLatePenalty: number
+  reliabilityLateEscalationPerTurn: number
+  contractGracePeriodTurns: number
+  voidedContractRelationPenalty: number
+}
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
@@ -38,6 +44,7 @@ function activeContract(overrides: Partial<Contract> = {}): Contract {
     grade: 'A',
     dueTurn: 10,
     status: 'active',
+    lateEventId: null,
     ...overrides,
   }
 }
@@ -107,21 +114,77 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
     expect(emitted.some((e) => e.headline.includes('FULFILLED'))).toBe(true)
   })
 
-  it('ett kontrakt som passerar dueTurn utan att vara klart sätts late och reliability faller — en gång, inte varje tur', () => {
+  it('ett kontrakt som passerar dueTurn utan att vara klart sätts late (engångsövergång) och reliability faller — sedan P27 eskalerar den vidare varje tur kontraktet FÖRBLIR late', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const contract = activeContract({ dueTurn: 5, quantity: 100, unitsDelivered: 10 })
     state.market.contracts = [contract]
     state.meta.turn = 6 // > dueTurn
     const reliabilityBefore = state.house.reputation.reliability
 
-    deliveries(makeCtx(state, 'del-seed').ctx)
+    const { ctx: ctx1 } = makeCtx(state, 'del-seed')
+    deliveries(ctx1)
     expect(contract.status).toBe('late')
-    expect(state.house.reputation.reliability).toBeLessThan(reliabilityBefore)
+    // Transitionsturen ger BÅDA straffen samma tur: engångsstraffet
+    // (reliabilityLatePenalty) OCH den första eskaleringen (kontraktet HAR
+    // redan status 'late' när eskaleringskontrollen körs, samma passage) —
+    // matchar spec 3.1:s egen räkneexempel ("−17 innan voided" med tre
+    // eskaleringar och ETT engångsstraff över exakt tre 'late'-turer).
+    expect(state.house.reputation.reliability).toBe(
+      reliabilityBefore - BALANCE.reliabilityLatePenalty - BALANCE.reliabilityLateEscalationPerTurn,
+    )
     const afterFirst = state.house.reputation.reliability
 
+    // P27 (avsnitt 3.1): kontraktet är fortfarande 'late' — reliability faller
+    // VIDARE, med reliabilityLateEscalationPerTurn, inte "ingen ny smäll" som
+    // innan P27.
     state.meta.turn = 7
     deliveries(makeCtx(state, 'del-seed-2').ctx)
-    expect(state.house.reputation.reliability).toBe(afterFirst) // ingen ny smäll
+    expect(contract.status).toBe('late') // ännu inte voided — innanför grace period
+    expect(state.house.reputation.reliability).toBe(afterFirst - BALANCE.reliabilityLateEscalationPerTurn)
+  })
+
+  it('(P27 klart-når) ett kontrakt som passerar dueTurn + contractGracePeriodTurns blir voided, köparens relation faller, och ingen ytterligare betalning bokförs', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const contract = activeContract({ dueTurn: 5, quantity: 100, unitsDelivered: 10, price: 1000000 })
+    state.market.contracts = [contract]
+    const buyer = state.factions['rvn']!
+    const relationBefore = buyer.relationToPlayer
+    const treasuryBefore = state.house.treasury
+
+    // Kör fram till precis innan grace period passerat: dueTurn(5) + grace(3) = 8.
+    for (let turn = 6; turn <= 8; turn++) {
+      state.meta.turn = turn
+      deliveries(makeCtx(state, `del-seed-${turn}`).ctx)
+    }
+    expect(contract.status).toBe('late') // turn 8: 8 > 8 är falskt — ännu inte voided
+
+    state.meta.turn = 9 // 9 > 8 — nu voided
+    const { ctx, emitted } = makeCtx(state, 'del-seed-void')
+    deliveries(ctx)
+
+    expect(contract.status).toBe('voided')
+    expect(buyer.relationToPlayer).toBe(relationBefore - BALANCE.voidedContractRelationPenalty)
+    expect(state.house.treasury).toBe(treasuryBefore) // ingen leverans skedde här — ingen betalning alls
+    const voidEvent = emitted.find((e) => e.headline.includes('VOIDED'))
+    expect(voidEvent).toBeDefined()
+    expect(voidEvent!.causeId).toBe(contract.lateEventId)
+
+    // Ett kontrakt som väl är voided rör sig aldrig igen, oavsett hur många
+    // fler turer som spelas.
+    state.meta.turn = 20
+    deliveries(makeCtx(state, 'del-seed-after-void').ctx)
+    expect(contract.status).toBe('voided')
+    expect(buyer.relationToPlayer).toBe(relationBefore - BALANCE.voidedContractRelationPenalty) // ingen ny smäll
+
+    // Starkaste beviset på "ingen ytterligare betalning bokförs": en skeppning
+    // som redan var producerad och på väg innan kontraktet voidades anländer
+    // ÄNDÅ inte till någon betalning — "redan producerade enheter är förlorade"
+    // (spec 3.1, ordagrant).
+    state.market.shipments = [{ id: 'ghost-shipment', contractId: contract.id, units: 20, arrivalTurn: 21 }]
+    state.meta.turn = 21
+    deliveries(makeCtx(state, 'del-seed-ghost').ctx)
+    expect(state.house.treasury).toBe(treasuryBefore) // fortfarande orört
+    expect(contract.unitsDelivered).toBe(10) // oförändrat — skeppningen konsumerades tyst, ingen effekt
   })
 
   it('en restricted-leverans anropar doomsdayGate med produktens doomsdayOnDelivery-intervall, kedjad via causeId till leveranshändelsen', () => {
@@ -341,6 +404,7 @@ function activeRivalContract(overrides: Partial<RivalContract> = {}): RivalContr
     unitsDelivered: 0,
     dueTurn: 10,
     status: 'active',
+    lateEventId: null,
     ...overrides,
   }
 }
@@ -386,7 +450,7 @@ describe('deliveries — rivalernas leverans/attribution (P25, avsnitt 2.3)', ()
     expect(emitted.some((e) => e.headline.includes('RIVAL CONTRACT') && e.headline.includes('FULFILLED'))).toBe(true)
   })
 
-  it('(P25 klart-när) ett rivalkontrakt som passerar dueTurn utan att vara klart sätts late och rivalens reliability faller — en gång, inte varje tur', () => {
+  it('(P25 klart-när) ett rivalkontrakt som passerar dueTurn utan att vara klart sätts late (engångsövergång) och rivalens reliability faller — sedan P27 eskalerar den vidare varje tur kontraktet FÖRBLIR late', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const rival = state.rivals['brandt']!
     rival.contracts = [activeRivalContract({ dueTurn: 5, quantity: 100000, unitsDelivered: 10 })] // aldrig hinner fulfillas
@@ -395,12 +459,51 @@ describe('deliveries — rivalernas leverans/attribution (P25, avsnitt 2.3)', ()
 
     deliveries(makeCtx(state, 'del-seed').ctx)
     expect(rival.contracts[0]!.status).toBe('late')
-    expect(rival.reputation.reliability).toBe(reliabilityBefore - BALANCE.reliabilityLatePenalty)
+    // Se motsvarande spelartest ovan — transitionsturen ger BÅDA straffen.
+    expect(rival.reputation.reliability).toBe(
+      reliabilityBefore - BALANCE.reliabilityLatePenalty - BALANCE.reliabilityLateEscalationPerTurn,
+    )
     const afterFirst = rival.reputation.reliability
 
+    // P27 (avsnitt 3.1): samma eskalering som för spelarens Contract, TILLÄMPAD
+    // på en RivalContract — kontraktet är fortfarande 'late', reliability
+    // faller vidare.
     state.meta.turn = 7
     deliveries(makeCtx(state, 'del-seed-2').ctx)
-    expect(rival.reputation.reliability).toBe(afterFirst) // ingen ny smäll — kontraktet är redan 'late', inte 'active'
+    expect(rival.contracts[0]!.status).toBe('late') // ännu inte voided
+    expect(rival.reputation.reliability).toBe(afterFirst - BALANCE.reliabilityLateEscalationPerTurn)
+  })
+
+  it('(P27 klart-när) ett RivalContract som passerar dueTurn + contractGracePeriodTurns blir voided, rivalens relations[buyerId] faller, och ingen ytterligare leverans sker', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rival = state.rivals['brandt']!
+    const contract = activeRivalContract({ dueTurn: 5, quantity: 100000, unitsDelivered: 10 })
+    rival.contracts = [contract]
+    rival.relations['rvn'] = 40
+    const relationBefore = rival.relations['rvn']!
+
+    for (let turn = 6; turn <= 8; turn++) {
+      state.meta.turn = turn
+      deliveries(makeCtx(state, `del-seed-${turn}`).ctx)
+    }
+    expect(contract.status).toBe('late') // turn 8: 8 > 8 är falskt
+
+    state.meta.turn = 9
+    const { ctx, emitted } = makeCtx(state, 'del-seed-void')
+    deliveries(ctx)
+
+    expect(contract.status).toBe('voided')
+    expect(rival.relations['rvn']).toBe(relationBefore - BALANCE.voidedContractRelationPenalty)
+    const voidEvent = emitted.find((e) => e.headline.includes('VOIDED'))
+    expect(voidEvent).toBeDefined()
+    expect(voidEvent!.causeId).toBe(contract.lateEventId)
+
+    // Inget mer levereras mot ett voided RivalContract.
+    const unitsBefore = contract.unitsDelivered
+    state.meta.turn = 20
+    deliveries(makeCtx(state, 'del-seed-after-void').ctx)
+    expect(contract.unitsDelivered).toBe(unitsBefore)
+    expect(contract.status).toBe('voided')
   })
 
   it('leverans fortsätter mot ett redan "late" rivalkontrakt (bara statusövergången är en engångshändelse)', () => {

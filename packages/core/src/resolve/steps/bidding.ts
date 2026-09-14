@@ -194,6 +194,7 @@ export const bidding: ResolveStep = (ctx) => {
         grade: winner.grade,
         dueTurn: draft.meta.turn + winner.deliveryTurns,
         status: 'active',
+        lateEventId: null,
       }
       draft.market.contracts.push(contract)
 
@@ -230,6 +231,7 @@ export const bidding: ResolveStep = (ctx) => {
           unitsDelivered: 0,
           dueTurn: draft.meta.turn + winner.deliveryTurns,
           status: 'active',
+          lateEventId: null,
         }
         rival.contracts.push(rivalContract)
         rival.capital += winner.price

@@ -104,6 +104,7 @@ function resolvePush(ctx: ResolveContext, pending: PendingCrisis): void {
     grade: 'A',
     dueTurn: draft.meta.turn + 20, // "femårskontrakt" — 20 turer, ett kvartal per tur
     status: 'active',
+    lateEventId: null,
   }
   draft.market.contracts.push(contract)
   emit({

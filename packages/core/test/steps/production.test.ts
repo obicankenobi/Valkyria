@@ -36,6 +36,7 @@ function activeContract(overrides: Partial<Contract> = {}): Contract {
     grade: 'A',
     dueTurn: 10,
     status: 'active',
+    lateEventId: null,
     ...overrides,
   }
 }
@@ -216,5 +217,73 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       const shipment = state.market.shipments.find((s) => s.contractId === contract.id)
       expect(shipment?.units).toBe(product.unitsPerLineTurn)
     }
+  })
+
+  describe('P27: linjeomställning kostar (avsnitt 3.2)', () => {
+    it('(P27 klart-når) en linje som byter productId producerar INGET under omställningsturen, och återupptas exakt en tur senare', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.meta.turn = 3
+      const line = state.house.lines[0]!
+      // Linjen är redan igång mot ett kontrakt (105mm_field_gun) som blir
+      // fulfilled DEN HÄR turen — frigörs i steg 1, tilldelas sedan i steg 2 ett
+      // NYTT kontrakt för en ANNAN produkt (ch3_transport_helicopter).
+      const oldContract = activeContract({ id: 'old', productId: '105mm_field_gun', quantity: 10, unitsDelivered: 10, status: 'fulfilled' })
+      const newContract = activeContract({ id: 'new', productId: 'ch3_transport_helicopter', quantity: 1000 })
+      state.market.contracts = [oldContract, newContract]
+      line.assignedContractId = oldContract.id
+      line.productId = oldContract.productId
+      line.status = 'running'
+
+      const { ctx, emitted } = makeCtx(state, 'retool-seed')
+      production(ctx)
+
+      expect(line.assignedContractId).toBe(newContract.id) // tog det enda tillgängliga kontraktet
+      expect(line.productId).toBe('ch3_transport_helicopter')
+      expect(line.status).toBe('retooling')
+      expect(line.retoolingUntilTurn).toBe(3 + 1) // retoolingTurns (balance.json) = 1
+      expect(state.market.shipments.find((s) => s.contractId === newContract.id)).toBeUndefined() // inget producerat
+      expect(emitted.some((e) => e.headline.includes('RETOOLS'))).toBe(true)
+
+      // Nästa tur: omställningen är klar, linjen producerar normalt.
+      state.meta.turn = 4
+      production(makeCtx(state, 'retool-seed-2').ctx)
+
+      expect(line.status).toBe('running')
+      expect(line.retoolingUntilTurn).toBeNull()
+      expect(state.market.shipments.find((s) => s.contractId === newContract.id)).toBeDefined()
+    })
+
+    it('en helt ny/tidigare tom linje som får sitt FÖRSTA kontrakt ställer INTE om — den startar bara', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const contract = activeContract({ quantity: 1000 })
+      state.market.contracts = [contract]
+      // Alla fyra default-linjer har productId: null från start (createInitialState) — se state.ts.
+      expect(state.house.lines[0]!.productId).toBeNull()
+
+      production(makeCtx(state, 'prod-seed').ctx)
+
+      const line = state.house.lines.find((l) => l.assignedContractId === contract.id)!
+      expect(line.status).toBe('running') // inte 'retooling'
+      expect(line.retoolingUntilTurn).toBeNull()
+      expect(state.market.shipments.find((s) => s.contractId === contract.id)).toBeDefined() // producerar direkt
+    })
+
+    it('en linje som byter till SAMMA productId (två separata kontrakt för samma produkt) ställer inte om', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.meta.turn = 0
+      const line = state.house.lines[0]!
+      const oldContract = activeContract({ id: 'old', productId: '105mm_field_gun', quantity: 10, unitsDelivered: 10, status: 'fulfilled' })
+      const newContract = activeContract({ id: 'new', productId: '105mm_field_gun', quantity: 1000 }) // SAMMA produkt
+      state.market.contracts = [oldContract, newContract]
+      line.assignedContractId = oldContract.id
+      line.productId = oldContract.productId
+      line.status = 'running'
+
+      production(makeCtx(state, 'retool-same-seed').ctx)
+
+      expect(line.assignedContractId).toBe(newContract.id)
+      expect(line.status).toBe('running') // ingen omställning — samma produkt
+      expect(state.market.shipments.find((s) => s.contractId === newContract.id)).toBeDefined()
+    })
   })
 })

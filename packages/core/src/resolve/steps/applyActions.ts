@@ -189,6 +189,7 @@ export const applyActions: ResolveStep = (ctx) => {
             assignedContractId: null,
             status: 'idle',
             blockedReason: null,
+            retoolingUntilTurn: null,
           }
           house.lines.push(line)
           emit({

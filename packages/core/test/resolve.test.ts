@@ -336,7 +336,7 @@ describe('resolveTurn — P25: rivalerna fullföljer kontrakt (ETAPP2_TEKNISK_SP
       brandt: {
         ...state.rivals['brandt']!,
         contracts: [
-          { id: 'rc-heat-test', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 100000, unitsDelivered: 0, dueTurn: 500, status: 'active' },
+          { id: 'rc-heat-test', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 100000, unitsDelivered: 0, dueTurn: 500, status: 'active', lateEventId: null },
         ],
       },
     }
@@ -543,6 +543,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
       grade: 'A',
       dueTurn: 999,
       status: 'active',
+      lateEventId: null,
     }
   }
 

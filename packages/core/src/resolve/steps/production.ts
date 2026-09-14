@@ -15,6 +15,7 @@ import type { Contract, Shipment } from '../../types.js'
 interface Balance {
   deliveryDelayMinTurns: number
   deliveryDelayMaxTurns: number
+  retoolingTurns: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -33,6 +34,21 @@ function remainingToProduce(contract: Contract, shipments: readonly Shipment[]):
 export const production: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
+
+  // 0) Linjer vars omställning (P27, avsnitt 3.2) är klar den här turen återgår
+  //    till normal drift innan resten av steget hinner röra dem.
+  for (const line of house.lines) {
+    if (line.status !== 'retooling') continue
+    if (line.retoolingUntilTurn === null || draft.meta.turn < line.retoolingUntilTurn) continue
+    line.status = 'running'
+    line.retoolingUntilTurn = null
+  }
+
+  // Fångar varje linjes productId INNAN steg 1 eventuellt nollställer den —
+  // "linjen BYTER productId" (avsnitt 3.2) går annars inte att avgöra, eftersom
+  // en frigjord linje redan har productId: null när steg 2 tilldelar den på nytt
+  // i SAMMA anrop.
+  const previousProductId = new Map(house.lines.map((l) => [l.id, l.productId]))
 
   // 1) Frigör linjer vars kontrakt inte längre behöver produktion (fulfilled/
   //    voided, eller redan färdigproducerat och väntar på leverans).
@@ -59,17 +75,40 @@ export const production: ResolveStep = (ctx) => {
     )
     if (!contract) continue
 
+    // P27, avsnitt 3.2: en linje som BYTER produkt (hade ett annat productId
+    // in i den här funktionen än den nu tilldelas) kostar en omställningstur —
+    // en helt ny/redan tom linje (previous null) straffas inte, den startar
+    // bara upp.
+    const previous = previousProductId.get(line.id) ?? null
+    const isSwitch = previous !== null && previous !== contract.productId
+
     line.assignedContractId = contract.id
     line.productId = contract.productId
     line.grade = contract.grade
-    line.status = 'running'
     line.blockedReason = null
     claimed.add(contract.id)
+
+    if (isSwitch) {
+      line.status = 'retooling'
+      line.retoolingUntilTurn = draft.meta.turn + BALANCE.retoolingTurns
+      emit({
+        severity: 'ticker',
+        scope: 'house',
+        headline: `${line.id.toUpperCase()} RETOOLS FOR ${getProduct(contract.productId).name.toUpperCase()} — IDLE THIS TURN`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: true,
+        subjectId: null,
+      })
+    } else {
+      line.status = 'running'
+    }
   }
 
   // 3) Producera.
   for (const line of house.lines) {
     if (!line.assignedContractId) continue
+    if (line.status === 'retooling') continue // avsnitt 3.2: "producerar ingenting under omställningen"
     const contract = draft.market.contracts.find((c) => c.id === line.assignedContractId)
     if (!needsProduction(contract)) continue
 

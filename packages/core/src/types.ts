@@ -157,8 +157,11 @@ export interface ProductionLine {
   unitsPerTurnAtFull: number
   capacityPct: Pct
   assignedContractId: string | null
-  status: 'idle' | 'running' | 'blocked'
+  // 'retooling' (P27, ETAPP2_TEKNISK_SPEC.md avsnitt 3.2) — linjen har bytt
+  // productId och producerar ingenting under retoolingUntilTurn.
+  status: 'idle' | 'running' | 'blocked' | 'retooling'
   blockedReason: string | null
+  retoolingUntilTurn: number | null
 }
 
 export interface RndProject {
@@ -246,6 +249,10 @@ export interface Contract {
   grade: Grade
   dueTurn: number
   status: 'active' | 'fulfilled' | 'late' | 'voided'
+  // P27 (ETAPP2_TEKNISK_SPEC.md avsnitt 3.1): id:t på den WireEvent som satte
+  // kontraktet 'late' — specens egen pseudokod kräver den som causeId när
+  // kontraktet senare blir 'voided' (CLAUDE.md hård regel 4, kedjad orsak).
+  lateEventId: string | null
 }
 
 // Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när
@@ -350,6 +357,8 @@ export interface RivalContract {
   unitsDelivered: number
   dueTurn: number
   status: 'active' | 'fulfilled' | 'late' | 'voided'
+  // Se Contract.lateEventId (P27) — samma roll, symmetrisk för en rival.
+  lateEventId: string | null
 }
 
 // ── 2.6 WireEvent ────────────────────────────────────────────────────────────

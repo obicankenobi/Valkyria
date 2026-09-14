@@ -32,8 +32,19 @@ describe('wire-chains invariant', () => {
     // riktiga händelser och en riktig 20-turers körning prövas här).
     expect(state.wire.length).toBeGreaterThan(0)
     // Fönstret är 8 turer — en 20-turerskörning ska ha beskurit bort de äldsta.
+    // Sedan P27 (avsnitt 3.1) kan en 'voided'-händelses causeId peka tillbaka på
+    // den 'late'-händelse som orsakade den, upp till contractGracePeriodTurns
+    // turer tidigare — pruneWire:s egen WIRE_CHAIN_DEPTH-logik (wire.ts) håller
+    // då den äldre 'late'-händelsen vid liv ÄVEN OM den ligger utanför det råa
+    // 8-turersfönstret, exakt det regel 2 i spec 2.6 finns för att garantera
+    // (en synlig händelse ska aldrig peka på en osynlig). Den strikta
+    // fönstergränsen nedan är alltså inte längre en giltig invariant i sig — det
+    // riktiga skyddet är `assertNoDanglingCauseId` ovan, som körs varje tur.
+    // Kvar här: bevisa att beskärning FAKTISKT sker över en lång körning, inte en
+    // exakt gräns.
     const oldestKeptTurn = Math.min(...state.wire.map((e) => e.turn))
-    expect(oldestKeptTurn).toBeGreaterThan(state.meta.turn - 1 - 8)
+    expect(oldestKeptTurn).toBeGreaterThan(0)
+    expect(state.wire.length).toBeLessThan(200) // långt under vad 20 obeskurna turer hade gett
   })
 
   it('en syntetisk historik som spänner över långt fler än 8 turer, med grenande orsakskedjor: pruneWire lämnar aldrig en hängande referens', () => {
