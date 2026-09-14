@@ -174,6 +174,12 @@ export function TheWorld({ state }: { state: GameState }) {
                   {station.status === 'active' && <Tag tone="green">Active</Tag>}
                   {station.status === 'dormant' && <Tag>Dormant</Tag>}
                   {station.status === 'burned' && <Tag tone="red">Burned</Tag>}
+                  {/* P29 (avsnitt 4.2): "ett slutvillkor spelaren inte ser komma är
+                      inte ett beslut" — samma tröskel wire-reporten (upkeep.ts)
+                      redan varnar mot, läst härifrån (DISPLAY_THRESHOLDS). */}
+                  {station.status === 'active' && station.exposure > DISPLAY_THRESHOLDS.exposureBurnThreshold && (
+                    <Tag tone="amber">Under surveillance</Tag>
+                  )}
                 </td>
               </tr>
             ))}

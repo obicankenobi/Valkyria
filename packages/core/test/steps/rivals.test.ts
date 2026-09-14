@@ -195,10 +195,13 @@ describe('rivals — P26: leverantörskapacitet (opportunist, avsnitt 2.4)', () 
 })
 
 describe('rivals — P26: egna incidenter (patriot, avsnitt 2.4/2.5)', () => {
-  it('(P26 klart-når) en misslyckad rivalincident kan pusha till house.exposureEvents via felattribution mot spelaren', () => {
+  it('(P26/P29 klart-når) en misslyckad rivalincident kan höja en aktiv stations exposure via felattribution mot spelaren — INTE house.exposureEvents direkt', () => {
     const state = createInitialState('indochina-slice', 'seed')
     for (const id of Object.keys(state.rivals)) if (id !== 'meridian') state.rivals[id]!.sabotagedUntilTurn = 999
     const rival = state.rivals['meridian']! // patriot
+    const station = state.house.stations[0]!
+    expect(station.status).toBe('active')
+    const exposureBefore = station.exposure
     expect(state.house.exposureEvents).toHaveLength(0)
 
     // incident-probe-51: attempt lyckas, incidenten misslyckas, felattribution
@@ -208,8 +211,11 @@ describe('rivals — P26: egna incidenter (patriot, avsnitt 2.4/2.5)', () => {
     rivals(ctx)
 
     expect(emitted.some((e) => e.headline.includes('ATTRIBUTION FAILED'))).toBe(true)
-    expect(state.house.exposureEvents).toHaveLength(1)
-    expect(state.house.exposureEvents[0]).toBe(state.meta.turn)
+    expect(emitted.some((e) => e.headline.includes('EXPOSURE RISES'))).toBe(true)
+    // Avsnitt 4.1 (P29): misslyckad attribution höjer exposure — bränner INTE
+    // en station direkt och pushar INTE house.exposureEvents.
+    expect(station.exposure).toBe(exposureBefore + balance.misattributionExposurePenalty)
+    expect(state.house.exposureEvents).toHaveLength(0)
     // Avsnitt 2.5: en misslyckad egen incident sabotagerar rivalen SJÄLV också.
     expect(rival.sabotagedUntilTurn).toBe(state.meta.turn + balance.rivalSabotageCooldownTurns)
   })

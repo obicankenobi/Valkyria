@@ -154,5 +154,7 @@
   "reliabilityLateEscalationPerTurn": 3,
   "contractGracePeriodTurns": 3,
   "voidedContractRelationPenalty": 15,
-  "retoolingTurns": 1
+  "retoolingTurns": 1,
+  "_p29_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 4.1 ger misattributionExposurePenalty(30) ordagrant.",
+  "misattributionExposurePenalty": 30
 }

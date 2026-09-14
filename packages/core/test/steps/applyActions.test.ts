@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyActions } from '../../src/resolve/steps/applyActions.js'
+import { endings } from '../../src/resolve/steps/endings.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import { bidEstimate } from '../../src/queries.js'
@@ -380,8 +381,11 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3)', ()
     expect(delta).toBeLessThanOrEqual(20) // stageIncidentDoomsdayMax
   })
 
-  it('STAGE_INCIDENT vid misslyckad attribution: exposureEvents växer, ingen doomsday-effekt', () => {
+  it('(P29) STAGE_INCIDENT vid misslyckad attribution: en aktiv stations exposure stiger, INTE exposureEvents, ingen doomsday-effekt', () => {
     const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    expect(station.status).toBe('active')
+    const exposureBefore = station.exposure
     const exposureEventsBefore = state.house.exposureEvents.length
     const doomsdayBefore = state.doomsday
 
@@ -390,9 +394,38 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3)', ()
     const { ctx, emitted } = makeCtx(state, [action], 'stage-incident-seed-0')
     applyActions(ctx)
 
-    expect(state.house.exposureEvents.length).toBe(exposureEventsBefore + 1)
+    // Avsnitt 4.1: misslyckad attribution höjer en stations exposure — bränner
+    // INTE en station direkt och pushar INTE house.exposureEvents (det är bara
+    // vad en FAKTISKT bränd station gör). EXPOSURE ska kräva tre brända
+    // stationer, inte tre misslyckade attributioner.
+    expect(state.house.exposureEvents.length).toBe(exposureEventsBefore) // orört
+    expect(station.exposure).toBe(exposureBefore + 30) // misattributionExposurePenalty
     expect(state.doomsday).toBe(doomsdayBefore)
     expect(emitted.some((e) => e.headline.includes('ATTRIBUTION FAILED'))).toBe(true)
+    expect(emitted.some((e) => e.headline.includes('EXPOSURE RISES'))).toBe(true)
+  })
+
+  it('(P29 klart-når) EXPOSURE kräver tre BRÄNDA stationer — hur många misslyckade attributioner som helst räcker aldrig ensamma', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+
+    // Fyra misslyckade attributioner i rad — fler än exposureEventsForEnding(3).
+    // 'stage-incident-seed-0' ger success=false varje gång (fräsch rng per
+    // anrop, samma frö → samma första drag varje gång).
+    for (let i = 0; i < 4; i++) {
+      const action: PlayerAction = { type: 'POLITICAL', op: 'STAGE_INCIDENT', targetFactionId: 'rvn', spend: 0 }
+      const { ctx } = makeCtx(state, [action], 'stage-incident-seed-0')
+      applyActions(ctx)
+    }
+
+    // Stationen är kraftigt mer exponerad — men INGEN av gångerna räknades som
+    // en bränd station.
+    expect(station.exposure).toBeGreaterThan(0)
+    expect(state.house.exposureEvents).toHaveLength(0)
+
+    const { ctx: endingsCtx } = makeCtx(state, [], 'endings-check')
+    endings(endingsCtx)
+    expect(state.status.kind).not.toBe('ended') // inget EXPOSURE-slut, trots fyra misslyckade attributioner
   })
 
   it('BACK_CHANNEL sänker doomsday inom backChannelDoomsdayMin…Max, kostar spend', () => {

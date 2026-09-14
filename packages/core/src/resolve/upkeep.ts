@@ -46,6 +46,13 @@ export function advanceRndQueue(house: { rnd: RndProject[]; techLevel: Record<Te
 // (avkallning för en vilande station, en risk att brännas ovanför tröskeln), inte
 // bara som en direkt effekt av en ny INTEL-handling. DESIGN.md §9, ordagrant: "−5
 // per vilande tur. Vid exposure > 80 rullas varje tur mot avslöjande."
+//
+// P29 (ETAPP2_TEKNISK_SPEC.md avsnitt 4.2): en station som överlever rullningen
+// men fortfarande ligger över tröskeln varnas i wire, VARJE sådan tur — inte
+// bara en engångsnotis vid första gången den korsar tröskeln (ingen ny "redan
+// varnad"-flagga på Station för det, och risken är verkligen återkommande så
+// länge exponeringen ligger kvar däruppe). "Ett slutvillkor spelaren inte ser
+// komma är inte ett beslut" (avsnitt 4.2, ordagrant).
 export function advanceStations(ctx: ResolveContext): void {
   const { draft, rng, emit } = ctx
   const house = draft.house
@@ -56,16 +63,28 @@ export function advanceStations(ctx: ResolveContext): void {
     }
 
     if (station.status === 'burned' || station.exposure <= BALANCE.exposureBurnThreshold) continue
-    if (!rng.chance(BALANCE.stationBurnChancePct)) continue
 
-    station.status = 'burned'
-    house.exposureEvents.push(draft.meta.turn)
+    if (rng.chance(BALANCE.stationBurnChancePct)) {
+      station.status = 'burned'
+      house.exposureEvents.push(draft.meta.turn)
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `STATION ${station.city.toUpperCase()} BURNED — EXPOSURE ${station.exposure.toFixed(0)}`,
+        causeId: null,
+        delta: { exposure: 0 },
+        actorIsPlayer: false,
+        subjectId: station.nation,
+      })
+      continue
+    }
+
     emit({
-      severity: 'headline',
+      severity: 'report',
       scope: 'house',
-      headline: `STATION ${station.city.toUpperCase()} BURNED — EXPOSURE ${station.exposure.toFixed(0)}`,
+      headline: `STATION ${station.city.toUpperCase()} UNDER SURVEILLANCE — EXPOSURE ${station.exposure.toFixed(0)}`,
       causeId: null,
-      delta: { exposure: 0 },
+      delta: {},
       actorIsPlayer: false,
       subjectId: station.nation,
     })

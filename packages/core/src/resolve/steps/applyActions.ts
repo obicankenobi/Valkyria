@@ -59,6 +59,7 @@ interface Balance {
   intelExposureMin: number
   intelExposureMax: number
   maxStations: number
+  misattributionExposurePenalty: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -313,8 +314,12 @@ export const applyActions: ResolveStep = (ctx) => {
               addDoomsday(ctx, amount, incidentId)
             }
           } else {
-            house.exposureEvents.push(draft.meta.turn)
-            emit({
+            // P29 (avsnitt 4.1): misslyckad attribution höjer en stations
+            // exposure — den bränner INTE en station direkt och pushar INTE
+            // house.exposureEvents (det är vad en FAKTISKT bränd station gör,
+            // se advanceStations/resolveBackDown). EXPOSURE ska kräva tre
+            // brända stationer, inte tre misslyckade attributioner.
+            const attributionId = emit({
               severity: 'headline',
               scope: 'house',
               headline: `${house.name.toUpperCase()} LINKED TO INCIDENT AGAINST ${target.name.toUpperCase()} — ATTRIBUTION FAILED`,
@@ -323,6 +328,22 @@ export const applyActions: ResolveStep = (ctx) => {
               actorIsPlayer: true,
               subjectId: target.id,
             })
+
+            const activeStations = house.stations.filter((s) => s.status === 'active')
+            if (activeStations.length > 0) {
+              const station = rng.pick(activeStations)
+              const before = station.exposure
+              station.exposure = Math.min(100, before + BALANCE.misattributionExposurePenalty)
+              emit({
+                severity: 'ticker',
+                scope: 'house',
+                headline: `STATION ${station.city.toUpperCase()} EXPOSURE RISES — ${before.toFixed(0)} → ${station.exposure.toFixed(0)}`,
+                causeId: attributionId,
+                delta: { exposure: station.exposure - before },
+                actorIsPlayer: false,
+                subjectId: station.nation,
+              })
+            }
           }
           break
         }

@@ -28,6 +28,7 @@ interface ThresholdBalance {
   supplyIndexMin: number
   supplyIndexMax: number
   crisisPushExchangePct: number
+  exposureBurnThreshold: number
 }
 const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
 
@@ -43,6 +44,8 @@ export const DISPLAY_THRESHOLDS = {
   supplyIndexMax: THRESHOLD_BALANCE.supplyIndexMax,
   // P21 (spec 9.4): "PUSH:s 30 % ska stå utskrivet" i krismodalen.
   crisisPushExchangePct: THRESHOLD_BALANCE.crisisPushExchangePct,
+  // P29 (avsnitt 4.2): THE WORLD ritar varningsnivån en station brinner ovanför.
+  exposureBurnThreshold: THRESHOLD_BALANCE.exposureBurnThreshold,
 } as const
 
 // Samma motivering som DISPLAY_THRESHOLDS ovan, bara riktad mot en annan extern

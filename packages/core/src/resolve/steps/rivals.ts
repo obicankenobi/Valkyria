@@ -32,9 +32,9 @@
 // PROVISORISK rivalIncidentAttemptChancePct, kalibrerad mot orderGenerationChancePct
 // (samma sorts "dice roll per tur"-fält). Misslyckad attribution pekar med
 // rivalIncidentMisattributionPct sannolikhet på SPELAREN i stället för rivalen —
-// då pushas till house.exposureEvents, samma mekanism STAGE_INCIDENT-
-// misattribution redan använder (P29 gör om båda källorna på en gång, se
-// ANDRINGSLOGG.md).
+// då höjs en slumpvald AKTIV stations exposure med misattributionExposurePenalty
+// (P29, avsnitt 4.1 — INTE house.exposureEvents.push direkt, samma korrigering
+// som STAGE_INCIDENT-misattribution fick i samma prompt, se ANDRINGSLOGG.md).
 //
 // (2.5) sabotagedUntilTurn: dött sedan P1. Avsnitt 2.5 kopplar det uttryckligen
 // till "en misslyckad egen incident" (utöver etapp 3:s ännu obyggda SABOTAGE) —
@@ -66,6 +66,7 @@ interface Balance {
   stageIncidentHeatMax: number
   stageIncidentDoomsdayMin: number
   stageIncidentDoomsdayMax: number
+  misattributionExposurePenalty: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -168,8 +169,11 @@ export const rivals: ResolveStep = (ctx) => {
         rival.sabotagedUntilTurn = draft.meta.turn + BALANCE.rivalSabotageCooldownTurns
 
         if (rng.chance(BALANCE.rivalIncidentMisattributionPct)) {
-          draft.house.exposureEvents.push(draft.meta.turn)
-          emit({
+          // P29 (avsnitt 4.1): samma korrigering som STAGE_INCIDENT — misslyckad
+          // attribution höjer en stations exposure, pushar INTE
+          // house.exposureEvents direkt (det är bara vad en FAKTISKT bränd
+          // station gör).
+          const attributionId = emit({
             severity: 'headline',
             scope: 'house',
             headline: `${draft.house.name.toUpperCase()} LINKED TO ${rival.name.toUpperCase()}'S BOTCHED INCIDENT AGAINST ${target.name.toUpperCase()} — ATTRIBUTION FAILED`,
@@ -178,6 +182,22 @@ export const rivals: ResolveStep = (ctx) => {
             actorIsPlayer: false,
             subjectId: target.id,
           })
+
+          const activeStations = draft.house.stations.filter((s) => s.status === 'active')
+          if (activeStations.length > 0) {
+            const station = rng.pick(activeStations)
+            const before = station.exposure
+            station.exposure = Math.min(100, before + BALANCE.misattributionExposurePenalty)
+            emit({
+              severity: 'ticker',
+              scope: 'house',
+              headline: `STATION ${station.city.toUpperCase()} EXPOSURE RISES — ${before.toFixed(0)} → ${station.exposure.toFixed(0)}`,
+              causeId: attributionId,
+              delta: { exposure: station.exposure - before },
+              actorIsPlayer: false,
+              subjectId: station.nation,
+            })
+          }
         } else {
           emit({
             severity: 'ticker',
