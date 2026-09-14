@@ -1,38 +1,75 @@
-// THE SEVENTH FRONT — de fyra vyerna (P11: WIRE/FLOOR, P12: HOUSE/WORLD) och
-// IndexedDB-persistens (P12). Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10.
+// THE SEVENTH FRONT — appskalet: HUD, navigation, turordning. De fyra vyerna
+// ligger i components/. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10.
 import { useState } from 'react'
+import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
+import type { GameState } from '@seventh-front/core'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { TheWire } from './components/TheWire.js'
 import { TheWorld } from './components/TheWorld.js'
+import { formatMoney } from './components/ui.js'
 import { useGame } from './useGame.js'
 
 type View = 'wire' | 'floor' | 'house' | 'world'
 
-function formatMoney(amount: number): string {
-  return `£${Math.round(amount).toLocaleString('sv-SE')}`
+const ENDING_LABEL: Record<string, string> = {
+  INSOLVENCY: 'Insolvent — huset likviderat',
+  BUYOUT: 'Utköpt — styrelsemålet missat',
+  EXPOSURE: 'Avslöjat — licensen indragen',
+  NUCLEAR_EXCHANGE: 'Kärnvapenutväxling',
+  SCENARIO_COMPLETE: 'Scenariot slutfört',
 }
 
-function endingLabel(ending: string): string {
-  switch (ending) {
-    case 'INSOLVENCY':
-      return 'INSOLVENT — huset likviderat'
-    case 'BUYOUT':
-      return 'UTKÖPT — styrelsemålet missat'
-    case 'EXPOSURE':
-      return 'AVSLÖJAT — licensen indragen'
-    case 'NUCLEAR_EXCHANGE':
-      return 'KÄRNVAPENUTVÄXLING'
-    case 'SCENARIO_COMPLETE':
-      return 'SCENARIOT SLUTFÖRT'
-    default:
-      return ending
-  }
+function doomsdayTone(doomsday: number): string {
+  if (doomsday >= DISPLAY_THRESHOLDS.doomsdayCrisisEvent) return 'is-danger'
+  if (doomsday >= DISPLAY_THRESHOLDS.doomsdayCrisisWatch) return 'is-amber'
+  return ''
+}
+
+function Hud({ state }: { state: GameState }) {
+  const house = state.house
+  const target = house.boardTarget
+  const progressPct = target.threshold > 0 ? (target.progressSnapshot / target.threshold) * 100 : 0
+
+  return (
+    <div className="hud" data-testid="hud">
+      <div className="hud-cell">
+        <span className="hud-label">Kassa</span>
+        <span className={house.treasury < 0 ? 'hud-value is-danger' : 'hud-value'} data-testid="hud-treasury">
+          {formatMoney(house.treasury)}
+        </span>
+      </div>
+      <div className="hud-cell">
+        <span className="hud-label">Skuld</span>
+        <span className="hud-value">{formatMoney(house.debt)}</span>
+      </div>
+      <div className="hud-cell">
+        <span className="hud-label">Kreditutrymme</span>
+        <span className="hud-value">{formatMoney(house.creditLimit)}</span>
+      </div>
+      <div className="hud-cell">
+        <span className="hud-label">Styrelsemål</span>
+        <span className="hud-value">{progressPct.toFixed(0)}%</span>
+      </div>
+      <div className="hud-cell">
+        <span className="hud-label">Doomsday</span>
+        <span className={`hud-value ${doomsdayTone(state.doomsday)}`}>{state.doomsday.toFixed(0)}</span>
+      </div>
+    </div>
+  )
 }
 
 export function App() {
   const { state, draft, lastRejected, hydrated, setBid, removeBid, endTurn, restart } = useGame()
   const [view, setView] = useState<View>('wire')
+
+  if (!hydrated) {
+    return (
+      <div className="app">
+        <p className="loading">Läser sparat parti…</p>
+      </div>
+    )
+  }
 
   const ended = state.status.kind === 'ended'
 
@@ -41,72 +78,73 @@ export function App() {
     setView('wire') // THE WIRE är startvyn varje tur (avsnitt 8)
   }
 
-  if (!hydrated) {
-    return (
-      <main style={{ fontFamily: 'ui-monospace, monospace', padding: '1.5rem', maxWidth: '48rem' }}>
-        <h1>THE SEVENTH FRONT</h1>
-        <p>Läser sparat parti…</p>
-      </main>
-    )
-  }
-
   return (
-    <main style={{ fontFamily: 'ui-monospace, monospace', padding: '1.5rem', maxWidth: '48rem' }}>
-      <h1>THE SEVENTH FRONT</h1>
-
-      <header style={{ marginBottom: '1rem', borderBottom: '1px solid currentColor', paddingBottom: '0.5rem' }}>
-        <p>
-          {state.house.name} — år {state.meta.year} kv{state.meta.quarter} (tur {state.meta.turn}) — kassa{' '}
-          {formatMoney(state.house.treasury)} — doomsday {state.doomsday.toFixed(0)}
-        </p>
-        <nav style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => setView('wire')} disabled={view === 'wire'}>
-            THE WIRE
-          </button>
-          <button type="button" onClick={() => setView('floor')} disabled={view === 'floor'}>
-            THE FLOOR ({state.market.openOrders.length})
-          </button>
-          <button type="button" onClick={() => setView('house')} disabled={view === 'house'}>
-            THE HOUSE
-          </button>
-          <button type="button" onClick={() => setView('world')} disabled={view === 'world'}>
-            THE WORLD
-          </button>
-          <span style={{ flex: 1 }} />
-          <button type="button" onClick={handleEndTurn} disabled={ended}>
-            Avsluta tur ({draft.bids.length} bud)
-          </button>
-        </nav>
+    <div className="app">
+      <header className="topbar">
+        <h1 className="brand">
+          The Seventh Front
+          <span className="brand-house">{state.house.name}</span>
+        </h1>
+        <span className="datestamp" data-testid="datestamp">
+          {state.meta.year} · Q{state.meta.quarter} · Tur {state.meta.turn}
+        </span>
       </header>
 
-      {lastRejected.length > 0 && (
-        <div style={{ marginBottom: '1rem', border: '1px solid currentColor', padding: '0.5rem' }}>
-          <p>Avvisat förra turen:</p>
-          <ul>
-            {lastRejected.map((r, i) => (
-              <li key={i}>{r.reason}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <Hud state={state} />
+
+      <nav className="tabs">
+        <button type="button" className="tab" onClick={() => setView('wire')} disabled={view === 'wire'}>
+          THE WIRE
+        </button>
+        <button type="button" className="tab" onClick={() => setView('floor')} disabled={view === 'floor'}>
+          THE FLOOR
+          <span className="tab-count">{state.market.openOrders.length}</span>
+        </button>
+        <button type="button" className="tab" onClick={() => setView('house')} disabled={view === 'house'}>
+          THE HOUSE
+        </button>
+        <button type="button" className="tab" onClick={() => setView('world')} disabled={view === 'world'}>
+          THE WORLD
+        </button>
+        <span className="tabs-spacer" />
+        <button type="button" className="btn btn-primary" onClick={handleEndTurn} disabled={ended}>
+          Avsluta tur
+          {draft.bids.length > 0 ? ` · ${draft.bids.length} bud` : ''}
+        </button>
+      </nav>
 
       {ended && state.status.kind === 'ended' && (
-        <div style={{ marginBottom: '1rem', border: '1px solid currentColor', padding: '0.5rem' }}>
-          <p>
-            <strong>PARTIET SLUT: {endingLabel(state.status.ending)}</strong> (tur {state.status.turn})
-          </p>
-          <button type="button" onClick={restart}>
+        <div className="banner is-ended">
+          <div>
+            <div className="banner-title">{ENDING_LABEL[state.status.ending] ?? state.status.ending}</div>
+            <div className="banner-sub">Partiet avgjordes tur {state.status.turn}.</div>
+          </div>
+          <span className="tabs-spacer" />
+          <button type="button" className="btn" onClick={restart}>
             Nytt parti
           </button>
         </div>
       )}
 
-      {view === 'wire' && <TheWire wire={state.wire} />}
-      {view === 'floor' && (
-        <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />
+      {lastRejected.length > 0 && (
+        <div className="banner">
+          <div>
+            <div className="banner-title">Avvisat förra turen</div>
+            <ul>
+              {lastRejected.map((entry, i) => (
+                <li key={i}>{entry.reason}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
       )}
-      {view === 'house' && <TheHouse state={state} />}
-      {view === 'world' && <TheWorld state={state} />}
-    </main>
+
+      <main>
+        {view === 'wire' && <TheWire wire={state.wire} />}
+        {view === 'floor' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
+        {view === 'house' && <TheHouse state={state} />}
+        {view === 'world' && <TheWorld state={state} />}
+      </main>
+    </div>
   )
 }

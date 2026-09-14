@@ -23,7 +23,7 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   }
   expect(hasOrder).toBe(true)
 
-  const headerBefore = await page.locator('header p').first().textContent()
+  const headerBefore = await page.getByTestId('datestamp').textContent()
 
   // Mitt i en tur: lägg ett bud (skickar det till draften), men avsluta ALDRIG
   // turen — resolveTurn har alltså inte körts, precis som "mitt i en tur" kräver.
@@ -43,7 +43,7 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   await expect(page.getByRole('heading', { name: 'THE SEVENTH FRONT' })).toBeVisible()
 
   // Partiets tillstånd (tur, kassa, doomsday — headerraden) är oförändrat.
-  const headerAfter = await page.locator('header p').first().textContent()
+  const headerAfter = await page.getByTestId('datestamp').textContent()
   expect(headerAfter).toBe(headerBefore)
 
   // Det ospardade budutkastet finns kvar: samma order visar "Uppdatera bud"

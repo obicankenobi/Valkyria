@@ -573,10 +573,17 @@ THE HOUSE    produktionslinjer, R&D, kassa, kredit, styrelsemål, personal.
 THE WORLD    fronter, faktioner, heat, DOOMSDAY, stationer.
 ```
 
-Estetik: papper, skrivmaskin, telexremsa. Monospace för siffror. Ingen animation. Ingen karta i
-etapp 1 — fronten visas som en linje med en position, vilket är allt simuleringen faktiskt
-modellerar. Att rita en karta som är mer detaljerad än modellen är ett löfte spelet inte kan
-hålla.
+Estetik: **lägesrummet under lampan** — mörk yta, telexgult för spelarens egna spår, monospace med
+tabellsiffror för allt räknebart. Registret är fortfarande papper, skrivmaskin och telexremsa, men
+utfört som ett spelgränssnitt: paneler, mätare och staplar där ett tal har en skala att läsas mot.
+Sparsamma övergångar, aldrig dekorativ rörelse, alltid avstängda vid `prefers-reduced-motion`.
+Ingen karta i etapp 1 — fronten visas som en linje med en position, vilket är allt simuleringen
+faktiskt modellerar. Att rita en karta som är mer detaljerad än modellen är ett löfte spelet inte
+kan hålla.
+
+> Omprövat av ägaren efter P12 (se `docs/ANDRINGSLOGG.md`). Raden löd tidigare "papper,
+> skrivmaskin, telexremsa. Monospace för siffror. Ingen animation." — P11/P12 byggdes ordagrant
+> efter den och resultatet läste som ett dokument, inte som ett spel.
 
 `THE HOUSE` ska visa **marginal per aktivt kontrakt**, inte bara kassa. Spelaren kan inte fatta
 prisbeslut på en siffra som bara rör sig.

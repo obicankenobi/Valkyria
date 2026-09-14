@@ -5,6 +5,7 @@
 // skapar sin egen, hash-seedade Rng ur seed+orderId+grade och kastar den efter
 // anropet — stabil inom en tur (samma indata ger bitvis identiskt resultat) och rör
 // aldrig state.meta.rngCursor.
+import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, computeRivalBid, computeScore, getProduct, computeUnitCostNow } from './pricing.js'
@@ -12,6 +13,27 @@ import type { BidEstimate, GameState, Grade, Money, Order, Pct, RivalId } from '
 
 const WIN_BAND_POINTS = 5
 const MONTE_CARLO_SAMPLES = 100
+
+// Tröskelvärden som UI:t ritar ut som markeringar i sina mätare. Läses HÄRIFRÅN,
+// ur balance.json, så att appen aldrig upprepar en balanssiffra i sin egen kod —
+// CLAUDE.md hård regel 5 gäller formellt bara packages/core, men drift-risken är
+// exakt densamma i ett UI som ritar "krisgränsen" på fel ställe efter ett
+// balanspass. Bara trösklar som FAKTISKT finns i balance.json exporteras; heatens
+// 40/70 (spec avsnitt 5) är prosatal utan fält och ritas därför inte ut.
+interface ThresholdBalance {
+  doomsdayCrisisWatchThreshold: number
+  doomsdayCrisisEventThreshold: number
+  doomsdayNuclearExchangeThreshold: number
+  heatEscalationThreshold: number
+}
+const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
+
+export const DISPLAY_THRESHOLDS = {
+  doomsdayCrisisWatch: THRESHOLD_BALANCE.doomsdayCrisisWatchThreshold,
+  doomsdayCrisisEvent: THRESHOLD_BALANCE.doomsdayCrisisEventThreshold,
+  doomsdayNuclearExchange: THRESHOLD_BALANCE.doomsdayNuclearExchangeThreshold,
+  heatEscalation: THRESHOLD_BALANCE.heatEscalationThreshold,
+} as const
 
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per
 // effectiveDepth.

@@ -1,15 +1,19 @@
-// BidForm — budformuläret för en order. Visar winBand störst, yourUnitCost och
-// BERÄKNAD BRUTTOMARGINAL vid det valda priset och den valda graden — spelaren
-// kan inte fatta prisbeslut utan att se sin kostnad. Se ETAPP1_TEKNISK_SPEC.md
-// avsnitt 8.
+// BidForm — budformuläret för en order. Visar winBand störst (som ett
+// sannolikhetsdiagram, inte en tabellrad), yourUnitCost, och BERÄKNAD
+// BRUTTOMARGINAL vid det valda priset och den valda graden — spelaren kan inte
+// fatta prisbeslut utan att se sin kostnad. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8.
 import { useMemo, useState } from 'react'
 import { bidEstimate } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order } from '@seventh-front/core'
+import { formatMoney } from './ui.js'
 
 const GRADES: Grade[] = ['A', 'B', 'C']
 
-function formatMoney(amount: number): string {
-  return `£${Math.round(amount).toLocaleString('sv-SE')}`
+function marginClass(marginPct: number | null): string {
+  if (marginPct === null) return 'margin-readout'
+  if (marginPct <= 0) return 'margin-readout is-loss'
+  if (marginPct < 20) return 'margin-readout is-thin'
+  return 'margin-readout is-good'
 }
 
 export function BidForm({
@@ -34,63 +38,61 @@ export function BidForm({
   // att räkna om vid varje grade-byte utan att röra rngCursor.
   const estimate = useMemo(() => bidEstimate(state, order, grade), [state, order, grade])
 
-  const marginPct = price > 0 ? ((price - estimate.yourUnitCost) / price) * 100 : null
+  // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
+  // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste därför skalas med
+  // orderns kvantitet. Utan multiplikationen visade formuläret ~100 % marginal
+  // på i stort sett varje bud.
+  const totalCost = estimate.yourUnitCost * order.quantity
+  const grossProfit = price > 0 ? price - totalCost : null
+  const marginPct = price > 0 ? ((price - totalCost) / price) * 100 : null
 
   return (
-    <div style={{ borderLeft: '2px solid currentColor', paddingLeft: '0.75rem', marginTop: '0.5rem' }}>
-      <table>
-        <tbody>
-          <tr>
-            <td>yourUnitCost (grade {grade})</td>
-            <td>{formatMoney(estimate.yourUnitCost)}</td>
-          </tr>
-          <tr>
-            <td>rivalpris, uppskattat</td>
-            <td>
-              {formatMoney(estimate.rivalPriceLow)} – {formatMoney(estimate.rivalPriceHigh)}
-              {estimate.lowestRivalHouse && ` (lägst: ${estimate.lowestRivalHouse})`}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="bid-panel">
+      <div>
+        <p className="subhead">Underrättelse</p>
+        <dl className="kv">
+          <dt>Din styckkostnad (grade {grade})</dt>
+          <dd>{formatMoney(estimate.yourUnitCost)}</dd>
+          <dt>Rivalpris, uppskattat</dt>
+          <dd>
+            {formatMoney(estimate.rivalPriceLow)} – {formatMoney(estimate.rivalPriceHigh)}
+          </dd>
+          {estimate.lowestRivalHouse && (
+            <>
+              <dt>Lägst bud väntas från</dt>
+              <dd>{state.rivals[estimate.lowestRivalHouse]?.name ?? estimate.lowestRivalHouse}</dd>
+            </>
+          )}
+        </dl>
 
-      <p style={{ marginBottom: '0.25rem' }}>winBand:</p>
-      <table>
-        <thead>
-          <tr>
-            <th>pris</th>
-            <th>vinstchans</th>
-          </tr>
-        </thead>
-        <tbody>
+        <p className="subhead">Vinstchans per pris</p>
+        <div className="winband">
           {estimate.winBand.map((point) => (
-            <tr key={point.price}>
-              <td>{formatMoney(point.price)}</td>
-              <td>{point.confidence}%</td>
-            </tr>
+            <div key={point.price} className="winband-row">
+              <span>{formatMoney(point.price)}</span>
+              <span className="winband-bar">
+                <span style={{ width: `${point.confidence}%` }} />
+              </span>
+              <span className="winband-pct">{point.confidence}%</span>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
 
       <form
         onSubmit={(e) => {
           e.preventDefault()
           onSubmit({ orderId: order.id, price, deliveryTurns, grade, bribe })
         }}
-        style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxWidth: '20rem' }}
       >
-        <label style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+        <p className="subhead">Ditt anbud</p>
+
+        <label className="field">
           Pris
-          <input
-            type="number"
-            min={0}
-            value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
-            required
-          />
+          <input type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} required />
         </label>
-        <label style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
-          Leveranstid (turer)
+        <label className="field">
+          Leveranstid
           <input
             type="number"
             min={1}
@@ -99,7 +101,7 @@ export function BidForm({
             required
           />
         </label>
-        <label style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+        <label className="field">
           Grade
           <select value={grade} onChange={(e) => setGrade(e.target.value as Grade)}>
             {GRADES.map((g) => (
@@ -109,21 +111,43 @@ export function BidForm({
             ))}
           </select>
         </label>
-        <label style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+        <label className="field">
           Muta
           <input type="number" min={0} value={bribe} onChange={(e) => setBribe(Number(e.target.value))} />
         </label>
 
-        <p>
-          <strong>Beräknad bruttomarginal: {marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}</strong>
-        </p>
-
-        <button type="submit">{existingBid ? 'Uppdatera bud' : 'Lägg bud'}</button>
-        {existingBid && (
-          <button type="button" onClick={onRemove}>
-            Ta bort bud
-          </button>
+        {price > estimate.rivalPriceHigh && (
+          // Rena avläsningen av spelarens EGEN uppskattning — ingen dold
+          // information röjs (trueBudget visas aldrig). Utan den kan
+          // formuläret visa en lockande marginal på ett bud som enligt
+          // winBand har noll vinstchans.
+          <p className="hint is-warn">
+            Priset ligger över hela det uppskattade rivalintervallet. Vinstchansen bedöms som noll.
+          </p>
         )}
+
+        <div className={marginClass(marginPct)}>
+          <div>
+            <div className="margin-label">Bruttomarginal</div>
+            {grossProfit !== null && (
+              <div className="meter-label" style={{ marginTop: 2 }}>
+                {formatMoney(grossProfit)} efter {formatMoney(totalCost)} i styckkostnad ({order.quantity} enheter)
+              </div>
+            )}
+          </div>
+          <div className="margin-value">{marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}</div>
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="btn btn-primary">
+            {existingBid ? 'Uppdatera bud' : 'Lägg bud'}
+          </button>
+          {existingBid && (
+            <button type="button" className="btn" onClick={onRemove}>
+              Ta bort bud
+            </button>
+          )}
+        </div>
       </form>
     </div>
   )

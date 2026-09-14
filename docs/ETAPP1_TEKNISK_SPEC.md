@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 2.1.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 2.2.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -1020,7 +1020,15 @@ migrering. Autospara efter varje `resolveTurn`.
 > Ramverket är på plats (`switch` på `meta.version` i `persistence.ts`) för nästa gång fältet
 > faktiskt höjs.
 
-Estetik: monospace för siffror, papper och telex. Ingen animation. Ingen karta.
+Estetik: **lägesrum, inte dokument** (ägarbeslut efter P12, se `docs/ANDRINGSLOGG.md`). Mörk yta,
+telexgul accent för spelarens egna spår, monospace med tabellsiffror för allt räknebart, och
+riktig typografisk hierarki. Mätare och staplar där ett tal har en skala att läsas mot
+(`doomsday` mot sina trösklar, styrelsemålet mot sin bana, marginal mot noll). Sparsamma
+övergångar (under 350 ms, alltid avstängda vid `prefers-reduced-motion`). Ingen karta.
+
+> **Omprövat av ägaren, se `docs/ANDRINGSLOGG.md`.** Ursprungsraden löd "monospace för siffror,
+> papper och telex. Ingen animation." och P11 byggdes ordagrant efter den. Registret (kalla kriget,
+> telex, papper) är detsamma — men utfört som ett spelgränssnitt i stället för ett dokument.
 
 > **Tre vägval gjorda under P11, se `docs/ANDRINGSLOGG.md`.** (1) `Order.trueBudget`,
 > `inspectorIntegrity`, `weights` och `referencePrice` visas ALDRIG i THE FLOOR:s orderlista eller
