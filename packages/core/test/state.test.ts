@@ -47,9 +47,9 @@ describe('createInitialState', () => {
     expect(state.wire).toEqual([])
   })
 
-  it('styrelsemålets prognoskontroller ligger på tur 8 och 14', () => {
+  it('(P30) styrelsemålets prognoskontroller ligger på tur 6, 10, 14 och 18', () => {
     const state = createInitialState('indochina-slice', 'test-seed')
-    expect(state.house.boardTarget.reviewTurns).toEqual([8, 14])
+    expect(state.house.boardTarget.reviewTurns).toEqual([6, 10, 14, 18])
     expect(state.house.boardTarget.dueTurn).toBe(20)
     expect(state.house.boardTarget.reviewsFailed).toBe(0)
     expect(state.house.boardTarget.lastReviewTurn).toBeNull()

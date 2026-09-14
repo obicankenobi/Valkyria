@@ -141,12 +141,18 @@ describe('resolveTurn — P3: ekonomi och slut', () => {
     //
     // P10-rättelse: med de sänkta fasta kostnaderna hinner huset INTE gå insolvent
     // (3 negativa turer i rad) förrän långt senare — men board.ts (byggd i P8, fanns
-    // inte när det här testet skrevs i P3) underkänner BÅDA sina granskningar
-    // (tur 8 och 14) för ett hus med progressSnapshot === 0 hela vägen, vilket ger
-    // BUYOUT redan vid tur 14 — innan treasury ens hunnit bli negativt. Samma
-    // underliggande sanning som testets ursprungliga namn ("ett hus utan intäkter
-    // förlorar") gäller alltså fortfarande, bara med en annan, mer specifik
-    // slutkod, eftersom hela pipelinen (inte bara economy.ts) nu är på plats.
+    // inte när det här testet skrevs i P3) underkänner BÅDA sina granskningar för
+    // ett hus med progressSnapshot === 0 hela vägen, vilket ger BUYOUT innan
+    // treasury ens hunnit bli negativt. Samma underliggande sanning som testets
+    // ursprungliga namn ("ett hus utan intäkter förlorar") gäller alltså
+    // fortfarande, bara med en annan, mer specifik slutkod, eftersom hela
+    // pipelinen (inte bara economy.ts) nu är på plats.
+    //
+    // P30 (avsnitt 5.1/5.2): reviewTurns är nu [6, 10, 14, 18] (tidigare [8, 14]),
+    // och en godkänd kontroll nollställer reviewsFailed — men det här huset klarar
+    // ALDRIG en kontroll (progressSnapshot 0 hela vägen), så "två underkända I RAD"
+    // inträffar nu redan vid den ANDRA granskningsturen (10), inte den gamla andra
+    // (14).
     let state: GameState = createInitialState('indochina-slice', 'insolvency-seed')
     expect(state.house.treasury).toBe(4000000)
 
@@ -158,8 +164,8 @@ describe('resolveTurn — P3: ekonomi och slut', () => {
       if (state.status.kind === 'ended') break
     }
 
-    expect(callsUntilEnded).toBe(15)
-    expect(state.status).toEqual({ kind: 'ended', ending: 'BUYOUT', turn: 14 })
+    expect(callsUntilEnded).toBe(11)
+    expect(state.status).toEqual({ kind: 'ended', ending: 'BUYOUT', turn: 10 })
     expect(state.house.boardTarget.reviewsFailed).toBe(2)
     expect(state.house.creditLimit).toBe(0)
   })

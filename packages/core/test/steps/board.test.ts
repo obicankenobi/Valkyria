@@ -61,24 +61,43 @@ describe('board (isolerat steg, spec avsnitt 5 "Board")', () => {
 
   it('godkänd kontroll (progress över den linjära banan minus tolerans): ticker, ingen reviewsFailed-ökning, ingen kreditstraff', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.meta.turn = 8 // reviewTurns[0]
-    // Passmark = threshold(2) * 8/20 * (1 - 0.15) = 0.68. Ge gott om marginal.
-    state.house.revenueByTurn = Array(9).fill(0)
-    state.house.revenueByTurn[8] = 4000000 // progress = 4 000 000/4 000 000 = 1.0, väl över 0.68
+    state.meta.turn = 6 // reviewTurns[0] (P30: [6, 10, 14, 18])
+    // Passmark = threshold(2) * 6/20 * (1 - 0.15) = 0.51. Ge gott om marginal.
+    state.house.revenueByTurn = Array(7).fill(0)
+    state.house.revenueByTurn[6] = 4000000 // progress = 4 000 000/4 000 000 = 1.0, väl över 0.51
 
     const { ctx, emitted } = makeCtx(state)
     board(ctx)
 
     expect(state.house.boardTarget.reviewsFailed).toBe(0)
     expect(state.house.creditPenaltyMultiplier).toBe(1)
-    expect(state.house.boardTarget.lastReviewTurn).toBe(8)
+    expect(state.house.boardTarget.lastReviewTurn).toBe(6)
     expect(emitted.some((e) => e.headline.includes('ON TRACK'))).toBe(true)
+  })
+
+  it('(P30 klart-når) godkänd kontroll nollställer reviewsFailed — underkänd → godkänd → underkänd ger INTE BUYOUT', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+
+    state.meta.turn = 6 // underkänd — progress 0
+    board(makeCtx(state).ctx)
+    expect(state.house.boardTarget.reviewsFailed).toBe(1)
+
+    state.meta.turn = 10 // godkänd — gott om progress
+    state.house.revenueByTurn = Array(11).fill(0)
+    state.house.revenueByTurn[10] = 4000000
+    board(makeCtx(state).ctx)
+    expect(state.house.boardTarget.reviewsFailed).toBe(0) // nollställd, inte kvar på 1
+
+    state.meta.turn = 14 // underkänd igen — men INTE i rad efter en godkänd
+    state.house.revenueByTurn[14] = 0
+    board(makeCtx(state).ctx)
+    expect(state.house.boardTarget.reviewsFailed).toBe(1) // bara EN i rad, inte två
   })
 
   it('underkänd kontroll: reviewsFailed ökar, creditPenaltyMultiplier sänks, headline emitteras (CLAUDE.md hård regel 4)', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.meta.turn = 8
-    // progress 0 — långt under passmark 0.68.
+    state.meta.turn = 6
+    // progress 0 — långt under passmark 0.51.
 
     const { ctx, emitted } = makeCtx(state)
     board(ctx)
@@ -89,11 +108,11 @@ describe('board (isolerat steg, spec avsnitt 5 "Board")', () => {
     expect(emitted.some((e) => e.headline.includes('TIGHTENED'))).toBe(true)
   })
 
-  it('två underkända kontroller i rad halverar creditPenaltyMultiplier två gånger (kumulativt)', () => {
+  it('(P30 klart-når) två underkända kontroller I RAD halverar creditPenaltyMultiplier två gånger (kumulativt) och ger BUYOUT', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.meta.turn = 8
+    state.meta.turn = 6
     board(makeCtx(state).ctx)
-    state.meta.turn = 14
+    state.meta.turn = 10 // reviewTurns[1] (P30: [6, 10, 14, 18])
     board(makeCtx(state).ctx)
 
     expect(state.house.boardTarget.reviewsFailed).toBe(2)
@@ -102,7 +121,7 @@ describe('board (isolerat steg, spec avsnitt 5 "Board")', () => {
 
   it('en granskningstur avgörs bara en gång — ett andra anrop samma tur ändrar inget (lastReviewTurn-skyddet)', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.meta.turn = 8
+    state.meta.turn = 6
     board(makeCtx(state).ctx)
     const afterFirst = { ...state.house.boardTarget }
 
@@ -117,11 +136,12 @@ describe('board (isolerat steg, spec avsnitt 5 "Board")', () => {
     const { economy } = await import('../../src/resolve/steps/economy.js')
     const state = createInitialState('indochina-slice', 'seed')
     // economy.ts:s trailingRevenue tittar på de 4 SENASTE turerna relativt currentTurn
-    // (index 5..8) — måste ligga där för att ge ett positivt creditLimit att jämföra.
-    // Litet nog totalt (500 000) för att progress (500 000/4 000 000 = 0,125) ska
-    // ligga långt under passmark 0,68 vid tur 8, så granskningen faktiskt underkänns.
-    state.house.revenueByTurn = [0, 0, 0, 0, 0, 0, 0, 0, 500000]
-    state.meta.turn = 8
+    // (index 3..6 vid tur 6, P30) — måste ligga där för att ge ett positivt creditLimit
+    // att jämföra. Litet nog totalt (500 000) för att progress (500 000/4 000 000 =
+    // 0,125) ska ligga långt under passmark 0,51 vid tur 6, så granskningen faktiskt
+    // underkänns.
+    state.house.revenueByTurn = [0, 0, 0, 0, 0, 0, 500000]
+    state.meta.turn = 6
 
     const before = makeCtx(state)
     economy(before.ctx)

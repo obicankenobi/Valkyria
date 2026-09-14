@@ -61,6 +61,13 @@ function runReview(ctx: ResolveContext): void {
   const passed = target.progressSnapshot >= passMark
 
   if (passed) {
+    // P30 (ETAPP2_TEKNISK_SPEC.md avsnitt 5.1): reviewsFailed räknade tidigare
+    // KUMULATIVT över hela partiet — spec avsnitt 5, DESIGN.md §7.3 och
+    // CLAUDE.md säger alla "två underkända kontroller I RAD". En godkänd
+    // kontroll nollställer räknaren, annars syns skillnaden aldrig (med bara
+    // två granskningsturer, som innan P30, gick det inte att se; med fyra gör
+    // det det).
+    target.reviewsFailed = 0
     emit({
       severity: 'ticker',
       scope: 'house',

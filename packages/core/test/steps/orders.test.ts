@@ -62,9 +62,10 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     // Kör många turer/seeds för att ge slumpen chans att välja fel om den kunde.
     for (const seed of ['a', 'b', 'c', 'd', 'e']) {
       const trial = createInitialState('indochina-slice', 'seed')
-      for (let turn = 0; turn < 9; turn++) {
-        // Stannar före tur 10 så den SCRIPTADE restricted-ordern inte blandas in —
-        // den här testar bara den ordinarie genereringens produktval.
+      for (let turn = 0; turn < 7; turn++) {
+        // Stannar före tur 7 så ingen av de TRE scriptade restricted-ordrarna
+        // (P30, avsnitt 5.3: tur 7/10/16) blandas in — den här testar bara den
+        // ordinarie genereringens produktval.
         trial.meta.turn = turn
         orders(makeCtx(trial, seed + turn).ctx)
       }
@@ -119,10 +120,11 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     state.factions['nlf']!.militaryBudget = 0
     // laos har kvar sin normala budget — kontroll: genereringen fungerar alls.
 
-    for (let turn = 0; turn < 9; turn++) {
-      // Stannar före tur 10 — samma skäl som "ordinarie generering väljer aldrig
-      // en restricted produkt" ovan: den scriptade restricted-ordern (mot rvn)
-      // ska INTE blandas in här, den prövas medvetet i en egen rad i ANDRINGSLOGG.md.
+    for (let turn = 0; turn < 7; turn++) {
+      // Stannar före tur 7 (P30: tidigaste scriptade restricted-order, avsnitt
+      // 5.3) — samma skäl som "ordinarie generering väljer aldrig en restricted
+      // produkt" ovan: de scriptade ordrarna (mot rvn) ska INTE blandas in här,
+      // de prövas medvetet i en egen rad i ANDRINGSLOGG.md.
       state.meta.turn = turn
       orders(makeCtx(state, `budget-exhausted-seed-${turn}`).ctx)
     }
