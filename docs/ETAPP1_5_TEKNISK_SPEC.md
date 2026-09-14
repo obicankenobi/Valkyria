@@ -609,24 +609,67 @@ att någon rad rörde sig.
 
 | Kriterium | Målvärde | Varför |
 |---|---|---|
-| **Rivalerna vinner utlysta ordrar** | **~22–50 %** mot `balanced` (golvet sänkt från 25 %, se ovan) | NY. Auktionen ska vara en auktion (2) |
+| **Rivalerna vinner utlysta ordrar** | ~15 % mot `balanced` (reviderat under P22, se nedan) | NY. Auktionen ska vara en auktion (2) |
 | **Rivalbud diskvalificerade av `trueBudget`** | **< 10 %** av alla rivalbud | NY. Taket ska vara sällsynt, inte normalt (2) |
-| **Partier där en grade väljs > 70 % av gångerna** | **< 60 %** | Grade-valet ska vara levande (5) |
+| Partier där en grade väljs > 70 % av gångerna | ~96 % (reviderat under P22 — strukturellt oundvikligt, se nedan) | Grade-valet ska vara levande (5) |
 | **`supplyCostIndex` spann under ett parti** | **≥ 25 enheter** mellan min och max | NY. Kostnadsrisken ska vara verklig (3) |
 | `passive` överlever 20 turer | 25–45 % | |
 | `passive` förlorar på `BUYOUT` | > 50 %, minst hälften före tur 20 | |
 | `aggressive` når `NUCLEAR_EXCHANGE` | **5–20 %** | Krisvalet gör det nåbart igen (9) |
 | Något parti når `EXPOSURE` | **> 2 %** över alla policyer | `Station.exposure` skrivs nu (8.4) |
-| `balanced` når `SCENARIO_COMPLETE` | 35–55 % | |
+| `balanced` når `SCENARIO_COMPLETE` | ~91 % (reviderat under P22, se nedan) | |
 | Andel partier avgjorda före tur 8 | < 10 % | |
-| **Andel partier som slutar på tur 14 eller 20** | **< 75 %** | NY. I dag 99,2 %. Utfallsrymden ska vara bred |
+| Andel partier som slutar på tur 14 eller 20 | ~80 % (reviderat under P22 — se nedan, i spänning mot `passive`s BUYOUT-rad) | NY. Utfallsrymden ska vara bred |
 | Spridning i slutkassa för `balanced` | ≥ 3× mellan p10 och p90 **bland partier med positiv slutkassa** | Definitionen rättad, se granskningsrapporten |
 | Turer med `heat > 40` i ett aktivt parti | 30–60 % | |
-| `capacity`-boten mot `aggressive` | `capacity` ska ha **högre** median-slutkassa | NY. Prövar om kapacitetsknappheten är verklig |
+| `capacity`-boten mot `aggressive` | `capacity` ska ha **lägre** median-slutkassa (reviderat under P22 — strukturellt, se nedan) | NY. Prövar om kapacitetsknappheten är verklig |
 
 **Måltabellen är hypoteser, inte acceptanskriterier.** Samma brasklapp som etapp 1. Om
 härnessen envist säger något annat och partierna ändå är roliga att spela är det tabellen som
 ska skrivas om — men som ett medvetet beslut med en motivering och en loggrad.
+
+> **Fem rader omprövade under P22, se `docs/ANDRINGSLOGG.md`.** Balanspasset (n=500/policy,
+> `payrollBase`/`lineUpkeep`/`boardReviewTolerance`/`insolvencyTurns`/`heatDecay*`/
+> `rivalMarginBase`/`relationTermWeight` skruvade — se ANDRINGSLOGG för hela listan och
+> resonemanget bakom varje fält) fick nio av fjorton rader i mål. Fem visade sig, efter
+> upprepad, dokumenterad skruvning, sitta fast av skäl balance.json inte rår på:
+> - **Rivalerna vinner ordrar (mätt ~15 %):** samma `computeScore`-platå P15 redan bevisade
+>   (avsnitt 2.2-blockquoten ovan), nu djupare — `repTermReliabilityDivisor`/
+>   `repTermQualityDivisor` är P19:s ORDAGRANNA specsiffror (ej tunbara) och ger spelaren en
+>   växande poängfördel rivalerna strukturellt saknar (de har varken `relationToPlayer` eller
+>   `reputation`, se `pricing.ts`). `relationTermWeight` sänkt 40→5 gav en mätbar men liten
+>   effekt (rivalWinPct rörde sig från ~7 % till ~15 %) innan den mättades; `rivalMarginBase`
+>   sänkt 0,3→0,1 gav i praktiken NOLL effekt (`balanced`s egen konfidensmålsökning i
+>   `winBand` flyttar sig i lås med rivalernas prissättning, se ANDRINGSLOGG.md).
+> - **Grade-dominans (mätt ~96 %, mål < 60 %):** identisk mekanism som etapp 1:s egen,
+>   redan reviderade rad (`ETAPP1_TEKNISK_SPEC.md` rad 951, "strukturellt ouppnåeligt") —
+>   `passive`/`aggressive`/`capacity` hårdkodar fortfarande EN grade var i `policies.ts`
+>   (oförändrat sedan P9/P14), så 3 av 4 policyer ger 100 % dominans i VARJE parti per
+>   konstruktion. Att nå < 60 % i den aggregerade populationen kräver att ändra botarnas
+>   kod, utanför P22:s mandat ("ändra bara balance.json").
+> - **`balanced` `SCENARIO_COMPLETE` (mätt ~91 %, mål 35–55 %):** samma `fixedCosts`-spak som
+>   fick `passive`/`capacity` i mål (se `passive`-raderna) krossar dem långt innan den ens
+>   syns hos `balanced` — en tredubbling av `fixedCosts.payrollBase` (testat, se
+>   ANDRINGSLOGG.md) gav `capacity` 100 % INSOLVENCY och `passive` 4 % överlevnad samtidigt
+>   som `balanced` fortsatte klara sig fint. De tre arketyperna är för olika ekonomiskt för
+>   att en enda global kostnadsspak ska kunna träffa alla tre måltal samtidigt.
+> - **Andel partier vid tur 14/20 (mätt ~80 %, mål < 75 %):** i direkt, bevisad spänning mot
+>   `passive`-raden ovan — `boardTarget.reviewTurns` ([8, 14]) och `dueTurn` (20) är
+>   SCENARIEDATA, inte `balance.json`, så att göra `passive`s BUYOUT vanlig (mål uppfyllt,
+>   `passive` förlorar > 50 % av gångerna) koncentrerar med nödvändighet fler slut till just
+>   de fasta granskningsturerna. Att sänka koncentrationen under 75 % kräver fler, spridda
+>   granskningstillfällen — en scenarioändring, inte en balance.json-siffra.
+> - **`capacity` mot `aggressive` (mätt: `capacity`s medianslutkassa NEGATIV, `aggressive`s
+>   ~18 M — motsatt håll mot målet):** `capacity`s egen bidlogik (`policies.ts`, oförändrad)
+>   bjuder BARA på ordrar den kan leverera med lediga linjer NU — ett självpåtaget avkall på
+>   intäkt `aggressive` aldrig gör. Felsökt med en instrumenterad körning (se
+>   ANDRINGSLOGG.md): `capacity`s fyra linjer blir upptagna av långlöpande kontrakt och
+>   frigörs för sällan för att hålla jämna steg med `aggressive`s "bjud på allt"-strategi,
+>   oavsett `orderDeliverySlackTurns` (testat 3–9) eller `fixedCosts`. Att ändra det kräver
+>   en annan bidstrategi i koden, inte en balanssiffra.
+>
+> Samtliga fem är alltså medvetna, undersökta gränser för vad `balance.json` ensamt kan göra
+> — inte obalanserade siffror som glömdes bort.
 
 ---
 

@@ -3,7 +3,10 @@ import { resolveTurn } from '../src/resolve/index.js'
 import { createInitialState } from '../src/state.js'
 import { bidEstimate } from '../src/queries.js'
 import { computeUnitCostNow, getProduct } from '../src/pricing.js'
+import balanceData from '../src/data/balance.json' with { type: 'json' }
 import type { Contract, GameState, TurnSubmission, WireEvent } from '../src/types.js'
+
+const BALANCE = balanceData as unknown as { insolvencyTurns: number }
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
@@ -171,12 +174,12 @@ describe('resolveTurn — P3: ekonomi och slut', () => {
     // att först spela fram dit.
     const state: GameState = createInitialState('indochina-slice', 'insolvency-seed-2')
     state.house.treasury = -1
-    state.house.insolventTurns = 2
+    state.house.insolventTurns = BALANCE.insolvencyTurns - 1
     state.meta.turn = 5 // godtycklig, inte en granskningstur (8/14) — board.ts ska inte kunna störa
 
     const result = resolveTurn(state, EMPTY_SUBMISSION)
     expect(result.state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 5 })
-    expect(result.state.house.insolventTurns).toBe(3)
+    expect(result.state.house.insolventTurns).toBe(BALANCE.insolvencyTurns)
   })
 })
 
@@ -200,8 +203,12 @@ describe('resolveTurn — P5: produktion, kostnad och leverans', () => {
     }
     expect(order).toBeDefined()
 
-    // Lägg ett bud som bör vinna: gott om marginal under trueBudget.
-    const bidPrice = Math.round(order!.trueBudget * 0.75)
+    // Lägg ett bud som bör vinna: winBand:s lägsta prispunkt är den (nära) säkraste
+    // att vinna med, oavsett hur aggressivt rivalerna råkar prisa sig just den här
+    // turen (P22-balanspasset sänkte rivalMarginBase, se ANDRINGSLOGG.md — ett fast
+    // 0,75×trueBudget-bud vann inte alltid längre).
+    const estimate = bidEstimate(state, order!, 'A')
+    const bidPrice = estimate.winBand[0]!.price
     const submission: TurnSubmission = {
       standingOrders: [],
       bids: [{ orderId: order!.id, price: bidPrice, deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
@@ -263,9 +270,12 @@ describe('resolveTurn — P6: front och attribution', () => {
     }
     expect(order).toBeDefined()
 
+    // Samma motivering som P5-testet ovan: winBand:s lägsta prispunkt, inte ett fast
+    // 0,75×trueBudget, garanterar vinsten oavsett rivalernas prissättning.
+    const bidPrice = bidEstimate(state, order!, 'A').winBand[0]!.price
     const submission: TurnSubmission = {
       standingOrders: [],
-      bids: [{ orderId: order!.id, price: Math.round(order!.trueBudget * 0.75), deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
+      bids: [{ orderId: order!.id, price: bidPrice, deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
       actions: [],
     }
     state = resolveTurn(state, submission).state

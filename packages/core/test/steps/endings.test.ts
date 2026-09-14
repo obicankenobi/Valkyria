@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { endings } from '../../src/resolve/steps/endings.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
+import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
 
@@ -70,7 +71,7 @@ describe('endings (isolerat steg, spec avsnitt 5 + 7.2)', () => {
 
   it('INSOLVENCY när insolventTurns når balance.insolvencyTurns', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.house.insolventTurns = 3
+    state.house.insolventTurns = balance.insolvencyTurns
 
     const { ctx } = makeCtx(state)
     endings(ctx)
@@ -80,7 +81,7 @@ describe('endings (isolerat steg, spec avsnitt 5 + 7.2)', () => {
 
   it('ingen INSOLVENCY under tröskeln', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.house.insolventTurns = 2
+    state.house.insolventTurns = balance.insolvencyTurns - 1
 
     const { ctx } = makeCtx(state)
     endings(ctx)

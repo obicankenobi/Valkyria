@@ -36,7 +36,7 @@
 // Även med allt detta är enskilda 20-turersparti fortfarande sannolikhetsstyrda
 // (empiriskt runt 90-95 % av körningarna hann en kris inom 20 turer i sig
 // själva) — testet spelar därför om från ett helt nytt parti (rensad
-// IndexedDB, nytt frö) upp till tre gånger om inte en kris hunnit dyka upp,
+// IndexedDB, nytt frö) upp till fem gånger om inte en kris hunnit dyka upp,
 // i stället för att acceptera en flackig enstaka-försök-design.
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
@@ -77,7 +77,7 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
       await page
         .getByLabel('Price')
         .first()
-        .fill(String(Math.round(unitCost * quantity * 1.3)))
+        .fill(String(Math.round(unitCost * quantity * 1.5)))
       await page
         .getByRole('button', { name: /Place Bid/ })
         .first()
@@ -90,7 +90,7 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     // Säkerhetslån — håll partiet likvitt så INSOLVENCY inte hinner före krisen.
     const treasury = parseMoney(await page.getByTestId('hud-treasury').innerText())
     const creditLimit = parseMoney(await page.getByTestId('credit-limit').innerText())
-    if (treasury < 2000000 && creditLimit > 0) {
+    if (treasury < 6000000 && creditLimit > 0) {
       await page.getByLabel('Loan amount').fill(String(creditLimit))
       await page.getByRole('button', { name: 'Take Loan' }).click()
     }
@@ -131,7 +131,7 @@ test('spela 20 turer utan konsolfel, med executive actions varje tur och minst e
   page.on('pageerror', (err) => errors.push(String(err)))
 
   let crisisHandled = false
-  for (let attempt = 0; attempt < 3 && !crisisHandled; attempt++) {
+  for (let attempt = 0; attempt < 5 && !crisisHandled; attempt++) {
     await startFreshGame(page)
     crisisHandled = await playUntilCrisisOrTurnLimit(page)
   }

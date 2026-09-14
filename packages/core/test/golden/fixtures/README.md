@@ -1,5 +1,8 @@
 # Fryst balansfixtur
 
-`balance.frozen.json` läggs här i P2, som en kopia av `src/data/balance.json` vid det
-tillfället. Den uppdateras därefter bara som ett medvetet, separat beslut — aldrig som en
-bieffekt av P10:s balanspass. Se ETAPP1_TEKNISK_SPEC.md avsnitt 7.2.
+`balance.frozen.json` frystes i P22 (etapp 1,5:s sista prompt, efter balanspasset — se
+ETAPP1_5_TEKNISK_SPEC.md avsnitt 11.3: "fryses sist i etappen ... en fixtur som fryses innan
+balansen är klar hade dödat balanspasset"), som en bitvis kopia av `src/data/balance.json` i
+det ögonblicket. Den uppdateras därefter bara som ett medvetet, separat beslut — aldrig som en
+bieffekt av ett senare balanspass. `golden.test.ts`s första test jämför de två filerna bitvis
+och failar tydligt om de glidit isär.

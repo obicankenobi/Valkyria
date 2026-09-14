@@ -205,8 +205,9 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
       state.market.openOrders = [order]
       state.meta.turn = 0
       // En enda rival (Brandt: aggression 55, specialisation artillery — matchar
-      // produktkategorin, specBonus −0,04). Förväntat bud utan jitter:
-      // 2 000 000 × (1 + 0,179 − 0,04) ≈ 2 278 000, jitter ±60 000.
+      // produktkategorin, specBonus −0,04). Förväntat bud utan jitter (P22-
+      // balanspasset sänkte rivalMarginBase 0,3→0,1 för att få upp rivalWinPct, se
+      // ANDRINGSLOGG.md): 2 000 000 × (1 − 0,021 − 0,04) ≈ 1 878 000, jitter ±60 000.
       state.rivals = {
         brandt: {
           id: 'brandt',
@@ -221,13 +222,13 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
       }
       order.competingRivals = ['brandt']
 
-      // Spelaren har en strukturell fördel oavsett pris (relationTerm +2.4 poäng,
-      // och rivalens leveranstid missar kravet ~1 av 3 gånger vilket kostar den
-      // 7.5 poäng) — ett pris rakt på rivalens förväntade bud hade därför nästan
-      // alltid vunnit. 2 380 000 är empiriskt avvägt (se P4-commit) till en
-      // vinstfrekvens runt 55 %, långt innanför [5 %, 95 %] men fortfarande
-      // synligt påverkat av jittret åt båda hållen.
-      const fixedPrice = 2380000
+      // Spelaren har fortfarande en strukturell fördel oavsett pris (rivalens
+      // leveranstid missar kravet ~1 av 3 gånger, vilket kostar den poäng på
+      // deliveryTerm) — ett pris rakt på rivalens förväntade bud hade därför vunnit
+      // klart oftare än 50 %. 1 900 000 är empiriskt avvägt (se P22-balanspasset,
+      // docs/ANDRINGSLOGG.md) till en vinstfrekvens runt 60 %, långt innanför
+      // [5 %, 95 %] men fortfarande synligt påverkat av jittret åt båda hållen.
+      const fixedPrice = 1900000
       const submission: TurnSubmission = {
         standingOrders: [],
         bids: [{ orderId: order.id, price: fixedPrice, deliveryTurns: 3, grade: 'A', bribe: 0 }],
