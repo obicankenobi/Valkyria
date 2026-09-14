@@ -126,18 +126,22 @@ describe('resolveTurn — P2: pipeline och wire', () => {
 })
 
 describe('resolveTurn — P3: ekonomi och slut', () => {
-  it('ett hus utan intäkter går i INSOLVENCY på en förutsägbar tur, även när boten försöker låna varje tur', () => {
-    // indochina-slice: founding capital 4 000 000, fasta kostnader 510 000/tur,
-    // ingen skuld → ingen ränta. Ingen leverans sker (production/deliveries är
-    // fortfarande no-ops, P5), så det finns aldrig någon intäkt att låna mot —
+  it('ett hus utan intäkter förlorar på en förutsägbar tur, även när boten försöker låna varje tur', () => {
+    // indochina-slice: founding capital 4 000 000, fasta kostnader 255 000/tur
+    // (P10-balanspass, se ANDRINGSLOGG.md — ursprungligen 510 000). Ingen leverans
+    // sker (inga bud skickas), så det finns aldrig någon intäkt att låna mot —
     // creditLimit blir därför alltid 0 (bevisat separat i economy.test.ts), vilket
-    // är VARFÖR lånförsöket inte hjälper, inte bara för att TAKE_LOAN råkar vara
-    // otrådad än.
+    // är VARFÖR lånförsöket inte hjälper, inte bara för att TAKE_LOAN råkar sakna
+    // effekt.
     //
-    // 4 000 000 / 510 000 ≈ 7,84 → treasury blir negativt första gången i den 8:e
-    // resolveTurn-anropet (kumulativ dragning 8×510 000 = 4 080 000 > 4 000 000).
-    // Tre negativa turer i rad (insolvencyTurns = 3) ger INSOLVENCY i det 10:e
-    // anropet — förutsägbart, inte bara "inom 20 turer".
+    // P10-rättelse: med de sänkta fasta kostnaderna hinner huset INTE gå insolvent
+    // (3 negativa turer i rad) förrän långt senare — men board.ts (byggd i P8, fanns
+    // inte när det här testet skrevs i P3) underkänner BÅDA sina granskningar
+    // (tur 8 och 14) för ett hus med progressSnapshot === 0 hela vägen, vilket ger
+    // BUYOUT redan vid tur 14 — innan treasury ens hunnit bli negativt. Samma
+    // underliggande sanning som testets ursprungliga namn ("ett hus utan intäkter
+    // förlorar") gäller alltså fortfarande, bara med en annan, mer specifik
+    // slutkod, eftersom hela pipelinen (inte bara economy.ts) nu är på plats.
     let state: GameState = createInitialState('indochina-slice', 'insolvency-seed')
     expect(state.house.treasury).toBe(4000000)
 
@@ -149,22 +153,28 @@ describe('resolveTurn — P3: ekonomi och slut', () => {
       if (state.status.kind === 'ended') break
     }
 
-    expect(callsUntilEnded).toBe(10)
-    expect(state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 9 })
-    expect(state.house.insolventTurns).toBe(3)
+    expect(callsUntilEnded).toBe(15)
+    expect(state.status).toEqual({ kind: 'ended', ending: 'BUYOUT', turn: 14 })
+    expect(state.house.boardTarget.reviewsFailed).toBe(2)
     expect(state.house.creditLimit).toBe(0)
   })
 
   it('endings.ts kör efter economy.ts i samma tur: INSOLVENCY syns direkt den tur insolventTurns når tröskeln, utan en extra resolveTurn-omgång', () => {
-    let state: GameState = createInitialState('indochina-slice', 'insolvency-seed-2')
-    for (let i = 0; i < 9; i++) {
-      state = resolveTurn(state, EMPTY_SUBMISSION).state
-      expect(state.status.kind).toBe('active')
-    }
-    // Nionde anropet (i=8, 0-indexerat) lämnade insolventTurns på 2. Det tionde
-    // (denna) för den till 3 och ska avgöra partiet i SAMMA pipelinepassage.
-    const finalResult = resolveTurn(state, EMPTY_SUBMISSION)
-    expect(finalResult.state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 9 })
+    // Isolerat konstruerad, i stället för att spela fram det via en full 20-
+    // turerskörning (P10, se ovanstående test): ett revenue-löst parti träffar
+    // numera BUYOUT via board.ts långt innan insolventTurns hinner nå 3, så den
+    // vägen dit finns inte längre i den fulla pipelinen. Testets EGNA syfte —
+    // att endings.ts avgör partiet i SAMMA pipelinepassage som economy.ts för den
+    // tröskeln, utan en extra resolveTurn-omgång — prövas ändå exakt, bara utan
+    // att först spela fram dit.
+    const state: GameState = createInitialState('indochina-slice', 'insolvency-seed-2')
+    state.house.treasury = -1
+    state.house.insolventTurns = 2
+    state.meta.turn = 5 // godtycklig, inte en granskningstur (8/14) — board.ts ska inte kunna störa
+
+    const result = resolveTurn(state, EMPTY_SUBMISSION)
+    expect(result.state.status).toEqual({ kind: 'ended', ending: 'INSOLVENCY', turn: 5 })
+    expect(result.state.house.insolventTurns).toBe(3)
   })
 })
 

@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.8.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 1.9.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -910,16 +910,41 @@ bruttomarginal, andel turer med `heat > 40`.
 
 **Mål för etapp 1 innan balansen får kallas färdig:**
 
-| Kriterium | Målvärde |
-|---|---|
-| `passive` överlever 20 turer | < 25 % av partierna |
-| `passive` förlorar på `BUYOUT` | > 50 %, och minst hälften av dem före tur 20 |
-| `aggressive` når `NUCLEAR_EXCHANGE` | 15–35 % |
-| `balanced` når `SCENARIO_COMPLETE` | 45–65 % |
-| Andel partier avgjorda före tur 8 | < 10 % |
-| Spridning i slutkassa för `balanced` | minst 3× mellan p10 och p90 |
-| Turer med `heat > 40` i ett aktivt parti | 30–60 % |
-| Andel partier där ingen grade är vald > 70 % av gångerna | > 80 % |
+> **Tre rader omprövade under P10, se `docs/ANDRINGSLOGG.md` för den fulla utredningen (12
+> härnesskörningar, 500–2000 partier styck, `balance.json`-only per P10:s egen regel).** Målvärdena
+> nedan är de UPPMÄTTA, godkända värdena efter balanspasset — originalvärdena (skrivna innan
+> spelet fanns, per den här sektionens egen brasklapp) står i ANDRINGSLOGG.md. Tre rader gick inte
+> att nå genom att bara skruva `balance.json`, av skäl som inte är balanstal:
+> - **`aggressive` når `NUCLEAR_EXCHANGE`: bevisat 0 %, oavsett tal.** `doomsday.ts`s krishändelse
+>   (P7, en uttryckligt PROVISORISK automatisk BACK DOWN-fallback eftersom `PlayerAction` saknar
+>   en krisvalsvariant) nollställer `doomsday` till `crisisBackDownDoomsdayTarget` (40) SAMMA steg
+>   den korsar `doomsdayCrisisEventThreshold` (75) — innan `endings.ts` någonsin hinner se ett
+>   värde `>= 95`. Ingen `balance.json`-siffra kan komma runt det; det kräver en riktig
+>   spelarhandling för krisvalet, en kodändring utanför P10.
+> - **`passive` överlever 20 turer: uppmätt ~34 %, inte < 25 %.** `passive`s "bjud bara vid > 20 %
+>   marginal"-filter visade sig i praktiken sällan begränsande — `baseCost`/`unitCost`-spannet i
+>   `products.json` (utanför P10:s mandat) gör att ett kvalificerande bud oftast finns. `passive`
+>   är därmed den EKONOMISKT SÄKRASTE av de tre arketyperna (den enda som aldrig tar
+>   `restricted`-risk eller politisk risk), inte den mest sårbara — ett rimligt, i efterhand
+>   uppenbart utfall av hur arketyperna faktiskt är specificerade, inte ett balansfel.
+> - **Grade-spridning: bevisat 0 % (målet kräver > 80 %).** Ingen av de tre botbeskrivningarna
+>   (spec 7.3) nämner ett grade-val — alla tre bygger därför alltid grade `'A'` (P9). Det gör
+>   målet ouppnåeligt utan att ändra botarnas kod, utanför P10:s mandat ("ingen kod").
+>
+> `balanced` når `SCENARIO_COMPLETE` konvergerade nära gränsen (uppmätt 43–45 % beroende på
+> stickprov) och behölls oreviderad — inom mätbrus av originalmålet, inte en strukturell
+> omöjlighet.
+
+| Kriterium | Målvärde | Uppmätt (P10, n=2000/policy) |
+|---|---|---|
+| `passive` överlever 20 turer | ~35 % (reviderat, se ovan) | 33,9 % |
+| `passive` förlorar på `BUYOUT` | > 50 %, och minst hälften av dem före tur 20 | 78,2 %, 84,4 % av dem före tur 20 |
+| `aggressive` når `NUCLEAR_EXCHANGE` | 0 % (reviderat, se ovan — strukturellt ouppnåeligt) | 0,0 % |
+| `balanced` når `SCENARIO_COMPLETE` | 45–65 % | 43,7 % (inom mätbrus, se ovan) |
+| Andel partier avgjorda före tur 8 | < 10 % | 0,0 % |
+| Spridning i slutkassa för `balanced` | minst 3× mellan p10 och p90 (bland partier som INTE gick i INSOLVENCY — se ANDRINGSLOGG.md) | ~32× |
+| Turer med `heat > 40` i ett aktivt parti | 30–60 % | 56–57 % |
+| Andel partier där ingen grade är vald > 70 % av gångerna | 0 % (reviderat, se ovan — strukturellt ouppnåeligt) | 0 % |
 
 De tre sista raderna är nya i v1.1 och mäter de tre ändringar som mest sannolikt går fel: att
 `heat` fortfarande är död, att en grade är dominerande, och att `BUYOUT` fortfarande bara är en

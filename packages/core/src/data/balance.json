@@ -4,14 +4,26 @@
   "heatDecayActive": 2,
   "heatDecayIdle": 8,
   "doomsdayDecayPerTurn": 3,
-  "gradePriceFactor": { "A": 1.0, "B": 0.86, "C": 0.72 },
-  "gradeCostFactor": { "A": 1.0, "B": 0.82, "C": 0.61 },
-  "gradeScandalChance": { "A": 0, "B": 4, "C": 14 },
+  "gradePriceFactor": {
+    "A": 1.0,
+    "B": 0.86,
+    "C": 0.72
+  },
+  "gradeCostFactor": {
+    "A": 1.0,
+    "B": 0.82,
+    "C": 0.61
+  },
+  "gradeScandalChance": {
+    "A": 0,
+    "B": 4,
+    "C": 14
+  },
   "fixedCosts": {
-    "payrollBase": 180000,
+    "payrollBase": 90000,
     "payrollPerExtraLine": 45000,
-    "lineUpkeep": 60000,
-    "stationUpkeep": 90000,
+    "lineUpkeep": 30000,
+    "stationUpkeep": 45000,
     "rndOverhead": 120000
   },
   "creditMultiple": 1.6,
@@ -20,19 +32,19 @@
   "exposureEventsForEnding": 3,
   "exposureWindowTurns": 6,
   "rivalCashFloor": 1200000,
-  "bidWeightsDefault": { "price": 0.55, "delivery": 0.3, "relationship": 0.15 },
-
+  "bidWeightsDefault": {
+    "price": 0.55,
+    "delivery": 0.3,
+    "relationship": 0.15
+  },
   "_p4_note": "Fälten nedan krävs av formlerna i spec avsnitt 4.1/4.2/4.4, som uttryckligen säger 'Detta är siffrorna att skruva på först. De ligger i balance.json, inte i koden.' Se docs/ANDRINGSLOGG.md för blocPenaltyScale, orderGeneration* och rivalDeliveryJitterTurns, som är provisoriska (ingen formel/kadens gavs i specen för dem).",
-
   "scarcityPriceDivisor": 400,
-
   "rivalMarginBase": 0.3,
   "rivalMarginAggressionScale": 0.22,
   "rivalCashPressurePenalty": 0.05,
   "rivalSpecialisationBonus": 0.04,
   "rivalJitterRange": 0.06,
   "rivalDeliveryJitterTurns": 2,
-
   "scoreBase": 100,
   "priceTermWeight": 120,
   "deliveryTermWeight": 25,
@@ -42,24 +54,20 @@
   "repTermReliabilityDivisor": 5,
   "repTermQualityDivisor": 8,
   "blocPenaltyScale": 15,
-
   "relationBoostMin": 4,
   "relationBoostMax": 8,
-
   "orderGenerationChancePct": 35,
   "orderQuantityMin": 20,
-  "orderQuantityMax": 150,
+  "orderQuantityMax": 185,
   "orderDeliverySlackTurns": 3,
   "orderBiddingWindowTurns": 1,
   "statedBudgetMinFactor": 0.6,
   "statedBudgetMaxFactor": 0.95,
   "trueBudgetMinFactor": 0.9,
   "trueBudgetMaxFactor": 1.3,
-
   "deliveryDelayMinTurns": 1,
   "deliveryDelayMaxTurns": 3,
   "reliabilityLatePenalty": 8,
-
   "_p6_note": "fronts.ts-fälten nedan är PROVISORISKA i sin helhet -- se docs/ANDRINGSLOGG.md. Avsnitt 5 ger bara en formel (equipmentRatio) och lös prosa för resten (manpowerRatio, moral, position, förluster). Inget av det här är ett spelbalansbeslut som redan är fattat.",
   "frontEquipmentWeight": 0.6,
   "frontManpowerWeight": 0.4,
@@ -68,7 +76,6 @@
   "frontBaseAttritionPct": 1.5,
   "frontMoraleShiftPerTurn": 3,
   "publicSupportLossPerCasualty": 0.01,
-
   "_p7_note": "factionBankruptcyTurns/factionLowSupportTurns/factionLowSupportThreshold och doomsdayCrisisWatchThreshold/doomsdayCrisisEventThreshold/doomsdayNuclearExchangeThreshold kommer direkt ur specens siffror (avsnitt 5, DESIGN.md SS6.2) -- inte provisoriska. embargoTreasuryDrainPerTurn, heatEscalationChancePct och crisisBackDownDoomsdayTarget/-stationExposure ÄR provisoriska: avsnitt 5 ger ingen formel för embargots ekonomiska effekt eller escalation-riskens sannolikhet, och krishändelsens tre val (DESIGN.md SS6.2) kräver ett spelarbeslut PlayerAction-unionen (fryst sedan P2) inte har en variant för -- se ANDRINGSLOGG.md.",
   "factionBankruptcyTurns": 2,
   "factionLowSupportTurns": 3,
@@ -82,9 +89,9 @@
   "doomsdayCrisisEventThreshold": 75,
   "doomsdayNuclearExchangeThreshold": 95,
   "crisisBackDownDoomsdayTarget": 40,
-
   "_p8_note": "boardReviewCreditPenalty är en nödvändig komplettering (specen kräver 'skärpta lånevillkor' vid en underkänd kontroll men ger ingen siffra). rivalPassiveGrowthCapital/-MarketShare är PROVISORISKA -- DESIGN.md avsnitt 12 säger bara 'rivalhusen växer om du är passiv', ingen takt. Se ANDRINGSLOGG.md, som även loggar de två rivalbeteenden (leverantörskapacitet, iscensatta incidenter) som medvetet lämnas obyggda i P8.",
   "boardReviewCreditPenalty": 0.5,
   "rivalPassiveGrowthCapital": 40000,
-  "rivalPassiveGrowthMarketShare": 0.5
+  "rivalPassiveGrowthMarketShare": 0.5,
+  "_p10_note": "P10 balanspass -- se docs/ANDRINGSLOGG.md för den fulla utredningen (11 härnesskörningar, 500-1000 partier styck). fixedCosts sänkta till hälften (payrollBase/lineUpkeep/stationUpkeep) -- ursprungsvärdena (510 000/tur mot 4 000 000 grundkapital) gjorde INSOLVENCY praktiskt taget oundviklig för alla tre botstrategierna inom ~9 turer, oavsett spelstil, eftersom ingen av dem tar lån (P9, ordagrant efter specens botbeskrivningar). orderQuantityMax höjd (150->185) för att ge balanced/aggressive tillräcklig intäktstakt för SCENARIO_COMPLETE-målet utan att dra upp fixedCosts igen. heatEscalation*-fälten testades men återställdes -- de påverkar aldrig NUCLEAR_EXCHANGE-frekvensen (se ANDRINGSLOGG.md: doomsday.ts:s krishändelse, P7, nollställer doomsday till 40 innan endings.ts någonsin ser ett värde över doomsdayCrisisEventThreshold, så trösklar/chanser för eskalering är strukturellt overksamma för just det målet)."
 }
