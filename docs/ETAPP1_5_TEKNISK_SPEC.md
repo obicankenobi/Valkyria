@@ -1,8 +1,11 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1,5
 
-**Version 1.0 — förslag.** Samma vertikala skiva: `INDOCHINA_SLICE`, 20 turer. Ingen ny front,
-ingen ny köpare, inget nytt scenario. Etappen kopplar in det som redan finns i modellen och
-lagar det som mäts som trasigt.
+**Version 1.0 — antagen (ägarbeslut 2026-09-14, se `docs/ANDRINGSLOGG.md`).** Samma vertikala
+skiva: `INDOCHINA_SLICE`, 20 turer. Ingen ny front, ingen ny köpare, inget nytt scenario.
+Etappen kopplar in det som redan finns i modellen och lagar det som mäts som trasigt.
+
+Grundlaget är den externa granskningen i `docs/RAPPORT1_GRANSKNING.md` (mätt mot HEAD `156eb7d`)
+och den långsiktiga planen i `docs/RAPPORT2_LANGSIKTIG_PLAN.md`.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -577,10 +580,9 @@ svensk, inklusive `<html lang="sv">`. Ingen loggrad finns.
 hela register är engelskspråkig telex från 1964, och wire-rubrikerna är redan engelska.
 `<html lang="en">`.
 
-Om ägaren i stället vill behålla svenskt gränssnitt är det ett fullt legitimt beslut, men det
-kräver (a) en rad i `ANDRINGSLOGG.md`, (b) att specens rad 6–7 ändras, och (c) att i18n-lagret
-läggs in direkt i stället för att ett andra språk hårdkodas. **Detta är etappens enda öppna
-fråga och bör avgöras innan P21 körs.**
+**Avgjort (ägarbeslut 2026-09-14):** engelska UI-strängar, enligt beslutet ovan — se
+`docs/ANDRINGSLOGG.md` för loggraden. P21 genomför översättningen och sätter
+`<html lang="en">`.
 
 ---
 

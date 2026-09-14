@@ -3,8 +3,12 @@
 Turbaserad kallakrigssimulator. TypeScript, strict. Kärnan är headless och ren.
 
 Designdokumentet är `docs/DESIGN.md`. Den tekniska specen för etapp 1 är
-`docs/ETAPP1_TEKNISK_SPEC.md`. **Läs den promptens avsnitt i specen innan du börjar** — den är
-skriven för att följas ordagrant, inte för att tolkas.
+`docs/ETAPP1_TEKNISK_SPEC.md` (P0–P12, klar). Den aktiva specen är nu **etapp 1,5**,
+`docs/ETAPP1_5_TEKNISK_SPEC.md` (P13–P22, antagen som ägarbeslut 2026-09-14) — den ersätter
+etapp 1-specens avsnitt 7.3-måltabell men lämnar resten av etapp 1-specen stående som historik.
+Bakgrunden till etapp 1,5 finns i `docs/RAPPORT1_GRANSKNING.md` (extern granskning) och
+`docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan). **Läs den promptens avsnitt i den spec som
+gäller innan du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
 
 ## Hårda regler
 
