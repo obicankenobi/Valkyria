@@ -141,5 +141,13 @@
   "crisisPushContractQuantity": 5000,
   "crisisSellFileTarget": 50,
   "crisisSellFileRevenue": 3000000,
-  "crisisSellFileStandingPenalty": 20
+  "crisisSellFileStandingPenalty": 20,
+  "_p26_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 2.4 namnger rivalSupplyPlayCapitalFloor/-CooldownTurns/-IndexPenalty/-Cost och rivalIncidentMisattributionPct men ger inga tal (bara fältnamnen, samma mönster som P4:s ursprungliga rivalfält). rivalIncidentAttemptChancePct och rivalSabotageCooldownTurns namns inte alls av specen -- de krävs ändå: 'kan iscensätta en incident' har ingen egen frekvens (till skillnad från spelarens STAGE_INCIDENT, som kostar en actionPoint och därigenom självbegränsas), och avsnitt 2.5 kopplar sabotagedUntilTurn till 'en misslyckad egen incident' utan att ge en varaktighet. Alla sju PROVISORISKA, kalibrerade mot närmaste befintliga analog (se docs/ANDRINGSLOGG.md).",
+  "rivalSupplyPlayCapitalFloor": 2000000,
+  "rivalSupplyPlayCooldownTurns": 5,
+  "rivalSupplyPlayIndexPenalty": 8,
+  "rivalSupplyPlayCost": 300000,
+  "rivalIncidentAttemptChancePct": 15,
+  "rivalIncidentMisattributionPct": 30,
+  "rivalSabotageCooldownTurns": 3
 }

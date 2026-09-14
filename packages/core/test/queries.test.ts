@@ -148,6 +148,7 @@ describe('rivalscoring — bidEstimate och bidding.ts använder identiska rivalt
       relations: { rvn: 100 },
       reputation: { quality: 100, reliability: 100 },
       contracts: [],
+      supplyPlayCooldownUntilTurn: null,
     }
   }
 
@@ -165,6 +166,7 @@ describe('rivalscoring — bidEstimate och bidding.ts använder identiska rivalt
       relations: { rvn: 0 },
       reputation: { quality: 0, reliability: 0 },
       contracts: [],
+      supplyPlayCooldownUntilTurn: null,
     }
   }
 

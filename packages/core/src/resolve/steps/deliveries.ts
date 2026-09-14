@@ -213,63 +213,70 @@ export const deliveries: ResolveStep = (ctx) => {
   // av spelarens ovan, aldrig sammanflätad med den: RivalContract, inte
   // Contract/Shipment.
   for (const rival of Object.values(draft.rivals)) {
-    for (const contract of rival.contracts) {
-      if (contract.status !== 'active' && contract.status !== 'late') continue
+    // Avsnitt 2.5: en saboterad rival "levererar inte" — bara SJÄLVA leveransen
+    // hoppas över, inte försenings-övergången nedan (sabotage ska inte skydda
+    // mot att bli 'late' på ett kontrakt de ändå missar).
+    const sabotaged = rival.sabotagedUntilTurn !== null && draft.meta.turn < rival.sabotagedUntilTurn
 
-      const remaining = contract.quantity - contract.unitsDelivered
-      if (remaining <= 0) continue
+    if (!sabotaged) {
+      for (const contract of rival.contracts) {
+        if (contract.status !== 'active' && contract.status !== 'late') continue
 
-      const delivered = Math.min(BALANCE.rivalDeliveryUnitsPerTurn, remaining)
-      contract.unitsDelivered += delivered
-      const product = getProduct(contract.productId)
-      const buyer = draft.factions[contract.buyerId]
-      const buyerName = buyer ? buyer.name.toUpperCase() : contract.buyerId.toUpperCase()
+        const remaining = contract.quantity - contract.unitsDelivered
+        if (remaining <= 0) continue
 
-      const deliveryId = emit({
-        severity: 'ticker',
-        scope: 'market',
-        headline: `${rival.name.toUpperCase()} DELIVERS ${delivered}× ${product.name.toUpperCase()} TO ${buyerName}`,
-        causeId: null,
-        delta: { unitsDelivered: delivered },
-        actorIsPlayer: false,
-        subjectId: contract.buyerId,
-      })
+        const delivered = Math.min(BALANCE.rivalDeliveryUnitsPerTurn, remaining)
+        contract.unitsDelivered += delivered
+        const product = getProduct(contract.productId)
+        const buyer = draft.factions[contract.buyerId]
+        const buyerName = buyer ? buyer.name.toUpperCase() : contract.buyerId.toUpperCase()
 
-      // Attribution + teaterns leveransräknare i SAMMA steg, SAMMA tur — innan
-      // heat.ts (senare i samma pipeline-passage) läser och nollställer den. Det
-      // här är avsnitt 2.3:s hela poäng (punkt 3): fronten och heat rör sig utan
-      // att spelaren gjort något.
-      const frontMatch = findFrontForBuyer(draft.fronts, contract.buyerId)
-      if (frontMatch) {
-        const { front, side } = frontMatch
-        front.equipment[side][product.category] += delivered
-        front.attribution[rival.id] = (front.attribution[rival.id] ?? 0) + delivered
-
-        const theatre = draft.theatres[front.theatreId]
-        if (theatre) theatre.deliveriesIntoActiveWarThisTurn += delivered
-
-        emit({
+        const deliveryId = emit({
           severity: 'ticker',
-          scope: 'front',
-          headline: `${delivered}× ${product.name.toUpperCase()} REACHES THE ${front.id.toUpperCase()} FRONT (${rival.name.toUpperCase()})`,
-          causeId: deliveryId,
-          delta: { [`equipment.${side}.${product.category}`]: delivered },
-          actorIsPlayer: false,
-          subjectId: front.id,
-        })
-      }
-
-      if (contract.unitsDelivered >= contract.quantity) {
-        contract.status = 'fulfilled'
-        emit({
-          severity: 'report',
           scope: 'market',
-          headline: `RIVAL CONTRACT ${contract.id} FULFILLED: ${product.name.toUpperCase()} TO ${buyerName} (${rival.name.toUpperCase()})`,
-          causeId: deliveryId,
-          delta: {},
+          headline: `${rival.name.toUpperCase()} DELIVERS ${delivered}× ${product.name.toUpperCase()} TO ${buyerName}`,
+          causeId: null,
+          delta: { unitsDelivered: delivered },
           actorIsPlayer: false,
           subjectId: contract.buyerId,
         })
+
+        // Attribution + teaterns leveransräknare i SAMMA steg, SAMMA tur — innan
+        // heat.ts (senare i samma pipeline-passage) läser och nollställer den. Det
+        // här är avsnitt 2.3:s hela poäng (punkt 3): fronten och heat rör sig utan
+        // att spelaren gjort något.
+        const frontMatch = findFrontForBuyer(draft.fronts, contract.buyerId)
+        if (frontMatch) {
+          const { front, side } = frontMatch
+          front.equipment[side][product.category] += delivered
+          front.attribution[rival.id] = (front.attribution[rival.id] ?? 0) + delivered
+
+          const theatre = draft.theatres[front.theatreId]
+          if (theatre) theatre.deliveriesIntoActiveWarThisTurn += delivered
+
+          emit({
+            severity: 'ticker',
+            scope: 'front',
+            headline: `${delivered}× ${product.name.toUpperCase()} REACHES THE ${front.id.toUpperCase()} FRONT (${rival.name.toUpperCase()})`,
+            causeId: deliveryId,
+            delta: { [`equipment.${side}.${product.category}`]: delivered },
+            actorIsPlayer: false,
+            subjectId: front.id,
+          })
+        }
+
+        if (contract.unitsDelivered >= contract.quantity) {
+          contract.status = 'fulfilled'
+          emit({
+            severity: 'report',
+            scope: 'market',
+            headline: `RIVAL CONTRACT ${contract.id} FULFILLED: ${product.name.toUpperCase()} TO ${buyerName} (${rival.name.toUpperCase()})`,
+            causeId: deliveryId,
+            delta: {},
+            actorIsPlayer: false,
+            subjectId: contract.buyerId,
+          })
+        }
       }
     }
 

@@ -86,6 +86,7 @@ describe('bidding (isolerat steg, spec avsnitt 4.2, 4.4)', () => {
         relations: {},
         reputation: { quality: 50, reliability: 50 },
         contracts: [],
+        supplyPlayCooldownUntilTurn: null,
       },
     }
     order.competingRivals = ['brandt']
@@ -235,6 +236,7 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
           relations: {},
           reputation: { quality: 50, reliability: 50 },
           contracts: [],
+          supplyPlayCooldownUntilTurn: null,
         },
       }
       order.competingRivals = ['brandt']

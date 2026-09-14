@@ -330,6 +330,13 @@ export interface RivalHouse {
   relations: Record<FactionId, Pct> // samma roll som Faction.relationToPlayer
   reputation: { quality: Pct; reliability: Pct }
   contracts: RivalContract[] // se RivalContract, byggs av P25
+
+  // NY (P26, ETAPP2_TEKNISK_SPEC.md avsnitt 2.4) — "en gång per
+  // rivalSupplyPlayCooldownTurns" kräver ett spårat "senast använd"-tillstånd.
+  // Inte i avsnitt 2.1:s egen datamodell (specen ger bara balansfälten, inte en
+  // implementationsmekanism för kadensen) — se ANDRINGSLOGG.md, samma sorts
+  // nödvändiga, PROVISORISKA tillägg som house.foundingCapital/scandalUntilTurn.
+  supplyPlayCooldownUntilTurn: number | null
 }
 
 // Se ETAPP2_TEKNISK_SPEC.md avsnitt 2.1/2.3. Symmetrisk motsvarighet till Contract,

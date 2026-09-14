@@ -108,6 +108,9 @@ export const bidding: ResolveStep = (ctx) => {
     for (const rivalId of order.competingRivals) {
       const rival = draft.rivals[rivalId]
       if (!rival) continue
+      // Avsnitt 2.5: en saboterad rival "lägger inga bud" — hoppas över helt,
+      // ingen ticker (de deltar inte, snarare än att bli diskvalificerade).
+      if (rival.sabotagedUntilTurn !== null && draft.meta.turn < rival.sabotagedUntilTurn) continue
 
       const rivalBid = computeRivalBid(rng, rival, product, order.referencePrice)
       if (rivalBid.price > order.trueBudget) {

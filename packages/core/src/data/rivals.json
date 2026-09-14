@@ -11,7 +11,8 @@
     "homeState": "west",
     "relations": { "rvn": 35, "nlf": 15, "laos": 30 },
     "reputation": { "quality": 55, "reliability": 60 },
-    "contracts": []
+    "contracts": [],
+    "supplyPlayCooldownUntilTurn": null
   },
   "costigan": {
     "id": "costigan",
@@ -25,7 +26,8 @@
     "homeState": "neutral",
     "relations": { "rvn": 40, "nlf": 20, "laos": 35 },
     "reputation": { "quality": 60, "reliability": 65 },
-    "contracts": []
+    "contracts": [],
+    "supplyPlayCooldownUntilTurn": null
   },
   "meridian": {
     "id": "meridian",
@@ -39,6 +41,7 @@
     "homeState": "east",
     "relations": { "rvn": 15, "nlf": 35, "laos": 20 },
     "reputation": { "quality": 50, "reliability": 55 },
-    "contracts": []
+    "contracts": [],
+    "supplyPlayCooldownUntilTurn": null
   }
 }

@@ -272,6 +272,12 @@ describe('resolveTurn — P6: front och attribution', () => {
   it('(P6 klart-när) en front dit spelaren levererar artilleri flyttar position i rätt riktning, och attribution summerar till levererade enheter', () => {
     // rvn = sideA (position ska röra sig mot -100 när rvn får materiel).
     let state: GameState = createInitialState('indochina-slice', 'p6-direction-seed')
+    // Inga rivaler — samma isolering som stagnationstestet ovan. Sedan P26
+    // (avsnitt 2.4) drar rivals.ts nya rng-anrop varje tur (opportunist-/
+    // patriot-beteenden, oberoende av spelarens passivitet), vilket flyttar
+    // rng-markören och därmed vilken order/kvantitet som genereras för det
+    // här fröet. Testet handlar om produktions-/leveranskedjan, inte rivaler.
+    state.rivals = {}
     const positionBefore = state.fronts['front-1']!.position
 
     let order = undefined as GameState['market']['openOrders'][number] | undefined
@@ -446,6 +452,10 @@ describe('resolveTurn — P8: rivaler och styrelse', () => {
 
   it('rivalhusen växer i kapital och marknadsandel när partiet är helt passivt (EMPTY_SUBMISSION), tur efter tur', () => {
     let state: GameState = createInitialState('indochina-slice', 'p8-rival-growth-seed')
+    // P26:s NYA, oberoende opportunist-beteende (avsnitt 2.4) drar också capital
+    // och hade annars kunnat maskera den passiva tillväxten det här testet
+    // faktiskt mäter — se rivals.test.ts för samma isolering.
+    state.rivals['brandt']!.sabotagedUntilTurn = 999
     const rival = state.rivals['brandt']!
     const capitalBefore = rival.capital
 

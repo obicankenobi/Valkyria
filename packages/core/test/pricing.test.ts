@@ -16,6 +16,7 @@ function makeRival(overrides: Partial<RivalHouse> = {}): RivalHouse {
     relations: {},
     reputation: { quality: 50, reliability: 50 },
     contracts: [],
+    supplyPlayCooldownUntilTurn: null,
     ...overrides,
   }
 }
