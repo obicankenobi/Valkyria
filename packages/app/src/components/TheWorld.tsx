@@ -24,23 +24,23 @@ export function TheWorld({ state }: { state: GameState }) {
           right={<Tag tone={doomsdayTone(state.doomsday)}>{state.doomsday.toFixed(0)} / 100</Tag>}
         >
           <Meter
-            label="Nuvarande nivå"
+            label="Current level"
             value={state.doomsday}
             display={state.doomsday.toFixed(0)}
             tone={doomsdayTone(state.doomsday)}
             marks={[
-              { at: DISPLAY_THRESHOLDS.doomsdayCrisisWatch, label: 'bevakning' },
-              { at: DISPLAY_THRESHOLDS.doomsdayCrisisEvent, label: 'kris' },
-              { at: DISPLAY_THRESHOLDS.doomsdayNuclearExchange, label: 'utväxling' },
+              { at: DISPLAY_THRESHOLDS.doomsdayCrisisWatch, label: 'watch' },
+              { at: DISPLAY_THRESHOLDS.doomsdayCrisisEvent, label: 'crisis' },
+              { at: DISPLAY_THRESHOLDS.doomsdayNuclearExchange, label: 'exchange' },
             ]}
           />
           <p className="banner-sub" style={{ marginTop: 18 }}>
-            Högsta nivå hittills: <span className="mono">{state.doomsdayPeak.toFixed(0)}</span>. Toppvärdet avgör
-            epilogens omdöme om återhållsamhet, inte slutvärdet.
+            Peak level so far: <span className="mono">{state.doomsdayPeak.toFixed(0)}</span>. The peak value decides
+            the epilogue's verdict on restraint, not the final value.
           </p>
         </Panel>
 
-        <Panel title="Teatrar">
+        <Panel title="Theatres">
           <div style={{ display: 'grid', gap: 14 }}>
             {Object.values(state.theatres).map((theatre) => (
               <Meter
@@ -49,14 +49,14 @@ export function TheWorld({ state }: { state: GameState }) {
                 value={theatre.heat}
                 display={theatre.heat.toFixed(0)}
                 tone={theatre.heat >= DISPLAY_THRESHOLDS.heatEscalation ? 'red' : 'amber'}
-                marks={[{ at: DISPLAY_THRESHOLDS.heatEscalation, label: 'eskalering' }]}
+                marks={[{ at: DISPLAY_THRESHOLDS.heatEscalation, label: 'escalation' }]}
               />
             ))}
           </div>
         </Panel>
       </div>
 
-      <Panel title="Fronter" flush>
+      <Panel title="Fronts" flush>
         {Object.values(state.fronts).map((front) => {
           const sideA = state.factions[front.sideA]
           const sideB = state.factions[front.sideB]
@@ -68,7 +68,7 @@ export function TheWorld({ state }: { state: GameState }) {
               <div className="front-sides">
                 <span className="side-a">{sideA ? sideA.name : front.sideA}</span>
                 <span className="meter-label">
-                  {front.id} · anfaller: sida {front.attacker.toUpperCase()} · {totalCasualties} förluster
+                  {front.id} · attacking: side {front.attacker.toUpperCase()} · {totalCasualties} casualties
                 </span>
                 <span className="side-b">{sideB ? sideB.name : front.sideB}</span>
               </div>
@@ -79,17 +79,17 @@ export function TheWorld({ state }: { state: GameState }) {
               </div>
 
               <div className="front-stats">
-                <Meter label="Moral A" value={front.morale.a} display={front.morale.a.toFixed(0)} tone="blue" />
-                <Meter label="Moral B" value={front.morale.b} display={front.morale.b.toFixed(0)} tone="red" />
+                <Meter label="Morale A" value={front.morale.a} display={front.morale.a.toFixed(0)} tone="blue" />
+                <Meter label="Morale B" value={front.morale.b} display={front.morale.b.toFixed(0)} tone="red" />
                 <Meter
-                  label="Styrka A"
+                  label="Strength A"
                   value={front.strength.a}
                   max={Math.max(front.strength.a, front.strength.b, 1)}
                   display={front.strength.a.toFixed(0)}
                   tone="blue"
                 />
                 <Meter
-                  label="Styrka B"
+                  label="Strength B"
                   value={front.strength.b}
                   max={Math.max(front.strength.a, front.strength.b, 1)}
                   display={front.strength.b.toFixed(0)}
@@ -101,42 +101,42 @@ export function TheWorld({ state }: { state: GameState }) {
         })}
       </Panel>
 
-      <Panel title="Faktioner" flush>
+      <Panel title="Factions" flush>
         {Object.values(state.factions).map((faction) => {
           const alignPct = ((faction.alignment + 100) / 200) * 100
           return (
             <div className="faction-card" key={faction.id}>
               <div className="faction-head">
                 <span className="faction-name">{faction.name}</span>
-                {faction.bankrupt && <Tag tone="red">Bankrutt</Tag>}
+                {faction.bankrupt && <Tag tone="red">Bankrupt</Tag>}
                 {faction.embargoed && <Tag tone="amber">Embargo</Tag>}
-                {!faction.bankrupt && !faction.embargoed && <Tag tone="green">Handlande</Tag>}
+                {!faction.bankrupt && !faction.embargoed && <Tag tone="green">Trading</Tag>}
               </div>
 
               <div className="faction-meters">
                 <Meter
-                  label="Relation till dig"
+                  label="Relation to you"
                   value={faction.relationToPlayer}
                   display={faction.relationToPlayer.toFixed(0)}
                   tone={faction.relationToPlayer >= 50 ? 'green' : 'amber'}
                 />
                 <Meter
-                  label="Folkligt stöd"
+                  label="Public support"
                   value={faction.publicSupport}
                   display={faction.publicSupport.toFixed(0)}
                   tone={faction.publicSupport < 25 ? 'red' : 'blue'}
                 />
                 <div>
                   <div className="meter-head">
-                    <span className="meter-label">Blocktillhörighet</span>
+                    <span className="meter-label">Bloc alignment</span>
                     <span className="meter-value">{faction.alignment.toFixed(0)}</span>
                   </div>
                   <div className="align-track">
                     <div className="align-marker" style={{ left: `${alignPct}%` }} />
                   </div>
                   <div className="align-legend">
-                    <span>Öst</span>
-                    <span>Väst</span>
+                    <span>East</span>
+                    <span>West</span>
                   </div>
                 </div>
               </div>
@@ -145,15 +145,15 @@ export function TheWorld({ state }: { state: GameState }) {
         })}
       </Panel>
 
-      <Panel title="Stationer">
+      <Panel title="Stations">
         <table>
           <thead>
             <tr>
-              <th>Stad</th>
-              <th>Land</th>
-              <th>Djup</th>
-              <th>Täckning</th>
-              <th style={{ width: 150 }}>Exponering</th>
+              <th>City</th>
+              <th>Nation</th>
+              <th>Depth</th>
+              <th>Coverage</th>
+              <th style={{ width: 150 }}>Exposure</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -171,9 +171,9 @@ export function TheWorld({ state }: { state: GameState }) {
                   </div>
                 </td>
                 <td>
-                  {station.status === 'active' && <Tag tone="green">Aktiv</Tag>}
-                  {station.status === 'dormant' && <Tag>Vilande</Tag>}
-                  {station.status === 'burned' && <Tag tone="red">Bränd</Tag>}
+                  {station.status === 'active' && <Tag tone="green">Active</Tag>}
+                  {station.status === 'dormant' && <Tag>Dormant</Tag>}
+                  {station.status === 'burned' && <Tag tone="red">Burned</Tag>}
                 </td>
               </tr>
             ))}

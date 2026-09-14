@@ -8,11 +8,11 @@ export type Tone = 'neutral' | 'amber' | 'red' | 'green' | 'blue'
 export function formatMoney(amount: number): string {
   const rounded = Math.round(amount)
   const sign = rounded < 0 ? '−' : ''
-  return `${sign}£${Math.abs(rounded).toLocaleString('sv-SE')}`
+  return `${sign}£${Math.abs(rounded).toLocaleString('en-GB')}`
 }
 
 export function formatSignedMoney(amount: number): string {
-  return `${amount >= 0 ? '+' : '−'}£${Math.abs(Math.round(amount)).toLocaleString('sv-SE')}`
+  return `${amount >= 0 ? '+' : '−'}£${Math.abs(Math.round(amount)).toLocaleString('en-GB')}`
 }
 
 export function Panel({

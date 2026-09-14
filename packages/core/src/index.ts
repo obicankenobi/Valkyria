@@ -13,4 +13,7 @@ export { bidEstimate, DISPLAY_THRESHOLDS, BOT_BALANCE } from './queries.js'
 // getProduct: paketets ENDA väg till produktkatalogen (avsnitt 6) för extern kod —
 // packages/harness (P9) behöver den för att avgöra om en order gäller en
 // restricted-produkt (Order har bara productId, inte en kopia av restricted-flaggan).
-export { getProduct } from './pricing.js'
+// computeUnitCostNow: appen (P21, spec 3.4) behöver den för att räkna marginal per
+// aktivt kontrakt mot DAGENS kostnad (supplyCostIndex rör sig efter kontraktet
+// tecknades), inte bara mot Contract.unitCostAtSigning.
+export { getProduct, computeUnitCostNow } from './pricing.js'

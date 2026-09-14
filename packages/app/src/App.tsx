@@ -13,11 +13,11 @@ import { useGame } from './useGame.js'
 type View = 'wire' | 'floor' | 'house' | 'world'
 
 const ENDING_LABEL: Record<string, string> = {
-  INSOLVENCY: 'Insolvent — huset likviderat',
-  BUYOUT: 'Utköpt — styrelsemålet missat',
-  EXPOSURE: 'Avslöjat — licensen indragen',
-  NUCLEAR_EXCHANGE: 'Kärnvapenutväxling',
-  SCENARIO_COMPLETE: 'Scenariot slutfört',
+  INSOLVENCY: 'Insolvent — the house is liquidated',
+  BUYOUT: 'Bought out — the board target was missed',
+  EXPOSURE: 'Exposed — licence revoked',
+  NUCLEAR_EXCHANGE: 'Nuclear exchange',
+  SCENARIO_COMPLETE: 'Scenario complete',
 }
 
 function doomsdayTone(doomsday: number): string {
@@ -34,22 +34,26 @@ function Hud({ state }: { state: GameState }) {
   return (
     <div className="hud" data-testid="hud">
       <div className="hud-cell">
-        <span className="hud-label">Kassa</span>
+        <span className="hud-label">Treasury</span>
         <span className={house.treasury < 0 ? 'hud-value is-danger' : 'hud-value'} data-testid="hud-treasury">
           {formatMoney(house.treasury)}
         </span>
       </div>
       <div className="hud-cell">
-        <span className="hud-label">Skuld</span>
+        <span className="hud-label">Debt</span>
         <span className="hud-value">{formatMoney(house.debt)}</span>
       </div>
       <div className="hud-cell">
-        <span className="hud-label">Kreditutrymme</span>
+        <span className="hud-label">Credit limit</span>
         <span className="hud-value">{formatMoney(house.creditLimit)}</span>
       </div>
       <div className="hud-cell">
-        <span className="hud-label">Styrelsemål</span>
+        <span className="hud-label">Board target</span>
         <span className="hud-value">{progressPct.toFixed(0)}%</span>
+      </div>
+      <div className="hud-cell">
+        <span className="hud-label">Action points</span>
+        <span className="hud-value">{house.actionPoints}</span>
       </div>
       <div className="hud-cell">
         <span className="hud-label">Doomsday</span>
@@ -60,13 +64,14 @@ function Hud({ state }: { state: GameState }) {
 }
 
 export function App() {
-  const { state, draft, lastRejected, hydrated, setBid, removeBid, endTurn, restart } = useGame()
+  const { state, draft, lastRejected, hydrated, setBid, removeBid, addAction, removeAction, setCrisisChoice, endTurn, restart } =
+    useGame()
   const [view, setView] = useState<View>('wire')
 
   if (!hydrated) {
     return (
       <div className="app">
-        <p className="loading">Läser sparat parti…</p>
+        <p className="loading">Loading saved game…</p>
       </div>
     )
   }
@@ -86,7 +91,7 @@ export function App() {
           <span className="brand-house">{state.house.name}</span>
         </h1>
         <span className="datestamp" data-testid="datestamp">
-          {state.meta.year} · Q{state.meta.quarter} · Tur {state.meta.turn}
+          {state.meta.year} · Q{state.meta.quarter} · Turn {state.meta.turn}
         </span>
       </header>
 
@@ -108,8 +113,8 @@ export function App() {
         </button>
         <span className="tabs-spacer" />
         <button type="button" className="btn btn-primary" onClick={handleEndTurn} disabled={ended}>
-          Avsluta tur
-          {draft.bids.length > 0 ? ` · ${draft.bids.length} bud` : ''}
+          End Turn
+          {draft.bids.length > 0 ? ` · ${draft.bids.length} bids` : ''}
         </button>
       </nav>
 
@@ -117,11 +122,11 @@ export function App() {
         <div className="banner is-ended">
           <div>
             <div className="banner-title">{ENDING_LABEL[state.status.ending] ?? state.status.ending}</div>
-            <div className="banner-sub">Partiet avgjordes tur {state.status.turn}.</div>
+            <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
           </div>
           <span className="tabs-spacer" />
           <button type="button" className="btn" onClick={restart}>
-            Nytt parti
+            New Game
           </button>
         </div>
       )}
@@ -129,7 +134,7 @@ export function App() {
       {lastRejected.length > 0 && (
         <div className="banner">
           <div>
-            <div className="banner-title">Avvisat förra turen</div>
+            <div className="banner-title">Rejected last turn</div>
             <ul>
               {lastRejected.map((entry, i) => (
                 <li key={i}>{entry.reason}</li>
@@ -140,9 +145,13 @@ export function App() {
       )}
 
       <main>
-        {view === 'wire' && <TheWire wire={state.wire} />}
+        {view === 'wire' && (
+          <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} />
+        )}
         {view === 'floor' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
-        {view === 'house' && <TheHouse state={state} />}
+        {view === 'house' && (
+          <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />
+        )}
         {view === 'world' && <TheWorld state={state} />}
       </main>
     </div>

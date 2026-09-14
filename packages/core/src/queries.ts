@@ -25,6 +25,9 @@ interface ThresholdBalance {
   doomsdayCrisisEventThreshold: number
   doomsdayNuclearExchangeThreshold: number
   heatEscalationThreshold: number
+  supplyIndexMin: number
+  supplyIndexMax: number
+  crisisPushExchangePct: number
 }
 const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
 
@@ -33,6 +36,13 @@ export const DISPLAY_THRESHOLDS = {
   doomsdayCrisisEvent: THRESHOLD_BALANCE.doomsdayCrisisEventThreshold,
   doomsdayNuclearExchange: THRESHOLD_BALANCE.doomsdayNuclearExchangeThreshold,
   heatEscalation: THRESHOLD_BALANCE.heatEscalationThreshold,
+  // P21 (spec 3.4): THE HOUSE ritar supplyCostIndex som en mätare mot 100-linjen —
+  // samma "läs härifrån, upprepa aldrig en balanssiffra i appen"-motivering som
+  // doomsday-/heat-trösklarna ovan.
+  supplyIndexMin: THRESHOLD_BALANCE.supplyIndexMin,
+  supplyIndexMax: THRESHOLD_BALANCE.supplyIndexMax,
+  // P21 (spec 9.4): "PUSH:s 30 % ska stå utskrivet" i krismodalen.
+  crisisPushExchangePct: THRESHOLD_BALANCE.crisisPushExchangePct,
 } as const
 
 // Samma motivering som DISPLAY_THRESHOLDS ovan, bara riktad mot en annan extern

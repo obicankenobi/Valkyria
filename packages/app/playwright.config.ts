@@ -15,7 +15,11 @@ const SANDBOX_CHROMIUM = '/opt/pw-browsers/chromium'
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
+  // P21 klart-när (ETAPP1_5_TEKNISK_SPEC.md avsnitt 14) lade till en fullständig
+  // 20-tursgenomgång med bud, lån och executive actions varje tur, plus upp till
+  // tre bundna omspel om ingen kris hunnit flaggas (play-20-turns.spec.ts:s eget
+  // huvudkommentar) — ryms inte längre inom 30 s.
+  timeout: 180_000,
   webServer: {
     command: 'npm run dev -- --port 4174 --strictPort',
     url: 'http://localhost:4174',

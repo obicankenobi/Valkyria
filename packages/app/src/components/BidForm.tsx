@@ -49,23 +49,23 @@ export function BidForm({
   return (
     <div className="bid-panel">
       <div>
-        <p className="subhead">Underrättelse</p>
+        <p className="subhead">Intelligence</p>
         <dl className="kv">
-          <dt>Din styckkostnad (grade {grade})</dt>
-          <dd>{formatMoney(estimate.yourUnitCost)}</dd>
-          <dt>Rivalpris, uppskattat</dt>
+          <dt>Your unit cost (grade {grade})</dt>
+          <dd data-testid="your-unit-cost">{formatMoney(estimate.yourUnitCost)}</dd>
+          <dt>Estimated rival price</dt>
           <dd>
             {formatMoney(estimate.rivalPriceLow)} – {formatMoney(estimate.rivalPriceHigh)}
           </dd>
           {estimate.lowestRivalHouse && (
             <>
-              <dt>Lägst bud väntas från</dt>
+              <dt>Lowest bid expected from</dt>
               <dd>{state.rivals[estimate.lowestRivalHouse]?.name ?? estimate.lowestRivalHouse}</dd>
             </>
           )}
         </dl>
 
-        <p className="subhead">Vinstchans per pris</p>
+        <p className="subhead">Win chance per price</p>
         <div className="winband">
           {estimate.winBand.map((point) => (
             <div key={point.price} className="winband-row">
@@ -85,14 +85,14 @@ export function BidForm({
           onSubmit({ orderId: order.id, price, deliveryTurns, grade, bribe })
         }}
       >
-        <p className="subhead">Ditt anbud</p>
+        <p className="subhead">Your bid</p>
 
         <label className="field">
-          Pris
+          Price
           <input type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} required />
         </label>
         <label className="field">
-          Leveranstid
+          Delivery time
           <input
             type="number"
             min={1}
@@ -112,7 +112,7 @@ export function BidForm({
           </select>
         </label>
         <label className="field">
-          Muta
+          Bribe
           <input type="number" min={0} value={bribe} onChange={(e) => setBribe(Number(e.target.value))} />
         </label>
 
@@ -122,16 +122,16 @@ export function BidForm({
           // formuläret visa en lockande marginal på ett bud som enligt
           // winBand har noll vinstchans.
           <p className="hint is-warn">
-            Priset ligger över hela det uppskattade rivalintervallet. Vinstchansen bedöms som noll.
+            The price is above the entire estimated rival range. Win chance is assessed as zero.
           </p>
         )}
 
         <div className={marginClass(marginPct)}>
           <div>
-            <div className="margin-label">Bruttomarginal</div>
+            <div className="margin-label">Gross margin</div>
             {grossProfit !== null && (
               <div className="meter-label" style={{ marginTop: 2 }}>
-                {formatMoney(grossProfit)} efter {formatMoney(totalCost)} i styckkostnad ({order.quantity} enheter)
+                {formatMoney(grossProfit)} after {formatMoney(totalCost)} in unit cost ({order.quantity} units)
               </div>
             )}
           </div>
@@ -140,11 +140,11 @@ export function BidForm({
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary">
-            {existingBid ? 'Uppdatera bud' : 'Lägg bud'}
+            {existingBid ? 'Update Bid' : 'Place Bid'}
           </button>
           {existingBid && (
             <button type="button" className="btn" onClick={onRemove}>
-              Ta bort bud
+              Remove Bid
             </button>
           )}
         </div>

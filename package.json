@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=packages/core && npm run build --workspace=packages/harness && npm run build --workspace=packages/app",
-    "typecheck": "tsc -p packages/core/tsconfig.test.json && tsc -p packages/harness/tsconfig.test.json && tsc -p packages/app/tsconfig.json",
+    "typecheck": "tsc -p packages/core/tsconfig.test.json && tsc -p packages/harness/tsconfig.test.json && tsc -p packages/app/tsconfig.test.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",

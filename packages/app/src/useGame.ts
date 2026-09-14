@@ -22,6 +22,9 @@ export interface UseGameResult {
   hydrated: boolean
   setBid: (bid: Bid) => void
   removeBid: (orderId: string) => void
+  addAction: (action: PlayerAction) => void
+  removeAction: (index: number) => void
+  setCrisisChoice: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
   endTurn: () => void
   restart: () => void
 }
@@ -77,6 +80,29 @@ export function useGame(): UseGameResult {
     setDraft((prev) => ({ ...prev, bids: prev.bids.filter((b) => b.orderId !== orderId) }))
   }, [])
 
+  // INTERNAL/POLITICAL executive actions (spec avsnitt 8, P21:s handlings-UI) —
+  // bara köade här, den faktiska handlingstaks-/avvisningskontrollen sker i
+  // applyActions.ts vid endTurn (samma mönster som setBid: draften är bara ett
+  // förslag tills resolveTurn körs).
+  const addAction = useCallback((action: PlayerAction) => {
+    setDraft((prev) => ({ ...prev, actions: [...prev.actions, action] }))
+  }, [])
+
+  const removeAction = useCallback((index: number) => {
+    setDraft((prev) => ({ ...prev, actions: prev.actions.filter((_, i) => i !== index) }))
+  }, [])
+
+  // CRISIS (avsnitt 9.2/9.4) — kostar ingen actionPoint och ska bara finnas EN
+  // gång i draften (resolvePendingCrisis, applyActions.ts, letar upp den FÖRSTA
+  // CRISIS-handlingen); ett omval ersätter alltså det tidigare valet i stället
+  // för att lägga till ett andra.
+  const setCrisisChoice = useCallback((choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => {
+    setDraft((prev) => ({
+      ...prev,
+      actions: [...prev.actions.filter((a) => a.type !== 'CRISIS'), { type: 'CRISIS', choice }],
+    }))
+  }, [])
+
   const endTurn = useCallback(() => {
     if (state.status.kind === 'ended') return
     const result = resolveTurn(state, draft)
@@ -91,5 +117,5 @@ export function useGame(): UseGameResult {
     setLastRejected([])
   }, [])
 
-  return { state, draft, lastRejected, hydrated, setBid, removeBid, endTurn, restart }
+  return { state, draft, lastRejected, hydrated, setBid, removeBid, addAction, removeAction, setCrisisChoice, endTurn, restart }
 }

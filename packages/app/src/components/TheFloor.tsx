@@ -31,17 +31,22 @@ function OrderRow({
       <div className="order-head">
         <span className="order-buyer">{buyer ? buyer.name : order.buyerId}</span>
         <span className="order-product">{product.name}</span>
-        <span className="order-qty">× {order.quantity}</span>
+        <span className="order-qty" data-testid="order-quantity">
+          × {order.quantity}
+        </span>
         {product.restricted && <Tag tone="red">Restricted</Tag>}
 
         <span className="order-meta">
-          <span className="meter-label">Uppgiven budget {formatMoney(order.statedBudget)}</span>
+          <span className="meter-label">Stated budget {formatMoney(order.statedBudget)}</span>
           <Tag tone={turnsLeft <= 0 ? 'red' : 'neutral'}>
-            {turnsLeft <= 0 ? 'Avgörs denna tur' : `${turnsLeft} tur kvar`}
+            {turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`}
           </Tag>
-          {existingBid && <Tag tone="green">Bud {formatMoney(existingBid.price)}</Tag>}
+          {existingBid && <Tag tone="green">Bid {formatMoney(existingBid.price)}</Tag>}
+          {/* "quote"/"close", not "bid" — "bid" is a substring of "Place Bid"/"Update Bid"/
+              "Remove Bid" below, which broke e2e locators scoped to an exact 'bid' name
+              (Playwright's role-name match is case-insensitive substring by default). */}
           <button type="button" className="btn" onClick={() => setOpen((v) => !v)}>
-            {open ? 'stäng' : 'bjud'}
+            {open ? 'close' : 'quote'}
           </button>
         </span>
       </div>
@@ -72,13 +77,13 @@ export function TheFloor({
       <h2 className="view-title">The Floor</h2>
 
       <Panel
-        title="Öppna utlysningar"
+        title="Open Orders"
         flush
-        right={<span className="meter-label">{draft.bids.length} bud lagda denna tur</span>}
+        right={<span className="meter-label">{draft.bids.length} bids placed this turn</span>}
       >
         {state.market.openOrders.length === 0 ? (
           <p className="empty" style={{ padding: '14px 16px' }}>
-            Inga öppna utlysningar. Köparna återkommer.
+            No open orders. Buyers will return.
           </p>
         ) : (
           state.market.openOrders.map((order) => (
@@ -94,17 +99,17 @@ export function TheFloor({
         )}
       </Panel>
 
-      <Panel title="Aktiva kontrakt" right={<span className="meter-label">{inTransit} enheter i transit</span>}>
+      <Panel title="Active Contracts" right={<span className="meter-label">{inTransit} units in transit</span>}>
         {activeContracts.length === 0 ? (
-          <p className="empty">Inga aktiva kontrakt.</p>
+          <p className="empty">No active contracts.</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Kontrakt</th>
-                <th>Köpare</th>
-                <th>Produkt</th>
-                <th>Levererat</th>
+                <th>Contract</th>
+                <th>Buyer</th>
+                <th>Product</th>
+                <th>Delivered</th>
                 <th>Deadline</th>
                 <th>Status</th>
               </tr>
@@ -121,9 +126,7 @@ export function TheFloor({
                       {contract.unitsDelivered}/{contract.quantity}
                     </td>
                     <td>T{contract.dueTurn}</td>
-                    <td>
-                      {contract.status === 'late' ? <Tag tone="red">Försenat</Tag> : <Tag tone="green">Aktivt</Tag>}
-                    </td>
+                    <td>{contract.status === 'late' ? <Tag tone="red">Late</Tag> : <Tag tone="green">Active</Tag>}</td>
                   </tr>
                 )
               })}

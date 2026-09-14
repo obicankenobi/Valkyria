@@ -17,9 +17,9 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   let hasOrder = false
   for (let i = 0; i < 10; i++) {
     await page.getByRole('button', { name: /THE FLOOR/ }).click()
-    hasOrder = (await page.getByRole('button', { name: 'bjud' }).count()) > 0
+    hasOrder = (await page.getByRole('button', { name: 'quote' }).count()) > 0
     if (hasOrder) break
-    await page.getByRole('button', { name: /Avsluta tur/ }).click()
+    await page.getByRole('button', { name: /End Turn/ }).click()
   }
   expect(hasOrder).toBe(true)
 
@@ -27,11 +27,11 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
 
   // Mitt i en tur: lägg ett bud (skickar det till draften), men avsluta ALDRIG
   // turen — resolveTurn har alltså inte körts, precis som "mitt i en tur" kräver.
-  await page.getByRole('button', { name: 'bjud' }).first().click()
-  await page.getByLabel('Pris').first().fill('1234567')
-  await page.getByLabel('Muta').first().fill('999')
+  await page.getByRole('button', { name: 'quote' }).first().click()
+  await page.getByLabel('Price').first().fill('1234567')
+  await page.getByLabel('Bribe').first().fill('999')
   await page
-    .getByRole('button', { name: /Lägg bud/ })
+    .getByRole('button', { name: /Place Bid/ })
     .first()
     .click()
 
@@ -46,11 +46,11 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   const headerAfter = await page.getByTestId('datestamp').textContent()
   expect(headerAfter).toBe(headerBefore)
 
-  // Det ospardade budutkastet finns kvar: samma order visar "Uppdatera bud"
-  // (inte "Lägg bud"), med samma pris och muta ifyllda.
+  // Det ospardade budutkastet finns kvar: samma order visar "Update Bid"
+  // (inte "Place Bid"), med samma pris och muta ifyllda.
   await page.getByRole('button', { name: /THE FLOOR/ }).click()
-  await page.getByRole('button', { name: 'bjud' }).first().click()
-  await expect(page.getByLabel('Pris').first()).toHaveValue('1234567')
-  await expect(page.getByLabel('Muta').first()).toHaveValue('999')
-  await expect(page.getByRole('button', { name: /Uppdatera bud/ })).toBeVisible()
+  await page.getByRole('button', { name: 'quote' }).first().click()
+  await expect(page.getByLabel('Price').first()).toHaveValue('1234567')
+  await expect(page.getByLabel('Bribe').first()).toHaveValue('999')
+  await expect(page.getByRole('button', { name: /Update Bid/ })).toBeVisible()
 })
