@@ -927,6 +927,10 @@ bruttomarginal, andel turer med `heat > 40`.
 >   är därmed den EKONOMISKT SÄKRASTE av de tre arketyperna (den enda som aldrig tar
 >   `restricted`-risk eller politisk risk), inte den mest sårbara — ett rimligt, i efterhand
 >   uppenbart utfall av hur arketyperna faktiskt är specificerade, inte ett balansfel.
+>   *Efterkontroll (2026-09-14, se ANDRINGSLOGG.md):* påståendet är nu mätt, inte bara resonerat.
+>   Över 1 096 ordrar i verkligt spel ligger den verkliga marginalen på botens val på 25,6 % /
+>   36,8 % / 59,5 % (p10/median/p90) — alltid över spärren. `referencePrice` skalar med kvantiteten
+>   precis som kostnaden gör, så marginalen är i praktiken kvantitetsoberoende.
 > - **Grade-spridning: bevisat 0 % (målet kräver > 80 %).** Ingen av de tre botbeskrivningarna
 >   (spec 7.3) nämner ett grade-val — alla tre bygger därför alltid grade `'A'` (P9). Det gör
 >   målet ouppnåeligt utan att ändra botarnas kod, utanför P10:s mandat ("ingen kod").

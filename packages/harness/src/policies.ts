@@ -25,9 +25,15 @@ export const passive: Policy = (state) => {
     if (product.restricted) continue
 
     const estimate = bidEstimate(state, order, GRADE)
+    // point.price är HELA kontraktets pris, yourUnitCost kostnaden för EN enhet
+    // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste skalas med
+    // orderns kvantitet. Utan multiplikationen jämförde filtret ett
+    // sexsiffrigt kontraktspris mot en tresiffrig styckkostnad och släppte
+    // igenom bud som garanterat gick med förlust. Se ANDRINGSLOGG.md.
+    const totalCost = estimate.yourUnitCost * order.quantity
     let best: { price: number; confidence: number } | null = null
     for (const point of estimate.winBand) {
-      const margin = point.price > 0 ? (point.price - estimate.yourUnitCost) / point.price : 0
+      const margin = point.price > 0 ? (point.price - totalCost) / point.price : 0
       if (margin <= 0.2) continue
       if (!best || point.confidence > best.confidence) best = point
     }
