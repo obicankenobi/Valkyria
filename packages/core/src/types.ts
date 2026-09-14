@@ -102,6 +102,13 @@ export interface House {
   // effekt. economy.ts (P3, patchad) multiplicerar creditLimit med det här talet.
   // Default 1 (ingen effekt) tills en kontroll faktiskt underkänns.
   creditPenaltyMultiplier: number
+  // Inte i avsnitt 2 — se ANDRINGSLOGG.md (P16). production.ts (avsnitt 4.1) behöver
+  // scenariots unitsPerLineTurnDefault för att räkna lineEfficiency = en linjes
+  // unitsPerTurnAtFull / detta tal — en linjekvalitetsfaktor som är 1,0 för alla
+  // linjer i dagens scenario men ger BUILD_LINE (avsnitt 8) något att variera.
+  // Samma mönster som foundingCapital ovan: ett scenario-frö som bara fanns i
+  // state.ts:s inläsning tills en senare prompt behövde läsa det efter tur 0.
+  unitsPerLineTurnDefault: number
 }
 
 export interface BoardTarget {
@@ -166,6 +173,13 @@ export interface Product {
   techRequired: number
   restricted: boolean // korsar blocklinjen / rör kärnvapentröskeln
   doomsdayOnDelivery: [number, number] | null // min/max, endast om restricted
+  // ETAPP1_5_TEKNISK_SPEC.md avsnitt 4.2: per-produkt ordervolym, eftersom
+  // balance.json:s globala orderQuantityMin/Max blev orimliga när produktionstakten
+  // (unitsPerLineTurn) gick från en platt konstant till en per-produkt siffra
+  // (avsnitt 4.1) — 20 gevär är ingen order, 185 kärnvapengranater är ett krig.
+  // Frånvarande = fall tillbaka på balance.json:s globala tal (orders.ts).
+  orderQuantityMin?: number
+  orderQuantityMax?: number
 }
 
 // baseCost och unitCost är två skilda tal och ska hållas isär överallt. baseCost är

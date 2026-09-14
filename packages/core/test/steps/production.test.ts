@@ -185,4 +185,36 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     // Marginalen i KRONOR PER ENHET är lägre för C än A.
     expect(marginByGrade.C.absolute).toBeLessThan(marginByGrade.A.absolute)
   })
+
+  it('(P16 klart-när) en linje producerar exakt product.unitsPerLineTurn enheter per tur, för tre olika produkter', () => {
+    // Tre produkter med tydligt olika unitsPerLineTurn (2, 3, 4000) — bevisar att
+    // takten faktiskt kommer från PRODUKTEN (avsnitt 4.1), inte längre en platt
+    // line.unitsPerTurnAtFull som var lika för alla. capacityPct 100 och gott om
+    // kvar att producera/kassa, så inget annat än unitsPerLineTurn kan begränsa.
+    for (const productId of ['mk9_longhand_shell', 'ch3_transport_helicopter', 'm1_rifle'] as const) {
+      const state = createInitialState('indochina-slice', 'units-per-line-turn-seed')
+      const product = getProduct(productId)
+      const contract = activeContract({
+        id: `contract-${productId}`,
+        productId,
+        quantity: product.unitsPerLineTurn * 10, // gott om kvar, oavsett produkt
+        grade: 'A',
+      })
+      state.market.contracts = [contract]
+      const line = state.house.lines[0]!
+      line.assignedContractId = contract.id
+      line.productId = contract.productId
+      line.grade = contract.grade
+      line.status = 'running'
+      line.capacityPct = 100
+      // lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault ska
+      // vara 1,0 för scenariots default-linjer — premissen testet vilar på.
+      expect(line.unitsPerTurnAtFull).toBe(state.house.unitsPerLineTurnDefault)
+
+      production(makeCtx(state, 'prod-seed').ctx)
+
+      const shipment = state.market.shipments.find((s) => s.contractId === contract.id)
+      expect(shipment?.units).toBe(product.unitsPerLineTurn)
+    }
+  })
 })

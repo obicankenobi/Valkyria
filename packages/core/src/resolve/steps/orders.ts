@@ -131,7 +131,11 @@ export const orders: ResolveStep = (ctx) => {
     if (eligible.length === 0) continue
 
     const product = rng.pick(eligible)
-    const quantity = rng.int(BALANCE.orderQuantityMin, BALANCE.orderQuantityMax)
+    // Produktens egna orderQuantityMin/Max (avsnitt 4.2) om satta, annars
+    // balance.json:s globala tal som fallback — se types.ts:s Product-kommentar.
+    const quantityMin = product.orderQuantityMin ?? BALANCE.orderQuantityMin
+    const quantityMax = product.orderQuantityMax ?? BALANCE.orderQuantityMax
+    const quantity = rng.int(quantityMin, quantityMax)
     const heat = computeHeatForBuyer(draft, factionId)
 
     const order = buildOrder({

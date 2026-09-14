@@ -4,83 +4,97 @@
     "name": "M-1 Standard Infantry Rifle",
     "category": "infantry",
     "baseCost": 380,
-    "unitCost": 210,
+    "unitCost": 290,
     "unitsPerLineTurn": 4000,
     "minDelivery": 1,
     "techRequired": 1,
     "restricted": false,
-    "doomsdayOnDelivery": null
+    "doomsdayOnDelivery": null,
+    "orderQuantityMin": 500,
+    "orderQuantityMax": 6000
   },
   {
     "id": "105mm_field_gun",
     "name": "105mm Field Gun, Towed",
     "category": "artillery",
     "baseCost": 20000,
-    "unitCost": 11500,
+    "unitCost": 10000,
     "unitsPerLineTurn": 40,
     "minDelivery": 2,
     "techRequired": 2,
     "restricted": false,
-    "doomsdayOnDelivery": null
+    "doomsdayOnDelivery": null,
+    "orderQuantityMin": 20,
+    "orderQuantityMax": 150
   },
   {
     "id": "m3_apc",
     "name": "M-3 Armoured Personnel Carrier",
     "category": "armour",
     "baseCost": 65000,
-    "unitCost": 38000,
+    "unitCost": 35000,
     "unitsPerLineTurn": 15,
     "minDelivery": 2,
     "techRequired": 3,
     "restricted": false,
-    "doomsdayOnDelivery": null
+    "doomsdayOnDelivery": null,
+    "orderQuantityMin": 10,
+    "orderQuantityMax": 100
   },
   {
     "id": "ch3_transport_helicopter",
     "name": "CH-3 Transport Helicopter",
     "category": "aviation",
     "baseCost": 420000,
-    "unitCost": 260000,
+    "unitCost": 218000,
     "unitsPerLineTurn": 3,
     "minDelivery": 3,
     "techRequired": 4,
     "restricted": false,
-    "doomsdayOnDelivery": null
+    "doomsdayOnDelivery": null,
+    "orderQuantityMin": 2,
+    "orderQuantityMax": 20
   },
   {
     "id": "coastal_patrol_boat",
     "name": "Coastal Patrol Boat, Mk II",
     "category": "naval",
     "baseCost": 180000,
-    "unitCost": 110000,
+    "unitCost": 99000,
     "unitsPerLineTurn": 4,
     "minDelivery": 3,
     "techRequired": 3,
     "restricted": false,
-    "doomsdayOnDelivery": null
+    "doomsdayOnDelivery": null,
+    "orderQuantityMin": 2,
+    "orderQuantityMax": 20
   },
   {
     "id": "tac_radio_suite",
     "name": "Tactical Radio & Radar Suite",
     "category": "electronics",
     "baseCost": 45000,
-    "unitCost": 24000,
+    "unitCost": 33000,
     "unitsPerLineTurn": 20,
     "minDelivery": 1,
     "techRequired": 3,
     "restricted": false,
-    "doomsdayOnDelivery": null
+    "doomsdayOnDelivery": null,
+    "orderQuantityMin": 20,
+    "orderQuantityMax": 150
   },
   {
     "id": "mk9_longhand_shell",
     "name": "Mk-9 \"Longhand\" Tactical Nuclear Artillery Shell",
     "category": "artillery",
-    "baseCost": 900000,
-    "unitCost": 540000,
+    "baseCost": 1600000,
+    "unitCost": 544000,
     "unitsPerLineTurn": 2,
     "minDelivery": 4,
     "techRequired": 8,
     "restricted": true,
-    "doomsdayOnDelivery": [14, 25]
+    "doomsdayOnDelivery": [14, 25],
+    "orderQuantityMin": 2,
+    "orderQuantityMax": 15
   }
 ]

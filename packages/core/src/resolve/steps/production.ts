@@ -77,7 +77,14 @@ export const production: ResolveStep = (ctx) => {
     if (remaining <= 0) continue // frigörs nästa tur av steg 1
 
     const product = getProduct(contract.productId)
-    const plannedUnits = Math.min(remaining, Math.floor(line.unitsPerTurnAtFull * (line.capacityPct / 100)))
+    // Avsnitt 4.1: produktionstakten styrs av PRODUKTEN (unitsPerLineTurn), inte av
+    // en platt line.unitsPerTurnAtFull som var lika för alla produkter — se
+    // ANDRINGSLOGG.md (P16). lineEfficiency är 1,0 för alla linjer i dagens
+    // scenario (alla linjer delar husets unitsPerLineTurnDefault), men ger
+    // BUILD_LINE (avsnitt 8, ännu obyggd) något att variera senare.
+    const lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault
+    const lineThroughput = product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency
+    const plannedUnits = Math.min(remaining, Math.floor(lineThroughput))
     if (plannedUnits <= 0) continue
 
     const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.supplyCostIndex)

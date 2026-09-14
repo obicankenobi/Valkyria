@@ -197,6 +197,7 @@ function buildHouse(scenario: ScenarioFile): House {
     exposureEvents: [],
     foundingCapital: seed.foundingCapital,
     creditPenaltyMultiplier: 1,
+    unitsPerLineTurnDefault: seed.unitsPerLineTurnDefault,
   }
 }
 

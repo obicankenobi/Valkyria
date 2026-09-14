@@ -28,6 +28,7 @@ import { deliveries } from './steps/deliveries.js'
 import { fronts } from './steps/fronts.js'
 import { factions } from './steps/factions.js'
 import { heat } from './steps/heat.js'
+import { supply } from './steps/supply.js'
 import { doomsday } from './steps/doomsday.js'
 import { rivals } from './steps/rivals.js'
 import { orders } from './steps/orders.js'
@@ -54,6 +55,7 @@ const PIPELINE: ResolveStep[] = [
   fronts, // frontresolve + attribution
   factions, // ekonomi, publicSupport, bankrutt
   heat, // per teater
+  supply, // supplyCostIndex — ETAPP1_5_TEKNISK_SPEC.md avsnitt 3, insatt mellan heat och doomsday
   doomsday, // avkylning, trösklar, krisevent
   rivals, // rivalhusens drag
   orders, // nya utlysningar genereras, referencePrice fryses

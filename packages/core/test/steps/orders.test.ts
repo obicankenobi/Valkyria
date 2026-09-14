@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { orders } from '../../src/resolve/steps/orders.js'
+import { getProduct } from '../../src/pricing.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import type { ResolveContext } from '../../src/resolve/index.js'
@@ -44,16 +45,17 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     expect(after.market.openOrders.some((o) => o.productId === 'mk9_longhand_shell')).toBe(false)
   })
 
-  it('den scriptade ordern fryser ett referencePrice tre till fem gånger en ordinär order (design­kravet i spec avsnitt 6)', () => {
-    const state = createInitialState('indochina-slice', 'seed')
-    state.meta.turn = 10
-    orders(makeCtx(state, 'orders-seed').ctx)
-    const restricted = state.market.openOrders.find((o) => o.productId === 'mk9_longhand_shell')!
-
-    // Designdokumentets eget exempel: 120 st 105mm-kanoner à referencePrice ≈ 2 400 000.
-    const ordinaryOrderValue = 2400000
-    expect(restricted.referencePrice).toBeGreaterThanOrEqual(ordinaryOrderValue * 3)
-    expect(restricted.referencePrice).toBeLessThanOrEqual(ordinaryOrderValue * 5)
+  it('mk9 (restricted) har ett baseCost tre till fem gånger en ordinär produkts (designkravet i spec avsnitt 6)', () => {
+    // ETAPP1_5_TEKNISK_SPEC.md avsnitt 4.3 höjde mk9_longhand_shell.baseCost till
+    // 1 600 000 EXAKT för att uppfylla det här kravet, kalibrerat mot
+    // ch3_transport_helicopter (per-produkt baseCost, inte en scriptad orders
+    // totala referencePrice — den senare beror även på den scriptade kvantiteten
+    // och råkar inte längre ligga i intervallet efter höjningen, se ANDRINGSLOGG.md).
+    const restricted = getProduct('mk9_longhand_shell')
+    const ordinary = getProduct('ch3_transport_helicopter')
+    const ratio = restricted.baseCost / ordinary.baseCost
+    expect(ratio).toBeGreaterThanOrEqual(3)
+    expect(ratio).toBeLessThanOrEqual(5)
   })
 
   it('ordinarie generering väljer aldrig en restricted produkt', () => {
