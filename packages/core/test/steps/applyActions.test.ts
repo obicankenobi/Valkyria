@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { applyActions } from '../../src/resolve/steps/applyActions.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
+import { bidEstimate } from '../../src/queries.js'
 import type { ResolveContext } from '../../src/resolve/index.js'
-import type { GameState, PlayerAction, TurnSubmission, WireEvent } from '../../src/types.js'
+import type { GameState, Order, PlayerAction, TurnSubmission, WireEvent } from '../../src/types.js'
 
 function makeCtx(
   state: GameState,
   actions: PlayerAction[],
+  seed = 'apply-actions-test',
 ): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
   const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
   let seq = 0
@@ -15,7 +17,7 @@ function makeCtx(
   const ctx: ResolveContext = {
     draft: state,
     submission,
-    rng: createRng('apply-actions-test', 0),
+    rng: createRng(seed, 0),
     emit: (e) => {
       emitted.push(e)
       return `test-${seq++}`
@@ -84,21 +86,19 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
     ])
   })
 
-  it('BROKER/INTEL/POLITICAL/MARKET förblir no-ops (P18 bygger POLITICAL/INTEL) — men konsumerar en actionPoint', () => {
+  it('BROKER/MARKET förblir helt obyggda no-ops (ingen prompt äger dem i etapp 1,5) — men konsumerar en actionPoint', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.house.actionPoints = 4 // gott om utrymme för alla fyra, oavsett scenariots default
+    state.house.actionPoints = 2
     const before = JSON.parse(JSON.stringify(state.house)) as typeof state.house
 
     const { ctx, emitted } = makeCtx(state, [
       { type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 100000 },
-      { type: 'INTEL', op: 'EXPAND', stationId: 'station-1' },
-      { type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 0 },
       { type: 'MARKET', op: 'BUY_FORWARD', spend: 0 },
     ])
     applyActions(ctx)
 
-    expect(state.house).toEqual(before) // ingen ekonomisk effekt av något av de fyra
-    expect(ctx.rejected).toEqual([]) // inte AVVISADE (ogiltiga) — bara ännu inte byggda
+    expect(state.house).toEqual(before) // ingen ekonomisk effekt av något av de två
+    expect(ctx.rejected).toEqual([]) // inte AVVISADE (ogiltiga) — bara aldrig byggda i etapp 1,5
     expect(emitted).toEqual([])
   })
 
@@ -285,5 +285,318 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
     expect(state.house.rnd).toEqual([])
     expect(state.house.techLevel.naval).toBe(techBefore + 1)
     expect(emitted.some((e) => e.headline.includes('R&D PROJECT COMPLETE') && e.headline.includes('NAVAL'))).toBe(true)
+  })
+})
+
+function orderFor(state: GameState): Order {
+  return {
+    id: 'order-test-0',
+    buyerId: 'rvn',
+    productId: '105mm_field_gun',
+    quantity: 100,
+    statedBudget: 1800000,
+    trueBudget: 2400000,
+    referencePrice: 2000000,
+    requiredDeliveryTurns: 3,
+    expiresTurn: state.meta.turn + 1,
+    competingRivals: Object.keys(state.rivals),
+    weights: { price: 0.55, delivery: 0.3, relationship: 0.15 },
+    inspectorIntegrity: 50,
+  }
+}
+
+describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3)', () => {
+  it('BRIBE höjer relationToPlayer med spend / bribeRelationCostPerPoint, kostar spend', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.relationToPlayer = 40
+    const treasuryBefore = state.house.treasury
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 10000 }])
+    applyActions(ctx)
+
+    // bribeRelationCostPerPoint = 5000 → 10 000 / 5000 = 2 poäng
+    expect(faction.relationToPlayer).toBe(42)
+    expect(state.house.treasury).toBe(treasuryBefore - 10000)
+    expect(emitted.some((e) => e.headline.includes('CULTIVATES'))).toBe(true)
+  })
+
+  it('BRIBE klampas av bribeRelationMaxPerTurn per målfaktion, även över flera BRIBE samma tur', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.relationToPlayer = 40
+
+    // Ett enda enormt bud skulle ge 100 poäng (500 000 / 5000) — långt över taket 15.
+    const { ctx: ctx1 } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 500000 }])
+    applyActions(ctx1)
+    expect(faction.relationToPlayer).toBe(55) // 40 + 15 (taket), inte 100+
+
+    // En andra BRIBE samma faktion, NY tur (nollställt tak) — samma resonemang.
+    faction.relationToPlayer = 40
+    const { ctx: ctx2a } = makeCtx(state, [
+      { type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 250000 },
+      { type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 250000 },
+    ])
+    applyActions(ctx2a)
+    expect(faction.relationToPlayer).toBe(55) // fortfarande klampat till +15, trots två separata bud
+  })
+
+  it('BRIBE går aldrig över 100 relationToPlayer', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.relationToPlayer = 92
+
+    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 100000 }])
+    applyActions(ctx)
+
+    expect(faction.relationToPlayer).toBe(100)
+  })
+
+  it('(P18 klart-när) STAGE_INCIDENT mot en blockgränsande faktion: doomsdayGate anropas inom rätt intervall, kausalkedjan pekar tillbaka till handlingen', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    expect(Math.abs(faction.alignment)).toBeGreaterThan(60) // premissen: rvn är blockgränsande
+    const doomsdayBefore = state.doomsday
+
+    const action: PlayerAction = { type: 'POLITICAL', op: 'STAGE_INCIDENT', targetFactionId: 'rvn', spend: 50000 }
+    // Seedad så att stageIncidentSuccessPct (65) slår in på FÖRSTA draget — inget
+    // annat i den här turen (en enda station, exposure 0, ingen brinn-rullning) drar
+    // ur rng:n innan STAGE_INCIDENT gör det.
+    const { ctx, emitted } = makeCtx(state, [action], 'stage-incident-seed-2')
+    applyActions(ctx)
+
+    const incidentEvent = emitted.find((e) => e.headline.includes('INCIDENT STAGED'))
+    expect(incidentEvent).toBeDefined()
+
+    const doomsdayEvent = emitted.find((e) => e.headline.startsWith('DOOMSDAY'))
+    expect(doomsdayEvent).toBeDefined()
+    expect(doomsdayEvent!.causeId).toBe('test-0') // första emitten är incidenthändelsen
+    expect(incidentEvent).toBe(emitted[0])
+
+    const delta = state.doomsday - doomsdayBefore
+    expect(delta).toBeGreaterThanOrEqual(5) // stageIncidentDoomsdayMin
+    expect(delta).toBeLessThanOrEqual(15) // stageIncidentDoomsdayMax
+  })
+
+  it('STAGE_INCIDENT vid misslyckad attribution: exposureEvents växer, ingen doomsday-effekt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const exposureEventsBefore = state.house.exposureEvents.length
+    const doomsdayBefore = state.doomsday
+
+    const action: PlayerAction = { type: 'POLITICAL', op: 'STAGE_INCIDENT', targetFactionId: 'rvn', spend: 50000 }
+    // stage-incident-seed-0: success=false på första draget.
+    const { ctx, emitted } = makeCtx(state, [action], 'stage-incident-seed-0')
+    applyActions(ctx)
+
+    expect(state.house.exposureEvents.length).toBe(exposureEventsBefore + 1)
+    expect(state.doomsday).toBe(doomsdayBefore)
+    expect(emitted.some((e) => e.headline.includes('ATTRIBUTION FAILED'))).toBe(true)
+  })
+
+  it('BACK_CHANNEL sänker doomsday inom backChannelDoomsdayMin…Max, kostar spend', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.doomsday = 50
+    const treasuryBefore = state.house.treasury
+
+    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 30000 }])
+    applyActions(ctx)
+
+    const delta = 50 - state.doomsday
+    expect(delta).toBeGreaterThanOrEqual(5) // backChannelDoomsdayMin
+    expect(delta).toBeLessThanOrEqual(15) // backChannelDoomsdayMax
+    expect(state.house.treasury).toBe(treasuryBefore - 30000)
+  })
+
+  it('POLITICAL avvisas med "unknown target faction" mot en okänd faktion', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const action: PlayerAction = { type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'atlantis', spend: 1000 }
+    const { ctx } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([{ action, reason: 'unknown target faction' }])
+  })
+})
+
+describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => {
+  it('EXPAND höjer station.depth (tak 5) och exposure, kostar intelExpandCost', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.depth = 0
+    const treasuryBefore = state.house.treasury
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'INTEL', op: 'EXPAND', stationId: station.id }])
+    applyActions(ctx)
+
+    expect(station.depth).toBe(1)
+    expect(station.exposure).toBeGreaterThanOrEqual(8) // intelExposureMin
+    expect(station.exposure).toBeLessThanOrEqual(25) // intelExposureMax
+    expect(state.house.treasury).toBeLessThan(treasuryBefore)
+    expect(emitted.some((e) => e.headline.includes('EXPANDED'))).toBe(true)
+  })
+
+  it('EXPAND klampar depth till 5, går aldrig över', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.depth = 5
+
+    const { ctx } = makeCtx(state, [{ type: 'INTEL', op: 'EXPAND', stationId: station.id }])
+    applyActions(ctx)
+
+    expect(station.depth).toBe(5)
+  })
+
+  it('(P18 klart-när) EXPAND krymper bidEstimate:s prisintervall nästa tur', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.depth = 0
+    station.nation = 'rvn' // samma köpare som ordern nedan
+    state.house.staff.chiefSalesman = 50 // under 75 — isolerar depth-effekten, se queries.test.ts
+
+    const order = orderFor(state)
+    const before = bidEstimate(state, order, 'A')
+    const widthBefore = before.rivalPriceHigh - before.rivalPriceLow
+
+    const { ctx } = makeCtx(state, [{ type: 'INTEL', op: 'EXPAND', stationId: station.id }])
+    applyActions(ctx)
+
+    const after = bidEstimate(state, order, 'A')
+    const widthAfter = after.rivalPriceHigh - after.rivalPriceLow
+
+    expect(station.depth).toBe(1)
+    expect(widthAfter).toBeLessThan(widthBefore)
+  })
+
+  it('EXPAND avvisas med "unknown station" för ett okänt station-id', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const action: PlayerAction = { type: 'INTEL', op: 'EXPAND', stationId: 'station-does-not-exist' }
+    const { ctx } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([{ action, reason: 'unknown station' }])
+  })
+
+  it('RECRUIT lägger en ny Station (depth 0, active) i den angivna nationen (targetId), kostar intelRecruitCost', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const stationsBefore = state.house.stations.length
+    const treasuryBefore = state.house.treasury
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'laos' }])
+    applyActions(ctx)
+
+    expect(state.house.stations.length).toBe(stationsBefore + 1)
+    const newStation = state.house.stations[state.house.stations.length - 1]!
+    expect(newStation.nation).toBe('laos')
+    expect(newStation.depth).toBe(0)
+    expect(newStation.exposure).toBe(0)
+    expect(newStation.status).toBe('active')
+    expect(state.house.treasury).toBeLessThan(treasuryBefore)
+    expect(emitted.some((e) => e.headline.includes('RECRUITS'))).toBe(true)
+  })
+
+  it('RECRUIT avvisas med "maximum stations reached" vid maxStations (5)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    while (state.house.stations.length < 5) {
+      state.house.stations.push({ ...state.house.stations[0]!, id: `station-extra-${state.house.stations.length}` })
+    }
+    const action: PlayerAction = { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'laos' }
+    const { ctx } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([{ action, reason: 'maximum stations reached' }])
+  })
+
+  it('RECRUIT avvisas med "invalid recruit target" utan ett giltigt targetId', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const missing: PlayerAction = { type: 'INTEL', op: 'RECRUIT', stationId: '' }
+    const unknown: PlayerAction = { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'atlantis' }
+    const { ctx } = makeCtx(state, [missing, unknown])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([
+      { action: missing, reason: 'invalid recruit target' },
+      { action: unknown, reason: 'invalid recruit target' },
+    ])
+  })
+
+  it('WITHDRAW sätter station.status till dormant', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.status = 'active'
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'INTEL', op: 'WITHDRAW', stationId: station.id }])
+    applyActions(ctx)
+
+    expect(station.status).toBe('dormant')
+    expect(emitted.some((e) => e.headline.includes('WITHDRAWN'))).toBe(true)
+  })
+
+  it('en vilande stations exposure faller intelDormantExposureDecay (5) per tur, golv 0', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.status = 'dormant'
+    station.exposure = 3 // mindre än decay-talet — ska golvas till 0, inte bli negativt
+
+    const { ctx } = makeCtx(state, [])
+    applyActions(ctx)
+
+    expect(station.exposure).toBe(0)
+  })
+
+  it('LEAK/SABOTAGE/TURN avvisas med "not implemented in this stage"', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const leak: PlayerAction = { type: 'INTEL', op: 'LEAK', stationId: 'station-1' }
+    const sabotage: PlayerAction = { type: 'INTEL', op: 'SABOTAGE', stationId: 'station-1' }
+    const turnOp: PlayerAction = { type: 'INTEL', op: 'TURN', stationId: 'station-1' }
+    const { ctx } = makeCtx(state, [leak, sabotage, turnOp])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([
+      { action: leak, reason: 'not implemented in this stage' },
+      { action: sabotage, reason: 'not implemented in this stage' },
+      { action: turnOp, reason: 'not implemented in this stage' },
+    ])
+  })
+
+  it('(P18 klart-när) en station kan brännas: status blir "burned", exposureEvents växer', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.exposure = 90 // över exposureBurnThreshold (80)
+    const exposureEventsBefore = state.house.exposureEvents.length
+
+    // station-burn-seed-5: rng.chance(stationBurnChancePct=20) lyckas på FÖRSTA
+    // draget — advanceStations gör exakt ett rng-anrop här (en station, ingen
+    // ny handling drar ur rng:n innan dess).
+    const { ctx, emitted } = makeCtx(state, [], 'station-burn-seed-5')
+    applyActions(ctx)
+
+    expect(station.status).toBe('burned')
+    expect(state.house.exposureEvents.length).toBe(exposureEventsBefore + 1)
+    expect(emitted.some((e) => e.headline.includes('BURNED'))).toBe(true)
+  })
+
+  it('en station under exposureBurnThreshold rullar aldrig mot avslöjande', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.exposure = 50 // under tröskeln 80
+
+    // Samma seed som garanterat bränner EN station ÖVER tröskeln — beviset att
+    // skillnaden är tröskeln, inte turen.
+    const { ctx } = makeCtx(state, [], 'station-burn-seed-5')
+    applyActions(ctx)
+
+    expect(station.status).not.toBe('burned')
+  })
+
+  it('en redan bränd station rullar aldrig igen (ingen ny exposureEvents-post)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const station = state.house.stations[0]!
+    station.exposure = 90
+    station.status = 'burned'
+    const exposureEventsBefore = state.house.exposureEvents.length
+
+    const { ctx } = makeCtx(state, [], 'station-burn-seed-5')
+    applyActions(ctx)
+
+    expect(state.house.exposureEvents.length).toBe(exposureEventsBefore)
   })
 })
