@@ -65,6 +65,11 @@ export const deliveries: ResolveStep = (ctx) => {
     })
   }
 
+  // Nollställs varje tur, precis som Theatre.deliveriesIntoActiveWarThisTurn —
+  // doomsday.ts (senare i samma passage) läser av och kopierar in i pendingCrisis
+  // om en kris utlöses den här turen (avsnitt 9.3, BACK_DOWN).
+  draft.market.restrictedRevenueThisTurn = 0
+
   // 1) Skeppningar som anlänt den här turen.
   const arrived = draft.market.shipments.filter((s) => s.arrivalTurn <= draft.meta.turn)
   const stillInTransit = draft.market.shipments.filter((s) => s.arrivalTurn > draft.meta.turn)
@@ -82,6 +87,7 @@ export const deliveries: ResolveStep = (ctx) => {
     const revenue = round(contract.price * (shipment.units / contract.quantity))
     house.treasury += revenue
     house.revenueByTurn[draft.meta.turn] = (house.revenueByTurn[draft.meta.turn] ?? 0) + revenue
+    if (product.restricted) draft.market.restrictedRevenueThisTurn += revenue
 
     const deliveryId = emit({
       severity: 'report',

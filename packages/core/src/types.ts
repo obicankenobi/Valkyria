@@ -52,9 +52,20 @@ export interface GameState {
     // borttagna ur listan när de anländer (deliveries.ts).
     shipments: Shipment[]
     supplyCostIndex: number // 100 = baseline. Multiplicerar KOSTNAD, inte pris.
+    // Inte i avsnitt 2 — se ANDRINGSLOGG.md (P20). Transient, självnollställande
+    // räknare, samma mönster som Theatre.deliveriesIntoActiveWarThisTurn: deliveries.ts
+    // fyller på den, doomsday.ts läser (och kopierar in i pendingCrisis) i samma
+    // steg-passage. Ger BACK_DOWN (avsnitt 9.3, "kvartalets restricted-intäkt
+    // annulleras") ett tal att annullera utan en hel ny per-tur-array på House.
+    restrictedRevenueThisTurn: Money
   }
   doomsday: Pct
   doomsdayPeak: Pct // för RESTRAINT i epilogen
+  // ETAPP1_5_TEKNISK_SPEC.md avsnitt 9.2/9.3 — satt av doomsday.ts när doomsday
+  // korsar doomsdayCrisisEventThreshold, null annars. Nästa TurnSubmission måste
+  // innehålla en CRISIS-handling (annars väljs BACK_DOWN automatiskt) —
+  // applyActions.ts, som kör FÖRST i pipelinen, läser och nollställer fältet.
+  pendingCrisis: { turn: number; theatreId: TheatreId; restrictedRevenueThisTurn: Money } | null
   wire: WireEvent[] // rullande fönster, se 2.6
   status: GameStatus
 }
@@ -334,6 +345,10 @@ export type PlayerAction =
   | { type: 'POLITICAL'; op: PoliticalOp; targetFactionId: FactionId; spend: Money }
   | { type: 'MARKET'; op: 'BUY_FORWARD' | 'RELEASE'; spend: Money }
   | { type: 'INTERNAL'; op: InternalOp; payload: Record<string, unknown> }
+  // Avsnitt 9.2 — den ENDA ändringen av den här unionen i hela etapp 1,5. Kostar
+  // ingen actionPoint (krisen är inte valfri) — applyActions.ts hanterar den
+  // separat från handlingstaket, se den filens huvudkommentar.
+  | { type: 'CRISIS'; choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE' }
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
 export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL'

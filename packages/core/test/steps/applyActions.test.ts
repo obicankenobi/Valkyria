@@ -3,6 +3,8 @@ import { applyActions } from '../../src/resolve/steps/applyActions.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import { bidEstimate } from '../../src/queries.js'
+import { alignmentPenalty } from '../../src/pricing.js'
+import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { GameState, Order, PlayerAction, TurnSubmission, WireEvent } from '../../src/types.js'
 
@@ -374,8 +376,8 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3)', ()
     expect(incidentEvent).toBe(emitted[0])
 
     const delta = state.doomsday - doomsdayBefore
-    expect(delta).toBeGreaterThanOrEqual(5) // stageIncidentDoomsdayMin
-    expect(delta).toBeLessThanOrEqual(15) // stageIncidentDoomsdayMax
+    expect(delta).toBeGreaterThanOrEqual(12) // stageIncidentDoomsdayMin
+    expect(delta).toBeLessThanOrEqual(20) // stageIncidentDoomsdayMax
   })
 
   it('STAGE_INCIDENT vid misslyckad attribution: exposureEvents växer, ingen doomsday-effekt', () => {
@@ -402,8 +404,8 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3)', ()
     applyActions(ctx)
 
     const delta = 50 - state.doomsday
-    expect(delta).toBeGreaterThanOrEqual(5) // backChannelDoomsdayMin
-    expect(delta).toBeLessThanOrEqual(15) // backChannelDoomsdayMax
+    expect(delta).toBeGreaterThanOrEqual(10) // backChannelDoomsdayMin
+    expect(delta).toBeLessThanOrEqual(20) // backChannelDoomsdayMax
     expect(state.house.treasury).toBe(treasuryBefore - 30000)
   })
 
@@ -598,5 +600,154 @@ describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => 
     applyActions(ctx)
 
     expect(state.house.exposureEvents.length).toBe(exposureEventsBefore)
+  })
+})
+
+describe('applyActions — P20: CRISIS (avsnitt 9.3, DESIGN.md §6.2) — löser ett pendingCrisis flaggat av doomsday.ts en tidigare tur', () => {
+  it('(P20 klart-när) PUSH kan leda till NUCLEAR_EXCHANGE — doomsday sätts till 100 när utbytet (crisisPushExchangePct) slår in', () => {
+    let found = false
+    for (let i = 0; i < 500 && !found; i++) {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
+      const action: PlayerAction = { type: 'CRISIS', choice: 'PUSH' }
+
+      const { ctx, emitted } = makeCtx(state, [action], `push-exchange-seed-${i}`)
+      applyActions(ctx)
+
+      if (state.doomsday !== 100) continue
+
+      found = true
+      expect(emitted.some((e) => e.headline.includes('CATASTROPHIC MISCALCULATION'))).toBe(true)
+      expect(state.doomsday).toBeGreaterThanOrEqual(balance.doomsdayNuclearExchangeThreshold) // endings.ts:s NUCLEAR_EXCHANGE-tröskel
+      expect(state.pendingCrisis).toBeNull()
+    }
+    expect(found).toBe(true)
+  })
+
+  it('(P20 klart-när) PUSH utan utbyte trappar ned till crisisPushBackdownTarget och tecknar ett femårskontrakt med teaterns största köpare', () => {
+    let found = false
+    for (let i = 0; i < 500 && !found; i++) {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
+      const action: PlayerAction = { type: 'CRISIS', choice: 'PUSH' }
+      const contractsBefore = state.market.contracts.length
+
+      const { ctx, emitted } = makeCtx(state, [action], `push-blink-seed-${i}`)
+      applyActions(ctx)
+
+      if (state.doomsday === 100) continue // utbytet slog in i den här iterationen — testar den andra grenen
+
+      found = true
+      expect(emitted.some((e) => e.headline.includes('BLINKS FIRST'))).toBe(true)
+      expect(state.doomsday).toBe(balance.crisisPushBackdownTarget)
+      expect(state.market.contracts.length).toBe(contractsBefore + 1)
+      const contract = state.market.contracts.at(-1)!
+      expect(contract.quantity).toBe(balance.crisisPushContractQuantity)
+      expect(state.pendingCrisis).toBeNull()
+    }
+    expect(found).toBe(true)
+  })
+
+  it('(P20 klart-när) BACK_DOWN bränner en slumpvald aktiv station och lägger till en exposureEvents-post', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
+    const station = state.house.stations[0]!
+    expect(station.status).toBe('active') // sanity: förutsättningen för att BACK_DOWN har något att bränna
+    const exposureEventsBefore = state.house.exposureEvents.length
+
+    const action: PlayerAction = { type: 'CRISIS', choice: 'BACK_DOWN' }
+    const { ctx, emitted } = makeCtx(state, [action], 'back-down-seed')
+    applyActions(ctx)
+
+    expect(station.status).toBe('burned')
+    expect(station.exposure).toBe(100)
+    expect(state.house.exposureEvents.length).toBe(exposureEventsBefore + 1)
+    expect(state.house.exposureEvents.at(-1)).toBe(state.meta.turn)
+    expect(state.doomsday).toBe(balance.crisisBackDownDoomsdayTarget)
+    expect(emitted.some((e) => e.headline === 'BACK DOWN')).toBe(true) // spelarvalt, INTE "(AUTOMATIC ...)"
+    expect(state.pendingCrisis).toBeNull()
+  })
+
+  it('(P20 klart-än) BACK_DOWN annullerar kvartalets restricted-intäkt (treasury och revenueByTurn för den flaggade turen)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.meta.turn = 5
+    state.pendingCrisis = { turn: 3, theatreId: 'indochina', restrictedRevenueThisTurn: 400000 }
+    state.house.revenueByTurn[3] = 900000
+    const treasuryBefore = state.house.treasury
+
+    const action: PlayerAction = { type: 'CRISIS', choice: 'BACK_DOWN' }
+    const { ctx } = makeCtx(state, [action], 'back-down-clawback-seed')
+    applyActions(ctx)
+
+    expect(state.house.treasury).toBe(treasuryBefore - 400000)
+    expect(state.house.revenueByTurn[3]).toBe(500000) // 900 000 - 400 000, den flaggade turens intäkt — inte turen krisen löses
+  })
+
+  it('(P20 klart-när) SELL_THE_FILE ger engångsintäkt och sänker permanent westStanding/eastStanding — synligt i alignmentPenalty för en bloc-anpassad faktion', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
+    const treasuryBefore = state.house.treasury
+    const rvn = state.factions['rvn']! // alignment 70 (väst) — indochina-slice.json
+    const penaltyBefore = alignmentPenalty(rvn.alignment, state.house)
+
+    const action: PlayerAction = { type: 'CRISIS', choice: 'SELL_THE_FILE' }
+    const { ctx, emitted } = makeCtx(state, [action], 'sell-the-file-seed')
+    applyActions(ctx)
+
+    expect(state.house.treasury).toBe(treasuryBefore + balance.crisisSellFileRevenue)
+    expect(state.doomsday).toBe(balance.crisisSellFileTarget)
+    expect(state.house.reputation.westStanding).toBe(50 - balance.crisisSellFileStandingPenalty)
+    expect(state.house.reputation.eastStanding).toBe(50 - balance.crisisSellFileStandingPenalty)
+
+    const penaltyAfter = alignmentPenalty(rvn.alignment, state.house)
+    expect(penaltyAfter).toBeLessThan(penaltyBefore) // samma bloc-anpassade köpares score-term faller mätbart i en senare bud-utvärdering (pricing.ts, computeScore)
+    expect(emitted.some((e) => e.headline.includes('STANDING WITH BOTH BLOCS COLLAPSES'))).toBe(true)
+    expect(state.pendingCrisis).toBeNull()
+  })
+
+  it('(P20 klart-när) ingen CRISIS-handling skickas in → automatisk BACK_DOWN, flaggad som sådan i headline och actorIsPlayer:false', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
+    const station = state.house.stations[0]!
+
+    const { ctx, emitted } = makeCtx(state, [], 'automatic-back-down-seed') // inga actions alls
+
+    applyActions(ctx)
+
+    const backDownEvent = emitted.find((e) => e.headline.includes('BACK DOWN'))
+    expect(backDownEvent).toBeDefined()
+    expect(backDownEvent!.headline).toContain('AUTOMATIC')
+    expect(backDownEvent!.headline).toContain('NO CRISIS CHOICE SUBMITTED')
+    expect(backDownEvent!.actorIsPlayer).toBe(false)
+    expect(state.doomsday).toBe(balance.crisisBackDownDoomsdayTarget)
+    expect(station.status).toBe('burned')
+    expect(state.pendingCrisis).toBeNull()
+  })
+
+  it('en actionPoint konsumeras INTE av CRISIS — handlingstaket gäller bara övriga handlingstyper', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.actionPoints = 1
+    state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
+
+    const crisisAction: PlayerAction = { type: 'CRISIS', choice: 'SELL_THE_FILE' }
+    const internalAction: PlayerAction = { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }
+    const { ctx } = makeCtx(state, [crisisAction, internalAction], 'crisis-action-point-seed')
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([]) // internalAction fick plats — CRISIS drog inget ur actionPoints-taket
+    expect(state.house.lines.length).toBeGreaterThan(0)
+  })
+
+  it('inget pendingCrisis satt → CRISIS-handlingen (om en ändå skickas in) är en no-op, ingen krishändelse löses', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    expect(state.pendingCrisis).toBeNull()
+    const doomsdayBefore = state.doomsday
+
+    const action: PlayerAction = { type: 'CRISIS', choice: 'PUSH' }
+    const { ctx, emitted } = makeCtx(state, [action], 'no-pending-crisis-seed')
+    applyActions(ctx)
+
+    expect(state.doomsday).toBe(doomsdayBefore)
+    expect(emitted.some((e) => e.headline.includes('PUSH') || e.headline.includes('BACK DOWN') || e.headline.includes('SELL THE FILE'))).toBe(false)
   })
 })

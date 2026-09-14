@@ -117,10 +117,10 @@
   "stageIncidentSuccessPct": 65,
   "stageIncidentHeatMin": 5,
   "stageIncidentHeatMax": 20,
-  "stageIncidentDoomsdayMin": 5,
-  "stageIncidentDoomsdayMax": 15,
-  "backChannelDoomsdayMin": 5,
-  "backChannelDoomsdayMax": 15,
+  "stageIncidentDoomsdayMin": 12,
+  "stageIncidentDoomsdayMax": 20,
+  "backChannelDoomsdayMin": 10,
+  "backChannelDoomsdayMax": 20,
   "intelExpandCost": 150000,
   "intelRecruitCost": 300000,
   "intelExposureMin": 8,
@@ -133,5 +133,12 @@
   "qualityScandalPenalty": 12,
   "qualityScandalTurns": 3,
   "scandalCreditPenalty": 0.75,
-  "militaryBudgetQuarterlyShare": 0.08
+  "militaryBudgetQuarterlyShare": 0.08,
+  "_p20_note": "ETAPP1_5_TEKNISK_SPEC.md avsnitt 9.3 ger crisisPushExchangePct(30), crisisPushBackdownTarget(45) och crisisBackDownDoomsdayTarget(40, satt i P7)/crisisSellFileTarget(50) ordagrant (DESIGN.md SS6.2). crisisPushContractQuantity, crisisSellFileRevenue och crisisSellFileStandingPenalty är PROVISORISKA -- specen namnger dem men ger ingen siffra. stageIncidentDoomsdayMin/Max och backChannelDoomsdayMin/Max (ovan) rättade till DESIGN.md SS6.2:s egna intervall (12-20 respektive 10-20) -- P18:s ursprungliga 5-15 för båda var min egen uppskattning, satt innan jag läst SS6.2:s tabell noga. Se docs/ANDRINGSLOGG.md.",
+  "crisisPushExchangePct": 30,
+  "crisisPushBackdownTarget": 45,
+  "crisisPushContractQuantity": 5000,
+  "crisisSellFileTarget": 50,
+  "crisisSellFileRevenue": 3000000,
+  "crisisSellFileStandingPenalty": 20
 }

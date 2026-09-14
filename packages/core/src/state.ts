@@ -298,11 +298,13 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
       contracts: [],
       shipments: [],
       supplyCostIndex: 100,
+      restrictedRevenueThisTurn: 0,
     },
     doomsday: 0,
     doomsdayPeak: 0,
     wire: [],
     status: { kind: 'active' },
+    pendingCrisis: null,
   }
 }
 

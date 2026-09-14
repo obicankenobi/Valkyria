@@ -20,10 +20,13 @@
 // inte värt ännu ett persisterat fält. Se ANDRINGSLOGG.md.
 //
 // Krisevent (doomsday >= 75, DESIGN.md §6.2's tre val PUSH / BACK DOWN / SELL THE
-// FILE) kräver ett spelarbeslut som PlayerAction-unionen (fryst sedan P2) inte har
-// någon variant för. Löst med en tydligt flaggad automatisk fallback: BACK DOWN
-// väljs alltid, med ett wire-headline som ärligt anger att det är en automatisk
-// standard i väntan på ett riktigt spelarval. Se ANDRINGSLOGG.md.
+// FILE): P20 bygger den riktiga PlayerAction-varianten (avsnitt 9.2, CRISIS) och
+// det tvåstegsflöde avsnitt 9.3 beskriver. DEN HÄR filen sätter bara draft.
+// pendingCrisis och fortsätter turen normalt — den löser INTE krisen. Det gör
+// applyActions.ts, i NÄSTA resolveTurn-anrop (den kör FÖRST i pipelinen, så när
+// den ser ett satt pendingCrisis är det alltid från en tidigare, redan avslutad
+// tur). Ingen ny fallback-logik här: BACK DOWN-standardvalet när ingen CRISIS-
+// handling skickas in bor i applyActions.ts, inte här.
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { addDoomsday } from '../doomsdayGate.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
@@ -36,7 +39,6 @@ interface Balance {
   heatEscalationDoomsdayMax: number
   doomsdayCrisisWatchThreshold: number
   doomsdayCrisisEventThreshold: number
-  crisisBackDownDoomsdayTarget: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -49,7 +51,7 @@ export const doomsday: ResolveStep = (ctx) => {
   applyHeatEscalation(ctx)
 
   checkCrisisWatch(ctx, beforeStep)
-  resolveCrisisEvent(ctx)
+  flagCrisisEvent(ctx)
 }
 
 function applyHeatEscalation(ctx: ResolveContext): void {
@@ -90,35 +92,36 @@ function checkCrisisWatch(ctx: ResolveContext, beforeStep: number): void {
   })
 }
 
-function resolveCrisisEvent(ctx: ResolveContext): void {
+function flagCrisisEvent(ctx: ResolveContext): void {
   const { draft, emit } = ctx
   if (draft.doomsday < BALANCE.doomsdayCrisisEventThreshold) return
+  if (draft.pendingCrisis !== null) return // redan flaggad (t.ex. samma tur doomsday korsade om igen)
 
-  const eventId = emit({
+  // Vilken teater krisen "rör" — avsnitt 9.3 behöver en för PUSH:s
+  // femårskontrakt ("till den teaterns största köpare"). Etapp 1,5 har bara en,
+  // men den med högst heat är den rimliga (och framtidssäkra) väljaren.
+  const theatres = Object.values(draft.theatres)
+  let hottest = theatres[0]
+  for (const t of theatres.slice(1)) {
+    if (t!.heat > hottest!.heat) hottest = t
+  }
+
+  emit({
     severity: 'headline',
     scope: 'global',
-    headline: `CRISIS — DOOMSDAY AT ${draft.doomsday.toFixed(0)}`,
+    headline: `CRISIS — DOOMSDAY AT ${draft.doomsday.toFixed(0)}. AWAITING YOUR CHOICE.`,
     causeId: null,
     delta: {},
     actorIsPlayer: false,
-    subjectId: null,
+    subjectId: hottest ? hottest.id : null,
   })
+  // causeId-kedjan för PUSH/BACK_DOWN/SELL_THE_FILE byggs i applyActions.ts, när
+  // krisen faktiskt löses — den här händelsen är bara flaggningen, inte en orsak
+  // till nästa turs utfall (det är spelarens VAL som orsakar det, inte notisen).
 
-  // PROVISORISK automatisk fallback — se filens huvudkommentar. Ingen PlayerAction
-  // finns för PUSH/SELL THE FILE, så BACK DOWN väljs alltid.
-  const target = BALANCE.crisisBackDownDoomsdayTarget
-  const delta = target - draft.doomsday
-  if (delta < 0) addDoomsday(ctx, delta, eventId)
-
-  draft.house.exposureEvents.push(draft.meta.turn)
-
-  emit({
-    severity: 'report',
-    scope: 'global',
-    headline: 'BACK DOWN (AUTOMATIC — NO PLAYER CHOICE MECHANISM YET, SEE ANDRINGSLOGG.md)',
-    causeId: eventId,
-    delta: {},
-    actorIsPlayer: false,
-    subjectId: null,
-  })
+  draft.pendingCrisis = {
+    turn: draft.meta.turn,
+    theatreId: hottest ? hottest.id : Object.keys(draft.theatres)[0]!,
+    restrictedRevenueThisTurn: draft.market.restrictedRevenueThisTurn,
+  }
 }

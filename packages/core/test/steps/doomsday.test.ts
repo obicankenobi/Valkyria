@@ -117,7 +117,7 @@ describe('doomsday (isolerat steg, spec avsnitt 5 "Doomsday")', () => {
     expect(found).toBe(true)
   })
 
-  it('(P7 klart-när, DESIGN.md §6.2) krisevent vid doomsdayCrisisEventThreshold löser automatiskt med BACK DOWN, flaggat som provisoriskt', () => {
+  it('(P20 klart-när, DESIGN.md §6.2) krisevent vid doomsdayCrisisEventThreshold flaggar pendingCrisis och väntar — löser INTE krisen själv', () => {
     const state = createInitialState('indochina-slice', 'seed')
     // Måste ligga tillräckligt högt för att fortfarande vara >= tröskeln EFTER
     // stegets egen avklingning (doomsdayDecayPerTurn dras alltid av först).
@@ -125,20 +125,39 @@ describe('doomsday (isolerat steg, spec avsnitt 5 "Doomsday")', () => {
     state.meta.turn = 7
     for (const theatre of Object.values(state.theatres)) theatre.heat = 0 // ingen eskalering ska störa mätningen
     const exposureBefore = state.house.exposureEvents.length
+    const doomsdayBeforeStep = state.doomsday
+    state.market.restrictedRevenueThisTurn = 12345
 
     const { ctx, emitted } = makeCtx(state, 'crisis-seed')
     doomsday(ctx)
 
     const crisisEvent = emitted.find((e) => e.headline.startsWith('CRISIS —'))
-    const backDownEvent = emitted.find((e) => e.headline.includes('BACK DOWN'))
     expect(crisisEvent).toBeDefined()
-    expect(backDownEvent).toBeDefined()
-    expect(backDownEvent!.causeId).toBe(emitted.indexOf(crisisEvent!) >= 0 ? `test-${emitted.indexOf(crisisEvent!)}` : null)
-    expect(backDownEvent!.headline).toContain('AUTOMATIC')
+    expect(crisisEvent!.headline).toContain('AWAITING YOUR CHOICE')
 
-    expect(state.doomsday).toBe(balance.crisisBackDownDoomsdayTarget)
-    expect(state.house.exposureEvents.length).toBe(exposureBefore + 1)
-    expect(state.house.exposureEvents.at(-1)).toBe(7)
+    // Ingen BACK DOWN-lösning längre — det tvåstegsflöde avsnitt 9.3 beskriver
+    // (flagga här, lös i applyActions.ts nästa resolveTurn-anrop).
+    expect(emitted.some((e) => e.headline.includes('BACK DOWN'))).toBe(false)
+    expect(state.doomsday).toBe(doomsdayBeforeStep - balance.doomsdayDecayPerTurn)
+    expect(state.house.exposureEvents.length).toBe(exposureBefore) // ingen station bränns här
+
+    expect(state.pendingCrisis).not.toBeNull()
+    expect(state.pendingCrisis!.turn).toBe(7)
+    expect(state.pendingCrisis!.restrictedRevenueThisTurn).toBe(12345)
+    expect(Object.keys(state.theatres)).toContain(state.pendingCrisis!.theatreId)
+  })
+
+  it('flagCrisisEvent flaggar bara en gång — ett redan satt pendingCrisis skrivs inte över samma tur', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.doomsday = balance.doomsdayCrisisEventThreshold + balance.doomsdayDecayPerTurn + 5
+    for (const theatre of Object.values(state.theatres)) theatre.heat = 0
+    state.pendingCrisis = { turn: 3, theatreId: 'indochina', restrictedRevenueThisTurn: 999 }
+
+    const { ctx, emitted } = makeCtx(state, 'crisis-seed-2')
+    doomsday(ctx)
+
+    expect(emitted.some((e) => e.headline.startsWith('CRISIS —'))).toBe(false)
+    expect(state.pendingCrisis).toEqual({ turn: 3, theatreId: 'indochina', restrictedRevenueThisTurn: 999 })
   })
 
   it('krisevent triggas inte under doomsdayCrisisEventThreshold', () => {
