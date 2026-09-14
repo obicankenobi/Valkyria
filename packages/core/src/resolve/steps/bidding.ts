@@ -1,6 +1,6 @@
 // bidding — avgör anbud som löper ut denna tur. Se ETAPP1_TEKNISK_SPEC.md avsnitt
 // 4.2, 4.4.
-import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct } from '../../pricing.js'
+import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalId } from '../../types.js'
 
@@ -123,10 +123,11 @@ export const bidding: ResolveStep = (ctx) => {
         continue
       }
 
-      // Rivaler har ingen grade (spec 4.2 tillämpar ingen gradeFactor på rivalbudet)
-      // och inget spårat relationToPlayer/reputation (RivalHouse saknar de fälten —
-      // se pricing.ts). 'A' ger effectiveRef = referencePrice, exakt vad formeln de
-      // facto redan bjöd mot.
+      // Rivaler har ingen grade (spec 4.2 tillämpar ingen gradeFactor på rivalbudet).
+      // 'A' ger effectiveRef = referencePrice, exakt vad formeln de facto redan bjöd
+      // mot. relationToPlayer/reputation/blocTerm är sedan P24 rivalens EGNA värden
+      // (RivalHouse.relations/reputation, rivalBlocTerm) — inte längre statiska
+      // nollor, se ETAPP2_TEKNISK_SPEC.md avsnitt 2.2.
       const score = computeScore({
         bidPrice: rivalBid.price,
         bidDeliveryTurns: rivalBid.deliveryTurns,
@@ -136,9 +137,9 @@ export const bidding: ResolveStep = (ctx) => {
         requiredDeliveryTurns: order.requiredDeliveryTurns,
         weights: order.weights,
         inspectorIntegrity: order.inspectorIntegrity,
-        relationToPlayer: 0,
-        reputation: null,
-        blocTerm: 0,
+        relationToPlayer: rival.relations[order.buyerId] ?? 0,
+        reputation: rival.reputation,
+        blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) : 0,
       })
       candidates.push({ source: rivalId, price: rivalBid.price, deliveryTurns: rivalBid.deliveryTurns, grade: 'A', bribe: 0, score })
     }

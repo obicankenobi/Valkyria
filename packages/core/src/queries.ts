@@ -8,7 +8,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
-import { alignmentPenalty, computeRivalBid, computeScore, getProduct, computeUnitCostNow } from './pricing.js'
+import { alignmentPenalty, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import type { BidEstimate, GameState, Grade, Money, Order, Pct, RivalId } from './types.js'
 
 const WIN_BAND_POINTS = 5
@@ -121,6 +121,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
     reputation: state.house.reputation,
     blocTerm,
     rivals: state.rivals,
+    factionAlignment: faction ? faction.alignment : 0,
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -136,6 +137,7 @@ interface WinBandInputs {
   reputation: { reliability: Pct; quality: Pct }
   blocTerm: number
   rivals: GameState['rivals']
+  factionAlignment: number
 }
 
 // Monte Carlo-skattning: för varje prispunkt, kör MONTE_CARLO_SAMPLES simulerade
@@ -179,6 +181,9 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
         const sampledBid = computeRivalBid(hashRng, rival, p.product, p.order.referencePrice)
         if (sampledBid.price > p.order.trueBudget) continue // diskvalificerad, ingen konkurrent
 
+        // relationToPlayer/reputation/blocTerm är sedan P24 rivalens EGNA värden —
+        // samma termer bidding.ts faktiskt avgör med, annars driver skattningen isär
+        // från avgörandet (queries.ts:s egen huvudkommentar).
         const rivalScore = computeScore({
           bidPrice: sampledBid.price,
           bidDeliveryTurns: sampledBid.deliveryTurns,
@@ -188,9 +193,9 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
           requiredDeliveryTurns: p.order.requiredDeliveryTurns,
           weights: p.order.weights,
           inspectorIntegrity: p.order.inspectorIntegrity,
-          relationToPlayer: 0,
-          reputation: null,
-          blocTerm: 0,
+          relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
+          reputation: rival.reputation,
+          blocTerm: rivalBlocTerm(rival, p.factionAlignment),
         })
         if (rivalScore >= playerScore) beatsAllRivals = false
       }

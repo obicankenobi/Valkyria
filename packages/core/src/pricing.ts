@@ -134,6 +134,21 @@ export function alignmentPenalty(factionAlignment: number, house: House): number
   return ((standing - 50) / 50) * strength * BALANCE.blocPenaltyScale
 }
 
+// rivalBlocTerm — RivalHouse-motsvarigheten till alignmentPenalty (spec 2.2,
+// ETAPP2_TEKNISK_SPEC.md). RivalHouse har ingen löpande 0–100-skala som House.
+// reputation.westStanding/eastStanding, bara en fast kategori (homeState). PRO-
+// VISORISK, samma sorts platshållare som alignmentPenalty självt (se
+// docs/ANDRINGSLOGG.md): en homeState-matchad rival får samma maximala svängning
+// (±blocPenaltyScale vid strength 1) som en spelare med standing 100/0 skulle få —
+// symmetriskt med avsikt, ingen ny, egen skala att kalibrera.
+export function rivalBlocTerm(rival: RivalHouse, factionAlignment: number): number {
+  if (factionAlignment === 0 || rival.homeState === 'neutral') return 0
+  const strength = Math.abs(factionAlignment) / 100
+  const aligned =
+    (factionAlignment > 0 && rival.homeState === 'west') || (factionAlignment < 0 && rival.homeState === 'east')
+  return (aligned ? 1 : -1) * strength * BALANCE.blocPenaltyScale
+}
+
 export interface ScoreInput {
   bidPrice: Money
   bidDeliveryTurns: number
@@ -143,13 +158,13 @@ export interface ScoreInput {
   requiredDeliveryTurns: number
   weights: { price: number; delivery: number; relationship: number }
   inspectorIntegrity: Pct
-  // Rivaler har inget spårat relationToPlayer/reputation (RivalHouse saknar
-  // fälten spec 4.4:s prosa förutsätter — se ANDRINGSLOGG.md). 0/null ger dem
-  // relationTerm 0 och repTerm 0: de konkurrerar på pris och leveranstid, precis
-  // det spec 4.2 faktiskt modellerar för dem.
+  // Sedan P24 (ETAPP2_TEKNISK_SPEC.md avsnitt 2.2) skickar bidding.ts/queries.ts
+  // rivalens EGNA relations[buyerId]/reputation/rivalBlocTerm(...) här, inte
+  // längre statiska nollor — RivalHouse fick fälten i P24 (avsnitt 2.1).
+  // `| null` finns kvar av samma skäl som fanns innan repTerm-grenen skrevs för
+  // en anropare som saknar reputation helt.
   relationToPlayer: Pct
   reputation: { reliability: Pct; quality: Pct } | null
-  // Samma skäl: blocTerm 0 för rivaler, riktig alignmentPenalty(...) för spelaren.
   blocTerm: number
 }
 

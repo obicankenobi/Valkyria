@@ -7,7 +7,11 @@
     "temperament": "opportunist",
     "capital": 5000000,
     "marketShare": 30,
-    "sabotagedUntilTurn": null
+    "sabotagedUntilTurn": null,
+    "homeState": "west",
+    "relations": { "rvn": 35, "nlf": 15, "laos": 30 },
+    "reputation": { "quality": 55, "reliability": 60 },
+    "contracts": []
   },
   "costigan": {
     "id": "costigan",
@@ -17,7 +21,11 @@
     "temperament": "cautious",
     "capital": 6500000,
     "marketShare": 35,
-    "sabotagedUntilTurn": null
+    "sabotagedUntilTurn": null,
+    "homeState": "neutral",
+    "relations": { "rvn": 40, "nlf": 20, "laos": 35 },
+    "reputation": { "quality": 60, "reliability": 65 },
+    "contracts": []
   },
   "meridian": {
     "id": "meridian",
@@ -27,6 +35,10 @@
     "temperament": "patriot",
     "capital": 4200000,
     "marketShare": 25,
-    "sabotagedUntilTurn": null
+    "sabotagedUntilTurn": null,
+    "homeState": "east",
+    "relations": { "rvn": 15, "nlf": 35, "laos": 20 },
+    "reputation": { "quality": 50, "reliability": 55 },
+    "contracts": []
   }
 }

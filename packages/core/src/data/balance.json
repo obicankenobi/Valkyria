@@ -48,7 +48,7 @@
   "scoreBase": 100,
   "priceTermWeight": 120,
   "deliveryTermWeight": 25,
-  "relationTermWeight": 5,
+  "relationTermWeight": 40,
   "bribeTermScale": 100,
   "bribeTermMultiplier": 1.5,
   "repTermReliabilityDivisor": 2,

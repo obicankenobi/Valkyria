@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { bidEstimate } from '../src/queries.js'
+import { bidding } from '../src/resolve/steps/bidding.js'
 import { createInitialState } from '../src/state.js'
-import type { GameState, Order, Station } from '../src/types.js'
+import { createRng } from '../src/rng.js'
+import type { GameState, Order, RivalHouse, Station, TurnSubmission } from '../src/types.js'
 
 function orderFor(state: GameState): Order {
   return {
@@ -118,5 +120,106 @@ describe('bidEstimate (spec avsnitt 4.3)', () => {
     const estB = bidEstimate(state, orderB, 'A')
 
     expect(estA).not.toEqual(estB)
+  })
+})
+
+// P24 klart när (ETAPP2_TEKNISK_SPEC.md avsnitt 2.2/9): "ett test visar att
+// bidEstimate's winBand och bidding.ts's avgörande fortfarande använder
+// identiska termer för en rival." bidEstimate hash-seedar sin egen Rng-ström
+// (aldrig huvud-Rng:n, se filens huvudkommentar) medan bidding.ts drar ur
+// huvud-Rng:n — de två strömmarna ger ALDRIG bitvis identiska bud, så det
+// ärliga sättet att bevisa "identiska termer" är att visa att BÅDA
+// mekanismerna svarar i SAMMA RIKTNING på samma ändring av rivalens egna
+// relations/reputation/homeState (rival.relations[buyerId], rival.reputation,
+// rivalBlocTerm) — om den ena läste gamla, statiska nollor och den andra
+// läste de nya fälten hade de divergerat i stället.
+describe('rivalscoring — bidEstimate och bidding.ts använder identiska rivaltermer (P24)', () => {
+  function strongRival(): RivalHouse {
+    return {
+      id: 'brandt',
+      name: 'Brandt',
+      specialisation: 'infantry',
+      aggression: 55,
+      temperament: 'opportunist',
+      capital: 9999999,
+      marketShare: 30,
+      sabotagedUntilTurn: null,
+      homeState: 'west', // rvn har alignment +70 — matchad, ger POSITIV blocTerm
+      relations: { rvn: 100 },
+      reputation: { quality: 100, reliability: 100 },
+      contracts: [],
+    }
+  }
+
+  function weakRival(): RivalHouse {
+    return {
+      id: 'brandt',
+      name: 'Brandt',
+      specialisation: 'infantry',
+      aggression: 55,
+      temperament: 'opportunist',
+      capital: 9999999,
+      marketShare: 30,
+      sabotagedUntilTurn: null,
+      homeState: 'east', // omatchad mot rvn (+70) — ger NEGATIV blocTerm
+      relations: { rvn: 0 },
+      reputation: { quality: 0, reliability: 0 },
+      contracts: [],
+    }
+  }
+
+  it('en förstärkt rival (hög relation/rykte, blockmatchad) sänker BÅDE bidEstimates mittpunktskonfidens OCH spelarens faktiska vinstfrekvens i bidding.ts, jämfört med en försvagad rival', () => {
+    const base = createInitialState('indochina-slice', 'query-seed')
+    base.house.stations = [{ id: 'station-1', city: 'SAIGON', nation: 'rvn', depth: 0, exposure: 0, coverage: ['procurement'], status: 'active' }]
+    base.house.staff.chiefSalesman = 50 // under 75 — inget depth-bonus, bredaste bandet (pct 0,35)
+    const order = { ...orderFor(base), competingRivals: ['brandt'] }
+
+    function midpointConfidence(rival: RivalHouse): number {
+      const state: GameState = { ...base, rivals: { brandt: rival } }
+      const est = bidEstimate(state, order, 'A')
+      const mid = est.winBand[Math.floor(est.winBand.length / 2)]!
+      return mid.confidence
+    }
+
+    const strongConfidence = midpointConfidence(strongRival())
+    const weakConfidence = midpointConfidence(weakRival())
+    expect(strongConfidence).toBeLessThan(weakConfidence)
+
+    function actualWinRate(rival: RivalHouse): number {
+      const SEEDS = 150
+      let wins = 0
+      for (let i = 0; i < SEEDS; i++) {
+        const state = createInitialState('indochina-slice', `consistency-${i}`)
+        state.rivals = { brandt: rival }
+        const testOrder: Order = { ...orderFor(state), competingRivals: ['brandt'], expiresTurn: 0 }
+        state.market.openOrders = [testOrder]
+        state.meta.turn = 0
+
+        const submission: TurnSubmission = {
+          standingOrders: [],
+          bids: [{ orderId: testOrder.id, price: testOrder.referencePrice, deliveryTurns: testOrder.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
+          actions: [],
+        }
+        const emitted: { headline: string }[] = []
+        let seq = 0
+        bidding({
+          draft: state,
+          submission,
+          rng: createRng(`consistency-${i}`, 0),
+          emit: (e) => {
+            emitted.push(e)
+            return `t-${seq++}`
+          },
+          rejected: [],
+        })
+
+        if (state.market.contracts.length > 0) wins++
+      }
+      return wins / SEEDS
+    }
+
+    const strongWinRate = actualWinRate(strongRival())
+    const weakWinRate = actualWinRate(weakRival())
+    expect(strongWinRate).toBeLessThan(weakWinRate)
   })
 })

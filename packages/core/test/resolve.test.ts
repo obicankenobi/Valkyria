@@ -203,12 +203,14 @@ describe('resolveTurn — P5: produktion, kostnad och leverans', () => {
     }
     expect(order).toBeDefined()
 
-    // Lägg ett bud som bör vinna: winBand:s lägsta prispunkt är den (nära) säkraste
-    // att vinna med, oavsett hur aggressivt rivalerna råkar prisa sig just den här
-    // turen (P22-balanspasset sänkte rivalMarginBase, se ANDRINGSLOGG.md — ett fast
-    // 0,75×trueBudget-bud vann inte alltid längre).
-    const estimate = bidEstimate(state, order!, 'A')
-    const bidPrice = estimate.winBand[0]!.price
+    // Lägg ett bud som GARANTERAT vinner, oavsett rivalernas pris ELLER (sedan P24,
+    // ETAPP2_TEKNISK_SPEC.md avsnitt 2.2) deras relations/reputation/blocTerm — bud
+    // 1 maximerar priceTerm (bidPrice/effectiveRef ≈ 0), vilket dominerar även den
+    // starkast tänkbara rivalens icke-pris-termer. winBand:s lägsta prispunkt
+    // (P22-balanspassets fix) räckte inte längre: den var bara "nära säker" mot
+    // ren prissättning, inte mot en rival med hög relations[buyerId]/reputation/
+    // blocTerm (P24 gav rivaler de fälten på riktigt) — se docs/ANDRINGSLOGG.md.
+    const bidPrice = 1
     const submission: TurnSubmission = {
       standingOrders: [],
       bids: [{ orderId: order!.id, price: bidPrice, deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],
@@ -270,9 +272,9 @@ describe('resolveTurn — P6: front och attribution', () => {
     }
     expect(order).toBeDefined()
 
-    // Samma motivering som P5-testet ovan: winBand:s lägsta prispunkt, inte ett fast
-    // 0,75×trueBudget, garanterar vinsten oavsett rivalernas prissättning.
-    const bidPrice = bidEstimate(state, order!, 'A').winBand[0]!.price
+    // Samma motivering som P5-testet ovan: bud 1 garanterar vinsten oavsett
+    // rivalernas prissättning ELLER (sedan P24) deras relations/reputation/blocTerm.
+    const bidPrice = 1
     const submission: TurnSubmission = {
       standingOrders: [],
       bids: [{ orderId: order!.id, price: bidPrice, deliveryTurns: order!.requiredDeliveryTurns, grade: 'A', bribe: 0 }],

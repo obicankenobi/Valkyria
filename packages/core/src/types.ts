@@ -321,6 +321,28 @@ export interface RivalHouse {
   capital: Money
   marketShare: Pct
   sabotagedUntilTurn: number | null
+
+  // NYA (P24, ETAPP2_TEKNISK_SPEC.md avsnitt 2.1) — stänger spec 4.4:s ursprungliga
+  // prosa ("Rivaler poängsätts med samma formel men med relationTerm och repTerm
+  // från deras egna värden"), som P4 var tvungen att arbeta runt eftersom fälten
+  // inte fanns.
+  homeState: 'neutral' | 'west' | 'east'
+  relations: Record<FactionId, Pct> // samma roll som Faction.relationToPlayer
+  reputation: { quality: Pct; reliability: Pct }
+  contracts: RivalContract[] // se RivalContract, byggs av P25
+}
+
+// Se ETAPP2_TEKNISK_SPEC.md avsnitt 2.1/2.3. Symmetrisk motsvarighet till Contract,
+// men för en rival — 'voided' tillagt (granskning inför antagande) så att samma
+// sena-kontrakt-eskalering (avsnitt 3.1) kan gälla en rival, inte bara spelaren.
+export interface RivalContract {
+  id: string
+  buyerId: FactionId
+  productId: ProductId
+  quantity: number
+  unitsDelivered: number
+  dueTurn: number
+  status: 'active' | 'fulfilled' | 'late' | 'voided'
 }
 
 // ── 2.6 WireEvent ────────────────────────────────────────────────────────────

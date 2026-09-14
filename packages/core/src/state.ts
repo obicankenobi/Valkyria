@@ -238,7 +238,12 @@ function buildRivals(scenario: ScenarioFile): Record<RivalId, RivalHouse> {
     if (!rival) {
       throw new Error(`createInitialState: okänt rivalId "${id}" i scenario ${scenario.id}`)
     }
-    rivals[id] = { ...rival }
+    rivals[id] = {
+      ...rival,
+      relations: { ...rival.relations },
+      reputation: { ...rival.reputation },
+      contracts: [],
+    }
   }
   return rivals
 }

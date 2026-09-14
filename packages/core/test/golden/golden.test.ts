@@ -30,11 +30,22 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // Den här kontrollen är mekaniken bakom det löftet: den failar HÖGT och
 // TYDLIGT innan ett enda parti ens spelas, i stället för att låta ett senare
 // balanspass tyst spela mot fel tal och producera ett meningslöst snapshot.
-it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+//
+// PENDAD P24–P31 (ägarbeslut 2026-09-14, se ANDRINGSLOGG.md samma datum). P24
+// kräver att `relationTermWeight` återställs 5 → 40 (ETAPP2_TEKNISK_SPEC.md
+// avsnitt 2.2) — den ändringen ensam bryter både den här kontrollen och de tre
+// hash-testerna nedan, och P25–P27 fortsätter ändra balance.json. Specen
+// planerar EXPLICIT att golden fryses om först i P32 ("balanspass, sist i
+// etappen ... uppdatera golden-snapshoten som ett medvetet, separat beslut när
+// tabellen står", avsnitt 9). Att låta testet stanna kvar rött i åtta
+// commit-cykler hade dolt en RIKTIG regression bland de förväntade — pendat
+// och synligt kommenterat är den ärliga varianten. Återaktivera i P32, när
+// `balance.frozen.json` fryses om mot den nya balansen.
+it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
-describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
+describe.skip('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '19e3e6750e97b3' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '107880ed82dd3f' },

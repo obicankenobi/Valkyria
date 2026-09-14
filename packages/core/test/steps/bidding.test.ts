@@ -73,7 +73,20 @@ describe('bidding (isolerat steg, spec avsnitt 4.2, 4.4)', () => {
     // En enda rival, med låg aggression (litet margin) så dess bud hamnar nära
     // referencePrice och under trueBudget även med jitter.
     state.rivals = {
-      brandt: { id: 'brandt', name: 'Brandt', specialisation: 'infantry', aggression: 90, temperament: 'opportunist', capital: 9999999, marketShare: 30, sabotagedUntilTurn: null },
+      brandt: {
+        id: 'brandt',
+        name: 'Brandt',
+        specialisation: 'infantry',
+        aggression: 90,
+        temperament: 'opportunist',
+        capital: 9999999,
+        marketShare: 30,
+        sabotagedUntilTurn: null,
+        homeState: 'neutral',
+        relations: {},
+        reputation: { quality: 50, reliability: 50 },
+        contracts: [],
+      },
     }
     order.competingRivals = ['brandt']
 
@@ -218,6 +231,10 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
           capital: 5000000,
           marketShare: 30,
           sabotagedUntilTurn: null,
+          homeState: 'neutral',
+          relations: {},
+          reputation: { quality: 50, reliability: 50 },
+          contracts: [],
         },
       }
       order.competingRivals = ['brandt']
