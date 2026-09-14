@@ -138,6 +138,17 @@ export const orders: ResolveStep = (ctx) => {
     const quantity = rng.int(quantityMin, quantityMax)
     const heat = computeHeatForBuyer(draft, factionId)
 
+    // Avsnitt 7.1.C: en faktion utlyser ingen order vars referencePrice överstiger
+    // dess militaryBudget. Gäller bara ORDINARIE generering (den här grenen) —
+    // INTE scenariots scriptade restricted-order (grenen ovan): den är en
+    // avsiktlig, en gång per parti-frestelse (spec avsnitt 6) som ska stå kvar
+    // oavsett rvns militärbudget den turen (7,2 M scriptad kvantitet ger ett
+    // referencePrice som rutinmässigt överstiger även en välfylld budget, se
+    // ANDRINGSLOGG.md) — att låta 7.1.C tysta den hade förstört designpelare 1:s
+    // enda garanterade prövning.
+    const referencePrice = computeReferencePrice(product, quantity, heat, draft.market.supplyCostIndex)
+    if (referencePrice > faction.militaryBudget) continue
+
     const order = buildOrder({
       id: nextId(),
       buyerId: factionId,

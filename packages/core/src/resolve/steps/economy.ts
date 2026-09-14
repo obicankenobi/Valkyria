@@ -28,6 +28,7 @@ interface Balance {
   fixedCosts: FixedCosts
   creditMultiple: number
   chiefOfStaffActionBonusThreshold: number
+  scandalCreditPenalty: number
 }
 
 const BALANCE = balance as unknown as Balance
@@ -75,10 +76,14 @@ function computeCreditLimit(house: House, currentTurn: number): Money {
   // P8-tillägg: house.creditPenaltyMultiplier (default 1, sänks av board.ts vid en
   // underkänd styrelsekontroll) — "skärpta lånevillkor" (spec 5, "Board") behöver en
   // faktisk effekt på just den här formeln, inte bara en headline. Se ANDRINGSLOGG.md.
+  // P19-tillägg (avsnitt 5.1): en aktiv grade-skandal (scandalUntilTurn > denna tur)
+  // multiplicerar samma formel med scandalCreditPenalty.
+  const scandalMult = house.scandalUntilTurn !== null && currentTurn < house.scandalUntilTurn ? BALANCE.scandalCreditPenalty : 1
   return Math.max(
     0,
-    round(trailingRevenue * BALANCE.creditMultiple * reliabilityMult * homeStateMult * house.creditPenaltyMultiplier) -
-      house.debt,
+    round(
+      trailingRevenue * BALANCE.creditMultiple * reliabilityMult * homeStateMult * house.creditPenaltyMultiplier * scandalMult,
+    ) - house.debt,
   )
 }
 

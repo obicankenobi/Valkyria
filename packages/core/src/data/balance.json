@@ -51,8 +51,8 @@
   "relationTermWeight": 40,
   "bribeTermScale": 100,
   "bribeTermMultiplier": 1.5,
-  "repTermReliabilityDivisor": 5,
-  "repTermQualityDivisor": 8,
+  "repTermReliabilityDivisor": 2,
+  "repTermQualityDivisor": 4,
   "blocPenaltyScale": 15,
   "relationBoostMin": 4,
   "relationBoostMax": 8,
@@ -68,6 +68,8 @@
   "deliveryDelayMinTurns": 1,
   "deliveryDelayMaxTurns": 3,
   "reliabilityLatePenalty": 8,
+  "reliabilityBidFloor": 15,
+  "reliabilityOnTimeBonus": 3,
   "_p16_note": "supply*-fälten är ETAPP1_5_TEKNISK_SPEC.md avsnitt 3.2:s EGNA siffror, inte provisoriska — specen ger dem ordagrant. orderQuantityMin/Max (ovan, oförändrade) är nu FALLBACK: produkter med egna Product.orderQuantityMin/Max i products.json (avsnitt 4.2) använder de talen i stället, se orders.ts.",
   "supplyHeatCoupling": 0.45,
   "supplyIndexMin": 85,
@@ -126,5 +128,10 @@
   "maxStations": 5,
   "intelDormantExposureDecay": 5,
   "exposureBurnThreshold": 80,
-  "stationBurnChancePct": 20
+  "stationBurnChancePct": 20,
+  "_p19_note": "ETAPP1_5_TEKNISK_SPEC.md avsnitt 5.1/6.2/6.3/7.1 ger qualityScandalPenalty(12), qualityScandalTurns(3), reliabilityBidFloor(15), reliabilityOnTimeBonus(3), repTermReliabilityDivisor(2)/repTermQualityDivisor(4) och militaryBudgetQuarterlyShare(0.08) ordagrant. scandalCreditPenalty ges bara i prosa ('multipliceras med scandalCreditPenalty (0,75)') -- samma tal, satt här.",
+  "qualityScandalPenalty": 12,
+  "qualityScandalTurns": 3,
+  "scandalCreditPenalty": 0.75,
+  "militaryBudgetQuarterlyShare": 0.08
 }

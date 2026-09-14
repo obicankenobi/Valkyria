@@ -114,6 +114,12 @@ export interface House {
   // Beräknat för NÄSTA tur (economy.ts kör sist i pipelinen; applyActions, som
   // faktiskt läser fältet, kör FÖRST — se applyActions.ts).
   actionPoints: number
+  // ETAPP1_5_TEKNISK_SPEC.md avsnitt 5.1 — satt av deliveries.ts vid en
+  // grade-skandal (turn + qualityScandalTurns), null när ingen skandal är aktiv.
+  // Läst av economy.ts (creditLimit multipliceras med scandalCreditPenalty medan
+  // aktiv) och nollställd av deliveries.ts själv när turen faktiskt nås
+  // (reputation.quality återställs samtidigt).
+  scandalUntilTurn: number | null
 }
 
 export interface BoardTarget {

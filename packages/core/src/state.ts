@@ -204,6 +204,7 @@ function buildHouse(scenario: ScenarioFile): House {
     // chiefOfStaff är 45 i indochina-slice.json, under tröskeln, så formeln körd
     // på turnollens värden ger 3 — ingen gissning, bara den frusna evalueringen.
     actionPoints: 3,
+    scandalUntilTurn: null,
   }
 }
 

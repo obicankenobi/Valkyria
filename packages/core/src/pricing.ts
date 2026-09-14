@@ -46,6 +46,7 @@ interface Balance {
   statedBudgetMaxFactor: number
   trueBudgetMinFactor: number
   trueBudgetMaxFactor: number
+  reliabilityBidFloor: number
   bidWeightsDefault: { price: number; delivery: number; relationship: number }
 }
 

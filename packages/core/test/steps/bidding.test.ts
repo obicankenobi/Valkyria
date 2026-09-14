@@ -243,4 +243,56 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
     expect(winRate).toBeGreaterThan(0.05)
     expect(winRate).toBeLessThan(0.95)
   })
+
+  it('(P19 klart-när) ett bud avvisas med "reputation below buyer threshold" när reliability < reliabilityBidFloor (15)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.reputation.reliability = 14 // under golvet 15
+    const order = dueOrder({ trueBudget: 3000000, referencePrice: 2000000, expiresTurn: 0 })
+    state.market.openOrders = [order]
+    state.meta.turn = 0
+
+    const bid = { orderId: order.id, price: 1500000, deliveryTurns: 2, grade: 'A' as const, bribe: 0 }
+    const submission: TurnSubmission = { standingOrders: [], bids: [bid], actions: [] }
+    const { ctx, emitted } = makeCtx(state, submission, 'bidding-seed')
+    bidding(ctx)
+
+    expect(state.market.contracts).toHaveLength(0)
+    expect(ctx.rejected).toEqual([{ action: bid, reason: 'reputation below buyer threshold' }])
+    expect(emitted.some((e) => e.headline.includes('RELIABILITY BELOW BUYER THRESHOLD'))).toBe(true)
+  })
+
+  it('reliability på exakt reliabilityBidFloor (15) diskvalificerar INTE — golvet är strikt "<"', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.reputation.reliability = 15
+    const order = dueOrder({ trueBudget: 3000000, referencePrice: 2000000, expiresTurn: 0 })
+    state.market.openOrders = [order]
+    state.meta.turn = 0
+
+    const bid = { orderId: order.id, price: 1500000, deliveryTurns: 2, grade: 'A' as const, bribe: 0 }
+    const submission: TurnSubmission = { standingOrders: [], bids: [bid], actions: [] }
+    const { ctx } = makeCtx(state, submission, 'bidding-seed-win')
+    bidding(ctx)
+
+    expect(ctx.rejected).toEqual([])
+  })
+
+  it('(P19 klart-när) en order dras tillbaka med "WITHDRAWN — BUDGET EXHAUSTED" när vinnarens pris överstiger köparens militaryBudget', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const order = dueOrder({ trueBudget: 3000000, referencePrice: 2000000, expiresTurn: 0 })
+    state.market.openOrders = [order]
+    state.meta.turn = 0
+    state.factions['rvn']!.militaryBudget = 1000000 // mindre än det bud som annars skulle vinna
+
+    const submission: TurnSubmission = {
+      standingOrders: [],
+      bids: [{ orderId: order.id, price: 1500000, deliveryTurns: 2, grade: 'A', bribe: 0 }],
+      actions: [],
+    }
+    const { ctx, emitted } = makeCtx(state, submission, 'bidding-seed-win')
+    bidding(ctx)
+
+    expect(state.market.contracts).toHaveLength(0)
+    expect(state.market.openOrders).toHaveLength(0) // avgjord — inte kvar som öppen
+    expect(emitted.some((e) => e.headline.includes('WITHDRAWN — BUDGET EXHAUSTED'))).toBe(true)
+  })
 })

@@ -54,7 +54,33 @@ export const bidding: ResolveStep = (ctx) => {
     const candidates: Candidate[] = []
 
     if (playerBid) {
-      if (playerBid.price <= order.trueBudget) {
+      if (playerBid.price > order.trueBudget) {
+        // Diskvalificerad: över trueBudget. Tyst mot spelaren (ingen upplysning om
+        // var taket låg), men synlig som ticker för felsökning (spec 4.4).
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: PRICE EXCEEDS BUYER'S TRUE BUDGET`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
+      } else if (draft.house.reputation.reliability < BALANCE.reliabilityBidFloor) {
+        // Avsnitt 6.2.B: en hård spärr, direkt efter trueBudget-kontrollen. Till
+        // skillnad från trueBudget-diskvalificeringen (tyst, bara ticker) avvisas
+        // den här UTTRYCKLIGEN — specens egen pseudokod pushar till rejected.
+        rejected.push({ action: playerBid, reason: 'reputation below buyer threshold' })
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()}'S RELIABILITY BELOW BUYER THRESHOLD`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
+      } else {
         const score = computeScore({
           bidPrice: playerBid.price,
           bidDeliveryTurns: playerBid.deliveryTurns,
@@ -75,18 +101,6 @@ export const bidding: ResolveStep = (ctx) => {
           grade: playerBid.grade,
           bribe: playerBid.bribe,
           score,
-        })
-      } else {
-        // Diskvalificerad: över trueBudget. Tyst mot spelaren (ingen upplysning om
-        // var taket låg), men synlig som ticker för felsökning (spec 4.4).
-        emit({
-          severity: 'ticker',
-          scope: 'market',
-          headline: `BID ON ${order.id} DISQUALIFIED: PRICE EXCEEDS BUYER'S TRUE BUDGET`,
-          causeId: null,
-          delta: {},
-          actorIsPlayer: true,
-          subjectId: order.buyerId,
         })
       }
     }
@@ -136,6 +150,21 @@ export const bidding: ResolveStep = (ctx) => {
         severity: 'report',
         scope: 'market',
         headline: `${buyerName}'S ORDER FOR ${product.name.toUpperCase()} GOES UNFULFILLED`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: order.buyerId,
+      })
+      continue
+    }
+
+    if (faction && winner.price > faction.militaryBudget) {
+      // Avsnitt 7.1.A: golv vid tilldelning, samma gren som "no winner" — en
+      // vinnare fanns, men köparen har inte råd med DEN.
+      emit({
+        severity: 'report',
+        scope: 'market',
+        headline: `${buyerName}'S ORDER FOR ${product.name.toUpperCase()} WITHDRAWN — BUDGET EXHAUSTED`,
         causeId: null,
         delta: {},
         actorIsPlayer: false,

@@ -249,3 +249,78 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
     })
   })
 })
+
+describe('deliveries — rykte (ETAPP1_5_TEKNISK_SPEC.md avsnitt 5.1, 6.3)', () => {
+  it('(P19 klart-när) en grade C-leverans kan utlösa en skandal som sänker quality, och effekten släpper efter tre turer', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.meta.turn = 5
+    state.house.reputation.quality = 50
+    const contract = activeContract({ grade: 'C', quantity: 20, unitsDelivered: 0, status: 'active' })
+    state.market.contracts = [contract]
+    state.market.shipments = [shipment({ units: 20, arrivalTurn: 5 })]
+
+    // scandal-seed-9: rng.chance(gradeScandalChance.C = 14) lyckas på FÖRSTA
+    // draget — kontraktet är inte restricted, så inget doomsday-drag kommer före.
+    const { ctx, emitted } = makeCtx(state, 'scandal-seed-9')
+    deliveries(ctx)
+
+    expect(state.house.reputation.quality).toBe(38) // 50 − qualityScandalPenalty(12)
+    expect(state.house.scandalUntilTurn).toBe(8) // turn(5) + qualityScandalTurns(3)
+    expect(emitted.some((e) => e.headline.includes('QUALITY SCANDAL'))).toBe(true)
+
+    // Tre turer senare: skandalen släpper, quality återställs.
+    for (let t = 6; t <= 8; t++) {
+      state.meta.turn = t
+      deliveries(makeCtx(state, `scandal-fade-${t}`).ctx)
+    }
+
+    expect(state.house.reputation.quality).toBe(50)
+    expect(state.house.scandalUntilTurn).toBeNull()
+  })
+
+  it('grade A kan aldrig utlösa en skandal (gradeScandalChance.A = 0)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.reputation.quality = 50
+    const contract = activeContract({ grade: 'A', quantity: 20, unitsDelivered: 0, status: 'active' })
+    state.market.contracts = [contract]
+    state.market.shipments = [shipment({ units: 20, arrivalTurn: 0 })]
+
+    // scandal-seed-9 lyckas för grade C (14 %) — men chance(0) kan aldrig lyckas,
+    // oavsett rng-ström.
+    const { ctx } = makeCtx(state, 'scandal-seed-9')
+    deliveries(ctx)
+
+    expect(state.house.reputation.quality).toBe(50)
+    expect(state.house.scandalUntilTurn).toBeNull()
+  })
+
+  it('reliability stiger med reliabilityOnTimeBonus (3) när ett kontrakt fulfillas I TID, klampat till 100', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.reputation.reliability = 98
+    const contract = activeContract({ grade: 'A', quantity: 10, unitsDelivered: 0, status: 'active', dueTurn: 5 })
+    state.market.contracts = [contract]
+    state.market.shipments = [shipment({ units: 10, arrivalTurn: 3 })]
+    state.meta.turn = 3 // före dueTurn — i tid
+
+    const { ctx, emitted } = makeCtx(state, 'no-scandal-seed')
+    deliveries(ctx)
+
+    expect(state.house.reputation.reliability).toBe(100) // 98 + 3, klampat
+    expect(emitted.some((e) => e.headline.includes('RELIABILITY RISES'))).toBe(true)
+  })
+
+  it('reliability stiger INTE när kontraktet redan hunnit bli "late" innan det fulfillas', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.reputation.reliability = 50
+    const contract = activeContract({ grade: 'A', quantity: 10, unitsDelivered: 0, status: 'late', dueTurn: 2 })
+    state.market.contracts = [contract]
+    state.market.shipments = [shipment({ units: 10, arrivalTurn: 5 })]
+    state.meta.turn = 5
+
+    const { ctx, emitted } = makeCtx(state, 'no-scandal-seed')
+    deliveries(ctx)
+
+    expect(state.house.reputation.reliability).toBe(50) // oförändrad
+    expect(emitted.some((e) => e.headline.includes('RELIABILITY RISES'))).toBe(false)
+  })
+})

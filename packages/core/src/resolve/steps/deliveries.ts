@@ -20,10 +20,14 @@ import { round } from '../../money.js'
 import { getProduct } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import type { ResolveStep } from '../index.js'
-import type { Front, GameState } from '../../types.js'
+import type { Front, GameState, Grade } from '../../types.js'
 
 interface Balance {
   reliabilityLatePenalty: number
+  reliabilityOnTimeBonus: number
+  gradeScandalChance: Record<Grade, number>
+  qualityScandalPenalty: number
+  qualityScandalTurns: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -44,6 +48,22 @@ function findFrontForBuyer(fronts: GameState['fronts'], buyerId: string): { fron
 export const deliveries: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
+
+  // 0) En grade-skandals utgång (avsnitt 5.1) — inte en del av leveransloopen,
+  // eftersom skandalens fönster kan löpa ut en tur helt utan nya leveranser.
+  if (house.scandalUntilTurn !== null && draft.meta.turn >= house.scandalUntilTurn) {
+    house.reputation.quality = Math.min(100, house.reputation.quality + BALANCE.qualityScandalPenalty)
+    house.scandalUntilTurn = null
+    emit({
+      severity: 'ticker',
+      scope: 'house',
+      headline: `${house.name.toUpperCase()}'S QUALITY SCANDAL FADES FROM MEMORY`,
+      causeId: null,
+      delta: { quality: BALANCE.qualityScandalPenalty },
+      actorIsPlayer: false,
+      subjectId: null,
+    })
+  }
 
   // 1) Skeppningar som anlänt den här turen.
   const arrived = draft.market.shipments.filter((s) => s.arrivalTurn <= draft.meta.turn)
@@ -107,8 +127,9 @@ export const deliveries: ResolveStep = (ctx) => {
     }
 
     if (contract.unitsDelivered >= contract.quantity) {
+      const wasOnTime = contract.status === 'active' // före omskrivningen nedan — 'late' hann det redan bli annars
       contract.status = 'fulfilled'
-      emit({
+      const fulfilledId = emit({
         severity: 'headline',
         scope: 'market',
         headline: `CONTRACT ${contract.id} FULFILLED: ${product.name.toUpperCase()} TO ${buyerName}`,
@@ -117,6 +138,38 @@ export const deliveries: ResolveStep = (ctx) => {
         actorIsPlayer: true,
         subjectId: contract.buyerId,
       })
+
+      // Avsnitt 6.3: återhämtning, bara vid leverans I TID. Asymmetrisk mot
+      // reliabilityLatePenalty (−8 / +3) med avsikt — rykte tar tid att bygga.
+      if (wasOnTime) {
+        house.reputation.reliability = Math.min(100, house.reputation.reliability + BALANCE.reliabilityOnTimeBonus)
+        emit({
+          severity: 'ticker',
+          scope: 'house',
+          headline: `${house.name.toUpperCase()}'S RELIABILITY RISES — CONTRACT ${contract.id} DELIVERED ON TIME`,
+          causeId: fulfilledId,
+          delta: { reliability: BALANCE.reliabilityOnTimeBonus },
+          actorIsPlayer: true,
+          subjectId: contract.buyerId,
+        })
+      }
+
+      // Avsnitt 5.1: grade-skandal. gradeScandalChance['A'] är 0 (balance.json) —
+      // grade A kan alltså aldrig utlösa en skandal, vilket är avsiktligt: risken
+      // är precis det som ska göra C till ett verkligt avvägt val, inte A.
+      if (rng.chance(BALANCE.gradeScandalChance[contract.grade])) {
+        house.reputation.quality = Math.max(0, house.reputation.quality - BALANCE.qualityScandalPenalty)
+        house.scandalUntilTurn = draft.meta.turn + BALANCE.qualityScandalTurns
+        emit({
+          severity: 'headline',
+          scope: 'house',
+          headline: `QUALITY SCANDAL: GRADE ${contract.grade} DELIVERY TO ${buyerName} DAMAGES ${house.name.toUpperCase()}'S REPUTATION`,
+          causeId: fulfilledId,
+          delta: { quality: -BALANCE.qualityScandalPenalty },
+          actorIsPlayer: true,
+          subjectId: contract.buyerId,
+        })
+      }
     }
   }
 

@@ -163,3 +163,45 @@ describe('factions (isolerat steg, spec avsnitt 5 "Faktion")', () => {
     expect(secondEmitted.some((e) => e.headline.includes('FORCED TO SUE FOR PEACE'))).toBe(false)
   })
 })
+
+describe('factions — militaryBudget-påfyllnad (ETAPP1_5_TEKNISK_SPEC.md avsnitt 7.1.B)', () => {
+  it('militaryBudget fylls på med militaryBudgetQuarterlyShare × treasury, klampat till högst treasury', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.treasury = 10000000
+    faction.militaryBudget = 1000000
+    const before = faction.militaryBudget
+
+    const { ctx, emitted } = makeCtx(state, 'faction-seed')
+    factions(ctx)
+
+    // militaryBudgetQuarterlyShare = 0.08 → 10 000 000 × 0.08 = 800 000
+    expect(faction.militaryBudget).toBe(before + 800000)
+    expect(emitted.some((e) => e.headline.includes('MILITARY BUDGET'))).toBe(true)
+  })
+
+  it('militaryBudget klampas till högst faction.treasury — kan aldrig vara en fiktion kassan inte täcker', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.treasury = 500000
+    faction.militaryBudget = 480000 // + 8 % av 500 000 (40 000) skulle ge 520 000, över treasury
+
+    const { ctx } = makeCtx(state, 'faction-seed')
+    factions(ctx)
+
+    expect(faction.militaryBudget).toBe(500000)
+  })
+
+  it('en bankrutt faktion får ingen militaryBudget-påfyllnad', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.bankrupt = true
+    faction.militaryBudget = 1000000
+    const before = faction.militaryBudget
+
+    const { ctx } = makeCtx(state, 'faction-seed')
+    factions(ctx)
+
+    expect(faction.militaryBudget).toBe(before)
+  })
+})

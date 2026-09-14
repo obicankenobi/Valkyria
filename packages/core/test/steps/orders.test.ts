@@ -112,4 +112,22 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     expect(state.market.openOrders.length).toBeGreaterThan(before)
     expect(emitted.length).toBeGreaterThanOrEqual(state.market.openOrders.length - before)
   })
+
+  it('(P19 klart-när) en faktion vars militaryBudget är slut utlyser inga ordinarie ordrar (avsnitt 7.1.C)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.factions['rvn']!.militaryBudget = 0
+    state.factions['nlf']!.militaryBudget = 0
+    // laos har kvar sin normala budget — kontroll: genereringen fungerar alls.
+
+    for (let turn = 0; turn < 9; turn++) {
+      // Stannar före tur 10 — samma skäl som "ordinarie generering väljer aldrig
+      // en restricted produkt" ovan: den scriptade restricted-ordern (mot rvn)
+      // ska INTE blandas in här, den prövas medvetet i en egen rad i ANDRINGSLOGG.md.
+      state.meta.turn = turn
+      orders(makeCtx(state, `budget-exhausted-seed-${turn}`).ctx)
+    }
+
+    expect(state.market.openOrders.some((o) => o.buyerId === 'rvn' || o.buyerId === 'nlf')).toBe(false)
+    expect(state.market.openOrders.some((o) => o.buyerId === 'laos')).toBe(true)
+  })
 })

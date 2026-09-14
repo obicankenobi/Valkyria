@@ -16,6 +16,7 @@
 // kvartalsvis kassadränering) som ett test kan trigga genom att direkt sätta
 // embargoed: true på en handbyggd faktion (spec 7.1). Se ANDRINGSLOGG.md.
 import balanceData from '../../data/balance.json' with { type: 'json' }
+import { round } from '../../money.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Faction, GameState } from '../../types.js'
 
@@ -24,6 +25,7 @@ interface Balance {
   factionLowSupportTurns: number
   factionLowSupportThreshold: number
   embargoTreasuryDrainPerTurn: number
+  militaryBudgetQuarterlyShare: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -34,8 +36,31 @@ export const factions: ResolveStep = (ctx) => {
     if (faction.bankrupt) continue // redan avgjort för den här faktionen
 
     processEconomicDistress(faction, draft, emit)
+    if (!faction.bankrupt) replenishMilitaryBudget(faction, emit)
     processLowSupport(faction, emit)
   }
+}
+
+// Avsnitt 7.1.B: militaryBudget är annars en engångstilldelning från
+// scenariofilen som bara sjunker (bidding.ts) — utan påfyllnad tar varje köpare
+// slut på pengar för gott inom några turer, vilket inte är vad "en köpare som
+// slutar beställa" (7.2) betyder. Klampad till högst faction.treasury: budgeten
+// kan aldrig vara en fiktion köparens egen kassa inte täcker.
+function replenishMilitaryBudget(faction: Faction, emit: ResolveContext['emit']): void {
+  const before = faction.militaryBudget
+  const next = Math.min(faction.treasury, faction.militaryBudget + round(faction.treasury * BALANCE.militaryBudgetQuarterlyShare))
+  faction.militaryBudget = Math.max(0, next)
+  if (faction.militaryBudget === before) return
+
+  emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${faction.name.toUpperCase()}'S MILITARY BUDGET: £${faction.militaryBudget.toLocaleString('en-GB')}`,
+    causeId: null,
+    delta: { militaryBudget: faction.militaryBudget - before },
+    actorIsPlayer: false,
+    subjectId: faction.id,
+  })
 }
 
 function processEconomicDistress(faction: Faction, draft: GameState, emit: ResolveContext['emit']): void {
