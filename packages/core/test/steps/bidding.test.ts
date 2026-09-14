@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bidding } from '../../src/resolve/steps/bidding.js'
+import { advanceRndQueue } from '../../src/resolve/upkeep.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import type { ResolveContext } from '../../src/resolve/index.js'
@@ -314,5 +315,83 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
     expect(state.market.contracts).toHaveLength(0)
     expect(state.market.openOrders).toHaveLength(0) // avgjord — inte kvar som öppen
     expect(emitted.some((e) => e.headline.includes('WITHDRAWN — BUDGET EXHAUSTED'))).toBe(true)
+  })
+})
+
+// P28 (ETAPP2_TEKNISK_SPEC.md avsnitt 3.3) — techRequired som en TREDJE
+// diskvalificeringsgrund, efter trueBudget och reliabilityBidFloor. Gäller bara
+// spelarens eget bud (RivalHouse har inget techLevel-fält).
+describe('bidding — P28: techspärr (avsnitt 3.3)', () => {
+  it('(P28 klart-når) ett bud på en produkt över husets tekniknivå avvisas med "insufficient tech level"', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    // mk9_longhand_shell: techRequired 8. Scenariots höjda techLevelDefault(4) +
+    // artillery-specialiseringens bonus(3) ger 7 — fortfarande under 8 (avsnitt
+    // 3.3:s egen, avsedda gräns: kräver ETT fullföljt REPRIORITISE_RND).
+    expect(state.house.techLevel.artillery).toBe(7)
+    const order = dueOrder({ productId: 'mk9_longhand_shell', trueBudget: 20000000, referencePrice: 10000000, expiresTurn: 0 })
+    state.market.openOrders = [order]
+    state.meta.turn = 0
+
+    const bid = { orderId: order.id, price: 8000000, deliveryTurns: 4, grade: 'A' as const, bribe: 0 }
+    const submission: TurnSubmission = { standingOrders: [], bids: [bid], actions: [] }
+    const { ctx, emitted } = makeCtx(state, submission, 'bidding-seed')
+    bidding(ctx)
+
+    expect(state.market.contracts).toHaveLength(0)
+    expect(ctx.rejected).toEqual([{ action: bid, reason: 'insufficient tech level' }])
+    expect(emitted.some((e) => e.headline.includes('TECH LEVEL IS TOO LOW'))).toBe(true)
+  })
+
+  it('(P28 klart-når) m3_apc/ch3_transport_helicopter/coastal_patrol_boat/tac_radio_suite är alla biddbara vid scenariots start med den höjda techLevelDefault', () => {
+    for (const productId of ['m3_apc', 'ch3_transport_helicopter', 'coastal_patrol_boat', 'tac_radio_suite'] as const) {
+      const state = createInitialState('indochina-slice', 'seed')
+      const order = dueOrder({
+        id: `order-${productId}`,
+        productId,
+        trueBudget: 30000000,
+        referencePrice: 10000000,
+        expiresTurn: 0,
+        competingRivals: [], // isolerar: bara spelarens eget bud avgör om tekniken räcker
+      })
+      state.market.openOrders = [order]
+      state.meta.turn = 0
+
+      const bid = { orderId: order.id, price: 1000000, deliveryTurns: 5, grade: 'A' as const, bribe: 0 }
+      const submission: TurnSubmission = { standingOrders: [], bids: [bid], actions: [] }
+      const { ctx } = makeCtx(state, submission, 'bidding-seed')
+      bidding(ctx)
+
+      expect(ctx.rejected).toEqual([]) // inte avvisad — varken på tech eller något annat
+      expect(state.market.contracts).toHaveLength(1) // vann kontraktet, alltså aldrig diskvalificerad
+    }
+  })
+
+  it('(P28 klart-når) ett fullföljt REPRIORITISE_RND-projekt i artillery gör mk9-budet giltigt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    expect(state.house.techLevel.artillery).toBe(7) // under mk9:s 8
+
+    // Fullfölj projektet på RIKTIGT via upkeep.ts:s egen mekanism, inte genom
+    // att bara sätta techLevel för hand.
+    state.house.rnd = [{ id: 'rnd-artillery-test', category: 'artillery', turnsRemaining: 1, turnsTotal: 6 }]
+    advanceRndQueue(state.house, () => 'rnd-event')
+    expect(state.house.techLevel.artillery).toBe(8) // nu tillräckligt
+
+    const order = dueOrder({
+      productId: 'mk9_longhand_shell',
+      trueBudget: 20000000,
+      referencePrice: 10000000,
+      expiresTurn: 0,
+      competingRivals: [], // isolerar: bara techspärren ska kunna hindra det här budet
+    })
+    state.market.openOrders = [order]
+    state.meta.turn = 0
+
+    const bid = { orderId: order.id, price: 5000000, deliveryTurns: 4, grade: 'A' as const, bribe: 0 } // under rvn:s militaryBudget (6 000 000)
+    const submission: TurnSubmission = { standingOrders: [], bids: [bid], actions: [] }
+    const { ctx } = makeCtx(state, submission, 'bidding-seed')
+    bidding(ctx)
+
+    expect(ctx.rejected).toEqual([])
+    expect(state.market.contracts).toHaveLength(1)
   })
 })

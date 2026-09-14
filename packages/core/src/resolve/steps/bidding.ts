@@ -80,6 +80,21 @@ export const bidding: ResolveStep = (ctx) => {
           actorIsPlayer: true,
           subjectId: order.buyerId,
         })
+      } else if (product.techRequired > draft.house.techLevel[product.category]) {
+        // P28 (ETAPP2_TEKNISK_SPEC.md avsnitt 3.3): en TREDJE diskvalificerings-
+        // grund, efter trueBudget och reliabilityBidFloor. Gäller bara spelarens
+        // eget bud — RivalHouse har inget techLevel-fält, rivaler byggs inte av
+        // den här spärren (de har heller inget REPRIORITISE_RND att investera i).
+        rejected.push({ action: playerBid, reason: 'insufficient tech level' })
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()}'S ${product.category.toUpperCase()} TECH LEVEL IS TOO LOW`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
       } else {
         const score = computeScore({
           bidPrice: playerBid.price,

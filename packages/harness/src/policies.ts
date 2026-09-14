@@ -73,6 +73,27 @@ function takeLoan(amount: number, actions: PlayerAction[]): void {
   actions.push({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: rounded } })
 }
 
+// P28 (ETAPP2_TEKNISK_SPEC.md avsnitt 3.3, "teknikspärr OCH R&D-VÄRDE"): innan
+// den här funktionen fanns investerade INGEN av de fyra botarna någonsin i
+// REPRIORITISE_RND — P28:s eget klart när-villkor ("minst 25 % av partierna
+// når mk9-ordern med tillräcklig tekniknivå OCH minst 25 % inte gör det") går
+// alltså inte att uppfylla utan att NÅGON bot faktiskt investerar. Ingen
+// prompt i avsnitt 9 äger R&D-investering explicit, så valet görs här,
+// motiverat och loggat i ANDRINGSLOGG.md: `balanced` och `capacity` (de två
+// mer "planerande" arketyperna — 10.2:s egna beskrivningar) gör ETT
+// engångsförsök i artillery (det enda hål 3.3:s techLevelDefault(4)-höjning
+// lämnar kvar innan mk9), `passive`/`aggressive` gör det INTE. Att låta ALLA
+// fyra investera gav en uppmätt 0 % "otillräcklig teknik vid mk9-ordern" —
+// nästan alla partier som överlever till tur 10 hinner klart oavsett policy,
+// så splitten måste komma från VILKA botar som investerar, inte från vilka
+// partier som överlever.
+function reprioritiseArtilleryIfNeeded(state: GameState, actions: PlayerAction[]): void {
+  if (state.house.techLevel.artillery >= 8) return
+  const alreadyQueued = state.house.rnd.some((p) => p.category === 'artillery')
+  if (alreadyQueued) return
+  actions.push({ type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'artillery' } })
+}
+
 // ── passive ──────────────────────────────────────────────────────────────
 // Bjuder bara vid marginal > 20 %, aldrig restricted, alltid grade A. Tar
 // TAKE_LOAN bara när treasury < 0 (och bara för att täcka underskottet, inte
@@ -108,6 +129,8 @@ export const passive: Policy = (state) => {
   candidates.sort((a, b) => b.margin - a.margin)
   const bids = candidates.slice(0, BOT_BALANCE.passiveMaxConcurrentBids).map((c) => c.bid)
 
+  // Investerar INTE i R&D (P28) — passive är den minimala arketypen, se
+  // reprioritiseArtilleryIfNeeded:s egen motivering (balanced/capacity gör det).
   const actions: PlayerAction[] = []
   if (state.house.treasury < 0) {
     takeLoan(Math.min(state.house.creditLimit, -state.house.treasury), actions)
@@ -131,6 +154,7 @@ export const aggressive: Policy = (state) => {
     bids.push({ orderId: order.id, price, deliveryTurns: order.requiredDeliveryTurns, grade: AGGRESSIVE_GRADE, bribe: 0 })
   }
 
+  // Investerar INTE i R&D (P28) — se reprioritiseArtilleryIfNeeded:s motivering.
   const actions: PlayerAction[] = []
   stageIncidentIfCool(state, actions)
   takeLoan(state.house.creditLimit, actions)
@@ -158,6 +182,7 @@ export const balanced: Policy = (state) => {
   }
 
   const actions: PlayerAction[] = []
+  reprioritiseArtilleryIfNeeded(state, actions)
   backChannelIfHot(state, actions)
   takeLoan(state.house.creditLimit * BALANCED_LOAN_SHARE, actions)
 
@@ -209,7 +234,12 @@ export const capacity: Policy = (state) => {
     bids.push({ orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade: CAPACITY_GRADE, bribe: 0 })
   }
 
-  return { standingOrders: [], bids, actions: [] }
+  // "Ingen politik, inga lån" (spec 10.2, ordagrant) — men R&D är varken.
+  // Se reprioritiseArtilleryIfNeeded:s egen motivering ovan (P28).
+  const actions: PlayerAction[] = []
+  reprioritiseArtilleryIfNeeded(state, actions)
+
+  return { standingOrders: [], bids, actions }
 }
 
 export const POLICIES: Record<string, Policy> = { passive, aggressive, balanced, capacity }

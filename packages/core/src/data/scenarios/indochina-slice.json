@@ -15,7 +15,7 @@
     "unitsPerLineTurnDefault": 40,
     "staff": { "chiefEngineer": 45, "chiefSalesman": 45, "chiefOfStaff": 45 },
     "reputation": { "quality": 50, "reliability": 50, "westStanding": 50, "eastStanding": 50 },
-    "techLevelDefault": 1,
+    "techLevelDefault": 4,
     "techLevelSpecialisationBonus": 3,
     "station": {
       "city": "SAIGON",

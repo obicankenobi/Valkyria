@@ -97,6 +97,13 @@ describe('passive (marginalfiltret, spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 1
     positive.house.creditLimit = 200000
     expect(passive(positive).actions).toEqual([])
   })
+
+  it('(P28) investerar ALDRIG i R&D — det är balanced/capacitys jobb, se ANDRINGSLOGG.md', () => {
+    const state = createInitialState('indochina-slice', 'passive-no-rnd-seed')
+    state.market.openOrders = []
+    expect(state.house.techLevel.artillery).toBe(7) // under mk9:s 8 — hade annars kunnat investera
+    expect(passive(state).actions.some((a) => a.type === 'INTERNAL' && a.op === 'REPRIORITISE_RND')).toBe(false)
+  })
 })
 
 describe('aggressive (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
@@ -147,6 +154,27 @@ describe('balanced (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
 
     expect(balanced(state).actions).toContainEqual({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 150000 } })
   })
+
+  it('(P28 klart-når) investerar i REPRIORITISE_RND(artillery) en gång, så länge tekniknivån inte redan räcker till mk9', () => {
+    const state = createInitialState('indochina-slice', 'balanced-rnd-seed')
+    state.market.openOrders = []
+    expect(state.house.techLevel.artillery).toBe(7) // under mk9:s 8
+
+    expect(balanced(state).actions).toContainEqual({
+      type: 'INTERNAL',
+      op: 'REPRIORITISE_RND',
+      payload: { category: 'artillery' },
+    })
+
+    // Redan en pågående artillery-satsning — inget nytt försök samma parti.
+    state.house.rnd = [{ id: 'rnd-1', category: 'artillery', turnsRemaining: 3, turnsTotal: 6 }]
+    expect(balanced(state).actions.some((a) => a.type === 'INTERNAL' && a.op === 'REPRIORITISE_RND')).toBe(false)
+
+    // Tekniknivån redan tillräcklig — inget försök alls.
+    state.house.rnd = []
+    state.house.techLevel.artillery = 8
+    expect(balanced(state).actions.some((a) => a.type === 'INTERNAL' && a.op === 'REPRIORITISE_RND')).toBe(false)
+  })
 })
 
 describe('capacity (referensboten, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
@@ -163,10 +191,17 @@ describe('capacity (referensboten, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     expect(bids.map((b) => b.orderId)).toEqual(['order-deliverable'])
   })
 
-  it('gör ingen politik och tar inga lån', () => {
+  it('gör ingen politik och tar inga lån (men investerar en gång i R&D, P28)', () => {
     const state = createInitialState('indochina-slice', 'capacity-no-actions-seed')
     state.house.treasury = -1
     state.house.creditLimit = 999999
+    // "Ingen politik, inga lån" (spec 10.2) gäller fortfarande — bara R&D-
+    // engångsförsöket (P28) finns kvar, se motsvarande passive-test.
+    expect(capacity(state).actions).toEqual([
+      { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'artillery' } },
+    ])
+
+    state.house.techLevel.artillery = 8
     expect(capacity(state).actions).toEqual([])
   })
 })
