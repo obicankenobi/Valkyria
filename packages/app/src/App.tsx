@@ -1,11 +1,13 @@
-// THE SEVENTH FRONT — THE WIRE och THE FLOOR (P11). THE HOUSE/THE WORLD och
-// IndexedDB-persistens byggs i P12. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10.
+// THE SEVENTH FRONT — de fyra vyerna (P11: WIRE/FLOOR, P12: HOUSE/WORLD) och
+// IndexedDB-persistens (P12). Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10.
 import { useState } from 'react'
 import { TheFloor } from './components/TheFloor.js'
+import { TheHouse } from './components/TheHouse.js'
 import { TheWire } from './components/TheWire.js'
+import { TheWorld } from './components/TheWorld.js'
 import { useGame } from './useGame.js'
 
-type View = 'wire' | 'floor'
+type View = 'wire' | 'floor' | 'house' | 'world'
 
 function formatMoney(amount: number): string {
   return `£${Math.round(amount).toLocaleString('sv-SE')}`
@@ -29,7 +31,7 @@ function endingLabel(ending: string): string {
 }
 
 export function App() {
-  const { state, draft, lastRejected, setBid, removeBid, endTurn, restart } = useGame()
+  const { state, draft, lastRejected, hydrated, setBid, removeBid, endTurn, restart } = useGame()
   const [view, setView] = useState<View>('wire')
 
   const ended = state.status.kind === 'ended'
@@ -37,6 +39,15 @@ export function App() {
   function handleEndTurn() {
     endTurn()
     setView('wire') // THE WIRE är startvyn varje tur (avsnitt 8)
+  }
+
+  if (!hydrated) {
+    return (
+      <main style={{ fontFamily: 'ui-monospace, monospace', padding: '1.5rem', maxWidth: '48rem' }}>
+        <h1>THE SEVENTH FRONT</h1>
+        <p>Läser sparat parti…</p>
+      </main>
+    )
   }
 
   return (
@@ -48,12 +59,18 @@ export function App() {
           {state.house.name} — år {state.meta.year} kv{state.meta.quarter} (tur {state.meta.turn}) — kassa{' '}
           {formatMoney(state.house.treasury)} — doomsday {state.doomsday.toFixed(0)}
         </p>
-        <nav style={{ display: 'flex', gap: '0.5rem' }}>
+        <nav style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button type="button" onClick={() => setView('wire')} disabled={view === 'wire'}>
             THE WIRE
           </button>
           <button type="button" onClick={() => setView('floor')} disabled={view === 'floor'}>
             THE FLOOR ({state.market.openOrders.length})
+          </button>
+          <button type="button" onClick={() => setView('house')} disabled={view === 'house'}>
+            THE HOUSE
+          </button>
+          <button type="button" onClick={() => setView('world')} disabled={view === 'world'}>
+            THE WORLD
           </button>
           <span style={{ flex: 1 }} />
           <button type="button" onClick={handleEndTurn} disabled={ended}>
@@ -84,11 +101,12 @@ export function App() {
         </div>
       )}
 
-      {view === 'wire' ? (
-        <TheWire wire={state.wire} />
-      ) : (
+      {view === 'wire' && <TheWire wire={state.wire} />}
+      {view === 'floor' && (
         <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />
       )}
+      {view === 'house' && <TheHouse state={state} />}
+      {view === 'world' && <TheWorld state={state} />}
     </main>
   )
 }

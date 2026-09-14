@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 2.0.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 2.1.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -994,8 +994,31 @@ prisbeslut utan att se sin kostnad.
 **kreditutrymme**, marginal per aktivt kontrakt, och styrelsens `progressSnapshot` mot bana med
 nästa kontrolltur utsatt.
 
+> **Innehållet i THE HOUSE/THE WORLD, se `docs/ANDRINGSLOGG.md` (P12).** Avsnitt 8 listar bara
+> det som MÅSTE finnas (kreditutrymme, marginal per kontrakt, `progressSnapshot`). DESIGN.md
+> avsnitt 18 ger den fullständiga listan båda vyerna byggs efter: THE HOUSE — produktionslinjer,
+> R&D, kassa, kredit, styrelsemål, personal. THE WORLD — fronter, faktioner, heat, DOOMSDAY,
+> stationer. Ingen av de "några få knapparna" avsnitt 8 nämner specificeras närmare någonstans —
+> båda byggs som rena läsvyer (bara den globala nav:en för att växla vy), inga extra knappar
+> hittades på.
+
 Persistens: hela `GameState` som JSON i IndexedDB under `save:{slot}`. `meta.version` styr
 migrering. Autospara efter varje `resolveTurn`.
+
+> **Fyra vägval gjorda under P12, se `docs/ANDRINGSLOGG.md`.** (1) "Som JSON" tolkat som
+> "JSON-kompatibel form", inte en bokstavlig `JSON.stringify`-sträng — `GameState` är redan ett
+> rent, structured-clone-bart objekt, så IndexedDB lagrar det direkt. (2) Den ospardade
+> `TurnSubmission`-draften sparas TILLSAMMANS med `GameState` under samma nyckel, inte bara
+> `GameState` för sig — klart när-villkoret ("mitt i en tur utan förlust") kräver det uttryckligen,
+> och "mitt i en tur" betyder här "har lagt bud men inte avslutat turen", inte "ett oskickat
+> formulär ska överleva keystroke för keystroke" (det senare hade krävt debounce-persistens per
+> textfält, ett mönster inget annat i specen antyder). (3) Autosparning körs på varje ändring av
+> `state`/`draft` (en `useEffect`), inte bara explicit efter `endTurn` — en strikt läsning av
+> "efter varje resolveTurn" hade missat just draft-delen av klart när-villkoret. (4)
+> `meta.version`-migreringen har hittills bara ett identitetsfall (version 1 → 1) — `createInitial
+> State` har aldrig producerat någon annan version, så det finns inget att migrera FRÅN än.
+> Ramverket är på plats (`switch` på `meta.version` i `persistence.ts`) för nästa gång fältet
+> faktiskt höjs.
 
 Estetik: monospace för siffror, papper och telex. Ingen animation. Ingen karta.
 
