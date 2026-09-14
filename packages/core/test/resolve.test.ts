@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { resolveTurn } from '../src/resolve/index.js'
 import { createInitialState } from '../src/state.js'
-import type { GameState, TurnSubmission } from '../src/types.js'
+import type { GameState, TurnSubmission, WireEvent } from '../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 

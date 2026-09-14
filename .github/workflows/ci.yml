@@ -1,0 +1,47 @@
+name: CI
+
+# Kör de fem stegen ETAPP1_5_TEKNISK_SPEC.md avsnitt 11.4 räknar upp (typecheck, test,
+# lint, build, e2e), men `build` körs FÖRST: `packages/harness`/`packages/app` importerar
+# `@seventh-front/core` via dess `package.json`-fält `main`/`types`, som pekar på
+# `dist/` — utan att `core` är byggt kan varken typecheck, test eller e2e-devservern
+# lösa upp importen. Klart när-villkorets egen ordning ("npm install && npm run build
+# går igenom ... npm run typecheck är grönt ... npm test är fortsatt grönt") ger samma
+# sekvens. Ingen täckningströskel (`npm run test:coverage` körs inte här) — se avsnitt
+# 11.4: "mät först, sätt tröskel i etapp 2."
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: build
+        run: npm run build
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: test
+        run: npm test
+
+      - name: lint
+        run: npm run lint
+
+      # Ingen förinstallerad Chromium-revision här (till skillnad från vissa
+      # sandlådor, se packages/app/playwright.config.ts) — hämta den riktiga.
+      - name: install e2e browser
+        run: npx playwright install --with-deps chromium
+
+      - name: e2e
+        run: npm run test:e2e

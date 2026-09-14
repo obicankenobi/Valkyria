@@ -8,8 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=packages/core && npm run build --workspace=packages/harness && npm run build --workspace=packages/app",
+    "typecheck": "tsc -p packages/core/tsconfig.test.json && tsc -p packages/harness/tsconfig.test.json && tsc -p packages/app/tsconfig.json",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "harness": "npm run build --workspace=packages/core --workspace=packages/harness && node packages/harness/dist/index.js",
     "test:e2e": "playwright test --config=packages/app/playwright.config.ts"
@@ -18,6 +20,7 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.5.1",
+    "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^10.10.0",
     "globals": "^17.12.0",
     "typescript": "^6.0.3",
