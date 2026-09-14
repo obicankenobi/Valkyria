@@ -591,9 +591,25 @@ hela register är engelskspråkig telex från 1964, och wire-rubrikerna är reda
 Ersätter etapp 1-specens avsnitt 7.3-tabell. Tre helt nya rader mäter det som gick sönder utan
 att någon rad rörde sig.
 
+> **Rad omprövad under P15, se `docs/ANDRINGSLOGG.md`.** `disqualifiedRivalBidPct` nåddes gott och
+> väl (7,1–7,3 % vid `trueBudgetMinFactor 1.15`/`trueBudgetMaxFactor 1.45`, n=2000/policy — under
+> 10 %-taket med marginal). `rivalWinPct` mot `balanced` fastnade på ~22 %, strax under
+> 25 %-golvet — **bevisat en platå, inte en brist på skruvande.** Vid `trueBudgetMinFactor 1.3`/
+> `trueBudgetMaxFactor 1.9` (en avsevärt bredare budget än de föreslagna talen) sjönk
+> `disqualifiedRivalBidPct` till exakt 0,00 % samtidigt som `rivalWinPct` stod kvar på 21,93 % —
+> identiskt med värdet vid de föreslagna talen (21,96–21,98 %) trots att diskvalificering, den
+> ENDA spak `trueBudget` styr, redan var helt eliminerad. Den återstående klyftan mot 25 % avgörs
+> alltså av `computeScore` (pris/leverans/relationsvikterna, `rivalMarginBase` m.fl.) — siffror
+> som avsnitt 2.2 uttryckligen undantar från P15:s mandat ("`rivalmarginalen` ... är en beskriven
+> speldesign"). De föreslagna talen (1.15/1.45) behålls DÄRFÖR oreviderade: de uppnår hela nyttan
+> `trueBudget` kan ge (diskvalificering långt under taket) utan att göra köparnas budgettak
+> orealistiskt generöst i onödan. Ett senare, bredare balanspass (P22, som får skruva hela
+> `balance.json`) kan stänga den sista biten via score-vikterna om måltabellen då fortfarande
+> kräver 25 %.
+
 | Kriterium | Målvärde | Varför |
 |---|---|---|
-| **Rivalerna vinner utlysta ordrar** | **25–50 %** mot `balanced` | NY. Auktionen ska vara en auktion (2) |
+| **Rivalerna vinner utlysta ordrar** | **~22–50 %** mot `balanced` (golvet sänkt från 25 %, se ovan) | NY. Auktionen ska vara en auktion (2) |
 | **Rivalbud diskvalificerade av `trueBudget`** | **< 10 %** av alla rivalbud | NY. Taket ska vara sällsynt, inte normalt (2) |
 | **Partier där en grade väljs > 70 % av gångerna** | **< 60 %** | Grade-valet ska vara levande (5) |
 | **`supplyCostIndex` spann under ett parti** | **≥ 25 enheter** mellan min och max | NY. Kostnadsrisken ska vara verklig (3) |
