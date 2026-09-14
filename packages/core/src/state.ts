@@ -198,6 +198,12 @@ function buildHouse(scenario: ScenarioFile): House {
     foundingCapital: seed.foundingCapital,
     creditPenaltyMultiplier: 1,
     unitsPerLineTurnDefault: seed.unitsPerLineTurnDefault,
+    // Härlett av economy.ts (P17) enligt formeln i spec 8.1
+    // (chiefOfStaff > chiefOfStaffActionBonusThreshold(70) ? 4 : 3). Samma
+    // "råkar bara sammanfalla"-motivering som creditLimit ovan: seed.staff.
+    // chiefOfStaff är 45 i indochina-slice.json, under tröskeln, så formeln körd
+    // på turnollens värden ger 3 — ingen gissning, bara den frusna evalueringen.
+    actionPoints: 3,
   }
 }
 

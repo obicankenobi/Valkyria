@@ -27,6 +27,7 @@ interface FixedCosts {
 interface Balance {
   fixedCosts: FixedCosts
   creditMultiple: number
+  chiefOfStaffActionBonusThreshold: number
 }
 
 const BALANCE = balance as unknown as Balance
@@ -39,6 +40,16 @@ const HOME_STATE_CREDIT_MULT: Record<House['homeState'], number> = {
 
 const BASE_LINES_INCLUDED_IN_PAYROLL = 4
 const TRAILING_REVENUE_TURNS = 4
+const ACTION_POINTS_BASE = 3
+const ACTION_POINTS_WITH_BONUS = 4
+
+// ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.1: härlett, skrivs bara här. Räknas för NÄSTA
+// tur (applyActions, som läser house.actionPoints, kör FÖRST i pipelinen — se
+// resolve/index.ts) mot chiefOfStaff:s värde EFTER den här turens egna HIRE-
+// handlingar (economy.ts kör sist), inte det värde turen började med.
+function computeActionPoints(house: House): number {
+  return house.staff.chiefOfStaff > BALANCE.chiefOfStaffActionBonusThreshold ? ACTION_POINTS_WITH_BONUS : ACTION_POINTS_BASE
+}
 
 function computeFixedCosts(house: House): Money {
   const extraLines = Math.max(0, house.lines.length - BASE_LINES_INCLUDED_IN_PAYROLL)
@@ -127,6 +138,20 @@ export const economy: ResolveStep = (ctx) => {
       headline: `${house.name.toUpperCase()} CREDIT LINE: £${house.creditLimit.toLocaleString('en-GB')}`,
       causeId: null,
       delta: { creditLimit: house.creditLimit - previousCreditLimit },
+      actorIsPlayer: false,
+      subjectId: null,
+    })
+  }
+
+  const previousActionPoints = house.actionPoints
+  house.actionPoints = computeActionPoints(house)
+  if (house.actionPoints !== previousActionPoints) {
+    emit({
+      severity: 'ticker',
+      scope: 'house',
+      headline: `${house.name.toUpperCase()} EXECUTIVE ACTIONS NEXT QUARTER: ${house.actionPoints}`,
+      causeId: null,
+      delta: { actionPoints: house.actionPoints - previousActionPoints },
       actorIsPlayer: false,
       subjectId: null,
     })

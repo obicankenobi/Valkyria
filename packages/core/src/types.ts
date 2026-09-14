@@ -109,6 +109,11 @@ export interface House {
   // Samma mönster som foundingCapital ovan: ett scenario-frö som bara fanns i
   // state.ts:s inläsning tills en senare prompt behövde läsa det efter tur 0.
   unitsPerLineTurnDefault: number
+  // ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.1 — härlett, skrivs bara av economy.ts
+  // (samma mönster som creditLimit): 4 om staff.chiefOfStaff > tröskeln, annars 3.
+  // Beräknat för NÄSTA tur (economy.ts kör sist i pipelinen; applyActions, som
+  // faktiskt läser fältet, kör FÖRST — se applyActions.ts).
+  actionPoints: number
 }
 
 export interface BoardTarget {

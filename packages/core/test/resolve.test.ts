@@ -3,7 +3,7 @@ import { resolveTurn } from '../src/resolve/index.js'
 import { createInitialState } from '../src/state.js'
 import { bidEstimate } from '../src/queries.js'
 import { computeUnitCostNow, getProduct } from '../src/pricing.js'
-import type { GameState, TurnSubmission, WireEvent } from '../src/types.js'
+import type { Contract, GameState, TurnSubmission, WireEvent } from '../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
@@ -441,5 +441,105 @@ describe('resolveTurn — P16: supply och produktionstakt', () => {
     }
 
     expect(anyDivergence).toBe(true)
+  })
+})
+
+describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
+  function fillerContract(id: string): Contract {
+    return {
+      id,
+      buyerId: 'rvn',
+      productId: '105mm_field_gun',
+      quantity: 100000, // aldrig färdigt under testets gång — håller linjen upptagen
+      unitsDelivered: 0,
+      price: 1,
+      unitCostAtSigning: 1,
+      grade: 'A',
+      dueTurn: 999,
+      status: 'active',
+    }
+  }
+
+  it('(P17 klart-när) BUILD_LINE höjer produktionen: en tidigare obemannad kontraktsrad får en linje och producerar', () => {
+    let state: GameState = createInitialState('indochina-slice', 'p17-build-line-seed')
+    state.house.treasury = 10000000 // gott om kassa för BUILD_LINE och produktion
+
+    // Alla FYRA befintliga linjer upptagna med kontrakt som aldrig blir klara.
+    const busyContracts = state.house.lines.map((_, i) => fillerContract(`contract-busy-${i}`))
+    const waitingContract: Contract = { ...fillerContract('contract-waiting'), quantity: 1000 }
+    state.market.contracts = [...busyContracts, waitingContract]
+    state.house.lines.forEach((line, i) => {
+      line.assignedContractId = busyContracts[i]!.id
+      line.productId = busyContracts[i]!.productId
+      line.status = 'running'
+    })
+    // Premissen: utan en femte linje finns det inget ledigt att tilldela waitingContract.
+    expect(state.house.lines.every((l) => l.status !== 'idle')).toBe(true)
+
+    let result = resolveTurn(state, {
+      standingOrders: [],
+      bids: [],
+      actions: [{ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }],
+    })
+    state = result.state
+    expect(state.house.lines.length).toBe(5)
+
+    // production.ts kör direkt efter applyActions i SAMMA pipeline-passage (avsnitt
+    // 10), så den nya linjen kan redan ha tilldelats och producerat den här turen —
+    // annars säkerställer nästa tur det (fortsatt tomma inskickningar räcker).
+    const alreadyShipped = state.market.shipments.some((s) => s.contractId === waitingContract.id)
+    if (!alreadyShipped) {
+      result = resolveTurn(state, { standingOrders: [], bids: [], actions: [] })
+      state = result.state
+    }
+
+    expect(state.market.shipments.some((s) => s.contractId === waitingContract.id)).toBe(true)
+  })
+
+  it('(P17 klart-när) ett R&D-projekt som löper klart höjer techLevel i rätt kategori, och rndOverhead debiteras varje tur under tiden', () => {
+    let state: GameState = createInitialState('indochina-slice', 'p17-rnd-seed')
+    state.house.treasury = 10000000
+    const techBefore = state.house.techLevel.naval
+    const EMPTY: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
+
+    let result = resolveTurn(state, {
+      standingOrders: [],
+      bids: [],
+      actions: [{ type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'naval' } }],
+    })
+    state = result.state
+    expect(state.house.rnd).toHaveLength(1)
+    const turnsTotal = state.house.rnd[0]!.turnsTotal
+
+    function fixedCostsChargedThisTurn(wire: readonly WireEvent[]): number {
+      const ticker = wire.find((e) => e.headline.includes('QUARTERLY FIXED COSTS'))
+      return ticker ? -ticker.delta.treasury! : 0
+    }
+
+    // rndOverhead debiteras av economy.ts, som läser house.rnd.length EFTER att
+    // applyActions (samma pipeline-passage) redan kan ha avancerat/tagit bort ett
+    // klart projekt — den sista av de här turnsTotal turerna är alltså turen
+    // projektet FÄRDIGSTÄLLS på, och den turen debiteras INTE rndOverhead (kön är
+    // redan tom när economy.ts kör). Mät därför bara medan kön fortfarande är
+    // icke-tom efter turen.
+    let fixedCostsWhileActive = 0
+    for (let t = 0; t < turnsTotal; t++) {
+      result = resolveTurn(state, EMPTY)
+      state = result.state
+      if (state.house.rnd.length > 0) {
+        fixedCostsWhileActive = fixedCostsChargedThisTurn(result.wire)
+      }
+    }
+
+    // Projektet ska nu vara klart: techLevel höjd, borttaget ur kön.
+    expect(state.house.techLevel.naval).toBe(techBefore + 1)
+    expect(state.house.rnd).toEqual([])
+
+    // En tur TILL, efter att projektet lämnat kön — rndOverhead (120 000) ska inte
+    // längre ingå i de fasta kostnaderna.
+    result = resolveTurn(state, EMPTY)
+    const fixedCostsAfterCompletion = fixedCostsChargedThisTurn(result.wire)
+
+    expect(fixedCostsWhileActive - fixedCostsAfterCompletion).toBe(120000) // fixedCosts.rndOverhead, balance.json
   })
 })
