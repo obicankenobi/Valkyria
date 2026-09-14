@@ -107,7 +107,7 @@ describe('passive (marginalfiltret, spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 1
 })
 
 describe('aggressive (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
-  it('bjuder på varje order, även restricted, underbjuder rivalerna, och väljer grade C', () => {
+  it('bjuder på varje order, även restricted, underbjuder rivalerna', () => {
     const state = withOrder(createInitialState('indochina-slice', 'aggressive-seed'), {
       productId: 'mk9_longhand_shell',
       quantity: 2,
@@ -118,7 +118,16 @@ describe('aggressive (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     const bids = aggressive(state).bids
     expect(bids.length).toBe(1)
     expect(bids[0]!.price).toBeLessThan(state.market.openOrders[0]!.referencePrice)
-    expect(bids[0]!.grade).toBe('C')
+  })
+
+  it('(P31) väljer grade dynamiskt (avsnitt 6.1) — inte längre hårdkodat C', () => {
+    const flush = withOrder(createInitialState('indochina-slice', 'aggressive-grade-seed'), { referencePrice: 90000 })
+    flush.house.treasury = BOT_BALANCE.gradeCashPressureThreshold + 1
+    expect(aggressive(flush).bids[0]!.grade).toBe('A')
+
+    const pressured = withOrder(createInitialState('indochina-slice', 'aggressive-grade-seed'), { referencePrice: 90000 })
+    pressured.house.treasury = BOT_BALANCE.gradeCashPressureThreshold - 1
+    expect(aggressive(pressured).bids[0]!.grade).toBe('C')
   })
 
   it('lånar maximalt varje tur (hela creditLimit)', () => {
@@ -137,7 +146,7 @@ describe('balanced (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     expect(balanced(state).bids.length).toBe(1)
   })
 
-  it('väljer grade A över gradeCashPressureThreshold, grade C när kassan är trängd', () => {
+  it('(P31, avsnitt 6.1) väljer grade A över gradeCashPressureThreshold, grade C när kassan är trängd', () => {
     const flush = withOrder(createInitialState('indochina-slice', 'balanced-grade-seed'), { referencePrice: 90000 })
     flush.house.treasury = BOT_BALANCE.gradeCashPressureThreshold + 1
     expect(balanced(flush).bids[0]!.grade).toBe('A')
@@ -145,6 +154,28 @@ describe('balanced (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     const pressured = withOrder(createInitialState('indochina-slice', 'balanced-grade-seed'), { referencePrice: 90000 })
     pressured.house.treasury = BOT_BALANCE.gradeCashPressureThreshold - 1
     expect(balanced(pressured).bids[0]!.grade).toBe('C')
+  })
+
+  it('(P31, avsnitt 6.1) väljer grade B under en pågående skandal — oavsett kassaläge', () => {
+    const state = withOrder(createInitialState('indochina-slice', 'balanced-scandal-seed'), { referencePrice: 90000 })
+    state.house.scandalUntilTurn = state.meta.turn + 3
+    state.house.treasury = BOT_BALANCE.gradeCashPressureThreshold - 1 // skulle annars gett C
+    expect(balanced(state).bids[0]!.grade).toBe('B')
+  })
+
+  it('(P31, avsnitt 6.1) väljer grade A igen sedan skandalen gått ut (scandalUntilTurn nådd)', () => {
+    const state = withOrder(createInitialState('indochina-slice', 'balanced-scandal-over-seed'), { referencePrice: 90000 })
+    state.house.scandalUntilTurn = state.meta.turn // redan nådd, inte längre pågående
+    expect(balanced(state).bids[0]!.grade).toBe('A')
+  })
+
+  it('(P31, avsnitt 6.1) väljer grade C när ordern viktar pris över gradePriceWeightThreshold, även vid gott om kassa', () => {
+    const state = withOrder(createInitialState('indochina-slice', 'balanced-priceweight-seed'), {
+      referencePrice: 90000,
+      weights: { price: BOT_BALANCE.gradePriceWeightThreshold + 0.01, delivery: 0.2, relationship: 0.1 },
+    })
+    state.house.treasury = BOT_BALANCE.gradeCashPressureThreshold + 1
+    expect(balanced(state).bids[0]!.grade).toBe('C')
   })
 
   it('lånar till halva creditLimit varje tur', () => {

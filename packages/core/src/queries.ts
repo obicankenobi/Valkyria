@@ -55,12 +55,16 @@ export const DISPLAY_THRESHOLDS = {
 interface BotTuningBalance {
   passiveMaxConcurrentBids: number
   gradeCashPressureThreshold: number
+  gradePriceWeightThreshold: number
 }
 const BOT_TUNING_BALANCE = balanceData as unknown as BotTuningBalance
 
 export const BOT_BALANCE = {
   passiveMaxConcurrentBids: BOT_TUNING_BALANCE.passiveMaxConcurrentBids,
   gradeCashPressureThreshold: BOT_TUNING_BALANCE.gradeCashPressureThreshold,
+  // P31 (avsnitt 6.1): tröskeln för "order.weights.price är högt" i den delade
+  // grade-regeln alla fyra botar nu använder, se policies.ts:s chooseGrade.
+  gradePriceWeightThreshold: BOT_TUNING_BALANCE.gradePriceWeightThreshold,
 } as const
 
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per

@@ -40,6 +40,33 @@ describe('runGame (packages/harness)', () => {
     }
   })
 
+  it('(P31, avsnitt 6.2) de fem nya kolumnerna är välformade tal inom rimliga gränser', () => {
+    for (const [name, policy] of Object.entries(POLICIES)) {
+      const metrics = runGame('indochina-slice', `p31-columns-seed-${name}`, name, policy)
+      expect(metrics.rivalContractsWon).toBeGreaterThanOrEqual(0)
+      expect(metrics.rivalAttributionShare).toBeGreaterThanOrEqual(0)
+      expect(metrics.rivalAttributionShare).toBeLessThanOrEqual(100)
+      expect(metrics.voidedContracts).toBeGreaterThanOrEqual(0)
+      expect(metrics.retoolingTurns).toBeGreaterThanOrEqual(0)
+      expect(metrics.stationsBurned).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('(P31, avsnitt 6.2) rivalContractsWon och rivalAttributionShare rör sig över noll över flera partier', () => {
+    // Inte bara att formeln inte kastar — att rivalerna faktiskt VINNER och
+    // LEVERERAR i ett stickprov, samma sorts "faktiskt uppmätt, inte antaget"
+    // som P26/P27:s härnessklart-när-rader (se ANDRINGSLOGG.md).
+    let anyContractsWon = false
+    let anyAttributionShare = false
+    for (let i = 0; i < 30; i++) {
+      const metrics = runGame('indochina-slice', `p31-exercised-seed-${i}`, 'balanced', balanced)
+      if (metrics.rivalContractsWon > 0) anyContractsWon = true
+      if (metrics.rivalAttributionShare > 0) anyAttributionShare = true
+    }
+    expect(anyContractsWon).toBe(true)
+    expect(anyAttributionShare).toBe(true)
+  })
+
   it('grossMarginPct är 0 (inte NaN) när inget någonsin levererats', () => {
     // passive tackar nej till restricted och kräver >20 % marginal i winBand — ett
     // parti kan sluta helt utan intäkt om inget bud någonsin röjer den tröskeln.

@@ -73,6 +73,21 @@ function takeLoan(amount: number, actions: PlayerAction[]): void {
   actions.push({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: rounded } })
 }
 
+// P31 (ETAPP2_TEKNISK_SPEC.md avsnitt 6.1): alla fyra botar väljer grade PER
+// ORDER enligt samma enkla regel, i stället för att hårdkoda en grade var
+// (P9/P14 — se ANDRINGSLOGG.md för de tre hårdkodningarna det här ersätter).
+// En pågående grade-skandal väger tyngst: B återhämtar reputation.quality utan
+// att antingen riskera en NY skandal (grade C:s gradeScandalChance är 14 %,
+// grade A:s är 0 %) eller ge upp hela A-marginalen mitt i en redan skadad
+// period. Utan skandal: C när kassan är trängd ELLER ordern viktar pris högt,
+// annars A — ordagrant avsnitt 6.1:s formulering.
+function chooseGrade(state: GameState, order: Order): Grade {
+  if (state.house.scandalUntilTurn !== null && state.meta.turn < state.house.scandalUntilTurn) return 'B'
+  if (state.house.treasury < BOT_BALANCE.gradeCashPressureThreshold) return 'C'
+  if (order.weights.price > BOT_BALANCE.gradePriceWeightThreshold) return 'C'
+  return 'A'
+}
+
 // P28 (ETAPP2_TEKNISK_SPEC.md avsnitt 3.3, "teknikspärr OCH R&D-VÄRDE"): innan
 // den här funktionen fanns investerade INGEN av de fyra botarna någonsin i
 // REPRIORITISE_RND — P28:s eget klart när-villkor ("minst 25 % av partierna
@@ -95,13 +110,13 @@ function reprioritiseArtilleryIfNeeded(state: GameState, actions: PlayerAction[]
 }
 
 // ── passive ──────────────────────────────────────────────────────────────
-// Bjuder bara vid marginal > 20 %, aldrig restricted, alltid grade A. Tar
-// TAKE_LOAN bara när treasury < 0 (och bara för att täcka underskottet, inte
-// för att expandera) — passiv betyder försiktig, inte skuldfri till varje pris.
-// Respekterar dessutom kapacitet: högst BOT_BALANCE.passiveMaxConcurrentBids bud
-// per tur. Vid fler kvalificerande ordrar än så prioriteras de med bäst marginal
+// Bjuder bara vid marginal > 20 %, aldrig restricted. Grade väljs dynamiskt
+// (P31, avsnitt 6.1 — se chooseGrade). Tar TAKE_LOAN bara när treasury < 0
+// (och bara för att täcka underskottet, inte för att expandera) — passiv
+// betyder försiktig, inte skuldfri till varje pris. Respekterar dessutom
+// kapacitet: högst BOT_BALANCE.passiveMaxConcurrentBids bud per tur. Vid fler
+// kvalificerande ordrar än så prioriteras de med bäst marginal
 // (deterministiskt — Policy har ingen rng, se ETAPP1_TEKNISK_SPEC.md avsnitt 3.3).
-const PASSIVE_GRADE: Grade = 'A'
 const PASSIVE_MARGIN_FLOOR = 0.2
 
 export const passive: Policy = (state) => {
@@ -111,7 +126,8 @@ export const passive: Policy = (state) => {
     const product = getProduct(order.productId)
     if (product.restricted) continue
 
-    const estimate = bidEstimate(state, order, PASSIVE_GRADE)
+    const grade = chooseGrade(state, order)
+    const estimate = bidEstimate(state, order, grade)
     const totalCost = estimate.yourUnitCost * order.quantity
     let best: { price: number; confidence: number } | null = null
     for (const point of estimate.winBand) {
@@ -121,7 +137,7 @@ export const passive: Policy = (state) => {
     if (!best) continue
 
     candidates.push({
-      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade: PASSIVE_GRADE, bribe: 0 },
+      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 },
       margin: marginAt(best.price, totalCost),
     })
   }
@@ -140,18 +156,19 @@ export const passive: Policy = (state) => {
 }
 
 // ── aggressive ───────────────────────────────────────────────────────────
-// Underbjuder alltid, tar varje restricted-order, grade C på allt, iscensätter
+// Underbjuder alltid, tar varje restricted-order. Grade väljs dynamiskt (P31,
+// avsnitt 6.1 — se chooseGrade), inte längre hårdkodat C på allt. Iscensätter
 // incidenter när en teater svalnat, lånar maximalt varje tur.
-const AGGRESSIVE_GRADE: Grade = 'C'
 const AGGRESSIVE_UNDERCUT_FACTOR = 0.9
 
 export const aggressive: Policy = (state) => {
   const bids: Bid[] = []
 
   for (const order of state.market.openOrders) {
-    const estimate = bidEstimate(state, order, AGGRESSIVE_GRADE)
+    const grade = chooseGrade(state, order)
+    const estimate = bidEstimate(state, order, grade)
     const price = Math.round(estimate.rivalPriceLow * AGGRESSIVE_UNDERCUT_FACTOR)
-    bids.push({ orderId: order.id, price, deliveryTurns: order.requiredDeliveryTurns, grade: AGGRESSIVE_GRADE, bribe: 0 })
+    bids.push({ orderId: order.id, price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 })
   }
 
   // Investerar INTE i R&D (P28) — se reprioritiseArtilleryIfNeeded:s motivering.
@@ -163,19 +180,19 @@ export const aggressive: Policy = (state) => {
 }
 
 // ── balanced ─────────────────────────────────────────────────────────────
-// Bjuder mot winBand-punkten närmast 60 % konfidens. Grade C när kassan är
-// trängd (treasury < gradeCashPressureThreshold), annars A — spec 5.2:s
-// avvägning ("C är rätt när du är trängd på kassa ... fel när du har rykte att
-// förlora"). Back-channel när doomsday > 65. Lånar till halva creditLimit varje
-// tur — inte hela (det är aggressives signatur), inte inget (det vore passive).
+// Bjuder mot winBand-punkten närmast 60 % konfidens. Grade väljs dynamiskt PER
+// ORDER (P31, avsnitt 6.1 — se chooseGrade; ersätter den tidigare per-tur-
+// regeln som bara såg treasury). Back-channel när doomsday > 65. Lånar till
+// halva creditLimit varje tur — inte hela (det är aggressives signatur), inte
+// inget (det vore passive).
 const BALANCED_TARGET_CONFIDENCE = 60
 const BALANCED_LOAN_SHARE = 0.5
 
 export const balanced: Policy = (state) => {
-  const grade: Grade = state.house.treasury < BOT_BALANCE.gradeCashPressureThreshold ? 'C' : 'A'
   const bids: Bid[] = []
 
   for (const order of state.market.openOrders) {
+    const grade = chooseGrade(state, order)
     const estimate = bidEstimate(state, order, grade)
     const closest = pickClosestConfidence(estimate.winBand, BALANCED_TARGET_CONFIDENCE, true)
     bids.push({ orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 })
@@ -208,8 +225,9 @@ export const balanced: Policy = (state) => {
 // Ingen politik, inga lån (spec 10.2, ordagrant) — 10.2 ger inget eget prismål för
 // capacity, så den återanvänder balanceds konfidensmål (60 %) OCH standard-
 // tie-breaken (inte balanceds preferHigherOnTie): referensbotens isolerade
-// variabel ska vara leveransförmågan, inte ett andra pris-experiment.
-const CAPACITY_GRADE: Grade = 'A'
+// variabel ska vara leveransförmågan, inte ett andra pris-experiment. Grade
+// väljs dynamiskt PER ORDER (P31, avsnitt 6.1 — se chooseGrade), inte längre
+// hårdkodat A.
 const CAPACITY_TARGET_CONFIDENCE = 60
 
 function linesNeededFor(order: Order): number {
@@ -229,9 +247,10 @@ export const capacity: Policy = (state) => {
     if (needed > availableLines) continue
     availableLines -= needed
 
-    const estimate = bidEstimate(state, order, CAPACITY_GRADE)
+    const grade = chooseGrade(state, order)
+    const estimate = bidEstimate(state, order, grade)
     const closest = pickClosestConfidence(estimate.winBand, CAPACITY_TARGET_CONFIDENCE)
-    bids.push({ orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade: CAPACITY_GRADE, bribe: 0 })
+    bids.push({ orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 })
   }
 
   // "Ingen politik, inga lån" (spec 10.2, ordagrant) — men R&D är varken.

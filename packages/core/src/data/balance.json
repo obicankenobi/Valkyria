@@ -102,9 +102,9 @@
   "rivalPassiveGrowthCapital": 40000,
   "rivalPassiveGrowthMarketShare": 0.5,
   "_p10_note": "P10 balanspass -- se docs/ANDRINGSLOGG.md för den fulla utredningen (11 härnesskörningar, 500-1000 partier styck). fixedCosts sänkta till hälften (payrollBase/lineUpkeep/stationUpkeep) -- ursprungsvärdena (510 000/tur mot 4 000 000 grundkapital) gjorde INSOLVENCY praktiskt taget oundviklig för alla tre botstrategierna inom ~9 turer, oavsett spelstil, eftersom ingen av dem tar lån (P9, ordagrant efter specens botbeskrivningar). orderQuantityMax höjd (150->185) för att ge balanced/aggressive tillräcklig intäktstakt för SCENARIO_COMPLETE-målet utan att dra upp fixedCosts igen. heatEscalation*-fälten testades men återställdes -- de påverkar aldrig NUCLEAR_EXCHANGE-frekvensen (se ANDRINGSLOGG.md: doomsday.ts:s krishändelse, P7, nollställer doomsday till 40 innan endings.ts någonsin ser ett värde över doomsdayCrisisEventThreshold, så trösklar/chanser för eskalering är strukturellt overksamma för just det målet).",
-  "_p14_note": "ETAPP1_5_TEKNISK_SPEC.md avsnitt 10.2 ger härnessbotarna nytt beteende men ingen siffra för de två fälten nedan -- PROVISORISKA, se docs/ANDRINGSLOGG.md. Exporteras till packages/harness via core/src/queries.ts:s BOT_BALANCE (samma mönster som DISPLAY_THRESHOLDS), inte hårdkodade i harness-paketet.",
+  "_p14_note": "ETAPP1_5_TEKNISK_SPEC.md avsnitt 10.2 ger härnessbotarna nytt beteende men ingen siffra för de två fälten nedan -- PROVISORISKA, se docs/ANDRINGSLOGG.md. Exporteras till packages/harness via core/src/queries.ts:s BOT_BALANCE (samma mönster som DISPLAY_THRESHOLDS), inte hårdkodade i harness-paketet. gradeCashPressureThreshold omkalibrerad 2 000 000 -> 1 700 000 i P31 (ETAPP2_TEKNISK_SPEC.md avsnitt 6.1) -- se docs/ANDRINGSLOGG.md: en enda delad tröskel för alla fyra botar kan inte hålla VARJE bot under P31:s egna 70%-tak samtidigt (capacity/passive drar åt varsitt håll, se den fulla utredningen), men ett smalt fönster gör det.",
   "passiveMaxConcurrentBids": 4,
-  "gradeCashPressureThreshold": 2000000,
+  "gradeCashPressureThreshold": 1700000,
   "_p17_note": "ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.1/8.2 ger chiefOfStaffActionBonusThreshold och maxProductionLines ordagrant, men INGEN siffra för buildLineCost, hireCost, hireGain eller rndProjectTurns -- PROVISORISKA, se docs/ANDRINGSLOGG.md.",
   "chiefOfStaffActionBonusThreshold": 70,
   "buildLineCost": 1200000,
@@ -156,5 +156,7 @@
   "voidedContractRelationPenalty": 15,
   "retoolingTurns": 1,
   "_p29_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 4.1 ger misattributionExposurePenalty(30) ordagrant.",
-  "misattributionExposurePenalty": 30
+  "misattributionExposurePenalty": 30,
+  "_p31_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 6.1 namnger 'order.weights.price är högt' som ett av två C-diskvalificerande villkor men ger inget tal -- PROVISORISKT. Satt ovanför bidWeightsDefault.price (0,55), det enda värde weights.price någonsin antar idag (orders.ts sätter alltid samma konstant per order, ingen variation finns ännu) -- ett tal därunder hade gjort villkoret ALLTID sant och tvingat varje bud till grade C, vilket bryter P31:s eget klart när (ingen policy > 70 % samma grade). Se docs/ANDRINGSLOGG.md.",
+  "gradePriceWeightThreshold": 0.65
 }

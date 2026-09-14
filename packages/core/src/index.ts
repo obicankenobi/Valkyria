@@ -8,6 +8,10 @@ export { round } from './money.js'
 export { createInitialState, cloneState } from './state.js'
 export { resolveTurn } from './resolve/index.js'
 export { createWireEmitter, pruneWire, WIRE_WINDOW_TURNS, WIRE_CHAIN_DEPTH } from './wire.js'
+// P31 (ETAPP2_TEKNISK_SPEC.md avsnitt 6.2): härnessens rivalAttributionShare-
+// kolumn måste skilja spelarens nyckel i Front.attribution från en rivals —
+// samma "läs källan, upprepa den aldrig" som DISPLAY_THRESHOLDS/BOT_BALANCE.
+export { PLAYER_ATTRIBUTION_KEY } from './resolve/steps/deliveries.js'
 export type { WireEmitter } from './wire.js'
 export { bidEstimate, DISPLAY_THRESHOLDS, BOT_BALANCE } from './queries.js'
 // getProduct: paketets ENDA väg till produktkatalogen (avsnitt 6) för extern kod —

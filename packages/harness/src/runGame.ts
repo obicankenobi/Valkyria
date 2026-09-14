@@ -1,7 +1,10 @@
 // runGame — kör ett parti headless med en given policy till slut (ended-status
 // eller scenariots turnCount) och samlar metrikerna avsnitt 7.3 kräver: ending,
 // sluttur, kassa, doomsdayPeak, antal kontrakt, marknadsandel, bruttomarginal,
-// andel turer med heat > 40.
+// andel turer med heat > 40. Plus de fem kolumnerna avsnitt 6.2 (P31) lägger
+// till: rivalContractsWon, rivalAttributionShare, voidedContracts,
+// retoolingTurns, stationsBurned — alla lästa direkt ur redan bokförda fält,
+// ingen ny räknare i core.
 //
 // MAX_TURNS = 21, inte 20 — se ANDRINGSLOGG.md (loggat under P8): scenariots
 // dueTurn/turnCount är 20 (0-indexerat), och endings.ts:s strikta dueTurn-kontroll
@@ -28,7 +31,7 @@
 // exakt så många rivalbud bidding.ts försöker pröva den turen. En rival som
 // saknas ur draft.rivals (finns inte i etapp 1,5) skulle göra denna nämnare en
 // aning för hög; ingen sådan borttagning existerar ännu.
-import { createInitialState, resolveTurn } from '@seventh-front/core'
+import { createInitialState, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
 import type { GameState, TurnResult } from '@seventh-front/core'
 import type { Policy } from './policies.js'
 
@@ -45,6 +48,13 @@ export interface GameMetrics {
   disqualifiedRivalBidPct: number
   grossMarginPct: number
   heatOver40SharePct: number
+  // P31 (ETAPP2_TEKNISK_SPEC.md avsnitt 6.2) — de fem kolumnerna som mäter det
+  // etapp 2 faktiskt byggde (rivalkontrakt, kapacitetsstraff, EXPOSURE).
+  rivalContractsWon: number
+  rivalAttributionShare: number
+  voidedContracts: number
+  retoolingTurns: number
+  stationsBurned: number
 }
 
 const MAX_TURNS = 21
@@ -57,6 +67,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let rivalBidsDisqualified = 0
   let turnsWithHighHeat = 0
   let turnsPlayed = 0
+  let retoolingLineTurns = 0
 
   for (let t = 0; t < MAX_TURNS; t++) {
     const decidingThisTurn = state.market.openOrders.filter((o) => o.expiresTurn <= state.meta.turn)
@@ -75,6 +86,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       }
     }
     if (Object.values(state.theatres).some((theatre) => theatre.heat > 40)) turnsWithHighHeat++
+    // P31 (avsnitt 6.2, retoolingTurns): "antal turer linjer stod i omställning"
+    // — en löpande summa, inte ett slutläge (en linje är 'retooling' bara i
+    // retoolingTurns(1) balanstur innan den går tillbaka till 'idle').
+    retoolingLineTurns += state.house.lines.filter((l) => l.status === 'retooling').length
 
     if (state.status.kind === 'ended') break
   }
@@ -82,6 +97,23 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   const totalRevenue = state.house.revenueByTurn.reduce((sum, r) => sum + r, 0)
   const totalCost = state.market.contracts.reduce((sum, c) => sum + c.unitCostAtSigning * c.unitsDelivered, 0)
   const totalDecidedOrders = playerWins + rivalWins
+
+  // P31 (avsnitt 6.2): de fem nya kolumnerna, alla lästa ur slutläget utom
+  // retoolingTurns ovan (en löpande summa, se kommentaren i turloopen).
+  const allRivalContracts = Object.values(state.rivals).flatMap((r) => r.contracts)
+  const rivalContractsWon = allRivalContracts.filter((c) => c.status === 'fulfilled').length
+  let attributedUnits = 0
+  let rivalAttributedUnits = 0
+  for (const front of Object.values(state.fronts)) {
+    for (const [key, units] of Object.entries(front.attribution)) {
+      attributedUnits += units
+      if (key !== PLAYER_ATTRIBUTION_KEY) rivalAttributedUnits += units
+    }
+  }
+  const voidedContracts =
+    state.market.contracts.filter((c) => c.status === 'voided').length +
+    allRivalContracts.filter((c) => c.status === 'voided').length
+  const stationsBurned = state.house.stations.filter((s) => s.status === 'burned').length
 
   return {
     policy: policyName,
@@ -96,5 +128,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     disqualifiedRivalBidPct: rivalBidsAttempted > 0 ? (rivalBidsDisqualified / rivalBidsAttempted) * 100 : 0,
     grossMarginPct: totalRevenue > 0 ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0,
     heatOver40SharePct: turnsPlayed > 0 ? (turnsWithHighHeat / turnsPlayed) * 100 : 0,
+    rivalContractsWon,
+    rivalAttributionShare: attributedUnits > 0 ? (rivalAttributedUnits / attributedUnits) * 100 : 0,
+    voidedContracts,
+    retoolingTurns: retoolingLineTurns,
+    stationsBurned,
   }
 }
