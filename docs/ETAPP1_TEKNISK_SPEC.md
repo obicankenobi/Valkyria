@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 1
 
-**Version 1.9.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
+**Version 2.0.** Vertikal skiva: scenariot `INDOCHINA_SLICE`, 20 turer. 1 front, 3 köpare,
 3 rivalhus, 4 linjer, 1 station.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
@@ -998,6 +998,21 @@ Persistens: hela `GameState` som JSON i IndexedDB under `save:{slot}`. `meta.ver
 migrering. Autospara efter varje `resolveTurn`.
 
 Estetik: monospace för siffror, papper och telex. Ingen animation. Ingen karta.
+
+> **Tre vägval gjorda under P11, se `docs/ANDRINGSLOGG.md`.** (1) `Order.trueBudget`,
+> `inspectorIntegrity`, `weights` och `referencePrice` visas ALDRIG i THE FLOOR:s orderlista eller
+> budformulär — bara `bidEstimate`s redan avsiktligt suddiga `winBand`/prisintervall, exakt som
+> avsnitt 4.3 beskriver att spelaren FÅR se. Specen säger inte uttryckligen vilka `Order`-fält som
+> är synliga, men hela poängen med `bidEstimate` faller om `GameState`s råa dolda fält visas rakt
+> upp i UI:t. (2) Ingen UI för `PlayerAction` (BROKER/INTEL/POLITICAL/MARKET/INTERNAL) byggs i
+> P11 — avsnitt 8 nämner bara ett budformulär för THE FLOOR, och `applyActions.ts` processar
+> ändå bara `TAKE_LOAN` på riktigt (P8). `TurnSubmission.actions` skickas alltid tomt. (3)
+> Klart när-villkoret ("spela 20 turer utan att öppna konsolen") verifieras med ett `@playwright/
+> test`-e2e-test (`packages/app/e2e/`, kört mot en riktig — headless — webbläsare, inte en
+> jsdom-simulering) i stället för manuell körning, eftersom kravet uttryckligen handlar om
+> webbläsarkonsolen. Testet hittade en riktig bugg: `index.html` saknade en favicon, vilket fick
+> webbläsaren att begära `/favicon.ico` och logga ett 404-konsolfel varje sidladdning — fixat med
+> en tom data-URI-favicon.
 
 ---
 

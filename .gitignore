@@ -6,3 +6,5 @@ coverage/
 *.log
 .DS_Store
 harness-results.csv
+test-results/
+playwright-report/

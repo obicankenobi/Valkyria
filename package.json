@@ -11,10 +11,12 @@
     "build": "npm run build --workspaces --if-present",
     "test": "vitest run",
     "lint": "eslint .",
-    "harness": "npm run build --workspace=packages/core --workspace=packages/harness && node packages/harness/dist/index.js"
+    "harness": "npm run build --workspace=packages/core --workspace=packages/harness && node packages/harness/dist/index.js",
+    "test:e2e": "playwright test --config=packages/app/playwright.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.5.1",
     "eslint": "^10.10.0",
     "globals": "^17.12.0",

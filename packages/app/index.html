@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Tom favicon i stället för ingen alls — annars begär webbläsaren
+         /favicon.ico automatiskt, vilket 404:ar och loggas som ett konsolfel
+         (upptäckt av P11:s e2e-test, se ANDRINGSLOGG.md). -->
+    <link rel="icon" href="data:," />
     <title>THE SEVENTH FRONT</title>
   </head>
   <body>
