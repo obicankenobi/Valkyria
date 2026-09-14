@@ -3,12 +3,17 @@
 Turbaserad kallakrigssimulator. TypeScript, strict. Kärnan är headless och ren.
 
 Designdokumentet är `docs/DESIGN.md`. Den tekniska specen för etapp 1 är
-`docs/ETAPP1_TEKNISK_SPEC.md` (P0–P12, klar). Den aktiva specen är nu **etapp 1,5**,
-`docs/ETAPP1_5_TEKNISK_SPEC.md` (P13–P22, antagen som ägarbeslut 2026-09-14) — den ersätter
-etapp 1-specens avsnitt 7.3-måltabell men lämnar resten av etapp 1-specen stående som historik.
-Bakgrunden till etapp 1,5 finns i `docs/RAPPORT1_GRANSKNING.md` (extern granskning) och
-`docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan). **Läs den promptens avsnitt i den spec som
-gäller innan du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
+`docs/ETAPP1_TEKNISK_SPEC.md` (P0–P12, klar). Etapp 1,5, `docs/ETAPP1_5_TEKNISK_SPEC.md`
+(P13–P22), är också klar — sista prompten (P22, balanspass + golden-test) är committad. Den
+aktiva specen är nu **etapp 2, "Motståndet"**, `docs/ETAPP2_TEKNISK_SPEC.md` (P23–P32, antagen
+som ägarbeslut 2026-09-14) — den ersätter etapp 1,5-specens avsnitt 13-måltabell och skjuter
+`DESIGN.md` §20:s bredd-etapp (andra fronten, råvarumarknad, kupper, `SUEZ`/`OCTOBER`) ett steg,
+till etapp 3, av ett mätt (inte tyckt) skäl: se etapp 2-specens avsnitt 1. Etapp 1 och 1,5
+lämnas stående som historik. Bakgrunden till etapp 2 finns i dess egna avsnitt 0 (facit mot
+P22) och avsnitt 1 (varför den inte är bredd); den ärver etapp 1,5:s egen bakgrund i
+`docs/RAPPORT1_GRANSKNING.md` (extern granskning) och `docs/RAPPORT2_LANGSIKTIG_PLAN.md`
+(långsiktig plan). **Läs den promptens avsnitt i den spec som gäller innan du börjar** — den är
+skriven för att följas ordagrant, inte för att tolkas.
 
 ## Hårda regler
 
