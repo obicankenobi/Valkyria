@@ -10,11 +10,18 @@
 // nödvändig, liten komplettering av redan committad P5-kod, inte en ny uppgift P6
 // hittar på. Se ANDRINGSLOGG.md.
 //
-// Bara SPELARENS egna leveranser (Contract/Shipment) går genom den här kedjan —
-// när en rival vinner en order skapas inget Contract (spec 4.4, se ANDRINGSLOGG.md
-// för P4:s motivering), så rivalmateriel kan inte spåras till en front i etapp 1.
-// P6:s klart när-villkor testar bara spelarens egna leveranser, så det blockerar
-// inget.
+// Fram till P25 gick bara SPELARENS egna leveranser (Contract/Shipment) genom den
+// här kedjan — när en rival vann en order skapades inget Contract (spec 4.4), så
+// rivalmateriel kunde inte spåras till en front. P25 (ETAPP2_TEKNISK_SPEC.md
+// avsnitt 2.3) lägger till en EGEN, parallell rivalkedja längst ned i den här
+// funktionen — RivalContract, inte Contract/Shipment (rivaler har ingen egen
+// produktionslinje/kapacitet att modellera i den här etappen, bara ett flatt
+// rivalDeliveryUnitsPerTurn rakt mot kontraktet, se avsnitt 2.3 punkt 2). Se
+// avsnitt 2.3:s egen motivering för VARFÖR den kedjan bor här och inte i
+// rivals.ts: PIPELINE kör rivals EFTER deliveries/fronts/heat, så en leverans
+// byggd i rivals.ts hade alltid varit en tur för sen för att heat.ts skulle
+// hinna se den (heat.ts läser och nollställer Theatre.deliveriesIntoActiveWar-
+// ThisTurn i samma passage, innan rivals.ts någonsin körs).
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { getProduct } from '../../pricing.js'
@@ -28,6 +35,7 @@ interface Balance {
   gradeScandalChance: Record<Grade, number>
   qualityScandalPenalty: number
   qualityScandalTurns: number
+  rivalDeliveryUnitsPerTurn: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -199,5 +207,91 @@ export const deliveries: ResolveStep = (ctx) => {
       actorIsPlayer: true,
       subjectId: contract.buyerId,
     })
+  }
+
+  // 3) Rivalernas EGEN leverans-/attributionskedja (P25, avsnitt 2.3) — vid sidan
+  // av spelarens ovan, aldrig sammanflätad med den: RivalContract, inte
+  // Contract/Shipment.
+  for (const rival of Object.values(draft.rivals)) {
+    for (const contract of rival.contracts) {
+      if (contract.status !== 'active' && contract.status !== 'late') continue
+
+      const remaining = contract.quantity - contract.unitsDelivered
+      if (remaining <= 0) continue
+
+      const delivered = Math.min(BALANCE.rivalDeliveryUnitsPerTurn, remaining)
+      contract.unitsDelivered += delivered
+      const product = getProduct(contract.productId)
+      const buyer = draft.factions[contract.buyerId]
+      const buyerName = buyer ? buyer.name.toUpperCase() : contract.buyerId.toUpperCase()
+
+      const deliveryId = emit({
+        severity: 'ticker',
+        scope: 'market',
+        headline: `${rival.name.toUpperCase()} DELIVERS ${delivered}× ${product.name.toUpperCase()} TO ${buyerName}`,
+        causeId: null,
+        delta: { unitsDelivered: delivered },
+        actorIsPlayer: false,
+        subjectId: contract.buyerId,
+      })
+
+      // Attribution + teaterns leveransräknare i SAMMA steg, SAMMA tur — innan
+      // heat.ts (senare i samma pipeline-passage) läser och nollställer den. Det
+      // här är avsnitt 2.3:s hela poäng (punkt 3): fronten och heat rör sig utan
+      // att spelaren gjort något.
+      const frontMatch = findFrontForBuyer(draft.fronts, contract.buyerId)
+      if (frontMatch) {
+        const { front, side } = frontMatch
+        front.equipment[side][product.category] += delivered
+        front.attribution[rival.id] = (front.attribution[rival.id] ?? 0) + delivered
+
+        const theatre = draft.theatres[front.theatreId]
+        if (theatre) theatre.deliveriesIntoActiveWarThisTurn += delivered
+
+        emit({
+          severity: 'ticker',
+          scope: 'front',
+          headline: `${delivered}× ${product.name.toUpperCase()} REACHES THE ${front.id.toUpperCase()} FRONT (${rival.name.toUpperCase()})`,
+          causeId: deliveryId,
+          delta: { [`equipment.${side}.${product.category}`]: delivered },
+          actorIsPlayer: false,
+          subjectId: front.id,
+        })
+      }
+
+      if (contract.unitsDelivered >= contract.quantity) {
+        contract.status = 'fulfilled'
+        emit({
+          severity: 'report',
+          scope: 'market',
+          headline: `RIVAL CONTRACT ${contract.id} FULFILLED: ${product.name.toUpperCase()} TO ${buyerName} (${rival.name.toUpperCase()})`,
+          causeId: deliveryId,
+          delta: {},
+          actorIsPlayer: false,
+          subjectId: contract.buyerId,
+        })
+      }
+    }
+
+    // Försenade rivalkontrakt — samma engångsövergång 'active' → 'late' som
+    // spelarens egen (steg 2 ovan), samma reliabilityLatePenalty (avsnitt 2.3
+    // ger ingen egen konstant, bara "reputation.reliability faller").
+    for (const contract of rival.contracts) {
+      if (contract.status !== 'active') continue
+      if (draft.meta.turn <= contract.dueTurn) continue
+
+      contract.status = 'late'
+      rival.reputation.reliability = Math.max(0, rival.reputation.reliability - BALANCE.reliabilityLatePenalty)
+
+      emit({
+        severity: 'report',
+        scope: 'market',
+        headline: `RIVAL CONTRACT ${contract.id} LATE — ${rival.name.toUpperCase()}'S RELIABILITY FALLS`,
+        causeId: null,
+        delta: { reliability: -BALANCE.reliabilityLatePenalty },
+        actorIsPlayer: false,
+        subjectId: contract.buyerId,
+      })
+    }
   }
 }

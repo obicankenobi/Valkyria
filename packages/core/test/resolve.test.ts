@@ -251,6 +251,15 @@ describe('resolveTurn — P5: produktion, kostnad och leverans', () => {
 describe('resolveTurn — P6: front och attribution', () => {
   it('(P6 klart-när) en front utan leveranser stagnerar över 15 turer: position, styrka, moral, förluster helt orörda', () => {
     let state: GameState = createInitialState('indochina-slice', 'p6-stagnation-seed')
+    // Sedan P25 (ETAPP2_TEKNISK_SPEC.md avsnitt 2.3) kan en rival som vinner en
+    // order leverera helt utan spelarens medverkan och därmed flytta fronten —
+    // exakt den nya, AVSEDDA effekten P25 finns för (se testet
+    // "en front dit ENDAST en rival levererar" nedan). "Utan leveranser" i DET HÄR
+    // testets ursprungliga mening (P6, ren stagnationsgaranti för nollställd
+    // inmatning) kräver alltså att det inte finns några rivaler att vinna en order
+    // överhuvudtaget — annars testar det inte längre "inga leveranser", bara
+    // "spelaren skickade inget den här turen".
+    state.rivals = {}
     const before = JSON.parse(JSON.stringify(state.fronts['front-1']))
 
     for (let i = 0; i < 15; i++) {
@@ -294,6 +303,61 @@ describe('resolveTurn — P6: front och attribution', () => {
     expect(state.fronts['front-1']!.position).toBeLessThan(positionBefore) // mot -100, rvn:s sida
     expect(state.fronts['front-1']!.attribution['player']).toBe(deliveredQuantity)
     expect(state.fronts['front-1']!.equipment.a.artillery).toBe(deliveredQuantity)
+  })
+})
+
+describe('resolveTurn — P25: rivalerna fullföljer kontrakt (ETAPP2_TEKNISK_SPEC.md avsnitt 2.3)', () => {
+  it('(P25 klart-når) en front dit ENDAST en rival levererar rör sig, och Front.attribution innehåller en rivalnyckel efter 20 turer — spelaren gör ingenting', () => {
+    let state: GameState = createInitialState('indochina-slice', 'p25-rival-delivers-seed')
+    const positionBefore = state.fronts['front-1']!.position
+
+    for (let t = 0; t < 20; t++) {
+      state = resolveTurn(state, EMPTY_SUBMISSION).state
+    }
+
+    // Spelaren har inte skickat in ett enda bud eller en enda handling någon av
+    // de 20 turerna — varje förflyttning här kommer uteslutande från en rival
+    // som vunnit en order och levererat mot den (P25), inte från spelaren.
+    expect(state.fronts['front-1']!.position).not.toBe(positionBefore)
+    const attributionKeys = Object.keys(state.fronts['front-1']!.attribution)
+    expect(attributionKeys.some((key) => key !== 'player')).toBe(true)
+    expect(state.market.contracts).toHaveLength(0) // spelaren har aldrig vunnit ett kontrakt
+  })
+
+  it('(P25 klart-når) en rivalleverans räknas i Theatre.deliveriesIntoActiveWarThisTurn SAMMA tur den sker, inte nästa — heat.ts (senare i samma pipeline-passage) ser den direkt', () => {
+    const state: GameState = createInitialState('indochina-slice', 'p25-same-turn-seed')
+    state.rivals = {
+      brandt: {
+        ...state.rivals['brandt']!,
+        contracts: [
+          { id: 'rc-heat-test', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 100000, unitsDelivered: 0, dueTurn: 500, status: 'active' },
+        ],
+      },
+    }
+    // Ta bort ordergenereringens rivaltävlan så att INGEN NY rivalorder/kontrakt
+    // kan uppstå och störa mätningen — bara det redan skapade kontraktet ovan
+    // ska leverera den här enda turen.
+    state.market.openOrders = []
+    const theatre = state.theatres['indochina']!
+    theatre.heat = 50
+    theatre.deliveriesIntoActiveWarThisTurn = 0
+    const heatBefore = theatre.heat
+
+    const result = resolveTurn(state, EMPTY_SUBMISSION)
+
+    // heat.ts's formel (isolerat testad i heat.test.ts): branchen "heatFromDeliveries > 0"
+    // ger heat + enheter×heatPerUnit − heatDecayActive. Om rivalleveransen inte hade
+    // räknats SAMMA tur (t.ex. en bugg som skrev den en pipeline-passage för sent)
+    // hade branchen "annars" (− heatDecayIdle, en annan formel) körts i stället.
+    const rivalDeliveryUnitsPerTurn = balanceData.rivalDeliveryUnitsPerTurn as number
+    const heatPerUnit = balanceData.heatPerUnit as number
+    const heatDecayActive = balanceData.heatDecayActive as number
+    const expectedHeat = Math.max(0, Math.min(100, heatBefore + rivalDeliveryUnitsPerTurn * heatPerUnit - heatDecayActive))
+
+    expect(result.state.theatres['indochina']!.heat).toBe(expectedHeat)
+    // Räknaren är transient (nollställd av heat.ts i samma steg) — just DÄRFÖR
+    // bevisar heat-utfallet ovan tidpunkten, inte en direkt läsning av räknaren.
+    expect(result.state.theatres['indochina']!.deliveriesIntoActiveWarThisTurn).toBe(0)
   })
 })
 

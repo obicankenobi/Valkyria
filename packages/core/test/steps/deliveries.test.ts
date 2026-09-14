@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { deliveries, PLAYER_ATTRIBUTION_KEY } from '../../src/resolve/steps/deliveries.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
+import balanceData from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
-import type { Contract, GameState, Shipment, TurnSubmission, WireEvent } from '../../src/types.js'
+import type { Contract, GameState, RivalContract, Shipment, TurnSubmission, WireEvent } from '../../src/types.js'
+
+const BALANCE = balanceData as unknown as { rivalDeliveryUnitsPerTurn: number; reliabilityLatePenalty: number }
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
@@ -322,5 +325,103 @@ describe('deliveries — rykte (ETAPP1_5_TEKNISK_SPEC.md avsnitt 5.1, 6.3)', () 
 
     expect(state.house.reputation.reliability).toBe(50) // oförändrad
     expect(emitted.some((e) => e.headline.includes('RELIABILITY RISES'))).toBe(false)
+  })
+})
+
+// P25 (ETAPP2_TEKNISK_SPEC.md avsnitt 2.3) — rivalernas EGEN leverans-/
+// attributionskedja, vid sidan av spelarens ovan. RivalContract, inte
+// Contract/Shipment: en rival har ingen egen produktionslinje i den här etappen,
+// bara ett flatt rivalDeliveryUnitsPerTurn rakt mot kontraktet.
+function activeRivalContract(overrides: Partial<RivalContract> = {}): RivalContract {
+  return {
+    id: 'rival-contract-test-0',
+    buyerId: 'rvn',
+    productId: '105mm_field_gun',
+    quantity: 100,
+    unitsDelivered: 0,
+    dueTurn: 10,
+    status: 'active',
+    ...overrides,
+  }
+}
+
+describe('deliveries — rivalernas leverans/attribution (P25, avsnitt 2.3)', () => {
+  it('en rival levererar upp till rivalDeliveryUnitsPerTurn mot sitt aktiva kontrakt varje tur', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rival = state.rivals['brandt']!
+    rival.contracts = [activeRivalContract({ quantity: 1000 })]
+    state.meta.turn = 0
+
+    deliveries(makeCtx(state, 'del-seed').ctx)
+
+    expect(rival.contracts[0]!.unitsDelivered).toBe(BALANCE.rivalDeliveryUnitsPerTurn)
+  })
+
+  it('en rivalleverans till en köpare som står på en front ökar equipment och attribution under rivalens EGET id, inte "player"', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']! // sideA: rvn
+    const rival = state.rivals['brandt']!
+    rival.contracts = [activeRivalContract({ buyerId: 'rvn', productId: '105mm_field_gun', quantity: 1000 })]
+    state.meta.turn = 0
+
+    deliveries(makeCtx(state, 'del-seed').ctx)
+
+    expect(front.equipment.a.artillery).toBe(BALANCE.rivalDeliveryUnitsPerTurn)
+    expect(front.attribution['brandt']).toBe(BALANCE.rivalDeliveryUnitsPerTurn)
+    expect(front.attribution[PLAYER_ATTRIBUTION_KEY]).toBeUndefined()
+  })
+
+  it('ett rivalkontrakt blir fulfilled när unitsDelivered når quantity', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rival = state.rivals['brandt']!
+    const quantity = Math.round(BALANCE.rivalDeliveryUnitsPerTurn / 2)
+    rival.contracts = [activeRivalContract({ quantity })]
+    state.meta.turn = 0
+
+    const { ctx, emitted } = makeCtx(state, 'del-seed')
+    deliveries(ctx)
+
+    expect(rival.contracts[0]!.status).toBe('fulfilled')
+    expect(rival.contracts[0]!.unitsDelivered).toBe(quantity) // aldrig mer än quantity, trots kvot kvar av rivalDeliveryUnitsPerTurn
+    expect(emitted.some((e) => e.headline.includes('RIVAL CONTRACT') && e.headline.includes('FULFILLED'))).toBe(true)
+  })
+
+  it('(P25 klart-när) ett rivalkontrakt som passerar dueTurn utan att vara klart sätts late och rivalens reliability faller — en gång, inte varje tur', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rival = state.rivals['brandt']!
+    rival.contracts = [activeRivalContract({ dueTurn: 5, quantity: 100000, unitsDelivered: 10 })] // aldrig hinner fulfillas
+    state.meta.turn = 6 // > dueTurn
+    const reliabilityBefore = rival.reputation.reliability
+
+    deliveries(makeCtx(state, 'del-seed').ctx)
+    expect(rival.contracts[0]!.status).toBe('late')
+    expect(rival.reputation.reliability).toBe(reliabilityBefore - BALANCE.reliabilityLatePenalty)
+    const afterFirst = rival.reputation.reliability
+
+    state.meta.turn = 7
+    deliveries(makeCtx(state, 'del-seed-2').ctx)
+    expect(rival.reputation.reliability).toBe(afterFirst) // ingen ny smäll — kontraktet är redan 'late', inte 'active'
+  })
+
+  it('leverans fortsätter mot ett redan "late" rivalkontrakt (bara statusövergången är en engångshändelse)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rival = state.rivals['brandt']!
+    rival.contracts = [activeRivalContract({ status: 'late', quantity: 1000, unitsDelivered: 50 })]
+    state.meta.turn = 0
+
+    deliveries(makeCtx(state, 'del-seed').ctx)
+
+    expect(rival.contracts[0]!.unitsDelivered).toBe(50 + BALANCE.rivalDeliveryUnitsPerTurn)
+  })
+
+  it('rör inte ett voided eller redan fulfilled rivalkontrakt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rival = state.rivals['brandt']!
+    rival.contracts = [activeRivalContract({ status: 'fulfilled', unitsDelivered: 100, quantity: 100 })]
+    state.meta.turn = 0
+
+    deliveries(makeCtx(state, 'del-seed').ctx)
+
+    expect(rival.contracts[0]!.unitsDelivered).toBe(100) // orört
   })
 })

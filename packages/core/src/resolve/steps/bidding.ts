@@ -2,7 +2,7 @@
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
 import type { ResolveStep } from '../index.js'
-import type { Contract, Grade, Money, Order, RivalId } from '../../types.js'
+import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
 
 interface Candidate {
   source: 'player' | RivalId
@@ -211,6 +211,35 @@ export const bidding: ResolveStep = (ctx) => {
     } else {
       const rival = draft.rivals[winner.source]
       const rivalName = rival ? rival.name.toUpperCase() : winner.source.toUpperCase()
+
+      // P25 (ETAPP2_TEKNISK_SPEC.md avsnitt 2.3, punkt 1): "bidding.ts:s rivalgren
+      // skapar en RivalContract och drar priset från köparens militaryBudget (redan
+      // gjort ovan) och lägger det till rivalens capital." Leverans/attribution
+      // hanteras i deliveries.ts, INTE här — se avsnitt 2.3:s egen motivering
+      // (rivals.ts ligger för sent i PIPELINE för att heat.ts ska hinna se en
+      // leverans byggd där samma tur).
+      if (rival) {
+        const rivalContract: RivalContract = {
+          id: `rival-contract-${order.id}`,
+          buyerId: order.buyerId,
+          productId: order.productId,
+          quantity: order.quantity,
+          unitsDelivered: 0,
+          dueTurn: draft.meta.turn + winner.deliveryTurns,
+          status: 'active',
+        }
+        rival.contracts.push(rivalContract)
+        rival.capital += winner.price
+
+        // Punkt 4: "Vid vunnet kontrakt stiger relations[buyerId] med samma
+        // relationBoostMin/Max som spelaren får" (ovan, spelarens gren).
+        if (faction) {
+          const boost = rng.int(BALANCE.relationBoostMin, BALANCE.relationBoostMax)
+          const before = rival.relations[order.buyerId] ?? 0
+          rival.relations[order.buyerId] = Math.min(100, before + boost)
+        }
+      }
+
       emit({
         severity: 'report',
         scope: 'market',
