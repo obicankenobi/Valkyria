@@ -10,6 +10,8 @@ const COLUMNS = [
   'doomsdayPeak',
   'contracts',
   'marketSharePct',
+  'rivalWinPct',
+  'disqualifiedRivalBidPct',
   'grossMarginPct',
   'heatOver40SharePct',
 ] as const satisfies readonly (keyof GameMetrics)[]

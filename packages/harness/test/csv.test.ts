@@ -12,6 +12,8 @@ function row(overrides: Partial<GameMetrics> = {}): GameMetrics {
     doomsdayPeak: 0,
     contracts: 3,
     marketSharePct: 50,
+    rivalWinPct: 45,
+    disqualifiedRivalBidPct: 8,
     grossMarginPct: 12.5,
     heatOver40SharePct: 20,
     ...overrides,
@@ -24,17 +26,17 @@ describe('csv (packages/harness)', () => {
     const lines = csv.trim().split('\n')
 
     expect(lines[0]).toBe(
-      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,grossMarginPct,heatOver40SharePct',
+      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct',
     )
     expect(lines.length).toBe(3) // header + 2 partier
-    expect(lines[1]).toContain('passive,seed-1,INSOLVENCY,9,-123,0,3,50,12.5,20')
+    expect(lines[1]).toContain('passive,seed-1,INSOLVENCY,9,-123,0,3,50,45,8,12.5,20')
     expect(lines[2]).toContain('aggressive,seed-2')
   })
 
   it('en tom lista ger bara headerraden', () => {
     const csv = toCsv([])
     expect(csv.trim().split('\n')).toEqual([
-      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,grossMarginPct,heatOver40SharePct',
+      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct',
     ])
   })
 

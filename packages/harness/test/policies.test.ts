@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialState, getProduct } from '@seventh-front/core'
+import { BOT_BALANCE, createInitialState, getProduct } from '@seventh-front/core'
 import type { GameState, Order } from '@seventh-front/core'
-import { aggressive, balanced, passive } from '../src/policies.js'
+import { aggressive, balanced, capacity, passive, POLICIES } from '../src/policies.js'
 
 // En handbyggd order med ett SATT referencePrice, så marginalen kan styras
 // exakt. Allt annat kommer ur ett riktigt initialstate.
-function withOrder(state: GameState, overrides: Partial<Order>): GameState {
-  const order: Order = {
+function buildOrder(state: GameState, overrides: Partial<Order>): Order {
+  return {
     id: 'order-test',
     buyerId: 'rvn',
     productId: 'm1_rifle',
@@ -21,11 +21,19 @@ function withOrder(state: GameState, overrides: Partial<Order>): GameState {
     inspectorIntegrity: 50,
     ...overrides,
   }
-  state.market.openOrders = [order]
+}
+
+function withOrder(state: GameState, overrides: Partial<Order>): GameState {
+  state.market.openOrders = [buildOrder(state, overrides)]
   return state
 }
 
-describe('passive (marginalfiltret, spec avsnitt 7.3)', () => {
+function withOrders(state: GameState, overridesList: readonly Partial<Order>[]): GameState {
+  state.market.openOrders = overridesList.map((overrides) => buildOrder(state, overrides))
+  return state
+}
+
+describe('passive (marginalfiltret, spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
   it('bjuder INTE när hela kontraktspriset ligger under styckkostnaden × kvantiteten + 20 %', () => {
     // m1_rifle: unitCost 210 grade A. 100 enheter ⇒ 21 000 i verklig kostnad.
     // Ett referencePrice på 15 000 lägger hela winBandet under den nivån, så
@@ -48,7 +56,9 @@ describe('passive (marginalfiltret, spec avsnitt 7.3)', () => {
       referencePrice: 90000,
     })
 
-    expect(passive(state).bids.length).toBe(1)
+    const bids = passive(state).bids
+    expect(bids.length).toBe(1)
+    expect(bids[0]!.grade).toBe('A')
   })
 
   it('tackar alltid nej till restricted, oavsett marginal', () => {
@@ -61,10 +71,36 @@ describe('passive (marginalfiltret, spec avsnitt 7.3)', () => {
 
     expect(passive(state).bids).toEqual([])
   })
+
+  it('bjuder på högst BOT_BALANCE.passiveMaxConcurrentBids ordrar per tur, även när fler kvalificerar (10.2)', () => {
+    const orders = Array.from({ length: 10 }, (_, i) => ({
+      id: `order-${i}`,
+      referencePrice: 500000, // långt över 20 %-marginalen mot m1_rifles 21 000 i kostnad
+    }))
+    const state = withOrders(createInitialState('indochina-slice', 'passive-capacity-seed'), orders)
+
+    const bids = passive(state).bids
+    expect(bids.length).toBe(BOT_BALANCE.passiveMaxConcurrentBids)
+    expect(new Set(bids.map((b) => b.orderId)).size).toBe(bids.length) // inga dubbletter
+  })
+
+  it('lånar bara när treasury < 0, och bara för att täcka underskottet (10.2)', () => {
+    const negative = createInitialState('indochina-slice', 'passive-loan-seed')
+    negative.market.openOrders = []
+    negative.house.treasury = -50000
+    negative.house.creditLimit = 200000
+    expect(passive(negative).actions).toEqual([{ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 50000 } }])
+
+    const positive = createInitialState('indochina-slice', 'passive-loan-seed')
+    positive.market.openOrders = []
+    positive.house.treasury = 50000
+    positive.house.creditLimit = 200000
+    expect(passive(positive).actions).toEqual([])
+  })
 })
 
-describe('aggressive och balanced (spec avsnitt 7.3)', () => {
-  it('aggressive bjuder på varje order, även restricted, och underbjuder rivalerna', () => {
+describe('aggressive (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
+  it('bjuder på varje order, även restricted, underbjuder rivalerna, och väljer grade C', () => {
     const state = withOrder(createInitialState('indochina-slice', 'aggressive-seed'), {
       productId: 'mk9_longhand_shell',
       quantity: 2,
@@ -75,11 +111,68 @@ describe('aggressive och balanced (spec avsnitt 7.3)', () => {
     const bids = aggressive(state).bids
     expect(bids.length).toBe(1)
     expect(bids[0]!.price).toBeLessThan(state.market.openOrders[0]!.referencePrice)
+    expect(bids[0]!.grade).toBe('C')
   })
 
-  it('balanced bjuder på varje order', () => {
+  it('lånar maximalt varje tur (hela creditLimit)', () => {
+    const state = createInitialState('indochina-slice', 'aggressive-loan-seed')
+    state.market.openOrders = []
+    state.house.creditLimit = 300000
+
+    expect(aggressive(state).actions).toContainEqual({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 300000 } })
+  })
+})
+
+describe('balanced (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
+  it('bjuder på varje order', () => {
     const state = withOrder(createInitialState('indochina-slice', 'balanced-seed'), { referencePrice: 90000 })
 
     expect(balanced(state).bids.length).toBe(1)
+  })
+
+  it('väljer grade A över gradeCashPressureThreshold, grade C när kassan är trängd', () => {
+    const flush = withOrder(createInitialState('indochina-slice', 'balanced-grade-seed'), { referencePrice: 90000 })
+    flush.house.treasury = BOT_BALANCE.gradeCashPressureThreshold + 1
+    expect(balanced(flush).bids[0]!.grade).toBe('A')
+
+    const pressured = withOrder(createInitialState('indochina-slice', 'balanced-grade-seed'), { referencePrice: 90000 })
+    pressured.house.treasury = BOT_BALANCE.gradeCashPressureThreshold - 1
+    expect(balanced(pressured).bids[0]!.grade).toBe('C')
+  })
+
+  it('lånar till halva creditLimit varje tur', () => {
+    const state = createInitialState('indochina-slice', 'balanced-loan-seed')
+    state.market.openOrders = []
+    state.house.creditLimit = 300000
+
+    expect(balanced(state).actions).toContainEqual({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 150000 } })
+  })
+})
+
+describe('capacity (referensboten, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
+  it('bjuder bara på ordrar som ryms inom lediga linjer och product.unitsPerLineTurn', () => {
+    // ch3_transport_helicopter: unitsPerLineTurn 3. Över 4 leveransturer ⇒ högst
+    // 12 enheter per linje. 4 lediga linjer i indochina-slice ⇒ högst 48 enheter
+    // levererbart totalt inom fristen.
+    const state = withOrders(createInitialState('indochina-slice', 'capacity-seed'), [
+      { id: 'order-deliverable', productId: 'ch3_transport_helicopter', quantity: 10, requiredDeliveryTurns: 4, referencePrice: 400000 },
+      { id: 'order-too-big', productId: 'ch3_transport_helicopter', quantity: 500, requiredDeliveryTurns: 4, referencePrice: 20000000 },
+    ])
+
+    const bids = capacity(state).bids
+    expect(bids.map((b) => b.orderId)).toEqual(['order-deliverable'])
+  })
+
+  it('gör ingen politik och tar inga lån', () => {
+    const state = createInitialState('indochina-slice', 'capacity-no-actions-seed')
+    state.house.treasury = -1
+    state.house.creditLimit = 999999
+    expect(capacity(state).actions).toEqual([])
+  })
+})
+
+describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
+  it('innehåller alla fyra botarna', () => {
+    expect(Object.keys(POLICIES).sort()).toEqual(['aggressive', 'balanced', 'capacity', 'passive'])
   })
 })

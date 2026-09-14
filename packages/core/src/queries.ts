@@ -35,6 +35,21 @@ export const DISPLAY_THRESHOLDS = {
   heatEscalation: THRESHOLD_BALANCE.heatEscalationThreshold,
 } as const
 
+// Samma motivering som DISPLAY_THRESHOLDS ovan, bara riktad mot en annan extern
+// konsument: härnessens botpolicyer (packages/harness, ETAPP1_5_TEKNISK_SPEC.md
+// avsnitt 10.2) behöver två balanstal för att respektera kapacitet/kassaläge utan
+// att hårdkoda en balanssiffra i harness-paketet.
+interface BotTuningBalance {
+  passiveMaxConcurrentBids: number
+  gradeCashPressureThreshold: number
+}
+const BOT_TUNING_BALANCE = balanceData as unknown as BotTuningBalance
+
+export const BOT_BALANCE = {
+  passiveMaxConcurrentBids: BOT_TUNING_BALANCE.passiveMaxConcurrentBids,
+  gradeCashPressureThreshold: BOT_TUNING_BALANCE.gradeCashPressureThreshold,
+} as const
+
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per
 // effectiveDepth.
 const DEPTH_BAND_PCT: Record<0 | 1 | 2 | 3 | 4 | 5, number> = {
