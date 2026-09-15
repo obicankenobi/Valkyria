@@ -15,9 +15,9 @@
 import indochinaSlice from '../../data/scenarios/indochina-slice.json' with { type: 'json' }
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
-import { allProducts, BALANCE, computeHeatForBuyer, computeReferencePrice, getProduct } from '../../pricing.js'
+import { allProducts, BALANCE, computeHeatForFront, computeReferencePrice, getProduct } from '../../pricing.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
-import type { Faction, FactionId, GameState, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
+import type { Faction, FactionId, FrontId, GameState, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
 
 interface NeedBalance {
   orderTriggerThreshold: Record<TechCategory, number>
@@ -58,6 +58,9 @@ interface NewOrderParams {
   weights: { price: number; delivery: number; relationship: number }
   rng: import('../../rng.js').Rng
   reason: OrderReason
+  // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): vilken front leveransen är avsedd
+  // för — null om ingen känd/vald (SCRIPTED).
+  frontId: FrontId | null
 }
 
 function buildOrder(p: NewOrderParams): Order {
@@ -92,21 +95,28 @@ function buildOrder(p: NewOrderParams): Order {
     weights: p.weights,
     inspectorIntegrity,
     reason: p.reason,
+    frontId: p.frontId,
   }
 }
 
 // P36 (avsnitt 4.3): "pressure(faction) = hur illa fronten går för faktionens
 // sida, 0..1, härlett ur position-förändring senaste 3 turerna (front.trace)
-// plus morale-underläge." Ingen faktion utan front (t.ex. laos) är under
-// press — samma fallback som computeHeatForBuyer.
+// plus morale-underläge."
+//
+// P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 1.3/3.3): var computePressureForBuyer(draft,
+// buyerId) fram till etapp 4 — sökte upp KÖPARENS (enda) front, ett mönster som
+// tyst mätte fel front så fort en köpare stod på två. Tar nu en EXPLICIT frontId,
+// precis som computeHeatForFront (pricing.ts) — anropsplatsen avgör vilken front
+// som är relevant (se highestPressureFront nedan för "vilken", när det inte redan
+// är känt via Order.reason).
 //
 // PROVISORISKT utöver det: hur "position-förändring" och "morale-underläge"
 // kombineras till en 0..1-skala. "Plus" läst ordagrant (summan av två 0..1-
 // termer, klampad till 1 — inte ett medelvärde). pressurePositionSpan
 // (balance.json, PROVISORISKT) avgör hur många positionspoängs rörelse på tre
 // turer som ensamt ger full press — se balance.json:s _p36_note.
-function computePressureForBuyer(draft: GameState, buyerId: FactionId): number {
-  const front = Object.values(draft.fronts).find((f) => f.sideA === buyerId || f.sideB === buyerId)
+function computePressureForFront(draft: GameState, buyerId: FactionId, frontId: FrontId): number {
+  const front = draft.fronts[frontId]
   if (!front) return 0
 
   const side: 'a' | 'b' = front.sideA === buyerId ? 'a' : 'b'
@@ -125,6 +135,34 @@ function computePressureForBuyer(draft: GameState, buyerId: FactionId): number {
   const moraleDisadvantage = clamp01((front.morale[otherSide] - front.morale[side]) / 100)
 
   return clamp01(positionPressure + moraleDisadvantage)
+}
+
+// P44 (avsnitt 3.2): "PEACETIME_REPLACEMENT: vald — den av köparens fronter där
+// pressure är högst. Ett försvarsdepartement köper till den front som går sämst."
+// null om köparen inte står på någon front (t.ex. Laos, innan sin egen front i
+// P45) — samma fallback som computePressureForFront/computeHeatForFront gav för
+// en frontlös köpare innan P44.
+//
+// Deterministisk tie-break (samma princip som engagement.ts:s byDescendingStrength
+// — CLAUDE.md hård regel 2, ingen RNG här): vid exakt lika pressure vinner lägst
+// front.id, sorterat före sökningen så ordningen aldrig beror av
+// Object.values-iterationsordning.
+function highestPressureFront(draft: GameState, buyerId: FactionId): FrontId | null {
+  const buyersFronts = Object.values(draft.fronts)
+    .filter((f) => f.sideA === buyerId || f.sideB === buyerId)
+    .sort((a, b) => a.id.localeCompare(b.id))
+  if (buyersFronts.length === 0) return null
+
+  let best = buyersFronts[0]!
+  let bestPressure = computePressureForFront(draft, buyerId, best.id)
+  for (const front of buyersFronts.slice(1)) {
+    const pressure = computePressureForFront(draft, buyerId, front.id)
+    if (pressure > bestPressure) {
+      best = front
+      bestPressure = pressure
+    }
+  }
+  return best.id
 }
 
 function clamp01(value: number): number {
@@ -155,7 +193,13 @@ export const orders: ResolveStep = (ctx) => {
       if (!buyer || buyer.bankrupt) continue
 
       const product = getProduct(scripted.productId)
-      const heat = computeHeatForBuyer(draft, scripted.buyerId)
+      // P44 (avsnitt 3.2): "SCRIPTED: null om scenariohändelsen inte anger
+      // någon." scriptedEvents ger ingen front i dagens scenariodata — Order.
+      // frontId blir null, men vikterna räknas ändå mot köparens mest pressade
+      // front (samma princip som innan P44, bara explicit i stället för sökt).
+      const weightingFront = highestPressureFront(draft, scripted.buyerId)
+      const heat = weightingFront !== null ? computeHeatForFront(draft, weightingFront) : 0
+      const pressure = weightingFront !== null ? computePressureForFront(draft, scripted.buyerId, weightingFront) : 0
       const order = buildOrder({
         id: nextId(),
         buyerId: scripted.buyerId,
@@ -166,9 +210,10 @@ export const orders: ResolveStep = (ctx) => {
         competingRivals: allRivalIds,
         heat,
         supplyCostIndex: draft.market.supplyCostIndex,
-        weights: weightsForPressure(computePressureForBuyer(draft, scripted.buyerId)),
+        weights: weightsForPressure(pressure),
         rng,
         reason: { kind: 'SCRIPTED' },
+        frontId: null,
       })
       draft.market.openOrders.push(order)
       emit({
@@ -206,14 +251,29 @@ export const orders: ResolveStep = (ctx) => {
     const issued = namedOrdersIssuedThisTurn[request.factionId] ?? 0
     if (issued >= NEED_BALANCE.maxOrdersPerFactionPerTurn) continue
 
-    const heat = computeHeatForBuyer(draft, request.factionId)
-    const weights = weightsForPressure(computePressureForBuyer(draft, request.factionId))
-    const issuedOrder = tryIssueOrder(ctx, request.factionId, faction, request.category, request.quantity, heat, weights, nextId, {
-      kind: 'REPLACE_FORMATION_LOSSES',
-      formationId: request.formationId,
-      formationName: request.formationName,
-      engagementWireId: request.engagementWireId,
-    })
+    // P44 (avsnitt 3.2): "REPLACE_FORMATION_LOSSES: härledd ur reason.formationId
+    // → förbandets frontId." Redan känt (request.frontId, satt av engagement.ts)
+    // — ingen sökning, och heat/pressure räknas mot EXAKT den fronten striden
+    // faktiskt stod på, inte köparens eventuella andra front.
+    const heat = computeHeatForFront(draft, request.frontId)
+    const weights = weightsForPressure(computePressureForFront(draft, request.factionId, request.frontId))
+    const issuedOrder = tryIssueOrder(
+      ctx,
+      request.factionId,
+      faction,
+      request.category,
+      request.quantity,
+      heat,
+      weights,
+      nextId,
+      request.frontId,
+      {
+        kind: 'REPLACE_FORMATION_LOSSES',
+        formationId: request.formationId,
+        formationName: request.formationName,
+        engagementWireId: request.engagementWireId,
+      },
+    )
     if (!issuedOrder) continue
 
     namedOrdersIssuedThisTurn[request.factionId] = issued + 1
@@ -254,6 +314,7 @@ function tryIssueOrder(
   heat: number,
   weights: { price: number; delivery: number; relationship: number },
   nextId: () => string,
+  frontId: FrontId | null,
   reason: OrderReason,
 ): { order: Order; product: Product; quantity: number } | null {
   const { draft, rng, emit } = ctx
@@ -307,6 +368,7 @@ function tryIssueOrder(
     weights,
     rng,
     reason,
+    frontId,
   })
   draft.market.openOrders.push(order)
   return { order, product, quantity }
@@ -339,8 +401,12 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
   const categoriesByFallingNeed = [...TECH_CATEGORIES].sort(
     (a, b) => faction.materielNeed[b] - faction.materielNeed[a],
   )
-  const heat = computeHeatForBuyer(draft, factionId)
-  const weights = weightsForPressure(computePressureForBuyer(draft, factionId))
+  // P44 (avsnitt 3.2): "PEACETIME_REPLACEMENT: vald — den av köparens fronter
+  // där pressure är högst." Samma front används för heat/pressure OCH lagras
+  // som Order.frontId — de är samma val, inte två separata beräkningar.
+  const frontId = highestPressureFront(draft, factionId)
+  const heat = frontId !== null ? computeHeatForFront(draft, frontId) : 0
+  const weights = weightsForPressure(frontId !== null ? computePressureForFront(draft, factionId, frontId) : 0)
 
   // Egen budget (maxOrdersPerFactionPerTurn), separat från steg 2:s namngivna
   // ersättningsordrar — se steg 2:s motivering (P40, avsnitt 5.4).
@@ -349,9 +415,18 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
     if (ordersIssued >= NEED_BALANCE.maxOrdersPerFactionPerTurn) break
     if (faction.materielNeed[category] < NEED_BALANCE.orderTriggerThreshold[category]) continue
 
-    const issuedOrder = tryIssueOrder(ctx, factionId, faction, category, faction.materielNeed[category], heat, weights, nextId, {
-      kind: 'PEACETIME_REPLACEMENT',
-    })
+    const issuedOrder = tryIssueOrder(
+      ctx,
+      factionId,
+      faction,
+      category,
+      faction.materielNeed[category],
+      heat,
+      weights,
+      nextId,
+      frontId,
+      { kind: 'PEACETIME_REPLACEMENT' },
+    )
     if (!issuedOrder) continue
 
     // Golvat vid 0 (samma symmetri som needCeiling golvar taket) — se

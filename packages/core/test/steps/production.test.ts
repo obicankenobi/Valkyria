@@ -37,6 +37,7 @@ function activeContract(overrides: Partial<Contract> = {}): Contract {
     dueTurn: 10,
     status: 'active',
     lateEventId: null,
+    frontId: null,
     ...overrides,
   }
 }

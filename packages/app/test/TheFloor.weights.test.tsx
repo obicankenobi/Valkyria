@@ -33,6 +33,7 @@ function makeOrder(state: GameState): Order {
     weights: DISTINCTIVE_WEIGHTS,
     inspectorIntegrity: 50,
     reason: { kind: 'PEACETIME_REPLACEMENT' },
+    frontId: 'front-1',
   }
 }
 

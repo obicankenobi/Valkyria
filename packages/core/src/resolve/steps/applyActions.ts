@@ -84,10 +84,21 @@ function isRndPayload(payload: Record<string, unknown>): payload is { category: 
 }
 
 // buyerId (en Faction) hör till en teater genom den front den står på — samma
-// logik som pricing.ts:s computeHeatForBuyer, men den funktionen returnerar bara
-// heat-talet, inte teatern själv (som STAGE_INCIDENT behöver för att kunna HÖJA
-// den). Ingen delad helper fanns för "hitta teatern", så en liten egen håller sig
-// här i stället för att bredda pricing.ts:s publika yta för en enda konsument.
+// idé som pricing.ts:s computeHeatForFront, men den funktionen tar en KÄND
+// frontId (P44) och returnerar bara heat-talet, inte teatern själv (som
+// STAGE_INCIDENT behöver för att kunna HÖJA den). Ingen delad helper fanns för
+// "hitta EN front/teater för en faktion som kan stå på flera", så en liten egen
+// håller sig här i stället för att bredda pricing.ts:s publika yta för en enda
+// konsument.
+//
+// KÄND, FLAGGAD LUCKA sedan P44 (ETAPP4_TEKNISK_SPEC.md, se ANDRINGSLOGG.md):
+// tar fortfarande FÖRSTA matchande fronten, samma mönster som orders.ts:s
+// dåvarande computePressureForBuyer hade innan P44 fixade den. Med Laos egen
+// front (P45) kan en faktion stå på två fronter — STAGE_INCIDENT väljer då
+// alltid den först funna teatern, inte nödvändigtvis den "rätta". Medvetet
+// lämnad: vilken av två teatrar en DIFFUS händelse ska träffa är ett eget litet
+// designval, inte del av P44:s mandat (Order/Contract.frontId, pris och vikter).
+// Åtgärda om P47:s mätning visar att det snedvrider något.
 function findTheatreForFaction(draft: GameState, factionId: FactionId): GameState['theatres'][string] | null {
   const front = Object.values(draft.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
   if (!front) return null

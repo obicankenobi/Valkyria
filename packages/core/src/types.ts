@@ -239,6 +239,11 @@ export interface Order {
   }
   inspectorIntegrity: Pct // dold, avgör mutans effekt
   reason: OrderReason
+  // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): vilken front leveransen är avsedd
+  // för — null om ingen kan härledas eller väljas (SCRIPTED utan angiven front).
+  // deliveries.ts faller tillbaka på findFrontForBuyer när den är null (samma
+  // funktion, oförändrad — se avsnitt 3.2:s tabell).
+  frontId: FrontId | null
 }
 
 // P40 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4), ordagrant.
@@ -270,6 +275,10 @@ export interface Contract {
   // kontraktet 'late' — specens egen pseudokod kräver den som causeId när
   // kontraktet senare blir 'voided' (CLAUDE.md hård regel 4, kedjad orsak).
   lateEventId: string | null
+  // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): ärvt från Order.frontId vid
+  // signering (bidding.ts). null för kontrakt som inte går via en Order (t.ex.
+  // crisis.ts:s krisköp) — samma fallback-princip som Order.frontId.
+  frontId: FrontId | null
 }
 
 // Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när
@@ -411,6 +420,10 @@ export interface FormationReplacementRequest {
   quantity: number
   statusEventId: string
   engagementWireId: string
+  // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): förbandets EGEN front — redan känd
+  // av engagement.ts (Formation.frontId) när begäran läggs, så orders.ts slipper
+  // söka efter den. Ersättningsordern som byggs ur begäran ärver den rakt av.
+  frontId: FrontId
 }
 
 export interface RivalHouse {

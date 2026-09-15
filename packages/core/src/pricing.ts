@@ -12,7 +12,7 @@ import productsData from './data/products.json' with { type: 'json' }
 import balanceData from './data/balance.json' with { type: 'json' }
 import { round } from './money.js'
 import type { Rng } from './rng.js'
-import type { FactionId, GameState, Grade, House, Money, Pct, Product, ProductId, RivalHouse } from './types.js'
+import type { FrontId, GameState, Grade, House, Money, Pct, Product, ProductId, RivalHouse } from './types.js'
 
 interface Balance {
   heatPriceElasticity: number
@@ -84,12 +84,18 @@ export function computeUnitCostNow(product: Product, grade: Grade, supplyCostInd
   return round(product.unitCost * gradeCostFactor * supplyFactor)
 }
 
-// heat hör till en teater, inte en köpare — men referencePrice behöver "köparens
-// heat". Etapp 1 har en front/teater; en köpare som inte står på någon front (t.ex.
-// Laos i INDOCHINA_SLICE) har ingen aktiv-krig-prispress och får heat 0. Ingen
-// spec-motsägelse: bara en naturlig läsning av "ingen front → inget krig här".
-export function computeHeatForBuyer(state: GameState, buyerId: FactionId): Pct {
-  const front = Object.values(state.fronts).find((f) => f.sideA === buyerId || f.sideB === buyerId)
+// heat hör till en teater, inte en köpare — men referencePrice behöver "en fronts
+// heat". P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 1.3): var computeHeatForBuyer(state,
+// buyerId) fram till etapp 4 — sökte upp KÖPARENS front, samma "första matchande
+// front"-mönster som orders.ts:s dåvarande computePressureForBuyer hade, och som
+// tyst gett fel pris så fort en köpare stod på två fronter. Tar nu en EXPLICIT
+// frontId i stället — anropsplatsen (orders.ts) vet redan vilken front ordern
+// gäller (Order.frontId, samma resonemang som avsnitt 3.2/3.3). En köpare som inte
+// står på någon front (t.ex. Laos, innan sin egen front i P45) har ingen
+// aktiv-krig-prispress och får heat 0 — samma fallback som innan, bara flyttad
+// till anropsplatsen (frontId null → 0, se orders.ts).
+export function computeHeatForFront(state: GameState, frontId: FrontId): Pct {
+  const front = state.fronts[frontId]
   if (!front) return 0
   const theatre = state.theatres[front.theatreId]
   return theatre ? theatre.heat : 0

@@ -90,6 +90,24 @@ function findFrontForBuyer(fronts: GameState['fronts'], buyerId: string): { fron
   return null
 }
 
+// P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): spelarens EGNA kontrakt vet numera
+// (oftast) exakt vilken front leveransen gäller — Contract.frontId, ärvt från
+// Order.frontId vid signering (bidding.ts). findFrontForBuyer används bara som
+// FALLBACK, kvar oförändrad (och fortsatt hela vägen för rivalernas leveranser,
+// som aldrig fick ett eget frontId — se avsnitt 3.2:s tabell, bara Order/Contract
+// nämns). Utan fallbacken hade ett kontrakt utan frontId (SCRIPTED, eller ett
+// krisköp via crisis.ts) aldrig levererat materiel någonstans.
+function resolveDeliveryFront(fronts: GameState['fronts'], buyerId: string, frontId: string | null): { front: Front; side: 'a' | 'b' } | null {
+  if (frontId !== null) {
+    const front = fronts[frontId]
+    if (front) {
+      if (front.sideA === buyerId) return { front, side: 'a' }
+      if (front.sideB === buyerId) return { front, side: 'b' }
+    }
+  }
+  return findFrontForBuyer(fronts, buyerId)
+}
+
 export const deliveries: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
@@ -154,7 +172,7 @@ export const deliveries: ResolveStep = (ctx) => {
     // types.ts som "levererade enheter", så den räknas upp direkt här, inte vid en
     // separat "sammandrabbning"-mekanik som fronts.ts inte har någon egen formel
     // för att avgöra tidpunkten på).
-    const frontMatch = findFrontForBuyer(draft.fronts, contract.buyerId)
+    const frontMatch = resolveDeliveryFront(draft.fronts, contract.buyerId, contract.frontId)
     if (frontMatch) {
       const { front, side } = frontMatch
       front.equipment[side][product.category] += shipment.units

@@ -314,5 +314,36 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       expect(order).toBeDefined()
       expect(order.weights).toEqual(balance.bidWeightsDefault)
     })
+
+    it('(P44 klart-när) en köpare på TVÅ fronter viktas/väljs mot den med högst pressure, inte den först funna', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front1 = state.fronts['front-1']! // rvn, ingen rörelse — 0 pressure
+      front1.trace = [5, 5, 5, 5]
+      front1.morale.a = 50
+      front1.morale.b = 50
+
+      // front-2 läggs till EFTER front-1 (samma insättningsordning-fälla som
+      // findFrontForBuyer/computePressureForBuyer hade innan P44 — "första
+      // matchande" hade alltid gett front-1, oavsett pressure). Ger rvn hög
+      // pressure här i stället.
+      state.fronts['front-2'] = {
+        ...JSON.parse(JSON.stringify(front1)),
+        id: 'front-2',
+        trace: [-20, -10, 0, 20], // rör sig mot sida B:s pol — dåligt för rvn (sida A)
+        morale: { a: 30, b: 70 },
+      }
+
+      state.factions['rvn']!.materielNeed.artillery = 100
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+      expect(order).toBeDefined()
+      // Vikterna avslöjar VILKEN front som faktiskt användes: hade koden tagit
+      // front-1 (0 pressure) hade weights varit standard, inte förskjutna.
+      expect(order.weights.delivery).toBeGreaterThan(order.weights.price)
+      expect(order.frontId).toBe('front-2')
+    })
   })
 })

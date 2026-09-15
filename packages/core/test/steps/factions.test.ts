@@ -48,6 +48,7 @@ describe('factions (isolerat steg, spec avsnitt 5 "Faktion")', () => {
       dueTurn: 10,
       status: 'active',
       lateEventId: null,
+      frontId: null,
     })
 
     const { ctx, emitted } = makeCtx(state, 'faction-seed')
@@ -97,6 +98,7 @@ describe('factions (isolerat steg, spec avsnitt 5 "Faktion")', () => {
         dueTurn: 10,
         status: 'fulfilled',
         lateEventId: null,
+        frontId: null,
       },
       {
         id: 'voided-1',
@@ -110,6 +112,7 @@ describe('factions (isolerat steg, spec avsnitt 5 "Faktion")', () => {
         dueTurn: 10,
         status: 'voided',
         lateEventId: null,
+        frontId: null,
       },
     )
 

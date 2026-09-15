@@ -72,10 +72,16 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // exakt 12 (var väl över tidigare), så tröskeln sänkt till > 8 med marginal
   // kvar mot alla tre policyer, i stället för att höja den siffra som faktiskt
   // brast.
+  //
+  // Omfryst i P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2, "golden omfryst i denna
+  // commit och ingen annan") — Order.frontId/Contract.frontId är nya fält i
+  // öppna ordrar/kontrakt, en del av det hashade sluttillståndet, oavsett att
+  // ingen SPELREGEL ändrades (samma tal, samma utfall, bara ett nytt fält per
+  // objekt). headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '10ccfe3b2e8c50' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4b5f88130add2' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '14ad00097a252' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'eb02936c85ce7' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '18e2ea0f40ab59' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '5e5ef179d12ea' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

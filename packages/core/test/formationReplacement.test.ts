@@ -100,6 +100,11 @@ describe('namngiven efterfrågan (P40, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
       // för UI som vill visa "varför" utan att gå via wire.
       expect(namedOrder!.reason.engagementWireId).toBe(attackEvent!.id)
     }
+    // (P44 klart-når, ETAPP4_TEKNISK_SPEC.md avsnitt 3.2) "REPLACE_FORMATION_
+    // LOSSES: härledd ur reason.formationId → förbandets frontId." Kedjan
+    // Formation.frontId → FormationReplacementRequest.frontId → Order.frontId
+    // hela vägen igenom, ingen sökning.
+    expect(namedOrder!.frontId).toBe(target.frontId)
   })
 
   it('(P40 klart-når) kedjan överlever pruneWire över 8 turer', () => {

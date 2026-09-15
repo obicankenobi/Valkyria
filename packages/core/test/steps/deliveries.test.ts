@@ -45,6 +45,13 @@ function activeContract(overrides: Partial<Contract> = {}): Contract {
     dueTurn: 10,
     status: 'active',
     lateEventId: null,
+    // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): default null — de flesta
+    // testerna i den här filen bryr sig inte om vilken front leveransen går
+    // till, bara ATT den gör det. Det gör dem, oförändrade, till löpande bevis
+    // för klart-när-kravet "ett kontrakt utan frontId levereras fortfarande via
+    // fallbacken" (findFrontForBuyer). Ett eget, explicit test nedan täcker
+    // VALET när frontId faktiskt är satt och det finns flera fronter.
+    frontId: null,
     ...overrides,
   }
 }
@@ -285,6 +292,28 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
       deliveries(makeCtx(state, 'del-seed-2').ctx)
 
       expect(front.attribution[PLAYER_ATTRIBUTION_KEY]).toBe(17)
+    })
+
+    it('(P44 klart-när) ett kontrakt MED ett explicit frontId levereras dit — inte till köparens första front i iterationsordning', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      // rvn står på BÅDA — front-1 (redan i scenariot) och en hand-konstruerad
+      // front-2, samma mönster som fronts.test.ts:s "flera fronter löses
+      // oberoende". findFrontForBuyer (fallbacken) hade tagit front-1, den
+      // FÖRSTA matchande — testet bevisar att ett explicit frontId styr rätt,
+      // till front-2, i stället.
+      const front1 = state.fronts['front-1']!
+      state.fronts['front-2'] = { ...JSON.parse(JSON.stringify(front1)), id: 'front-2' }
+      const front2 = state.fronts['front-2']!
+
+      const contract = activeContract({ buyerId: 'rvn', productId: '105mm_field_gun', frontId: 'front-2' })
+      state.market.contracts = [contract]
+      state.market.shipments = [shipment({ units: 20, arrivalTurn: 1 })]
+      state.meta.turn = 1
+
+      deliveries(makeCtx(state, 'del-seed').ctx)
+
+      expect(front2.equipment.a.artillery).toBe(20)
+      expect(front1.equipment.a.artillery).toBe(0) // orörd — inte fallbackens val
     })
 
     it('en leverans till en köpare som INTE står på någon front rör ingen front', () => {

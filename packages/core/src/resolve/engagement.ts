@@ -214,6 +214,9 @@ function queueReplacements(
       quantity,
       statusEventId,
       engagementWireId,
+      // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): redan känt här — förbandets
+      // egen front, ingen sökning behövs i orders.ts.
+      frontId: f.frontId,
     })
   }
 }

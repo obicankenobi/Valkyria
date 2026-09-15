@@ -82,6 +82,11 @@ function isSabotaged(rival: RivalHouse, turn: number): boolean {
 // duplicerad här hellre än exporterad, av samma skäl som pricing.ts:s
 // findLargestBuyerInTheatre: en enda extra konsument motiverar inte att bredda
 // en annan fils publika yta.
+//
+// KÄND, FLAGGAD LUCKA sedan P44 — samma "första matchande front"-brist som
+// applyActions.ts:s kopia (se den filens kommentar för hela resonemanget och
+// varför den medvetet lämnas). Styr här vilken teater en rivals supply play
+// träffar när en faktion står på två fronter.
 function findTheatreForFaction(draft: GameState, factionId: FactionId): GameState['theatres'][string] | null {
   const front = Object.values(draft.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
   if (!front) return null

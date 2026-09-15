@@ -43,6 +43,7 @@ function dueOrder(overrides: Partial<Order> = {}): Order {
     weights: { price: 0.55, delivery: 0.3, relationship: 0.15 },
     inspectorIntegrity: 50,
     reason: { kind: 'PEACETIME_REPLACEMENT' },
+    frontId: 'front-1',
     ...overrides,
   }
 }
@@ -134,6 +135,9 @@ describe('bidding (isolerat steg, spec avsnitt 4.2, 4.4)', () => {
     expect(contract.status).toBe('active')
     expect(contract.dueTurn).toBe(state.meta.turn + 2)
     expect(contract.unitCostAtSigning).toBeGreaterThan(0)
+    // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): Contract.frontId ärvt rakt av
+    // från Order.frontId vid signering.
+    expect(contract.frontId).toBe(order.frontId)
 
     const factionAfter = state.factions['rvn']!
     expect(factionAfter.relationToPlayer).toBeGreaterThan(factionBefore.relationToPlayer)

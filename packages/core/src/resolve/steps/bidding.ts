@@ -210,6 +210,8 @@ export const bidding: ResolveStep = (ctx) => {
         dueTurn: draft.meta.turn + winner.deliveryTurns,
         status: 'active',
         lateEventId: null,
+        // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): ärvt rakt av vid signering.
+        frontId: order.frontId,
       }
       draft.market.contracts.push(contract)
 
