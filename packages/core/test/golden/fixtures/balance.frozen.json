@@ -199,5 +199,20 @@
     "armoured": { "armour": 0.60, "infantry": 0.20, "artillery": 0.15, "electronics": 0.05 },
     "artillery": { "artillery": 0.70, "infantry": 0.20, "electronics": 0.10 },
     "irregular": { "infantry": 0.95, "artillery": 0.05 }
-  }
+  },
+  "_p49_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3 ger categoryCombatWeight, engagementAttritionPct(6), readinessLossMultiplier(1.8), maulThreshold(35), destroyThreshold(10) och refitThreshold(70) ordagrant -- specens egna tal. refittingReadinessRecoveryPerTurn saknar motsvarighet i specen: avsnitt 5.3 punkt 4 säger 'refitting -> active när readiness > refitThreshold' men ger INGEN mekanik för att readiness någonsin STIGER under refitting -- utan en sådan skulle ett förband som blivit mauled (readiness < 35) aldrig kunna nå över 70 och fastna permanent. Nödvändigt tillägg, PROVISORISKT: kalibrerat så ett förband som precis blivit mauled (readiness strax under 35) når över refitThreshold på ungefär samma antal turer (3-4) som en enda illa gynnad drabbning kan sänka readiness med, se docs/ANDRINGSLOGG.md.",
+  "categoryCombatWeight": {
+    "infantry": 0.10,
+    "artillery": 1.00,
+    "armour": 0.70,
+    "aviation": 0.50,
+    "naval": 0.05,
+    "electronics": 0.30
+  },
+  "engagementAttritionPct": 6,
+  "readinessLossMultiplier": 1.8,
+  "maulThreshold": 35,
+  "destroyThreshold": 10,
+  "refitThreshold": 70,
+  "refittingReadinessRecoveryPerTurn": 15
 }

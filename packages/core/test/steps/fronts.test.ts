@@ -139,6 +139,21 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     expect(state.fronts['front-2']!.position).toBe(0) // stagnerade — ingen materiel där
   })
 
+  describe('invarianten i 5.1 (P52, upptäckt under härnessmätningen — se ANDRINGSLOGG.md)', () => {
+    it('resolveFronts egen styrkeförlust speglas i formationerna, inte bara i front.strength', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      giveEquipment(front, 'a', 'artillery', 300) // sida A kraftigt överlägsen — garanterar förluster för B
+
+      fronts(makeCtx(state, 'front-seed').ctx)
+
+      for (const side of ['a', 'b'] as const) {
+        const sideFormations = front.formations.filter((f) => f.side === side)
+        expect(sideFormations.reduce((sum, f) => sum + f.strength, 0)).toBe(front.strength[side])
+      }
+    })
+  })
+
   describe('trace (P46, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
     it('växer med ett värde per tur och hålls kort — de fyra senaste positionerna, äldst först', () => {
       const state = createInitialState('indochina-slice', 'seed')

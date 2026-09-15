@@ -488,7 +488,8 @@ sitt syfte.
 
 ## 8. Måltabell
 
-Mätt läge i högerkolumnen är P47 (efter `39b863a`), 200 partier `balanced`, om inget annat anges.
+Mätt läge i högerkolumnen är P52 (efter `53b2512`, P51 hoppades över — se blockquote nedan),
+200 partier `balanced`, om inget annat anges.
 
 > **Rad omprövad under P45, se `docs/ANDRINGSLOGG.md`.** "Produkter som beställs minst en gång
 > per 100 partier" kan strukturellt aldrig nå 6 av 7: fyra av de sju produkterna (armour/
@@ -551,20 +552,45 @@ Mätt läge i högerkolumnen är P47 (efter `39b863a`), 200 partier `balanced`, 
 > `boardTarget` igen, redan avgjort orört i P47) | Uppmätt 16,9 % (n=200, `balanced`) — inom det
 > reviderade intervallet |
 
+> **P52: invarianten i 5.1 höll INTE — en äkta bugg hittad och rättad, ägaren tillfrågad.**
+> Härnessmätningen (n=200, `balanced`, full `resolveTurn`) visade 800 brutna kontroller av
+> 28 800, alltid `strength`, aldrig `equipment`. Grundorsak: `steps/fronts.ts`s `resolveFront`
+> (P6, långt före förbanden) minskar `front.strength[sida]` direkt via sin egen förlustformel,
+> utan att röra formationerna — den körs direkt EFTER `engagement()` i samma `fronts()`-anrop,
+> så den desynkar `front.strength` från förbanden igen varje stridstur (`attrition.ts`s
+> motsvarande brist för `equipment` hittades och rättades redan i P49 — den här var samma
+> mönster, bara för `strength`, och missades då). P52:s eget mandat är "ingen kod", så ägaren
+> tillfrågad innan fixen gjordes: en ny `reduceFormationsStrength` (`steps/fronts.ts`, samma
+> proportionella fördelning som `attrition.ts`s `reduceFormationsEquipment`) håller nu
+> `front.strength[sida]` i synk med formationerna, verifierat: 0 brutna kontroller av 33 600
+> efter fixen, plus ett nytt regressionstest (`fronts.test.ts`). Ett medvetet, motiverat
+> undantag från "ingen kod" — en bugfix, inte en balans- eller designändring |
+>
+> **(3B) Förband som blir `mauled` per parti** (1,45, mål 2–6) inte nått — samma `BUYOUT`-kaskad
+> som redan förklarar de flesta ouppfyllda raderna ovan: partier slutar i snitt vid tur ~11, för
+> kort tid för flera mauled-cykler per parti, och `destroyThreshold`/`maulThreshold` är specens
+> egna, ordagranna tal (P49:s not) — inte P52:s att skruva för att flytta fler händelser från
+> `destroyed` till `mauled`. Destroyed-frekvensen (2,35/parti) är hög av samma skäl P50:s roster-
+> omkalibrering redan gav (mindre formationer, se P50-blockquoten) — en avvägning som redan gjord,
+> inte omprövad här |
+
 | Kriterium | Målvärde | Mätt nu |
 |---|---|---|
 | **Produkter som beställs minst en gång per 100 partier** | **3 av 3 möjliga** (se blockquote ovan) | **3 av 3 (100 %)** |
-| **Andel ordrar som är gevär** | **< 45 %** | **67 % — ej uppfyllt, se P47-blockquote** |
-| Utlysta ordrar per tur | 1,0–1,8 | 1,10 |
-| **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | **1,05 (max 1,15) — uppfyllt, men trivialt, se P47-blockquote** |
+| **Andel ordrar som är gevär** | **< 45 %** | **70,3 % — ej uppfyllt, se P47-blockquote** |
+| Utlysta ordrar per tur | 1,0–1,8 | 1,33 |
+| **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | **1,06 (max 1,26) — uppfyllt, men trivialt, se P47-blockquote** |
 | **Partier där fronten byter riktning minst en gång** | **> 30 %** | **0 % — ej uppfyllt, se P47-blockquote** |
-| **Ordrar med `weights.delivery > weights.price`** | **8–25 %** | **21,9 %** |
+| **Ordrar med `weights.delivery > weights.price`** | **8–25 %** | **20,9 %** |
 | Partier där en köpare har `UNMET NEED` minst en tur | 20–60 % | 100 % |
-| **(3B) Förband som blir `mauled` per parti** | **2–6** | — |
-| **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **15–20 % (reviderat, se P50-blockquote)** | **16,9 %** |
-| Invarianten i 5.1 håller över 20 turer | alltid | — |
-| Rivalerna vinner ordrar (`balanced`) | 25–45 % | 68,2 % |
+| **(3B) Förband som blir `mauled` per parti** | **2–6** | **1,45 — ej uppfyllt, se P52-blockquote** |
+| **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **15–20 % (reviderat, se P50-blockquote)** | **19,5 %** |
+| **Invarianten i 5.1 håller över 20 turer** | **alltid** | **Ja, 0/33 600 brutna kontroller — se P52-blockquote (bugfix)** |
+| Rivalerna vinner ordrar (`balanced`) | 25–45 % | 71,2 % |
 | `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 0 % (200/200 `BUYOUT`, se P47-blockquote) |
+
+**P51 obyggd, inte klarmarkerad** — blockerad av den THE_WORLD-spec-lucka som flaggades vid
+antagandet (`CLAUDE.md`, `docs/ANDRINGSLOGG.md`). Ingen rad ovan beror av lägesbordet.
 
 **Måltabellen är hypoteser, inte acceptanskriterier.** Om härnessen envist säger något annat och
 partierna ändå är roliga att spela är det tabellen som ska skrivas om — men som ett medvetet

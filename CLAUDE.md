@@ -6,13 +6,17 @@ Designdokumentet är `docs/DESIGN.md`. Den tekniska specen för etapp 1 är
 `docs/ETAPP1_TEKNISK_SPEC.md` (P0–P12, klar). Etapp 1,5, `docs/ETAPP1_5_TEKNISK_SPEC.md`
 (P13–P22), är också klar. Etapp 2, "Motståndet", `docs/ETAPP2_TEKNISK_SPEC.md` (P23–P32), är
 ÄVEN DEN klar — se avsnitt 6.3:s blockquote för balanspassets fulla facit (fem av åtta
-fetstilta rader nådda, tre strukturellt reviderade). Den aktiva specen är nu **etapp 3, "Kriget
-som marknad"**, `docs/ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md` (P43–P52, antagen som
-ägarbeslut 2026-09-15, validerad mot commit `e650be2`) — den ersätter `orderGenerationChancePct`s
-tärningsdrivna ordergenerering med en behovsdriven modell kopplad till materielförluster på
-fronten, i två halvor: 3A (förbrukning, P43–P47, rör INTE balansen förrän P47) och 3B (namngivna
-förband, `Formation`, P48–P52). Se specens egna avsnitt 0–1 för de fyra mätta fynd den bygger på.
-Etapp 1, 1,5 och 2 lämnas stående som historik. **Känd lucka, upptäckt vid antagandet (se
+fetstilta rader nådda, tre strukturellt reviderade). Etapp 3, "Kriget som marknad",
+`docs/ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md` (P43–P52, antagen som ägarbeslut 2026-09-15,
+validerad mot commit `e650be2`) är **KLAR MED ETT UTTRYCKLIGT UNDANTAG: P51 är obyggd** (se
+nästa stycke) — P43–P50 och P52 kördes klart samma datum. Den ersätter
+`orderGenerationChancePct`s tärningsdrivna ordergenerering med en behovsdriven modell kopplad
+till materielförluster på fronten, i två halvor: 3A (förbrukning, P43–P47) och 3B (namngivna
+förband, `Formation`, P48–P52). Se specens egna avsnitt 0–1 för de fyra mätta fynd den bygger på,
+och avsnitt 8:s måltabell/blockquotes för balanspassens fulla facit (P47 för 3A, P52 för 3B).
+Ingen aktiv spec finns ännu för det som kommer härnäst — avsnitt 10:s "vad som lämnas till etapp
+4" är en lista över avsiktligt uteslutet innehåll, inte en skriven spec. Etapp 1, 1,5 och 2
+lämnas stående som historik. **Känd lucka, upptäckt vid antagandet (se
 `docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3 (etapp 3B) refererar
 upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`, `MovementArrow`, `sectorId` och
 ett INTEL-lager som om de redan finns — sökt igenom hela repot, noll träffar. Blockerar INTE

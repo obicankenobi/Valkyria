@@ -21,6 +21,7 @@
 // (denna turs förluster per sida) finns bara i det ögonblick den beräknas.
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { engagement } from '../engagement.js'
+import { allocateByWeight } from '../allocateByWeight.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Faction, FactionId, Front } from '../../types.js'
 
@@ -58,6 +59,28 @@ function applyCasualtiesToFaction(faction: Faction | undefined, casualties: numb
   if (!faction || casualties <= 0) return
   faction.manpower = Math.max(0, faction.manpower - casualties)
   faction.publicSupport = clamp(faction.publicSupport - casualties * BALANCE.publicSupportLossPerCasualty, 0, 100)
+}
+
+// P52 (upptäckt under härnessmätningen, ägaren tillfrågad — se ANDRINGSLOGG.md):
+// resolveFront minskar front.strength[sida] direkt via sin egen, redan sedan P6
+// existerande förlustformel, utan att röra formationerna — bröt invarianten i
+// avsnitt 5.1 så fort P48/P49:s förband fanns (Σ formations[sida].strength drev
+// isär från front.strength, mätt: alltid strength, aldrig equipment). Samma
+// mönster som attrition.ts:s (P49) motsvarande fix för equipment — vikten är
+// formationernas NUVARANDE styrka (aggregatets kollektiva förlustformel bryr
+// sig inte om vilket enskilt förband som råkar tappa mest).
+function reduceFormationsStrength(front: Front, side: 'a' | 'b', casualties: number): void {
+  if (casualties <= 0) return
+  const candidates = front.formations.filter((f) => f.side === side && f.strength > 0)
+  if (candidates.length === 0) return
+
+  const allocated = allocateByWeight(
+    candidates.map((f) => f.strength),
+    casualties,
+  )
+  candidates.forEach((f, i) => {
+    f.strength = Math.max(0, f.strength - allocated[i]!)
+  })
 }
 
 // P46 (avsnitt 4.3): pressure härleds ur "position-förändring senaste 3
@@ -128,7 +151,9 @@ function resolveFront(
   const defenderCasualties = Math.round(front.strength[defender] * (defenderLossPct / 100))
 
   front.strength[attacker] = Math.max(0, front.strength[attacker] - attackerCasualties)
+  reduceFormationsStrength(front, attacker, attackerCasualties)
   front.strength[defender] = Math.max(0, front.strength[defender] - defenderCasualties)
+  reduceFormationsStrength(front, defender, defenderCasualties)
   front.casualtiesTotal[attacker] += attackerCasualties
   front.casualtiesTotal[defender] += defenderCasualties
 

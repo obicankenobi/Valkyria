@@ -56,11 +56,16 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // om en omfrysning ("...", inget golden-villkor alls) — nästa avsedda
 // omfrysningspunkt är P52 (balanspass 3B, avsnitt 6:s "en gång per
 // etapphalva"), inte varje enskild 3B-prompt.
-it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+//
+// Återaktiverad och omfryst i P52 (2026-09-15, sista prompten i etapp 3) —
+// P50:s namngivna ersättningsordrar, P50:s omkalibrerade förbandsroster
+// (indochina-slice.json) och P52:s egen invariant-bugfix (resolveFront synkar
+// nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
+it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
-describe.skip('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
+describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
   // P47 (se ANDRINGSLOGG.md, 2026-09-15): alla tre golden-partierna slutar nu i
   // BUYOUT vid tur 10 (den dokumenterade P30/P45-spänningen, lämnad orörd på
   // ägarens beslut) — kortare partier ger färre rubriker. `passive` mäter nu
@@ -68,9 +73,9 @@ describe.skip('golden — ett scriptat parti per botpolicy, seed och sluttillst�
   // kvar mot alla tre policyer, i stället för att höja den siffra som faktiskt
   // brast.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '15ee239b0d2345' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '556479d755dc5' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '120551be2e95c0' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '10ccfe3b2e8c50' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4b5f88130add2' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '14ad00097a252' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
