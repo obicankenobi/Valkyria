@@ -51,7 +51,12 @@ function techLevelWithSpecialisationBonus(
 // Formen på scenariofilerna i data/scenarios/*.json — en ergonomisk startmall, inte
 // samma sak som det färdiga GameState. Hör hemma här och inte i types.ts, eftersom
 // den inte är del av avsnitt 2:s datamodell utan bara ett internt inläsningsformat.
-interface ScenarioFile {
+// Exporterad sedan P43 — inte del av paketets publika yta (index.ts re-exporterar
+// den inte), bara så att buildWorld nedan kan testas direkt mot en konstruerad
+// scenariofil (P43:s eget klart-när), samma mönster som andra interna moduler
+// redan importeras direkt av sina testfiler (../src/... i stället för paketets
+// index) i den här kodbasen.
+export interface ScenarioFile {
   id: string
   name: string
   startYear: number
@@ -95,13 +100,21 @@ interface ScenarioFile {
     relationToPlayer: number
     techLevelDefault: number
   }[]
-  theatre: {
+  // P43 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.1): flertaliga sedan etapp 4 — var
+  // singularobjekt fram till och med etapp 3, ett scenario kunde bara ha EN
+  // teater och EN front. Ren formatändring: `indochina-slice.json` har
+  // fortfarande bara ett element i varje array, se ANDRINGSLOGG.md.
+  theatres: {
     id: string
     name: string
     heat: number
-  }
-  front: {
+  }[]
+  fronts: {
     id: string
+    // NYTT i P43 — fanns inget behov av att ange det när det bara fanns en
+    // teater att tillhöra (den härleddes implicit). Bestämmer vilken teater i
+    // `theatres` ovan fronten hör till, alltså vilken `heat`-kurva den delar.
+    theatreId: string
     sideA: FactionId
     sideB: FactionId
     attacker: 'a' | 'b'
@@ -124,7 +137,7 @@ interface ScenarioFile {
       doctrine: Doctrine
       strength: number
     }[]
-  }
+  }[]
   // Konsumeras av orders.ts (P4), som avgör det exakta formatet då. Oanvänd här —
   // createInitialState bygger bara startläget, inte framtida turers utlysningar.
   scriptedEvents: unknown[]
@@ -265,7 +278,7 @@ function buildRivals(scenario: ScenarioFile): Record<RivalId, RivalHouse> {
   return rivals
 }
 
-function buildFormations(f: ScenarioFile['front']): Formation[] {
+function buildFormations(f: ScenarioFile['fronts'][number]): Formation[] {
   return f.formations.map((seed) => ({
     id: seed.id,
     name: seed.name,
@@ -287,12 +300,16 @@ function buildFormations(f: ScenarioFile['front']): Formation[] {
   }))
 }
 
-function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } {
-  const f = scenario.front
-
-  const front: Front = {
+// P43 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.1): flertalig sedan etapp 4 — bygger N
+// fronter och N teatrar, i stället för exakt en av varje. Varje front binds till
+// sin teater genom sitt EGNA theatreId (scenariodata, inte härlett). Exporterad
+// (se ScenarioFile ovan) så P43:s eget klart-när — "ett test visar att buildWorld
+// bygger två teatrar med var sin front ur en konstruerad scenariofil" — kan
+// testas direkt, utan att gå via den hårdkodade SCENARIOS-katalogen nedan.
+export function buildWorld(scenario: ScenarioFile): { theatres: Theatre[]; fronts: Front[] } {
+  const fronts: Front[] = scenario.fronts.map((f) => ({
     id: f.id,
-    theatreId: scenario.theatre.id,
+    theatreId: f.theatreId,
     sideA: f.sideA,
     sideB: f.sideB,
     position: f.position,
@@ -309,22 +326,22 @@ function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } 
     lastCasualtyEventId: null,
     trace: [f.position],
     formations: buildFormations(f),
-  }
+  }))
 
-  const theatre: Theatre = {
-    id: scenario.theatre.id,
-    name: scenario.theatre.name,
-    heat: scenario.theatre.heat,
-    frontIds: [front.id],
+  const theatres: Theatre[] = scenario.theatres.map((t) => ({
+    id: t.id,
+    name: t.name,
+    heat: t.heat,
+    frontIds: fronts.filter((front) => front.theatreId === t.id).map((front) => front.id),
     deliveriesIntoActiveWarThisTurn: 0,
-  }
+  }))
 
-  return { theatre, front }
+  return { theatres, fronts }
 }
 
 export function createInitialState(scenarioId: string, seed: string): GameState {
   const scenario = loadScenario(scenarioId)
-  const { theatre, front } = buildWorld(scenario)
+  const { theatres, fronts } = buildWorld(scenario)
 
   return {
     meta: {
@@ -338,9 +355,9 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
     },
     house: buildHouse(scenario),
     factions: buildFactions(scenario),
-    fronts: { [front.id]: front },
+    fronts: Object.fromEntries(fronts.map((front) => [front.id, front])),
     rivals: buildRivals(scenario),
-    theatres: { [theatre.id]: theatre },
+    theatres: Object.fromEntries(theatres.map((theatre) => [theatre.id, theatre])),
     market: {
       openOrders: [],
       contracts: [],
