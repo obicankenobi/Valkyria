@@ -56,10 +56,21 @@ function applyCasualtiesToFaction(faction: Faction | undefined, casualties: numb
   faction.publicSupport = clamp(faction.publicSupport - casualties * BALANCE.publicSupportLossPerCasualty, 0, 100)
 }
 
+// P46 (avsnitt 4.3): pressure härleds ur "position-förändring senaste 3
+// turerna" — fyra punkter (nu + tre bakåt) räcker för den jämförelsen, se
+// orders.ts:s computePressureForBuyer. Ingen balanssiffra — ett rent
+// datastrukturfönster, samma sorts kodkonstant som wire.ts:s WIRE_WINDOW_TURNS.
+const FRONT_TRACE_LENGTH = 4
+
 export const fronts: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
 
   for (const front of Object.values(draft.fronts)) {
+    // Skrivs VARJE tur, även en stagnerad front (position då oförändrad) —
+    // annars får trace hål som gör "tre turer bakåt" tvetydigt.
+    front.trace.push(front.position)
+    if (front.trace.length > FRONT_TRACE_LENGTH) front.trace.shift()
+
     const attacker = front.attacker
     const defender = otherSide(attacker)
 

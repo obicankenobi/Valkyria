@@ -3,6 +3,7 @@ import { orders } from '../../src/resolve/steps/orders.js'
 import { getProduct } from '../../src/pricing.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
+import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
 
@@ -244,5 +245,74 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
 
     expect(state.market.openOrders.some((o) => o.buyerId === 'rvn' || o.buyerId === 'nlf')).toBe(false)
     expect(state.market.openOrders.some((o) => o.buyerId === 'laos')).toBe(true)
+  })
+
+  describe('frontläget sätter vikterna (P46 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
+    it('en faktion som förlorar mark (position rör sig mot motståndarens pol) och ligger under i moral får weights.delivery > weights.price', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      // front-1: sideA='rvn'. Position rör sig -20→+20 över tre turer — mot
+      // sida B:s pol (+100), alltså dåligt för rvn (sida A). Moralen sätts
+      // också till rvns nackdel, så båda pressure-termerna bidrar.
+      front.trace = [-20, -10, 0, 20]
+      front.morale.a = 30
+      front.morale.b = 70
+      state.factions['rvn']!.materielNeed.artillery = 100
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+      expect(order).toBeDefined()
+      expect(order.weights.delivery).toBeGreaterThan(order.weights.price)
+      expect(order.weights.relationship).toBe(balance.bidWeightsDefault.relationship) // oförändrad, avsnitt 4.3
+    })
+
+    it('en faktion som varken förlorar mark eller ligger under i moral får de vanliga standardvikterna (pressure 0)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      front.trace = [5, 5, 5, 5] // ingen rörelse alls
+      // morale.a/morale.b redan lika (scenariots startvärden skiljer sig något
+      // — sätt dem uttryckligen lika för att isolera testet till positionstermen).
+      front.morale.a = 50
+      front.morale.b = 50
+      state.factions['rvn']!.materielNeed.artillery = 100
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+      expect(order).toBeDefined()
+      expect(order.weights).toEqual(balance.bidWeightsDefault)
+    })
+
+    it('en faktion som VINNER mark får inte högre delivery-vikt än standard (pressure klampad till 0, inte negativ)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      front.trace = [20, 10, 0, -20] // rör sig mot rvns egen pol (-100) — rvn vinner
+      front.morale.a = 70
+      front.morale.b = 30
+      state.factions['rvn']!.materielNeed.artillery = 100
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+      expect(order).toBeDefined()
+      expect(order.weights).toEqual(balance.bidWeightsDefault) // ingen "negativ press"
+    })
+
+    it('en köpare utan egen front (laos) är aldrig under press — standardvikter oavsett fronternas läge', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.fronts['front-1']!.trace = [-50, -40, -20, 0]
+      state.factions['laos']!.materielNeed.infantry = 100
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'laos')!
+      expect(order).toBeDefined()
+      expect(order.weights).toEqual(balance.bidWeightsDefault)
+    })
   })
 })

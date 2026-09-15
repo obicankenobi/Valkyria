@@ -332,6 +332,15 @@ export interface Front {
   // attrition.ts upprepar samma stagnationskontroll och läser dem aldrig annars.
   lastClampedAdvantage: number
   lastCasualtyEventId: string | null
+  // P46 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3). Specen
+  // refererar `front.trace` som om fältet redan finns ("härlett ur
+  // position-förändring senaste 3 turerna (front.trace)") — det gjorde det
+  // inte, sökt igenom hela repot, se docs/ANDRINGSLOGG.md. `position` skrivs
+  // bara av fronts.ts, en gång per tur, oavsett om fronten stagnerar (då
+  // orört), så trace fångar senaste positionerna i tidsordning, äldst
+  // först. Hålls kort (fyra punkter räcker för en tre-turers jämförelse) —
+  // ingen anledning att spara hela partiets historik här.
+  trace: number[]
 }
 
 export interface RivalHouse {

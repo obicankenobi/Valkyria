@@ -17,11 +17,13 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForBuyer, computeReferencePrice, getProduct } from '../../pricing.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
-import type { Faction, FactionId, Order, Product, RivalId, TechCategory } from '../../types.js'
+import type { Faction, FactionId, GameState, Order, Product, RivalId, TechCategory } from '../../types.js'
 
 interface NeedBalance {
   orderTriggerThreshold: Record<TechCategory, number>
   maxOrdersPerFactionPerTurn: number
+  weightPressureShift: number
+  pressurePositionSpan: number
 }
 const NEED_BALANCE = balanceData as unknown as NeedBalance
 
@@ -53,6 +55,7 @@ interface NewOrderParams {
   competingRivals: RivalId[]
   heat: number
   supplyCostIndex: number
+  weights: { price: number; delivery: number; relationship: number }
   rng: import('../../rng.js').Rng
 }
 
@@ -85,8 +88,53 @@ function buildOrder(p: NewOrderParams): Order {
     // skapelseturen. orderBiddingWindowTurns >= 1 garanterar det genom konstruktion.
     expiresTurn: p.currentTurn + BALANCE.orderBiddingWindowTurns,
     competingRivals: p.competingRivals,
-    weights: { ...BALANCE.bidWeightsDefault },
+    weights: p.weights,
     inspectorIntegrity,
+  }
+}
+
+// P46 (avsnitt 4.3): "pressure(faction) = hur illa fronten går för faktionens
+// sida, 0..1, härlett ur position-förändring senaste 3 turerna (front.trace)
+// plus morale-underläge." Ingen faktion utan front (t.ex. laos) är under
+// press — samma fallback som computeHeatForBuyer.
+//
+// PROVISORISKT utöver det: hur "position-förändring" och "morale-underläge"
+// kombineras till en 0..1-skala. "Plus" läst ordagrant (summan av två 0..1-
+// termer, klampad till 1 — inte ett medelvärde). pressurePositionSpan
+// (balance.json, PROVISORISKT) avgör hur många positionspoängs rörelse på tre
+// turer som ensamt ger full press — se balance.json:s _p46_note.
+function computePressureForBuyer(draft: GameState, buyerId: FactionId): number {
+  const front = Object.values(draft.fronts).find((f) => f.sideA === buyerId || f.sideB === buyerId)
+  if (!front) return 0
+
+  const side: 'a' | 'b' = front.sideA === buyerId ? 'a' : 'b'
+  const otherSide: 'a' | 'b' = side === 'a' ? 'b' : 'a'
+
+  // Position rör sig mot +100 (sida B:s pol) när B vinner mark — dåligt för A,
+  // bra för B. "directionalDelta" är alltid positivt när DEN HÄR sidan förlorar
+  // mark, oavsett vilken sida (a/b) den råkar vara.
+  const trace = front.trace
+  const oldest = trace[0]!
+  const newest = trace[trace.length - 1]!
+  const positionDelta = newest - oldest
+  const directionalDelta = side === 'a' ? positionDelta : -positionDelta
+  const positionPressure = clamp01(directionalDelta / NEED_BALANCE.pressurePositionSpan)
+
+  const moraleDisadvantage = clamp01((front.morale[otherSide] - front.morale[side]) / 100)
+
+  return clamp01(positionPressure + moraleDisadvantage)
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value))
+}
+
+function weightsForPressure(pressure: number): { price: number; delivery: number; relationship: number } {
+  const shift = pressure * NEED_BALANCE.weightPressureShift
+  return {
+    price: BALANCE.bidWeightsDefault.price - shift,
+    delivery: BALANCE.bidWeightsDefault.delivery + shift,
+    relationship: BALANCE.bidWeightsDefault.relationship,
   }
 }
 
@@ -116,6 +164,7 @@ export const orders: ResolveStep = (ctx) => {
         competingRivals: allRivalIds,
         heat,
         supplyCostIndex: draft.market.supplyCostIndex,
+        weights: weightsForPressure(computePressureForBuyer(draft, scripted.buyerId)),
         rng,
       })
       draft.market.openOrders.push(order)
@@ -173,6 +222,7 @@ function generateNeedDrivenOrders(
     (a, b) => faction.materielNeed[b] - faction.materielNeed[a],
   )
   const heat = computeHeatForBuyer(draft, factionId)
+  const weights = weightsForPressure(computePressureForBuyer(draft, factionId))
 
   let ordersIssued = 0
   for (const category of categoriesByFallingNeed) {
@@ -227,6 +277,7 @@ function generateNeedDrivenOrders(
       competingRivals: allRivalIds,
       heat,
       supplyCostIndex: draft.market.supplyCostIndex,
+      weights,
       rng,
     })
     draft.market.openOrders.push(order)

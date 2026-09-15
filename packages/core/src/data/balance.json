@@ -188,5 +188,8 @@
     "electronics": 6
   },
   "_p45_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2 ger maxOrdersPerFactionPerTurn(2) direkt i pseudokoden, inte i avsnitt 4.1:s fältlista -- specens eget tal, inte provisoriskt. orderGenerationChancePct borttagen helt (avsnitt 9:s egen instruktion: 'Ta bort orderGenerationChancePct') -- P4:s ursprungliga tärningsregel, ersatt av den behovsdrivna utlysningen.",
-  "maxOrdersPerFactionPerTurn": 2
+  "maxOrdersPerFactionPerTurn": 2,
+  "_p46_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3 ger weightPressureShift(0,25) ordagrant. pressurePositionSpan är PROVISORISKT -- specen ger 'position-förändring senaste 3 turerna' och en 0..1-skala men aldrig vilket antal positionspoäng som motsvarar full pressure (1,0). Kalibrerat mot frontBreakthroughMagnitude (5 positionspoäng per genombrott) -- två genombrott på tre turer räcker för full pressure via positionskomponenten ensam, empiriskt avstämt mot härnessens 8-25%-mål (avsnitt 8). Se docs/ANDRINGSLOGG.md.",
+  "weightPressureShift": 0.25,
+  "pressurePositionSpan": 10
 }

@@ -270,6 +270,7 @@ function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } 
     casualtiesTotal: { a: 0, b: 0 },
     lastClampedAdvantage: 0,
     lastCasualtyEventId: null,
+    trace: [f.position],
   }
 
   const theatre: Theatre = {

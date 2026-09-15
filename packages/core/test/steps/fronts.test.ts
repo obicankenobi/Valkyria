@@ -32,7 +32,12 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     const { ctx, emitted } = makeCtx(state, 'front-seed')
     fronts(ctx)
 
-    expect(front).toEqual(before)
+    // P46 (avsnitt 4.3): trace skrivs VARJE tur, även en stagnerad front —
+    // annars får "position senaste tre turerna" hål, se orders.ts:s
+    // computePressureForBuyer. Samma position upprepad, inte "orört" i strikt
+    // mening, men "stagnerar" gäller fortfarande allt ANNAT nedan.
+    expect(front.trace).toEqual([...before.trace, before.position])
+    expect({ ...front, trace: before.trace }).toEqual(before)
     expect(emitted).toEqual([]) // inget att emitta — fronten rördes aldrig
   })
 
@@ -120,5 +125,25 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
 
     expect(front1.position).not.toBe(5) // rörde sig
     expect(state.fronts['front-2']!.position).toBe(0) // stagnerade — ingen materiel där
+  })
+
+  describe('trace (P46, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
+    it('växer med ett värde per tur och hålls kort — de fyra senaste positionerna, äldst först', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      front.equipment.a.artillery = 200 // materiel, så position faktiskt rör sig
+
+      // fronts.ts skjuter på POSITIONEN SOM DEN ÄR VID TURENS BÖRJAN (innan
+      // den här turens eventuella genombrott flyttar den) — så bygg samma
+      // förväntade lista i samma ordning.
+      const expectedTrace = [...front.trace]
+      for (let turn = 0; turn < 6; turn++) {
+        expectedTrace.push(front.position)
+        fronts(makeCtx(state, `trace-seed-${turn}`).ctx)
+      }
+
+      expect(front.trace).toEqual(expectedTrace.slice(-4))
+      expect(front.trace.length).toBe(4)
+    })
   })
 })

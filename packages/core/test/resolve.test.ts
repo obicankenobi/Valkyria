@@ -272,7 +272,11 @@ describe('resolveTurn — P6: front och attribution', () => {
       state = resolveTurn(state, EMPTY_SUBMISSION).state
     }
 
-    expect(state.fronts['front-1']).toEqual(before)
+    // P46 (avsnitt 4.3): trace skrivs varje tur, även stagnerad — samma
+    // position upprepad om och om, kapad vid fyra punkter (fronts.ts).
+    const front = state.fronts['front-1']!
+    expect(front.trace).toEqual(Array(4).fill(before.position))
+    expect({ ...front, trace: before.trace }).toEqual(before)
   })
 
   it('(P6 klart-när) en front dit spelaren levererar artilleri flyttar position i rätt riktning, och attribution summerar till levererade enheter', () => {
