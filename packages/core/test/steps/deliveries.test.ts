@@ -543,10 +543,12 @@ describe('förbandsfördelning (P48, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md a
         sectorId: 'test-sector',
         doctrine: 'infantry',
         strength: 50,
+        strengthAtFull: 50,
         equipment: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 },
         readiness: 100,
         status: 'active',
         engagedWith: null,
+        turnsMauled: 0,
       },
       {
         id: 'test-mechanised',
@@ -557,10 +559,12 @@ describe('förbandsfördelning (P48, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md a
         sectorId: 'test-sector',
         doctrine: 'mechanised',
         strength: 50,
+        strengthAtFull: 50,
         equipment: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 },
         readiness: 100,
         status: 'active',
         engagedWith: null,
+        turnsMauled: 0,
       },
     ]
 

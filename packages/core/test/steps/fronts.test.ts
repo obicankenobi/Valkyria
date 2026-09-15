@@ -3,9 +3,21 @@ import { fronts } from '../../src/resolve/steps/fronts.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import type { ResolveContext } from '../../src/resolve/index.js'
-import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
+import type { Front, GameState, TechCategory, TurnSubmission, WireEvent } from '../../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
+
+// P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): fronts() anropar
+// numera engagement() internt, som skriver om front.equipment/strength UR
+// FÖRBANDEN varje gång (steg 5, invarianten). Ett test som bara sätter
+// front.equipment direkt (den här filens mönster sedan P6, innan förbanden
+// fanns) skulle annars tyst nollställas igen — sätt därför alltid på BÅDA
+// ställena, i det första förbandet på sidan.
+function giveEquipment(front: Front, side: 'a' | 'b', category: TechCategory, amount: number): void {
+  front.equipment[side][category] = amount
+  const formation = front.formations.find((f) => f.side === side)
+  if (formation) formation.equipment[category] = amount
+}
 
 function makeCtx(state: GameState, seed: string): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
   const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
@@ -44,7 +56,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
   it('(P6 klart-när) materiel levererat till sida A flyttar position mot -100 (A vunnit)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
-    front.equipment.a.artillery = 200 // gott om övertag, garanterar genombrott
+    giveEquipment(front, 'a', 'artillery', 200) // gott om övertag, garanterar genombrott
     const positionBefore = front.position
 
     fronts(makeCtx(state, 'front-seed').ctx)
@@ -55,7 +67,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
   it('(P6 klart-när) materiel levererat till sida B flyttar position mot +100 (B vunnit)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
-    front.equipment.b.artillery = 200
+    giveEquipment(front, 'b', 'artillery', 200)
     const positionBefore = front.position
 
     fronts(makeCtx(state, 'front-seed').ctx)
@@ -67,7 +79,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     front.position = 98
-    front.equipment.b.artillery = 500 // extremt övertag åt B
+    giveEquipment(front, 'b', 'artillery', 500) // extremt övertag åt B
 
     for (let i = 0; i < 5; i++) {
       fronts(makeCtx(state, `front-seed-${i}`).ctx)
@@ -79,7 +91,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
   it('den missgynnade sidan tar fler förluster', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
-    front.equipment.a.artillery = 300 // sida A kraftigt överlägsen
+    giveEquipment(front, 'a', 'artillery', 300) // sida A kraftigt överlägsen
 
     fronts(makeCtx(state, 'front-seed').ctx)
 
@@ -91,7 +103,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     const front = state.fronts['front-1']!
     const moraleABefore = front.morale.a
     const moraleBBefore = front.morale.b
-    front.equipment.a.artillery = 300
+    giveEquipment(front, 'a', 'artillery', 300)
 
     fronts(makeCtx(state, 'front-seed').ctx)
 
@@ -103,7 +115,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
 
   it('emittar minst en händelse när fronten faktiskt förändras (CLAUDE.md hård regel 4)', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    state.fronts['front-1']!.equipment.a.artillery = 50
+    giveEquipment(state.fronts['front-1']!, 'a', 'artillery', 50)
 
     const { ctx, emitted } = makeCtx(state, 'front-seed')
     fronts(ctx)
@@ -119,7 +131,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
       id: 'front-2',
       position: 0,
     }
-    front1.equipment.a.artillery = 200 // bara front-1 har materiel
+    giveEquipment(front1, 'a', 'artillery', 200) // bara front-1 har materiel
 
     fronts(makeCtx(state, 'front-seed').ctx)
 
@@ -131,7 +143,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     it('växer med ett värde per tur och hålls kort — de fyra senaste positionerna, äldst först', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!
-      front.equipment.a.artillery = 200 // materiel, så position faktiskt rör sig
+      giveEquipment(front, 'a', 'artillery', 200) // materiel, så position faktiskt rör sig
 
       // fronts.ts skjuter på POSITIONEN SOM DEN ÄR VID TURENS BÖRJAN (innan
       // den här turens eventuella genombrott flyttar den) — så bygg samma

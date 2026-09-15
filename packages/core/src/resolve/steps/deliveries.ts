@@ -26,6 +26,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { getProduct } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
+import { allocateByWeight } from '../allocateByWeight.js'
 import type { ResolveStep } from '../index.js'
 import type { Doctrine, Front, GameState, Grade, TechCategory } from '../../types.js'
 
@@ -54,6 +55,11 @@ const BALANCE = balanceData as unknown as Balance
 // fort en sådan leverans anländer (ingen förband skulle ta emot något, men
 // front.equipment[side][cat] hade ändå ökat). Faller då tillbaka till en
 // strength-proportionell fördelning i stället.
+//
+// P49 (se ANDRINGSLOGG.md): fördelningsaritmetiken (störst bråkdel, deterministisk)
+// bröts ut till allocateByWeight.ts, delad med attrition.ts:s motsvarande minskning
+// — samma garanti (summan blir exakt `units`) behövs på båda ställena, inte bara
+// här.
 function distributeUnitsToFormations(front: Front, side: 'a' | 'b', category: TechCategory, units: number): void {
   if (units <= 0) return
   const sideFormations = front.formations.filter((f) => f.side === side)
@@ -62,24 +68,9 @@ function distributeUnitsToFormations(front: Front, side: 'a' | 'b', category: Te
   const doctrineWeights = sideFormations.map((f) => BALANCE.doctrineProfile[f.doctrine][category] ?? 0)
   const totalDoctrineWeight = doctrineWeights.reduce((sum, w) => sum + w, 0)
   const weights = totalDoctrineWeight > 0 ? doctrineWeights : sideFormations.map((f) => f.strength)
-  const weightSum = weights.reduce((sum, w) => sum + w, 0)
-  if (weightSum <= 0) return // inget förband kan ta emot — front.equipment ökar ändå, invarianten håller (0 på den här sidan)
+  if (weights.reduce((sum, w) => sum + w, 0) <= 0) return // inget förband kan ta emot — front.equipment ökar ändå, invarianten håller (0 på den här sidan)
 
-  const raw = weights.map((w) => (w / weightSum) * units)
-  const allocated = raw.map(Math.floor)
-  let remainder = units - allocated.reduce((sum, v) => sum + v, 0)
-
-  // Största resten till formationerna med störst bråkdel — deterministiskt, ingen
-  // RNG (CLAUDE.md hård regel 2), tie-break på lägst index.
-  const byRemainingFraction = raw
-    .map((v, i) => ({ i, fraction: v - Math.floor(v) }))
-    .sort((a, b) => b.fraction - a.fraction || a.i - b.i)
-
-  for (let k = 0; k < byRemainingFraction.length && remainder > 0; k++) {
-    allocated[byRemainingFraction[k]!.i]!++
-    remainder--
-  }
-
+  const allocated = allocateByWeight(weights, units)
   sideFormations.forEach((formation, i) => {
     formation.equipment[category] += allocated[i]!
   })

@@ -275,11 +275,15 @@ function buildFormations(f: ScenarioFile['front']): Formation[] {
     sectorId: seed.sectorId,
     doctrine: seed.doctrine,
     strength: seed.strength,
+    // P49: strengthAtFull sätts en gång, vid uppresning — förbandets startstyrka
+    // ÄR dess fulla, avsedda styrka (TOE) innan någon strid ägt rum.
+    strengthAtFull: seed.strength,
     // Ingen leverans har skett än — samma startpunkt som front.equipment.
     equipment: uniformCategoryRecord(0),
     readiness: 100,
     status: 'active',
     engagedWith: null,
+    turnsMauled: 0,
   }))
 }
 

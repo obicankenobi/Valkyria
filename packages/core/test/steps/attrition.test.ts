@@ -6,9 +6,20 @@ import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
-import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
+import type { Front, GameState, TechCategory, TurnSubmission, WireEvent } from '../../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
+
+// P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): fronts() anropar
+// numera engagement() internt, som skriver om front.equipment/strength UR
+// FÖRBANDEN (steg 5, invarianten) — den här filens mönster sedan P43 (sätta
+// front.equipment direkt, innan förbanden fanns) skulle annars tyst nollställas
+// av det första fronts()-anropet. Sätt därför alltid på BÅDA ställena.
+function seedEquipment(front: Front, side: 'a' | 'b', record: Record<TechCategory, number>): void {
+  front.equipment[side] = record
+  const formation = front.formations.find((f) => f.side === side)
+  if (formation) formation.equipment = { ...record }
+}
 
 function makeCtx(state: GameState, seed: string): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
   const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
@@ -30,8 +41,8 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
   it('(P43 klart-när) front.equipment minskar efter en stridstur och går aldrig under noll', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
-    front.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
-    front.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    seedEquipment(front, 'a', { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    seedEquipment(front, 'b', { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 })
 
     const { ctx } = makeCtx(state, 'attrition-seed')
     fronts(ctx)
@@ -55,8 +66,8 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
     // räknas in. Ge båda sidor IDENTISK infanteristyrka så att en skillnad i
     // förstörd infanteri isolerat mäter loser-multiplikatorns effekt, inte olika
     // startlager.
-    front.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
-    front.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    seedEquipment(front, 'a', { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    seedEquipment(front, 'b', { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 })
 
     const { ctx } = makeCtx(state, 'attrition-seed')
     fronts(ctx)
@@ -85,8 +96,8 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
   it('emittar en ticker per sida som faktiskt förlorade materiel, kedjad till turens förlust-ticker (CLAUDE.md hård regel 4)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
-    front.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
-    front.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    seedEquipment(front, 'a', { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    seedEquipment(front, 'b', { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 })
 
     const { ctx, emitted } = makeCtx(state, 'attrition-seed')
     fronts(ctx)
@@ -106,8 +117,8 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
   it('flera fronter löses oberoende av varandra', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front1 = state.fronts['front-1']!
-    front1.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
-    front1.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    seedEquipment(front1, 'a', { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    seedEquipment(front1, 'b', { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 })
     state.fronts['front-2'] = { ...JSON.parse(JSON.stringify(front1)), id: 'front-2' }
     state.fronts['front-2']!.equipment = { a: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 }, b: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 } }
 
@@ -126,8 +137,8 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
       // Extremt övertag åt A — garanterar tunga, upprepade förluster för B
       // (front.sideB) varje tur, över tillräckligt många turer för att
       // materielNeed ska hinna nå taket om det INTE klampades.
-      front.equipment.a = { infantry: 2000, artillery: 2000, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 }
-      front.equipment.b = { infantry: 2000, artillery: 50, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 }
+      seedEquipment(front, 'a', { infantry: 2000, artillery: 2000, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 })
+      seedEquipment(front, 'b', { infantry: 2000, artillery: 50, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 })
       const sideBFaction = state.factions[front.sideB]!
 
       for (let turn = 0; turn < 40; turn++) {

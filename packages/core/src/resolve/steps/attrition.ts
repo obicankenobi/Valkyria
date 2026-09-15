@@ -18,9 +18,10 @@
 // tur. Det är också exakt "en front utan strid" betyder i den här motorn idag
 // (P43:s eget klart när, se avsnitt 0/fynd 3: bara artilleri avgör stagnation).
 import balanceData from '../../data/balance.json' with { type: 'json' }
+import { allocateByWeight } from '../allocateByWeight.js'
 import type { ResolveStep } from '../index.js'
 import { otherSide } from './fronts.js'
-import type { TechCategory } from '../../types.js'
+import type { Front, TechCategory } from '../../types.js'
 
 interface Balance {
   frontBaseAttritionPct: number
@@ -31,6 +32,27 @@ interface Balance {
 const BALANCE = balanceData as unknown as Balance
 
 const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
+
+// P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): P48:s invariant
+// (Σ formations[side].equipment[c] === front.equipment[side][c]) gäller nu ÄVEN
+// här — den här filen fanns före förbanden (P43) och minskade bara aggregatet
+// direkt. Utan en motsvarande minskning över formationerna hade varje stridstur
+// tyst brutit invarianten så fort attrition faktiskt förstörde något. Vikten är
+// formationens NUVARANDE innehav (allmänt slitage bryr sig inte om doktrin) —
+// till skillnad från deliveries.ts:s (P48) doktrinvikter vid TILLÄGG.
+function reduceFormationsEquipment(front: Front, side: 'a' | 'b', category: TechCategory, units: number): void {
+  if (units <= 0) return
+  const candidates = front.formations.filter((f) => f.side === side && f.equipment[category] > 0)
+  if (candidates.length === 0) return
+
+  const allocated = allocateByWeight(
+    candidates.map((f) => f.equipment[category]),
+    units,
+  )
+  candidates.forEach((f, i) => {
+    f.equipment[category] = Math.max(0, f.equipment[category] - allocated[i]!)
+  })
+}
 
 export const attrition: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
@@ -63,6 +85,7 @@ export const attrition: ResolveStep = (ctx) => {
         const destroyed = Math.floor((before * attritionPct) / 100 * BALANCE.categoryVulnerability[category])
         if (destroyed <= 0) continue
         front.equipment[side][category] = Math.max(0, before - destroyed)
+        reduceFormationsEquipment(front, side, category, destroyed)
         destroyedByCategory[category] = destroyed
         totalDestroyed += destroyed
         // P44 (avsnitt 4.1): "fronts.ts (efter förslitning) need[cat] +=

@@ -20,6 +20,7 @@
 // också här, inte i factions.ts — samma skäl som attribution i deliveries.ts: datan
 // (denna turs förluster per sida) finns bara i det ögonblick den beräknas.
 import balanceData from '../../data/balance.json' with { type: 'json' }
+import { engagement } from '../engagement.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Faction, FactionId, Front } from '../../types.js'
 
@@ -41,8 +42,11 @@ export function otherSide(side: 'a' | 'b'): 'a' | 'b' {
 
 // Given-formeln (spec 5): equipmentRatio = attackerArtillery / max(1, defenderArtillery).
 // Generaliserad till "fördel" (ratio − 1, > 0 gynnar den första sidan) så samma
-// funktion kan användas för både materiel och manskap.
-function ratioAdvantage(first: number, second: number): number {
+// funktion kan användas för både materiel och manskap. Exporterad sedan P49 —
+// resolve/engagement.ts (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3)
+// kräver uttryckligen "SAMMA matematik som fronts.ts redan använder", samma
+// återanvändningsmönster som otherSide (P43).
+export function ratioAdvantage(first: number, second: number): number {
   return first / Math.max(1, second) - 1
 }
 
@@ -81,6 +85,13 @@ export const fronts: ResolveStep = (ctx) => {
       // Ingen materiel levererad till någon sida än. Fronten stagnerar helt.
       continue
     }
+
+    // P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3/9): förbandens
+    // egen strid löses FÖRE aggregatberäkningen (P49:s egen instruktion,
+    // ordagrant) — engagement() skriver om front.equipment/front.strength ur
+    // formationerna (steg 5, invarianten i 5.1), och resolveFront nedan räknar
+    // sedan vidare på de UPPDATERADE aggregaten, samma tur.
+    engagement(front, attacker, defender, emit)
 
     resolveFront(front, attacker, defender, draft.factions, emit)
   }

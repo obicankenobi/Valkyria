@@ -367,6 +367,20 @@ export interface Formation {
   readiness: Pct // 0 = utslaget, 100 = stridsdugligt
   status: 'active' | 'mauled' | 'refitting' | 'destroyed'
   engagedWith: string | null // motståndarförbandets id, denna tur
+  // P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3): `combatPower`s
+  // egen formel refererar `F.strengthAtFull` som om fältet redan fanns — det
+  // gjorde det inte, avsnitt 5.2:s datamodell (P48) namnger det aldrig. Nödvändigt
+  // tillägg, samma mönster som `front.trace` (P46): satt en gång vid uppresning
+  // (= startstyrkan, INNAN några förluster), aldrig ändrad sedan — representerar
+  // förbandets fulla, avsedda styrka (TOE), inte dess nuvarande.
+  strengthAtFull: number
+  // P49: hur många turer i RAD förbandet varit `mauled` UTAN att ha stridit —
+  // avsnitt 5.3 punkt 4 kräver "'mauled' utan strid i 2 turer → 'refitting'" men
+  // ger ingen räknare i datamodellen. Nollställs varje gång status lämnar
+  // `mauled` (åt endera hållet), inkrementeras bara för ett förband som redan
+  // VAR mauled före den här turen (ett förband som precis BLEV mauled har per
+  // definition just stridit, se resolve/engagement.ts).
+  turnsMauled: number
 }
 
 export interface RivalHouse {
