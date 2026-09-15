@@ -8,25 +8,28 @@ Designdokumentet är `docs/DESIGN.md`. Den tekniska specen för etapp 1 är
 ÄVEN DEN klar — se avsnitt 6.3:s blockquote för balanspassets fulla facit (fem av åtta
 fetstilta rader nådda, tre strukturellt reviderade). Etapp 3, "Kriget som marknad",
 `docs/ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md` (P43–P52, antagen som ägarbeslut 2026-09-15,
-validerad mot commit `e650be2`) är **KLAR MED ETT UTTRYCKLIGT UNDANTAG: P51 är obyggd** (se
-nästa stycke) — P43–P50 och P52 kördes klart samma datum. Den ersätter
-`orderGenerationChancePct`s tärningsdrivna ordergenerering med en behovsdriven modell kopplad
-till materielförluster på fronten, i två halvor: 3A (förbrukning, P43–P47) och 3B (namngivna
-förband, `Formation`, P48–P52). Se specens egna avsnitt 0–1 för de fyra mätta fynd den bygger på,
-och avsnitt 8:s måltabell/blockquotes för balanspassens fulla facit (P47 för 3A, P52 för 3B).
-Ingen aktiv spec finns ännu för det som kommer härnäst — avsnitt 10:s "vad som lämnas till etapp
-4" är en lista över avsiktligt uteslutet innehåll, inte en skriven spec. Etapp 1, 1,5 och 2
-lämnas stående som historik. **Känd lucka, upptäckt vid antagandet (se
-`docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3 (etapp 3B) refererar
-upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`, `MovementArrow`, `sectorId` och
-ett INTEL-lager som om de redan finns — sökt igenom hela repot, noll träffar. Blockerar INTE
-P43–P47 (3A rör ingen av dessa) — men BLOCKERADE P51, som verifierat gjorde antagandet sant
-igen (2026-09-15): fortsatt noll träffar, och `packages/app/src/components/TheWorld.tsx` (den
-enda lägesvyn) har inget lägesbord, ingen `sectorId`-utgruppering, inget INTEL-lager. Ägaren
-tillfrågad; valde att hoppa över P51 i stället för att skriva en egen THE_WORLD-tillsatsspec.
-**P51 är alltså OBYGGD, inte klarmarkerad** — kvarstår som öppen punkt tills någon skriver den
-saknade specen, eller skriver om 5.5/skyddsräcke 1&3, eller ett uttryckligt ägarbeslut stryker
-P51 helt.** **Ytterligare känd spänning, upptäckt under P47 (se
+validerad mot commit `e650be2`) är **KLAR — alla tio prompter (P43–P52) kördes klart samma
+datum.** Den ersätter `orderGenerationChancePct`s tärningsdrivna ordergenerering med en
+behovsdriven modell kopplad till materielförluster på fronten, i två halvor: 3A (förbrukning,
+P43–P47) och 3B (namngivna förband, `Formation`, P48–P52). Se specens egna avsnitt 0–1 för de
+fyra mätta fynd den bygger på, och avsnitt 8:s måltabell/blockquotes för balanspassens fulla
+facit (P47 för 3A, P52 för 3B). Ingen aktiv spec finns ännu för det som kommer härnäst —
+avsnitt 10:s "vad som lämnas till etapp 4" är en lista över avsiktligt uteslutet innehåll,
+inte en skriven spec. Etapp 1, 1,5 och 2 lämnas stående som historik. **Känd lucka, upptäckt
+vid antagandet (se `docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3
+(etapp 3B) refererade upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`,
+`MovementArrow`, `sectorId` och ett INTEL-lager som om de redan fanns — sökt igenom hela repot,
+noll träffar. Blockerade INTE P43–P47 (3A rör ingen av dessa) — men BLOCKERADE P51 först
+(2026-09-15): fortsatt noll träffar, och `TheWorld.tsx` hade inget lägesbord. Ägaren tillfrågad
+en första gång; valde att hoppa över P51. Tillfrågad en andra gång, samma datum: valde att
+skriva `THE_WORLD`-spec-innehållet i efterhand (nu specens eget avsnitt 5.5.1) i stället för att
+lämna P51 olyst. **P51 är nu BYGGD** — `sectorId`-utgruppering och INTEL-dimning (`queries.ts`s
+`formationDisplay`, delar `effectiveDepth` med `bidEstimate`) finns i `TheWorld.tsx`;
+`MovementArrow` finns och är testad men körs ännu inte mot riktig `SUPPLY_ARRIVAL`-data (skulle
+kräva att röra `WireEvent.delta`, en del av golden-hashen — ägaren tillfrågad, valde att inte
+göra den ändringen nu) eller `REDEPLOY`-data (ingen mekanik i simuleringen flyttar ett förbands
+sektor alls). Se avsnitt 5.5.1 i specen och `docs/ANDRINGSLOGG.md` för hela resonemanget.**
+**Ytterligare känd spänning, upptäckt under P47 (se
 `docs/ANDRINGSLOGG.md`, 2026-09-15): styrelsegranskningens linjära intäktsmål (`board.ts`, P30,
 etapp 2) och P45:s behovsdrivna ordrar går inte längre ihop — 200/200 `balanced`-partier slutar
 i `BUYOUT`, i snitt vid tur ~11. Ägaren tillfrågad två gånger, valde att lämna `boardTarget`

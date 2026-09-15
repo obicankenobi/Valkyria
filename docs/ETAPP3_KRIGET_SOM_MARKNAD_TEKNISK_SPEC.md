@@ -439,6 +439,46 @@ att rita, och de rör sig av skäl spelaren kan följa.
 simuleringen. Spelarens enda inflytande är kommersiellt: vem som får köpa vad, hur fort, till
 vilket pris. Det skyddsräcket är icke förhandlingsbart — se avsnitt 7.
 
+### 5.5.1 Tillägg (2026-09-15, P51): `THE_WORLD`-spec-innehållet, skrivet i efterhand
+
+Den här sektionen — och skyddsräcke 1/3 i avsnitt 7 — refererade upprepade gånger till en
+`THE_WORLD`-spec med `deriveDeployment`, `MovementArrow`, `sectorId` och ett INTEL-lager som om
+de redan fanns. De gjorde det inte (`CLAUDE.md`, `docs/ANDRINGSLOGG.md`, 2026-09-15). Ägaren
+tillfrågad vid antagandet valde först att hoppa över P51; tillfrågad igen (samma datum) valde
+att skriva innehållet här, i efterhand, i stället för en egen `THE_WORLD`-tillsatsspec — en
+ändring av EXAKT den storlek `CLAUDE.md`s "Om specen och verkligheten inte stämmer" beskriver.
+
+**`sectorId`.** Inget att lägga till — `Formation.sectorId` (avsnitt 5.2, P48) är redan
+sanningskällan. `deriveDeployment` ersätts genom att aldrig anropas: `TheWorld.tsx` grupperar
+`front.formations` direkt på `sectorId`.
+
+**`MovementArrow`.** En ren presentationskomponent (`packages/app/src/components/
+MovementArrow.tsx`), props `{ kind: 'REDEPLOY' | 'SUPPLY_ARRIVAL'; formationName: string;
+toSectorId: string; fromSectorId?: string }`. Ingen callback, inget event-handtag, ingen prop
+som kan ändra state — skyddsräcke 1 gäller lika mycket UI-komponenter som `PlayerAction`-
+unionen. `FRONT_SHIFT`/`CAPTURE` ritas inte om (avsnitt 5.5:s egen tabell: "Oförändrat") — de
+hör till fronten, redan ritad i `TheWorld.tsx`s "Fronts"-panel.
+
+Komponenten är byggd och testad men **inte kopplad till riktig data i den här commiten**:
+`REDEPLOY` saknar en producent helt (ingen mekanik i simuleringen flyttar ett förbands
+`sectorId` efter uppresning — "byter sektor" är alltså sant i TYPEN, inte i spelet).
+`SUPPLY_ARRIVAL` skulle kräva att `deliveries.ts`s leveransticker fick förbandsnivå-attribution
+i sitt `delta`-fält — en ändring av `WireEvent.delta`, som är en del av det hashade
+sluttillstånd `golden.test.ts` fryser, och hade brutit golden en TREDJE gång i en etapp vars
+avsnitt 6 uttryckligen budgeterade för två. Ägaren tillfrågad; valde att INTE göra den
+ändringen nu. Kvarstår som en tydligt avgränsad, ännu ogjord uppgift — inte en gissning om
+framtida data.
+
+**INTEL-lagrets dimning (skyddsräcke 3).** `queries.ts`s `formationDisplay(state, formation)`,
+byggd på den REDAN EXPORTERADE `effectiveDepth` (nu även exporterad, delad rakt av med
+`bidEstimate` — "samma princip", ordagrant ur skyddsräcke 3). Gatingen är BINÄR (en aktiv
+station i förbandets faktions land eller ingen), inte gradvis som `bidEstimate`s bandbredd —
+skyddsräcke 3 ger ingen gradvis regel för förband, bara "utan station: `UNKNOWN FORMATION` och
+ett styrkeband", en ordagrann läsning. Gatade fält: `name` → `'UNKNOWN FORMATION'`, `readiness`
+→ `null`, `equipment` → `null`, `strength` → `null` (ersatt av `strengthBand`, ett nytt,
+PROVISORISKT balansfält-par eftersom specen inte ger bandets gränser). `sectorId`/`doctrine`/
+`status` nämns aldrig som dolda i skyddsräcke 3 och visas alltid.
+
 ---
 
 ## 6. Vad det kostar
@@ -451,7 +491,11 @@ intäkt. Att byta den från 35 %-tärning till behovsdriven flyttar varje rad i 
 ett till efter 3B.
 
 **Golden-snapshoten fryses om två gånger**, en gång per etapphalva, var och en i en egen commit
-med loggrad. Ingen annan ändring får ligga i de commitarna.
+med loggrad. Ingen annan ändring får ligga i de commitarna. (P51, i efterhand: `balance.json`
+växte med två UI-lästa fält, `fixtures/balance.frozen.json` hölls i synk som en mekanisk
+kopia — men de tre uppmätta hash-VÄRDENA rörde sig aldrig, empiriskt verifierat, eftersom
+`queries.ts` aldrig läses av `resolveTurn`-pipelinen. Ingen tredje omfrysning i den mening det
+här stycket varnar för — se avsnitt 5.5.1 och `docs/ANDRINGSLOGG.md`.)
 
 **`fronts.ts` växer.** Filen är redan flaggad som projektets minst specificerade. 3A lägger till
 ett förslitningssteg; 3B lägger till engagemangsupplösning. Bryt ut till
@@ -488,8 +532,8 @@ sitt syfte.
 
 ## 8. Måltabell
 
-Mätt läge i högerkolumnen är P52 (efter `53b2512`, P51 hoppades över — se blockquote nedan),
-200 partier `balanced`, om inget annat anges.
+Mätt läge i högerkolumnen är P52 (efter `53b2512`), 200 partier `balanced`, om inget annat
+anges — P51 (byggd i efterhand, se blockquote nedan) rör inget av det härnessen mäter.
 
 > **Rad omprövad under P45, se `docs/ANDRINGSLOGG.md`.** "Produkter som beställs minst en gång
 > per 100 partier" kan strukturellt aldrig nå 6 av 7: fyra av de sju produkterna (armour/
@@ -589,8 +633,13 @@ Mätt läge i högerkolumnen är P52 (efter `53b2512`, P51 hoppades över — se
 | Rivalerna vinner ordrar (`balanced`) | 25–45 % | 71,2 % |
 | `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 0 % (200/200 `BUYOUT`, se P47-blockquote) |
 
-**P51 obyggd, inte klarmarkerad** — blockerad av den THE_WORLD-spec-lucka som flaggades vid
-antagandet (`CLAUDE.md`, `docs/ANDRINGSLOGG.md`). Ingen rad ovan beror av lägesbordet.
+**P51 byggd (2026-09-15, samma dag, i en separat commit efter P52).** Den lucka som blockerade
+den första gången (`THE_WORLD`-specens innehåll saknades helt) löstes genom att skriva
+innehållet i efterhand, se avsnitt 5.5.1. De tre klart-när-testerna finns och är gröna:
+`packages/core/test/queries.formationDisplay.test.ts` (UNKNOWN FORMATION),
+`packages/app/test/MovementArrow.test.tsx` (ingen state-ändrande prop),
+`packages/core/test/types.skyddsracke1.test.ts` (inget `formationId`-fält i `TurnSubmission`).
+Ingen rad ovan beror av lägesbordet, så inget i tabellen mättes om.
 
 **Måltabellen är hypoteser, inte acceptanskriterier.** Om härnessen envist säger något annat och
 partierna ändå är roliga att spela är det tabellen som ska skrivas om — men som ett medvetet

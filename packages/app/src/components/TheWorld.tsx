@@ -3,14 +3,41 @@
 // fronten ritas som en linje med en position, exakt vad simuleringen
 // modellerar (DESIGN.md: "en karta som är mer detaljerad än modellen är ett
 // löfte spelet inte kan hålla").
-import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
-import type { GameState } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, formationDisplay } from '@seventh-front/core'
+import type { Front, FormationDisplay, GameState } from '@seventh-front/core'
 import { Bar, Meter, Panel, Tag } from './ui.js'
 
 function doomsdayTone(value: number): 'green' | 'amber' | 'red' {
   if (value >= DISPLAY_THRESHOLDS.doomsdayCrisisEvent) return 'red'
   if (value >= DISPLAY_THRESHOLDS.doomsdayCrisisWatch) return 'amber'
   return 'green'
+}
+
+function statusTone(status: FormationDisplay['status']): 'green' | 'amber' | 'red' | 'neutral' {
+  if (status === 'destroyed') return 'red'
+  if (status === 'mauled') return 'amber'
+  if (status === 'refitting') return 'neutral'
+  return 'green'
+}
+
+function strengthBandTone(band: FormationDisplay['strengthBand']): 'green' | 'amber' | 'red' {
+  if (band === 'stark') return 'green'
+  if (band === 'medel') return 'amber'
+  return 'red'
+}
+
+// P51 (avsnitt 5.5): "THE_WORLD-specens deriveDeployment blir överflödig och
+// ersätts: förbanden har redan en sectorId. Utgruppering behöver inte längre
+// härledas — den finns." Grupperar bara, härleder ingenting.
+function groupBySector(state: GameState, front: Front): Map<string, FormationDisplay[]> {
+  const bySector = new Map<string, FormationDisplay[]>()
+  for (const formation of front.formations) {
+    const display = formationDisplay(state, formation)
+    const group = bySector.get(display.sectorId)
+    if (group) group.push(display)
+    else bySector.set(display.sectorId, [display])
+  }
+  return bySector
 }
 
 export function TheWorld({ state }: { state: GameState }) {
@@ -96,6 +123,28 @@ export function TheWorld({ state }: { state: GameState }) {
                   tone="red"
                 />
               </div>
+
+              {/* P51 (avsnitt 5.1/5.5): förbanden, grupperade per sectorId — inte
+                  en karta (DESIGN.md §18/§21), samma typografiska lägesbord som
+                  resten av vyn. Namn/readiness/equipment dimmas per formationDisplay
+                  (skyddsräcke 3); status/doktrin/sektor visas alltid. */}
+              {front.formations.length > 0 && (
+                <div className="front-formations">
+                  {[...groupBySector(state, front).entries()].map(([sectorId, formations]) => (
+                    <div className="front-sector" key={sectorId}>
+                      <div className="front-sector-head">{sectorId.toUpperCase()}</div>
+                      {formations.map((formation) => (
+                        <div className="formation-row" key={formation.id}>
+                          <span className={formation.side === 'a' ? 'side-a' : 'side-b'}>{formation.name}</span>
+                          <span className="mono">{formation.doctrine}</span>
+                          <Tag tone={statusTone(formation.status)}>{formation.status}</Tag>
+                          <Tag tone={strengthBandTone(formation.strengthBand)}>{formation.strengthBand}</Tag>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })}

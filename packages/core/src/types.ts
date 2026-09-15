@@ -526,3 +526,26 @@ export interface BidEstimate {
   winBand: { price: Money; confidence: Pct }[]
   yourUnitCost: Money // alltid exakt — du känner din egen verkstad
 }
+
+// P51 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), byggd av
+// queries.ts:s formationDisplay(). Ordagrant gated: bara `readiness` och exakt
+// `equipment` — namnet blir 'UNKNOWN FORMATION' och strength ersätts av ett band som
+// en DIREKT KONSEKVENS av det (spec: "Utan station: UNKNOWN FORMATION och ett
+// styrkeband"), inte en egen, uppfunnen gatinglista. `sectorId`/`doctrine`/`status`
+// nämns aldrig som dolda i skyddsräcke 3 och visas därför alltid — samma "ordagrann
+// läsning" som resten av etappens tolkningar, se docs/ANDRINGSLOGG.md.
+export interface FormationDisplay {
+  id: string
+  name: string // formation.name, eller 'UNKNOWN FORMATION' om known === false
+  factionId: FactionId
+  frontId: FrontId
+  side: 'a' | 'b'
+  sectorId: string
+  doctrine: Doctrine
+  status: 'active' | 'mauled' | 'refitting' | 'destroyed'
+  strength: number | null // null om known === false — se strengthBand
+  strengthBand: 'svag' | 'medel' | 'stark'
+  readiness: Pct | null // null om known === false
+  equipment: Record<TechCategory, number> | null // null om known === false
+  known: boolean // true om huset har en aktiv station i förbandets faktions land
+}

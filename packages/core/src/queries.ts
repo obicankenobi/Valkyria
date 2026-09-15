@@ -9,7 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
-import type { BidEstimate, GameState, Grade, Money, Order, Pct, RivalId } from './types.js'
+import type { BidEstimate, Formation, FormationDisplay, GameState, Grade, Money, Order, Pct, RivalId } from './types.js'
 
 const WIN_BAND_POINTS = 5
 const MONTE_CARLO_SAMPLES = 100
@@ -78,12 +78,55 @@ const DEPTH_BAND_PCT: Record<0 | 1 | 2 | 3 | 4 | 5, number> = {
   5: 0,
 }
 
-function effectiveDepth(state: GameState, buyerId: string): 0 | 1 | 2 | 3 | 4 | 5 {
+// Exporterad sedan P51 (avsnitt 7, skyddsräcke 3: "samma princip som bidEstimate") —
+// formationDisplay nedan delar EXAKT den här funktionen, inte en egen kopia.
+export function effectiveDepth(state: GameState, buyerId: string): 0 | 1 | 2 | 3 | 4 | 5 {
   const station = state.house.stations.find((s) => s.nation === buyerId && s.status === 'active')
   const baseDepth = station ? station.depth : 0
   const bonus = state.house.staff.chiefSalesman > 75 ? 1 : 0
   // Matematiskt garanterat 0..5 (baseDepth är 0..5, bonus 0 eller 1, min(5,·) klampar).
   return Math.min(5, baseDepth + bonus) as 0 | 1 | 2 | 3 | 4 | 5
+}
+
+// P51 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), ordagrant:
+// "readiness och exakt equipment per förband visas bara på den underrättelsenivå
+// Station.depth i landet medger — samma princip som bidEstimate. Utan station:
+// UNKNOWN FORMATION och ett styrkeband." Gatingen är binär (känd/okänd, depth > 0),
+// inte gradvis som bidEstimate:s bandbredd — specen ger ingen gradvis regel för
+// förband, bara "utan station"/annars. sectorId/doctrine/status nämns aldrig som
+// dolda och visas därför alltid, se types.ts:s FormationDisplay-kommentar.
+interface FormationDisplayBalance {
+  formationStrengthBandLowPct: number
+  formationStrengthBandHighPct: number
+}
+const FORMATION_DISPLAY_BALANCE = balanceData as unknown as FormationDisplayBalance
+
+export function formationDisplay(state: GameState, formation: Formation): FormationDisplay {
+  const known = effectiveDepth(state, formation.factionId) > 0
+
+  const strengthPct = formation.strengthAtFull > 0 ? (formation.strength / formation.strengthAtFull) * 100 : 0
+  const strengthBand: FormationDisplay['strengthBand'] =
+    strengthPct < FORMATION_DISPLAY_BALANCE.formationStrengthBandLowPct
+      ? 'svag'
+      : strengthPct < FORMATION_DISPLAY_BALANCE.formationStrengthBandHighPct
+        ? 'medel'
+        : 'stark'
+
+  return {
+    id: formation.id,
+    name: known ? formation.name : 'UNKNOWN FORMATION',
+    factionId: formation.factionId,
+    frontId: formation.frontId,
+    side: formation.side,
+    sectorId: formation.sectorId,
+    doctrine: formation.doctrine,
+    status: formation.status,
+    strength: known ? formation.strength : null,
+    strengthBand,
+    readiness: known ? formation.readiness : null,
+    equipment: known ? { ...formation.equipment } : null,
+    known,
+  }
 }
 
 export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEstimate {

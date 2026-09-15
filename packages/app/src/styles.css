@@ -974,6 +974,31 @@ td.is-key {
   margin-top: 12px;
 }
 
+/* P51 (avsnitt 5.1/5.5): förbanden, grupperade per sectorId — samma typografiska
+   estetik som resten av vyn, ingen karta (DESIGN.md §18/§21). */
+.front-formations {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.front-sector-head {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+}
+
+.formation-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
 .faction-card {
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
