@@ -26,6 +26,7 @@ import { applyActions } from './steps/applyActions.js'
 import { production } from './steps/production.js'
 import { deliveries } from './steps/deliveries.js'
 import { fronts } from './steps/fronts.js'
+import { attrition } from './steps/attrition.js'
 import { factions } from './steps/factions.js'
 import { heat } from './steps/heat.js'
 import { supply } from './steps/supply.js'
@@ -53,6 +54,7 @@ const PIPELINE: ResolveStep[] = [
   production, // linjer producerar mot kontrakt; styckkostnad bokförs HÄR
   deliveries, // leveranser anländer, betalning, materiel in på front
   fronts, // frontresolve + attribution
+  attrition, // materielförslitning — ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3, insatt direkt efter fronts (P43)
   factions, // ekonomi, publicSupport, bankrutt
   heat, // per teater
   supply, // supplyCostIndex — ETAPP1_5_TEKNISK_SPEC.md avsnitt 3, insatt mellan heat och doomsday

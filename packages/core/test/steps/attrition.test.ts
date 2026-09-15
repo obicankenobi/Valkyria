@@ -1,0 +1,119 @@
+import { describe, expect, it } from 'vitest'
+import { attrition } from '../../src/resolve/steps/attrition.js'
+import { fronts } from '../../src/resolve/steps/fronts.js'
+import { createRng } from '../../src/rng.js'
+import { createInitialState } from '../../src/state.js'
+import type { ResolveContext } from '../../src/resolve/index.js'
+import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
+
+const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
+
+function makeCtx(state: GameState, seed: string): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
+  const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
+  let seq = 0
+  const ctx: ResolveContext = {
+    draft: state,
+    submission: EMPTY_SUBMISSION,
+    rng: createRng(seed, 0),
+    emit: (e) => {
+      emitted.push(e)
+      return `test-${seq++}`
+    },
+    rejected: [],
+  }
+  return { ctx, emitted }
+}
+
+describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3)', () => {
+  it('(P43 klart-när) front.equipment minskar efter en stridstur och går aldrig under noll', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    front.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+
+    const { ctx } = makeCtx(state, 'attrition-seed')
+    fronts(ctx)
+    attrition(ctx)
+
+    expect(front.equipment.a.infantry).toBeLessThan(500)
+    expect(front.equipment.a.artillery).toBeLessThan(300)
+    expect(front.equipment.b.infantry).toBeLessThan(500)
+    for (const side of ['a', 'b'] as const) {
+      for (const value of Object.values(front.equipment[side])) {
+        expect(value).toBeGreaterThanOrEqual(0)
+      }
+    }
+  })
+
+  it('(P43 klart-när) förlorande sida förbrukar mer än vinnande, mätt på en kategori båda sidor startar lika i', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    // front-1: attacker 'b', strengthA 100/strengthB 80, terrainBonus 5 (gynnar
+    // försvararen 'a') — b är alltså redan missgynnad innan materielskillnaden
+    // räknas in. Ge båda sidor IDENTISK infanteristyrka så att en skillnad i
+    // förstörd infanteri isolerat mäter loser-multiplikatorns effekt, inte olika
+    // startlager.
+    front.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    front.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+
+    const { ctx } = makeCtx(state, 'attrition-seed')
+    fronts(ctx)
+    expect(front.lastClampedAdvantage).toBeLessThan(0) // b (attacker) missgynnad — premissen testet vilar på
+
+    attrition(ctx)
+
+    const infantryDestroyedA = 500 - front.equipment.a.infantry
+    const infantryDestroyedB = 500 - front.equipment.b.infantry
+    expect(infantryDestroyedB).toBeGreaterThan(infantryDestroyedA)
+  })
+
+  it('(P43 klart-når) en front utan strid förbrukar ingenting', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    // Ingen materiel levererad än — samma stagnationsvillkor som fronts.ts.
+    const before = JSON.parse(JSON.stringify(front))
+
+    const { ctx, emitted } = makeCtx(state, 'attrition-seed')
+    attrition(ctx)
+
+    expect(front).toEqual(before)
+    expect(emitted).toEqual([])
+  })
+
+  it('emittar en ticker per sida som faktiskt förlorade materiel, kedjad till turens förlust-ticker (CLAUDE.md hård regel 4)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    front.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+
+    const { ctx, emitted } = makeCtx(state, 'attrition-seed')
+    fronts(ctx)
+    const casualtyEventId = front.lastCasualtyEventId
+    expect(casualtyEventId).not.toBeNull()
+
+    attrition(ctx)
+
+    const attritionTickers = emitted.filter((e) => e.headline.includes('ATTRITION'))
+    expect(attritionTickers.length).toBeGreaterThan(0)
+    for (const ticker of attritionTickers) {
+      expect(ticker.causeId).toBe(casualtyEventId)
+      expect(ticker.severity).toBe('ticker')
+    }
+  })
+
+  it('flera fronter löses oberoende av varandra', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front1 = state.fronts['front-1']!
+    front1.equipment.a = { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    front1.equipment.b = { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    state.fronts['front-2'] = { ...JSON.parse(JSON.stringify(front1)), id: 'front-2' }
+    state.fronts['front-2']!.equipment = { a: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 }, b: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 } }
+
+    const { ctx } = makeCtx(state, 'attrition-seed')
+    fronts(ctx)
+    attrition(ctx)
+
+    expect(front1.equipment.a.infantry).toBeLessThan(500) // front-1 hade strid
+    expect(state.fronts['front-2']!.equipment.a.infantry).toBe(0) // front-2 stagnerade
+  })
+})

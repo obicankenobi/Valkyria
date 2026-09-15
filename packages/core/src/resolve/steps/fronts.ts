@@ -34,7 +34,8 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-function otherSide(side: 'a' | 'b'): 'a' | 'b' {
+// Exporterad — resolve/steps/attrition.ts (P43) behöver samma sidbytesfunktion.
+export function otherSide(side: 'a' | 'b'): 'a' | 'b' {
   return side === 'a' ? 'b' : 'a'
 }
 
@@ -119,7 +120,12 @@ function resolveFront(
   front.morale[attacker] = clamp(front.morale[attacker] + moraleShift, 0, 100)
   front.morale[defender] = clamp(front.morale[defender] - moraleShift, 0, 100)
 
-  emit({
+  // P43 (avsnitt 3.1/3.3): resolve/steps/attrition.ts körs direkt efter det här
+  // steget och behöver både clampedAdvantage och den här tickerns id (causeId till
+  // förslitningens egen ticker, kedjans första led). Skrivs bara här, i samma
+  // ögonblick värdena faktiskt finns — se types.ts:s kommentar på fälten.
+  front.lastClampedAdvantage = clampedAdvantage
+  front.lastCasualtyEventId = emit({
     severity: 'ticker',
     scope: 'front',
     headline: `${front.id.toUpperCase()}: ${attackerCasualties + defenderCasualties} CASUALTIES THIS QUARTER`,

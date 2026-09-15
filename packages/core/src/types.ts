@@ -317,6 +317,16 @@ export interface Front {
   terrainBonus: number // -20 … +20, gynnar försvararen
   attribution: Record<string, number> // houseId | rivalId → levererade enheter
   casualtiesTotal: { a: number; b: number }
+  // P43 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3.1/3.3): resolve/steps/
+  // attrition.ts körs i ett EGET pipeline-steg direkt efter fronts, och behöver
+  // fronts.ts:s clampedAdvantage samt causeId:t till turens förlust-ticker — data
+  // som annars bara finns lokalt inuti fronts.ts:s resolveFront. Samma mönster som
+  // Theatre.deliveriesIntoActiveWarThisTurn (P6): enda sättet att flytta ett värde
+  // mellan två separata pipelinepassager utan att bryta ResolveContext:s frysta
+  // form. Skrivs bara när resolveFront faktiskt kör (dvs. fronten inte stagnerar);
+  // attrition.ts upprepar samma stagnationskontroll och läser dem aldrig annars.
+  lastClampedAdvantage: number
+  lastCasualtyEventId: string | null
 }
 
 export interface RivalHouse {

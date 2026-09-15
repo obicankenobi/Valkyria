@@ -267,6 +267,8 @@ function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } 
     terrainBonus: f.terrainBonus,
     attribution: {},
     casualtiesTotal: { a: 0, b: 0 },
+    lastClampedAdvantage: 0,
+    lastCasualtyEventId: null,
   }
 
   const theatre: Theatre = {

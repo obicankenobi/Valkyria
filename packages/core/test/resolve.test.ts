@@ -314,7 +314,14 @@ describe('resolveTurn — P6: front och attribution', () => {
 
     expect(state.fronts['front-1']!.position).toBeLessThan(positionBefore) // mot -100, rvn:s sida
     expect(state.fronts['front-1']!.attribution['player']).toBe(deliveredQuantity)
-    expect(state.fronts['front-1']!.equipment.a.artillery).toBe(deliveredQuantity)
+    // P43 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3): equipment
+    // förbrukas nu av attrition.ts varje stridstur — leveranser som ankommit
+    // TIDIGT i loopen ovan har redan hunnit tära ner innan sista leveransen
+    // kom in, så lagret på fronten är INTE längre garanterat lika med summan
+    // levererat (attribution, orörd av attrition, är fortfarande det exakta
+    // kumulativa måttet för det).
+    expect(state.fronts['front-1']!.equipment.a.artillery).toBeLessThanOrEqual(deliveredQuantity)
+    expect(state.fronts['front-1']!.equipment.a.artillery).toBeGreaterThan(0)
   })
 })
 

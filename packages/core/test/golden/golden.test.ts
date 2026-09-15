@@ -45,9 +45,9 @@ it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json',
 
 describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c64a1ab014436' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'a651047df113f' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '520a3eff4eb2d' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '19eaa8e478234' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4a5a34a1ce76f' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'ed5ee5fbb4f09' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

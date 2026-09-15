@@ -158,5 +158,16 @@
   "_p29_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 4.1 ger misattributionExposurePenalty(30) ordagrant.",
   "misattributionExposurePenalty": 30,
   "_p31_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 6.1 namnger 'order.weights.price är högt' som ett av två C-diskvalificerande villkor men ger inget tal -- PROVISORISKT. Satt ovanför bidWeightsDefault.price (0,55), det enda värde weights.price någonsin antar idag (orders.ts sätter alltid samma konstant per order, ingen variation finns ännu) -- ett tal därunder hade gjort villkoret ALLTID sant och tvingat varje bud till grade C, vilket bryter P31:s eget klart när (ingen policy > 70 % samma grade). Se docs/ANDRINGSLOGG.md.",
-  "gradePriceWeightThreshold": 0.65
+  "gradePriceWeightThreshold": 0.65,
+  "_p43_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3.1 ger equipmentAttritionCoupling(4.0), attritionLoserMultiplier(1.6) och categoryVulnerability (infantry 0.90/artillery 0.50/armour 0.70/aviation 0.30/naval 0.10/electronics 0.40) ordagrant -- specens egna kalibreringstal, inte provisoriska. frontBaseAttritionPct (1.5, satt sedan P6) återanvänds oförändrad som formelns 'intensity'-bas -- specen namnger fältet direkt utan att ge ett nytt.",
+  "equipmentAttritionCoupling": 4.0,
+  "attritionLoserMultiplier": 1.6,
+  "categoryVulnerability": {
+    "infantry": 0.90,
+    "artillery": 0.50,
+    "armour": 0.70,
+    "aviation": 0.30,
+    "naval": 0.10,
+    "electronics": 0.40
+  }
 }
