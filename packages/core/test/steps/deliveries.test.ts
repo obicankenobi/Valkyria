@@ -317,8 +317,14 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
     })
 
     it('en leverans till en köpare som INTE står på någon front rör ingen front', () => {
+      // P45 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.4): laos fick sin egen front
+      // (front-laos) — inte längre exemplet på en frontlös köpare. Tar bort
+      // den härur i stället, samma mönster som orders.test.ts:s motsvarande
+      // fix, för att pröva findFrontForBuyer/resolveDeliveryFront:s null-fall
+      // rent.
       const state = createInitialState('indochina-slice', 'seed')
-      const contract = activeContract({ buyerId: 'laos', productId: '105mm_field_gun' }) // laos står inte på front-1
+      delete state.fronts['front-laos']
+      const contract = activeContract({ buyerId: 'laos', productId: '105mm_field_gun' })
       state.market.contracts = [contract]
       state.market.shipments = [shipment({ units: 20, arrivalTurn: 1 })]
       state.meta.turn = 1

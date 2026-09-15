@@ -152,6 +152,31 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
         expect(sideFormations.reduce((sum, f) => sum + f.strength, 0)).toBe(front.strength[side])
       }
     })
+
+    it('(P45 klart-når) håller på BÅDA fronterna, inte bara front-1 — skyddsräcke 2 (avsnitt 6)', () => {
+      // ETAPP4_TEKNISK_SPEC.md avsnitt 6, skyddsräcke 2: "Invarianten från etapp
+      // 3 håller på BÅDA fronterna." Ger materiel till den missgynnade sidan på
+      // VARDERA fronten, så båda faktiskt tar riktiga förluster den här turen —
+      // inte bara en trivial 0=0 på den andra.
+      const state = createInitialState('indochina-slice', 'seed')
+      giveEquipment(state.fronts['front-1']!, 'a', 'artillery', 300)
+      giveEquipment(state.fronts['front-laos']!, 'a', 'artillery', 100)
+      const laosStrengthBBefore = state.fronts['front-laos']!.strength.b
+
+      fronts(makeCtx(state, 'front-seed').ctx)
+
+      for (const front of Object.values(state.fronts)) {
+        for (const side of ['a', 'b'] as const) {
+          const sideFormations = front.formations.filter((f) => f.side === side)
+          expect(sideFormations.reduce((sum, f) => sum + f.strength, 0)).toBe(front.strength[side])
+        }
+      }
+      // Bevisar att front-laos faktiskt rördes (inte bara ett orört 0=0-fall) —
+      // engagement()s egen strid, inte resolveFronts casualtiesTotal (som mäter
+      // ett SEPARAT, parallellt förluststeg och kan stanna på 0 även när
+      // formationerna redan tagit riktiga förluster, se ANDRINGSLOGG.md).
+      expect(state.fronts['front-laos']!.strength.b).toBeLessThan(laosStrengthBBefore)
+    })
   })
 
   describe('trace (P36, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {

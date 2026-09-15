@@ -71,6 +71,11 @@
       "id": "indochina",
       "name": "INDOCHINA",
       "heat": 25
+    },
+    {
+      "id": "laos",
+      "name": "LAOS",
+      "heat": 15
     }
   ],
   "fronts": [
@@ -95,6 +100,25 @@
         { "id": "nlf-main-force", "name": "Main Force Battalion Group", "factionId": "nlf", "side": "b", "sectorId": "cu-chi", "doctrine": "irregular", "strength": 30 },
         { "id": "nlf-d1-mechanised", "name": "D-1 Mechanised Regiment", "factionId": "nlf", "side": "b", "sectorId": "da-nang", "doctrine": "mechanised", "strength": 10 },
         { "id": "nlf-c10-artillery", "name": "C-10 Artillery Battalion", "factionId": "nlf", "side": "b", "sectorId": "an-loc", "doctrine": "artillery", "strength": 5 }
+      ]
+    },
+    {
+      "id": "front-laos",
+      "theatreId": "laos",
+      "sideA": "laos",
+      "sideB": "nlf",
+      "attacker": "b",
+      "position": 0,
+      "moraleA": 50,
+      "moraleB": 55,
+      "strengthA": 25,
+      "strengthB": 20,
+      "terrainBonus": 10,
+      "formations": [
+        { "id": "laos-1st-infantry", "name": "1st Lao Infantry Battalion", "factionId": "laos", "side": "a", "sectorId": "plain-of-jars", "doctrine": "infantry", "strength": 15 },
+        { "id": "laos-royal-artillery", "name": "Royal Lao Artillery Battery", "factionId": "laos", "side": "a", "sectorId": "plain-of-jars", "doctrine": "artillery", "strength": 10 },
+        { "id": "nlf-559th-transport", "name": "559th Transportation Group", "factionId": "nlf", "side": "b", "sectorId": "ho-chi-minh-trail", "doctrine": "irregular", "strength": 12 },
+        { "id": "nlf-968th-infantry", "name": "968th Infantry Regiment", "factionId": "nlf", "side": "b", "sectorId": "ho-chi-minh-trail", "doctrine": "infantry", "strength": 8 }
       ]
     }
   ],

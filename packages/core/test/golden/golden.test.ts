@@ -78,10 +78,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // öppna ordrar/kontrakt, en del av det hashade sluttillståndet, oavsett att
   // ingen SPELREGEL ändrades (samma tal, samma utfall, bara ett nytt fält per
   // objekt). headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P45 (avsnitt 3.4, samma klart-når-krav) — indochina-slice.json
+  // fick en andra front (front-laos, teater LAOS) och en fjärde/femte formation
+  // för laos/nlf. En genuint ny spelvärld, inte bara ett nytt fält den här
+  // gången: rvn/nlf-partiet på front-1 borde vara oberört, men laos deltar nu i
+  // ordergenerering/leveranser på ett sätt scenariot aldrig gjorde förut.
+  // headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'eb02936c85ce7' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '18e2ea0f40ab59' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '5e5ef179d12ea' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '11227ef8b09335' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'c56e36298a181' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'c0e98bcc88bdd' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

@@ -536,8 +536,16 @@ att man startar om i ett nytt läge, inte från att man sitter i samma läge lä
 `INDOCHINA_SLICE` är etapp 1:s vertikala skiva och är **ett eget scenario, inte de första 20
 turerna av `INDOCHINA`**. Skillnaden gjordes explicit i v2.1 eftersom det fulla scenariot är 34
 turer och därför har ett styrelsemål på 20 kvartal som inte går att pröva i en kortare körning.
-Skivan har ett eget femårsmål (`"Doubling"`, tur 20) med prognoskontroller vid tur 8 och 14, en
-front, tre köpare och tre rivaler.
+Skivan har ett eget femårsmål (`"Doubling"`, tur 20) med prognoskontroller vid tur 8 och 14, tre
+köpare och tre rivaler.
+
+> **Ändrat i P45 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.4, 2026-09-15):** skivan hade EN front fram
+> till etapp 4 — meningen ovan sa uttryckligen "en front". Den andra halvan av etapp 4 kräver en
+> andra front att pröva mekaniken mot (annars mäter P47:s balanspass ingenting), så skivan har nu
+> **två**: `front-1` (`rvn` mot `nlf`, teater `INDOCHINA`, oförändrad) och den nya `front-laos`
+> (`laos` mot `nlf`, egen teater `LAOS`, egen hetkurva). `nlf` står medvetet på båda — samma
+> faktion, ett delat `materielNeed`, två fronter att förlora materiel på. Se
+> `docs/ANDRINGSLOGG.md` för hela resonemanget bakom valet.
 
 ---
 

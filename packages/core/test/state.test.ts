@@ -23,10 +23,13 @@ describe('createInitialState', () => {
     expect(state.status).toEqual({ kind: 'active' })
   })
 
-  it('bygger etapp 1:s omfång: en front, en teater, tre faktioner, tre rivaler, fyra linjer, en station', () => {
+  it('bygger etapp 4:s omfång: två fronter, två teatrar, tre faktioner, tre rivaler, fyra linjer, en station', () => {
+    // P45 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.4): front-1 (rvn/nlf, INDOCHINA) +
+    // front-laos (laos/nlf, LAOS, egen hetkurva) — var "en front, en teater" i
+    // etapp 1-3, se docs/DESIGN.md avsnitt 16 för ändringen.
     const state = createInitialState('indochina-slice', 'test-seed')
-    expect(Object.keys(state.fronts)).toHaveLength(1)
-    expect(Object.keys(state.theatres)).toHaveLength(1)
+    expect(Object.keys(state.fronts)).toHaveLength(2)
+    expect(Object.keys(state.theatres)).toHaveLength(2)
     expect(Object.keys(state.factions)).toHaveLength(3)
     expect(Object.keys(state.rivals)).toHaveLength(3)
     expect(state.house.lines).toHaveLength(4)

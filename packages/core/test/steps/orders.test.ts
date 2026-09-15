@@ -302,8 +302,14 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       expect(order.weights).toEqual(balance.bidWeightsDefault) // ingen "negativ press"
     })
 
-    it('en köpare utan egen front (laos) är aldrig under press — standardvikter oavsett fronternas läge', () => {
+    it('en köpare utan egen front är aldrig under press — standardvikter oavsett fronternas läge', () => {
+      // P45 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.4): laos fick sin egen front
+      // (front-laos, mot nlf) — inte längre exemplet på en frontlös köpare.
+      // Tar bort den härur i stället för att hitta på en fjärde faktion, bara
+      // för att pröva highestPressureFront/computePressureForFront:s null-fall
+      // rent, isolerat från vilken faktion som råkar sakna en front just nu.
       const state = createInitialState('indochina-slice', 'seed')
+      delete state.fronts['front-laos']
       state.fronts['front-1']!.trace = [-50, -40, -20, 0]
       state.factions['laos']!.materielNeed.infantry = 100
       state.meta.turn = 0

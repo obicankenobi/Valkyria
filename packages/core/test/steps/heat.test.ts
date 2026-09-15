@@ -100,4 +100,23 @@ describe('heat (isolerat steg, spec avsnitt 5 "Heat")', () => {
 
     expect(emitted.length).toBeGreaterThan(0)
   })
+
+  it('(P45 klart-når, ETAPP4_TEKNISK_SPEC.md avsnitt 3.4/1.4) de två teatrarnas heat rör sig oberoende av varandra', () => {
+    // heat.ts loopade redan Object.values(draft.theatres) innan P45 — fynd 1.4
+    // i specen: "två teatrar ger två oberoende hetkurvor UTAN en enda ändring i
+    // heat.ts". Det här testet är beviset, med den andra teatern (LAOS) som nu
+    // faktiskt finns i indochina-slice.json.
+    const state = createInitialState('indochina-slice', 'seed')
+    const indochina = state.theatres['indochina']!
+    const laos = state.theatres['laos']!
+    indochina.heat = 20
+    laos.heat = 20
+    indochina.deliveriesIntoActiveWarThisTurn = 100 // bara INDOCHINA matas
+    laos.deliveriesIntoActiveWarThisTurn = 0
+
+    heat(makeCtx(state, 'heat-two-theatres-seed').ctx)
+
+    expect(indochina.heat).toBeGreaterThan(20) // stiger — fick leveranser
+    expect(laos.heat).toBeLessThan(20) // faller mot 0 — ingen leverans, egen kurva
+  })
 })

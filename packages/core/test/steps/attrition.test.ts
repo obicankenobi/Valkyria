@@ -155,5 +155,37 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
       expect(sideBFaction.materielNeed.infantry).toBeGreaterThan(0)
       expect(sideBFaction.materielNeed.infantry).toBe(balance.needCeiling) // 40 tunga stridsturer räcker gott för att nå taket
     })
+
+    it('(P45 klart-når, ETAPP4_TEKNISK_SPEC.md avsnitt 3.4) nlf:s materielNeed växer av förluster på BÅDA fronterna — samma delade behov, inte två separata', () => {
+      // Faction.materielNeed är per FAKTION, inte per front (avsnitt 3.4: "Ett
+      // försvarsdepartement har en budget och ett lager, inte två"). Två körningar
+      // med samma frö och samma nederlag på front-1 — den ENDA skillnaden är om
+      // front-laos OCKSÅ ger nlf stryk samma tur. Skillnaden i materielNeed-ökning
+      // bevisar att front-laos faktiskt bidrar till samma, delade pool.
+      function run(alsoLosingOnLaos: boolean): number {
+        const state = createInitialState('indochina-slice', 'materiel-need-two-fronts-seed')
+        seedEquipment(state.fronts['front-1']!, 'a', { infantry: 2000, artillery: 2000, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 })
+        seedEquipment(state.fronts['front-1']!, 'b', { infantry: 2000, artillery: 50, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 })
+        if (alsoLosingOnLaos) {
+          seedEquipment(state.fronts['front-laos']!, 'a', { infantry: 2000, artillery: 2000, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 })
+          seedEquipment(state.fronts['front-laos']!, 'b', { infantry: 2000, artillery: 50, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 })
+        }
+        const nlf = state.factions['nlf']!
+        const before = nlf.materielNeed.infantry
+
+        const { ctx } = makeCtx(state, 'materiel-need-two-fronts-turn')
+        fronts(ctx)
+        attrition(ctx)
+        factions(ctx)
+
+        return nlf.materielNeed.infantry - before
+      }
+
+      const growthFromFront1Alone = run(false)
+      const growthFromBothFronts = run(true)
+
+      expect(growthFromFront1Alone).toBeGreaterThan(0)
+      expect(growthFromBothFronts).toBeGreaterThan(growthFromFront1Alone)
+    })
   })
 })
