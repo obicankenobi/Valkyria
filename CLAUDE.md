@@ -16,8 +16,13 @@ Etapp 1, 1,5 och 2 lämnas stående som historik. **Känd lucka, upptäckt vid a
 `docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3 (etapp 3B) refererar
 upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`, `MovementArrow`, `sectorId` och
 ett INTEL-lager som om de redan finns — sökt igenom hela repot, noll träffar. Blockerar INTE
-P43–P47 (3A rör ingen av dessa), men måste lösas (skriv den saknade specen, eller skriv om
-5.5/skyddsräcke 1&3) innan P51.** **Ytterligare känd spänning, upptäckt under P47 (se
+P43–P47 (3A rör ingen av dessa) — men BLOCKERADE P51, som verifierat gjorde antagandet sant
+igen (2026-09-15): fortsatt noll träffar, och `packages/app/src/components/TheWorld.tsx` (den
+enda lägesvyn) har inget lägesbord, ingen `sectorId`-utgruppering, inget INTEL-lager. Ägaren
+tillfrågad; valde att hoppa över P51 i stället för att skriva en egen THE_WORLD-tillsatsspec.
+**P51 är alltså OBYGGD, inte klarmarkerad** — kvarstår som öppen punkt tills någon skriver den
+saknade specen, eller skriver om 5.5/skyddsräcke 1&3, eller ett uttryckligt ägarbeslut stryker
+P51 helt.** **Ytterligare känd spänning, upptäckt under P47 (se
 `docs/ANDRINGSLOGG.md`, 2026-09-15): styrelsegranskningens linjära intäktsmål (`board.ts`, P30,
 etapp 2) och P45:s behovsdrivna ordrar går inte längre ihop — 200/200 `balanced`-partier slutar
 i `BUYOUT`, i snitt vid tur ~11. Ägaren tillfrågad två gånger, valde att lämna `boardTarget`
