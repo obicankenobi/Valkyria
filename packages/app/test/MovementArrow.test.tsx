@@ -1,4 +1,4 @@
-// MovementArrow.test.tsx — P51 klart-när: "ett test visar att MovementArrow
+// MovementArrow.test.tsx — P41 klart-när: "ett test visar att MovementArrow
 // fortfarande inte tar någon state-ändrande prop" (ETAPP3_KRIGET_SOM_MARKNAD_
 // TEKNISK_SPEC.md avsnitt 5.5/7). "Fortfarande" i klart-när-texten syftar på att
 // komponenten, en gång byggd, aldrig i EN SENARE ändring ska få en callback-prop
@@ -17,7 +17,7 @@ afterEach(cleanup)
 // "state-ändrande prop" (en callback, ett event-handtag) skulle vara.
 type FunctionFlags<T> = { [K in keyof T]-?: T[K] extends (...args: never[]) => unknown ? true : false }
 
-describe('MovementArrow (P51 klart-när, skyddsräcke 1)', () => {
+describe('MovementArrow (P41 klart-när, skyddsräcke 1)', () => {
   it('inget fält i MovementArrowProps har en funktionstyp — ingen callback, inget event-handtag', () => {
     // Räknar upp varje fält explicit (inte en generisk "never"-kontroll, som
     // expect-type hanterar illa) — en FRAMTIDA prop måste läggas till här för

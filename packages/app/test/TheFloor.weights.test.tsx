@@ -1,4 +1,4 @@
-// P46 klart-när (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3, sista
+// P36 klart-när (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3, sista
 // meningen): "Order.weights visas aldrig." Renderar TheFloor.tsx PÅ RIKTIGT
 // (jsdom, @testing-library/react) med ett bud öppnat (BidForm synlig också),
 // och letar efter distinkta talsträngar ur en order med avsiktligt ovanliga
@@ -36,7 +36,7 @@ function makeOrder(state: GameState): Order {
   }
 }
 
-describe('TheFloor — P46 klart-när: Order.weights exponeras aldrig i UI:t', () => {
+describe('TheFloor — P36 klart-när: Order.weights exponeras aldrig i UI:t', () => {
   it('varken den stängda ordertraden eller det öppnade budformuläret visar weights.price/delivery/relationship', () => {
     const state = createInitialState('indochina-slice', 'weights-hidden-seed')
     const order = makeOrder(state)

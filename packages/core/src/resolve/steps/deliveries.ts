@@ -44,10 +44,10 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-// P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en ankommen
+// P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en ankommen
 // leverans delas ut över SIDANS förband enligt doktrinernas vikter — front.equipment
 // självt rörs inte här, det ökas separat (samma anropsplats, precis intill) precis
-// som innan P48. Håller invarianten i 5.1 genom konstruktion: samma `units` läggs
+// som innan P38. Håller invarianten i 5.1 genom konstruktion: samma `units` läggs
 // till på båda ställena, varje tur, aldrig i olika steg.
 //
 // Nödvändigt tillägg (se ANDRINGSLOGG.md): doctrineProfile (avsnitt 5.2) ger ingen
@@ -56,7 +56,7 @@ const BALANCE = balanceData as unknown as Balance
 // front.equipment[side][cat] hade ändå ökat). Faller då tillbaka till en
 // strength-proportionell fördelning i stället.
 //
-// P49 (se ANDRINGSLOGG.md): fördelningsaritmetiken (störst bråkdel, deterministisk)
+// P39 (se ANDRINGSLOGG.md): fördelningsaritmetiken (störst bråkdel, deterministisk)
 // bröts ut till allocateByWeight.ts, delad med attrition.ts:s motsvarande minskning
 // — samma garanti (summan blir exakt `units`) behövs på båda ställena, inte bara
 // här.

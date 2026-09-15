@@ -158,7 +158,7 @@
   "misattributionExposurePenalty": 30,
   "_p31_note": "ETAPP2_TEKNISK_SPEC.md avsnitt 6.1 namnger 'order.weights.price är högt' som ett av två C-diskvalificerande villkor men ger inget tal -- PROVISORISKT. Satt ovanför bidWeightsDefault.price (0,55), det enda värde weights.price någonsin antar idag (orders.ts sätter alltid samma konstant per order, ingen variation finns ännu) -- ett tal därunder hade gjort villkoret ALLTID sant och tvingat varje bud till grade C, vilket bryter P31:s eget klart när (ingen policy > 70 % samma grade). Se docs/ANDRINGSLOGG.md.",
   "gradePriceWeightThreshold": 0.65,
-  "_p43_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3.1 ger equipmentAttritionCoupling(4.0), attritionLoserMultiplier(1.6) och categoryVulnerability (infantry 0.90/artillery 0.50/armour 0.70/aviation 0.30/naval 0.10/electronics 0.40) ordagrant -- specens egna kalibreringstal, inte provisoriska. frontBaseAttritionPct (1.5, satt sedan P6) återanvänds oförändrad som formelns 'intensity'-bas -- specen namnger fältet direkt utan att ge ett nytt.",
+  "_p33_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3.1 ger equipmentAttritionCoupling(4.0), attritionLoserMultiplier(1.6) och categoryVulnerability (infantry 0.90/artillery 0.50/armour 0.70/aviation 0.30/naval 0.10/electronics 0.40) ordagrant -- specens egna kalibreringstal, inte provisoriska. frontBaseAttritionPct (1.5, satt sedan P6) återanvänds oförändrad som formelns 'intensity'-bas -- specen namnger fältet direkt utan att ge ett nytt.",
   "equipmentAttritionCoupling": 4.0,
   "attritionLoserMultiplier": 1.6,
   "categoryVulnerability": {
@@ -169,7 +169,7 @@
     "naval": 0.10,
     "electronics": 0.40
   },
-  "_p44_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1 ger peacetimeReplacement, needCeiling(400) och orderTriggerThreshold ordagrant -- specens egna tal. orderTriggerThreshold konsumeras inte förrän P45:s utlysning, men P44:s eget klart när mäter fredstidspåfyllningen mot just detta tal (infantry-tröskeln), så fältet måste finnas redan här.",
+  "_p34_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1 ger peacetimeReplacement, needCeiling(400) och orderTriggerThreshold ordagrant -- specens egna tal. orderTriggerThreshold konsumeras inte förrän P35:s utlysning, men P34:s eget klart när mäter fredstidspåfyllningen mot just detta tal (infantry-tröskeln), så fältet måste finnas redan här.",
   "peacetimeReplacement": {
     "infantry": 12,
     "artillery": 2,
@@ -187,12 +187,12 @@
     "naval": 2,
     "electronics": 6
   },
-  "_p45_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2 ger maxOrdersPerFactionPerTurn(2) direkt i pseudokoden, inte i avsnitt 4.1:s fältlista -- specens eget tal, inte provisoriskt. orderGenerationChancePct borttagen helt (avsnitt 9:s egen instruktion: 'Ta bort orderGenerationChancePct') -- P4:s ursprungliga tärningsregel, ersatt av den behovsdrivna utlysningen.",
+  "_p35_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2 ger maxOrdersPerFactionPerTurn(2) direkt i pseudokoden, inte i avsnitt 4.1:s fältlista -- specens eget tal, inte provisoriskt. orderGenerationChancePct borttagen helt (avsnitt 9:s egen instruktion: 'Ta bort orderGenerationChancePct') -- P4:s ursprungliga tärningsregel, ersatt av den behovsdrivna utlysningen.",
   "maxOrdersPerFactionPerTurn": 2,
-  "_p46_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3 ger weightPressureShift(0,25) ordagrant. pressurePositionSpan är PROVISORISKT -- specen ger 'position-förändring senaste 3 turerna' och en 0..1-skala men aldrig vilket antal positionspoäng som motsvarar full pressure (1,0). Kalibrerat mot frontBreakthroughMagnitude (5 positionspoäng per genombrott) -- två genombrott på tre turer räcker för full pressure via positionskomponenten ensam, empiriskt avstämt mot härnessens 8-25%-mål (avsnitt 8). Se docs/ANDRINGSLOGG.md.",
+  "_p36_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3 ger weightPressureShift(0,25) ordagrant. pressurePositionSpan är PROVISORISKT -- specen ger 'position-förändring senaste 3 turerna' och en 0..1-skala men aldrig vilket antal positionspoäng som motsvarar full pressure (1,0). Kalibrerat mot frontBreakthroughMagnitude (5 positionspoäng per genombrott) -- två genombrott på tre turer räcker för full pressure via positionskomponenten ensam, empiriskt avstämt mot härnessens 8-25%-mål (avsnitt 8). Se docs/ANDRINGSLOGG.md.",
   "weightPressureShift": 0.25,
   "pressurePositionSpan": 10,
-  "_p48_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2 ger doctrineProfile ordagrant -- specens eget tal. Ingen doktrin ger aviation eller naval en vikt alls (specen namner bara infantry/artillery/armour/electronics per doktrin) -- se deliveries.ts:s fallback (nödvändigt tillägg, ANDRINGSLOGG.md) för hur en sådan leverans ändå håller invarianten i 5.1.",
+  "_p38_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2 ger doctrineProfile ordagrant -- specens eget tal. Ingen doktrin ger aviation eller naval en vikt alls (specen namner bara infantry/artillery/armour/electronics per doktrin) -- se deliveries.ts:s fallback (nödvändigt tillägg, ANDRINGSLOGG.md) för hur en sådan leverans ändå håller invarianten i 5.1.",
   "doctrineProfile": {
     "infantry": { "infantry": 0.75, "artillery": 0.15, "armour": 0.05, "electronics": 0.05 },
     "mechanised": { "infantry": 0.40, "armour": 0.35, "artillery": 0.15, "electronics": 0.10 },
@@ -200,7 +200,7 @@
     "artillery": { "artillery": 0.70, "infantry": 0.20, "electronics": 0.10 },
     "irregular": { "infantry": 0.95, "artillery": 0.05 }
   },
-  "_p49_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3 ger categoryCombatWeight, engagementAttritionPct(6), readinessLossMultiplier(1.8), maulThreshold(35), destroyThreshold(10) och refitThreshold(70) ordagrant -- specens egna tal. refittingReadinessRecoveryPerTurn saknar motsvarighet i specen: avsnitt 5.3 punkt 4 säger 'refitting -> active när readiness > refitThreshold' men ger INGEN mekanik för att readiness någonsin STIGER under refitting -- utan en sådan skulle ett förband som blivit mauled (readiness < 35) aldrig kunna nå över 70 och fastna permanent. Nödvändigt tillägg, PROVISORISKT: kalibrerat så ett förband som precis blivit mauled (readiness strax under 35) når över refitThreshold på ungefär samma antal turer (3-4) som en enda illa gynnad drabbning kan sänka readiness med, se docs/ANDRINGSLOGG.md.",
+  "_p39_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3 ger categoryCombatWeight, engagementAttritionPct(6), readinessLossMultiplier(1.8), maulThreshold(35), destroyThreshold(10) och refitThreshold(70) ordagrant -- specens egna tal. refittingReadinessRecoveryPerTurn saknar motsvarighet i specen: avsnitt 5.3 punkt 4 säger 'refitting -> active när readiness > refitThreshold' men ger INGEN mekanik för att readiness någonsin STIGER under refitting -- utan en sådan skulle ett förband som blivit mauled (readiness < 35) aldrig kunna nå över 70 och fastna permanent. Nödvändigt tillägg, PROVISORISKT: kalibrerat så ett förband som precis blivit mauled (readiness strax under 35) når över refitThreshold på ungefär samma antal turer (3-4) som en enda illa gynnad drabbning kan sänka readiness med, se docs/ANDRINGSLOGG.md.",
   "categoryCombatWeight": {
     "infantry": 0.10,
     "artillery": 1.00,
@@ -215,7 +215,7 @@
   "destroyThreshold": 10,
   "refitThreshold": 70,
   "refittingReadinessRecoveryPerTurn": 15,
-  "_p51_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7 (skyddsräcke 3) kräver 'ett styrkeband' för ett förband utan station, men ger ingen formel för bandets gränser -- samma sorts lucka som refittingReadinessRecoveryPerTurn ovan. Nödvändigt tillägg, PROVISORISKT: formationStrengthBandLowPct/HighPct delar strength/strengthAtFull-kvoten (0-100%) i tre ungefär jämnstora band (svag/medel/stark), läst av queries.ts:s formationDisplay(). Läses ALDRIG av resolveTurn-pipelinen (bara av queries.ts, ett rent UI-lager utanför den hashade sluttillståndet) -- påverkar alltså inte golden.test.ts:s tre uppmätta hash-värden, bara fixtures/balance.frozen.json:s bitvisa kopia. Se docs/ANDRINGSLOGG.md.",
+  "_p41_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7 (skyddsräcke 3) kräver 'ett styrkeband' för ett förband utan station, men ger ingen formel för bandets gränser -- samma sorts lucka som refittingReadinessRecoveryPerTurn ovan. Nödvändigt tillägg, PROVISORISKT: formationStrengthBandLowPct/HighPct delar strength/strengthAtFull-kvoten (0-100%) i tre ungefär jämnstora band (svag/medel/stark), läst av queries.ts:s formationDisplay(). Läses ALDRIG av resolveTurn-pipelinen (bara av queries.ts, ett rent UI-lager utanför den hashade sluttillståndet) -- påverkar alltså inte golden.test.ts:s tre uppmätta hash-värden, bara fixtures/balance.frozen.json:s bitvisa kopia. Se docs/ANDRINGSLOGG.md.",
   "formationStrengthBandLowPct": 33,
   "formationStrengthBandHighPct": 66
 }

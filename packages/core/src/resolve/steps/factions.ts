@@ -48,7 +48,7 @@ export const factions: ResolveStep = (ctx) => {
   }
 }
 
-// P44 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1): "need[cat] +=
+// P34 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1): "need[cat] +=
 // peacetimeReplacement[cat]; need[cat] = min(need[cat], needCeiling)" — golvet
 // som håller marknaden vid liv innan attrition.ts någonsin haft en stridstur
 // att förbruka materiel i. Samma "emit bara på faktisk ändring"-mönster som

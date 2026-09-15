@@ -22,7 +22,7 @@ export type TechCategory =
 
 export type Grade = 'A' | 'B' | 'C'
 
-// P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
+// P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
 export type Doctrine = 'infantry' | 'mechanised' | 'armoured' | 'artillery' | 'irregular'
 
 // ── 2.2 GameState ────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ export interface GameState {
     // annulleras") ett tal att annullera utan en hel ny per-tur-array på House.
     restrictedRevenueThisTurn: Money
   }
-  // P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): nödvändig
+  // P40 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): nödvändig
   // transportkanal, samma mönster som pendingCrisis nedan — resolve/engagement.ts
   // (körs inuti steps/fronts.ts) fyller på den när ett förband blir mauled/
   // destroyed, steps/orders.ts (senare i SAMMA turs pipeline) tömmer den och
@@ -241,7 +241,7 @@ export interface Order {
   reason: OrderReason
 }
 
-// P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4), ordagrant.
+// P40 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4), ordagrant.
 export type OrderReason =
   | { kind: 'REPLACE_FORMATION_LOSSES'; formationId: string; formationName: string; engagementWireId: string }
   | { kind: 'PEACETIME_REPLACEMENT' }
@@ -302,9 +302,9 @@ export interface Faction {
   // ("treasury < 0 i två turer", "publicSupport < 25 i tre turer").
   negativeTreasuryTurns: number
   lowSupportTurns: number
-  // P44 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1). Skrivs av
+  // P34 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1). Skrivs av
   // attrition.ts (+= denna faktions sidas förlorade materiel), orders.ts
-  // (−= utlyst kvantitet, P45) och factions.ts (+= peacetimeReplacement,
+  // (−= utlyst kvantitet, P35) och factions.ts (+= peacetimeReplacement,
   // klampat till needCeiling) — av ingen annan.
   materielNeed: Record<TechCategory, number>
 }
@@ -339,7 +339,7 @@ export interface Front {
   terrainBonus: number // -20 … +20, gynnar försvararen
   attribution: Record<string, number> // houseId | rivalId → levererade enheter
   casualtiesTotal: { a: number; b: number }
-  // P43 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3.1/3.3): resolve/steps/
+  // P33 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3.1/3.3): resolve/steps/
   // attrition.ts körs i ett EGET pipeline-steg direkt efter fronts, och behöver
   // fronts.ts:s clampedAdvantage samt causeId:t till turens förlust-ticker — data
   // som annars bara finns lokalt inuti fronts.ts:s resolveFront. Samma mönster som
@@ -349,7 +349,7 @@ export interface Front {
   // attrition.ts upprepar samma stagnationskontroll och läser dem aldrig annars.
   lastClampedAdvantage: number
   lastCasualtyEventId: string | null
-  // P46 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3). Specen
+  // P36 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3). Specen
   // refererar `front.trace` som om fältet redan finns ("härlett ur
   // position-förändring senaste 3 turerna (front.trace)") — det gjorde det
   // inte, sökt igenom hela repot, se docs/ANDRINGSLOGG.md. `position` skrivs
@@ -358,7 +358,7 @@ export interface Front {
   // först. Hålls kort (fyra punkter räcker för en tre-turers jämförelse) —
   // ingen anledning att spara hela partiets historik här.
   trace: number[]
-  // P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en
+  // P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en
   // dekomposition av front.equipment/strength, inte ett andra lager sanning —
   // fronts.ts:s egna formler (ratioAdvantage, genombrottströskeln) rörs inte,
   // de räknar vidare på aggregaten. Invariant (5.1, fäst av ett eget test):
@@ -367,7 +367,7 @@ export interface Front {
   formations: Formation[]
 }
 
-// P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
+// P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
 export interface Formation {
   id: string
   name: string
@@ -381,14 +381,14 @@ export interface Formation {
   readiness: Pct // 0 = utslaget, 100 = stridsdugligt
   status: 'active' | 'mauled' | 'refitting' | 'destroyed'
   engagedWith: string | null // motståndarförbandets id, denna tur
-  // P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3): `combatPower`s
+  // P39 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3): `combatPower`s
   // egen formel refererar `F.strengthAtFull` som om fältet redan fanns — det
-  // gjorde det inte, avsnitt 5.2:s datamodell (P48) namnger det aldrig. Nödvändigt
-  // tillägg, samma mönster som `front.trace` (P46): satt en gång vid uppresning
+  // gjorde det inte, avsnitt 5.2:s datamodell (P38) namnger det aldrig. Nödvändigt
+  // tillägg, samma mönster som `front.trace` (P36): satt en gång vid uppresning
   // (= startstyrkan, INNAN några förluster), aldrig ändrad sedan — representerar
   // förbandets fulla, avsedda styrka (TOE), inte dess nuvarande.
   strengthAtFull: number
-  // P49: hur många turer i RAD förbandet varit `mauled` UTAN att ha stridit —
+  // P39: hur många turer i RAD förbandet varit `mauled` UTAN att ha stridit —
   // avsnitt 5.3 punkt 4 kräver "'mauled' utan strid i 2 turer → 'refitting'" men
   // ger ingen räknare i datamodellen. Nollställs varje gång status lämnar
   // `mauled` (åt endera hållet), inkrementeras bara för ett förband som redan
@@ -397,7 +397,7 @@ export interface Formation {
   turnsMauled: number
 }
 
-// P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): en väntande
+// P40 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): en väntande
 // begäran, skriven av resolve/engagement.ts när ett förband blir mauled/
 // destroyed, konsumerad av steps/orders.ts SAMMA tur. statusEventId är den
 // mauled/destroyed-händelsens EGNA id (Order.causeId kedjar hit — nästa led,
@@ -527,7 +527,7 @@ export interface BidEstimate {
   yourUnitCost: Money // alltid exakt — du känner din egen verkstad
 }
 
-// P51 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), byggd av
+// P41 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), byggd av
 // queries.ts:s formationDisplay(). Ordagrant gated: bara `readiness` och exakt
 // `equipment` — namnet blir 'UNKNOWN FORMATION' och strength ersätts av ett band som
 // en DIREKT KONSEKVENS av det (spec: "Utan station: UNKNOWN FORMATION och ett

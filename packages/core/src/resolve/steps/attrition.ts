@@ -1,7 +1,7 @@
 // attrition — materielförslitning. Se ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
 // avsnitt 3 ("Materielförslitning").
 //
-// Ett EGET pipeline-steg, insatt direkt efter `fronts` (P43:s egen instruktion) —
+// Ett EGET pipeline-steg, insatt direkt efter `fronts` (P33:s egen instruktion) —
 // INTE inline i fronts.ts:s resolveFront, trots att avsnitt 3.1:s formulering
 // ("i fronts.ts, efter... före...") beskriver VAR i beräkningen regeln hör hemma,
 // inte VILKEN fil den ska stå i. Formeln behöver clampedAdvantage och causeId:t
@@ -16,7 +16,7 @@
 // för att avgöra om fronten hade strid den här turen — annars läser den här
 // filen ett kvarblivet, ogiltigt lastClampedAdvantage-värde från en tidigare
 // tur. Det är också exakt "en front utan strid" betyder i den här motorn idag
-// (P43:s eget klart när, se avsnitt 0/fynd 3: bara artilleri avgör stagnation).
+// (P33:s eget klart när, se avsnitt 0/fynd 3: bara artilleri avgör stagnation).
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { allocateByWeight } from '../allocateByWeight.js'
 import type { ResolveStep } from '../index.js'
@@ -33,13 +33,13 @@ const BALANCE = balanceData as unknown as Balance
 
 const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
 
-// P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): P48:s invariant
+// P39 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): P38:s invariant
 // (Σ formations[side].equipment[c] === front.equipment[side][c]) gäller nu ÄVEN
-// här — den här filen fanns före förbanden (P43) och minskade bara aggregatet
+// här — den här filen fanns före förbanden (P33) och minskade bara aggregatet
 // direkt. Utan en motsvarande minskning över formationerna hade varje stridstur
 // tyst brutit invarianten så fort attrition faktiskt förstörde något. Vikten är
 // formationens NUVARANDE innehav (allmänt slitage bryr sig inte om doktrin) —
-// till skillnad från deliveries.ts:s (P48) doktrinvikter vid TILLÄGG.
+// till skillnad från deliveries.ts:s (P38) doktrinvikter vid TILLÄGG.
 function reduceFormationsEquipment(front: Front, side: 'a' | 'b', category: TechCategory, units: number): void {
   if (units <= 0) return
   const candidates = front.formations.filter((f) => f.side === side && f.equipment[category] > 0)
@@ -88,13 +88,13 @@ export const attrition: ResolveStep = (ctx) => {
         reduceFormationsEquipment(front, side, category, destroyed)
         destroyedByCategory[category] = destroyed
         totalDestroyed += destroyed
-        // P44 (avsnitt 4.1): "fronts.ts (efter förslitning) need[cat] +=
+        // P34 (avsnitt 4.1): "fronts.ts (efter förslitning) need[cat] +=
         // destroyed(denna faktions sida, cat)" — den kod som faktiskt
-        // beräknar `destroyed` är attrition.ts (P43 bröt ut den till ett eget
+        // beräknar `destroyed` är attrition.ts (P33 bröt ut den till ett eget
         // steg, se filens huvudkommentar), så det är här ackumuleringen hör
         // hemma, inte i fronts.ts. Ordagrant på formelnivå — bara filnamnet i
-        // specens prosa är efter P43 inaktuellt, inte den avsedda platsen i
-        // pipelinen (P44:s eget avsnitt 9-prompt säger redan "attrition.ts").
+        // specens prosa är efter P33 inaktuellt, inte den avsedda platsen i
+        // pipelinen (P34:s eget avsnitt 9-prompt säger redan "attrition.ts").
         if (faction) faction.materielNeed[category] += destroyed
       }
       if (totalDestroyed === 0) continue // inget faktiskt förlorat — inget att emitta (CLAUDE.md hård regel 4 gäller bara verkliga ändringar)

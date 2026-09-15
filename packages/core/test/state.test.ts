@@ -63,7 +63,7 @@ describe('createInitialState', () => {
     expect(state.factions[front!.sideB]).toBeDefined()
   })
 
-  it('(P48) förbandens styrka summerar till frontens startstyrkor per sida, och invarianten i 5.1 håller (0 = 0) vid start', () => {
+  it('(P38) förbandens styrka summerar till frontens startstyrkor per sida, och invarianten i 5.1 håller (0 = 0) vid start', () => {
     const state = createInitialState('indochina-slice', 'test-seed')
     const front = Object.values(state.fronts)[0]!
     expect(front.formations.length).toBeGreaterThanOrEqual(6)

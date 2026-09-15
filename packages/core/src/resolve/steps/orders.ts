@@ -1,14 +1,14 @@
 // orders — genererar nya utlysningar, fryser referencePrice. Se
-// ETAPP1_TEKNISK_SPEC.md avsnitt 4.1, 6, och (P45)
+// ETAPP1_TEKNISK_SPEC.md avsnitt 4.1, 6, och (P35)
 // ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2.
 //
 // Två delar: (1) konsumerar scenariots scriptedEvents (idag bara RESTRICTED_ORDER,
 // se data/scenarios/indochina-slice.json) på den tur de anger, OFÖRÄNDRAD sedan
-// P45 (spec 4.2: "behåll den scriptade grenen oförändrad"). (2) P45: ordinarie
+// P35 (spec 4.2: "behåll den scriptade grenen oförändrad"). (2) P35: ordinarie
 // generering är nu BEHOVSDRIVEN, inte ett tärningskast — se
 // `generateNeedDrivenOrders` nedan. `orderGenerationChancePct` (P4:s ursprungliga,
 // uttryckligen PROVISORISKA kadensregel, se docs/ANDRINGSLOGG.md) är borttagen
-// helt, ur både koden och balance.json, per P45:s egen instruktion. Ordinarie
+// helt, ur både koden och balance.json, per P35:s egen instruktion. Ordinarie
 // generering väljer aldrig en restricted produkt — de kommer bara från
 // scriptedEvents, i linje med att de ska vara sällsynta och konsekventa
 // (DESIGN.md avsnitt 5.2).
@@ -95,7 +95,7 @@ function buildOrder(p: NewOrderParams): Order {
   }
 }
 
-// P46 (avsnitt 4.3): "pressure(faction) = hur illa fronten går för faktionens
+// P36 (avsnitt 4.3): "pressure(faction) = hur illa fronten går för faktionens
 // sida, 0..1, härlett ur position-förändring senaste 3 turerna (front.trace)
 // plus morale-underläge." Ingen faktion utan front (t.ex. laos) är under
 // press — samma fallback som computeHeatForBuyer.
@@ -104,7 +104,7 @@ function buildOrder(p: NewOrderParams): Order {
 // kombineras till en 0..1-skala. "Plus" läst ordagrant (summan av två 0..1-
 // termer, klampad till 1 — inte ett medelvärde). pressurePositionSpan
 // (balance.json, PROVISORISKT) avgör hur många positionspoängs rörelse på tre
-// turer som ensamt ger full press — se balance.json:s _p46_note.
+// turer som ensamt ger full press — se balance.json:s _p36_note.
 function computePressureForBuyer(draft: GameState, buyerId: FactionId): number {
   const front = Object.values(draft.fronts).find((f) => f.sideA === buyerId || f.sideB === buyerId)
   if (!front) return 0
@@ -183,7 +183,7 @@ export const orders: ResolveStep = (ctx) => {
     }
   }
 
-  // 2) NYTT (P50, avsnitt 5.4): namngivna ersättningsordrar för förband som
+  // 2) NYTT (P40, avsnitt 5.4): namngivna ersättningsordrar för förband som
   // blivit mauled/destroyed DEN HÄR TURENS strid — resolve/engagement.ts (kört
   // inuti steps/fronts.ts, tidigare i SAMMA turs pipeline) har redan fyllt
   // draft.pendingFormationReplacements.
@@ -231,7 +231,7 @@ export const orders: ResolveStep = (ctx) => {
   // — samma "inget omförsök samma tur"-princip som steg 3:s anonyma gren).
   draft.pendingFormationReplacements = []
 
-  // 3) Ordinarie generering — behovsdriven (P45, avsnitt 4.2), inte längre ett
+  // 3) Ordinarie generering — behovsdriven (P35, avsnitt 4.2), inte längre ett
   // tärningskast. Egen budget, se steg 2:s motivering ovan. Se
   // generateNeedDrivenOrders nedan.
   for (const [factionId, faction] of Object.entries(draft.factions)) {
@@ -343,7 +343,7 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
   const weights = weightsForPressure(computePressureForBuyer(draft, factionId))
 
   // Egen budget (maxOrdersPerFactionPerTurn), separat från steg 2:s namngivna
-  // ersättningsordrar — se steg 2:s motivering (P50, avsnitt 5.4).
+  // ersättningsordrar — se steg 2:s motivering (P40, avsnitt 5.4).
   let ordersIssued = 0
   for (const category of categoriesByFallingNeed) {
     if (ordersIssued >= NEED_BALANCE.maxOrdersPerFactionPerTurn) break
@@ -359,7 +359,7 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
     // negativt varje gång quantityMin > orderTriggerThreshold (m1_rifle: min
     // 500, infantry-tröskel 60), och ett djupt negativt need tar decennier av
     // peacetimeReplacement att arbeta av — en faktion som en gång beställt gevär
-    // beställer aldrig fler. Utan golvet uppfylls inte P45:s eget klart när
+    // beställer aldrig fler. Utan golvet uppfylls inte P35:s eget klart när
     // ("minst 6 av 7 produkter beställda över 100 partier"), uppmätt 2/7.
     const needBefore = faction.materielNeed[category]
     faction.materielNeed[category] = Math.max(0, needBefore - issuedOrder.quantity)

@@ -1,4 +1,4 @@
-// TheWorld.formations.test.tsx — P51 klart-när: "ett test visar att ett förband
+// TheWorld.formations.test.tsx — P41 klart-när: "ett test visar att ett förband
 // utan station i landet visas som UNKNOWN FORMATION" (ETAPP3_KRIGET_SOM_MARKNAD_
 // TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3). Renderar TheWorld PÅ RIKTIGT (jsdom),
 // samma mönster som TheFloor.weights.test.tsx — en körtidsrendering fångar att
@@ -12,7 +12,7 @@ import { TheWorld } from '../src/components/TheWorld.js'
 
 afterEach(cleanup)
 
-describe('TheWorld — förbanden på lägesbordet (P51 klart-när)', () => {
+describe('TheWorld — förbanden på lägesbordet (P41 klart-när)', () => {
   it('utan någon station visas samtliga förband som UNKNOWN FORMATION, grupperade per sektor', () => {
     const state = createInitialState('indochina-slice', 'the-world-formations-seed')
     state.house.stations = []

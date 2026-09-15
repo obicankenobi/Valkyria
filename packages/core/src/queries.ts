@@ -78,7 +78,7 @@ const DEPTH_BAND_PCT: Record<0 | 1 | 2 | 3 | 4 | 5, number> = {
   5: 0,
 }
 
-// Exporterad sedan P51 (avsnitt 7, skyddsräcke 3: "samma princip som bidEstimate") —
+// Exporterad sedan P41 (avsnitt 7, skyddsräcke 3: "samma princip som bidEstimate") —
 // formationDisplay nedan delar EXAKT den här funktionen, inte en egen kopia.
 export function effectiveDepth(state: GameState, buyerId: string): 0 | 1 | 2 | 3 | 4 | 5 {
   const station = state.house.stations.find((s) => s.nation === buyerId && s.status === 'active')
@@ -88,7 +88,7 @@ export function effectiveDepth(state: GameState, buyerId: string): 0 | 1 | 2 | 3
   return Math.min(5, baseDepth + bonus) as 0 | 1 | 2 | 3 | 4 | 5
 }
 
-// P51 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), ordagrant:
+// P41 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), ordagrant:
 // "readiness och exakt equipment per förband visas bara på den underrättelsenivå
 // Station.depth i landet medger — samma princip som bidEstimate. Utan station:
 // UNKNOWN FORMATION och ett styrkeband." Gatingen är binär (känd/okänd, depth > 0),

@@ -44,13 +44,13 @@ describe('wire-chains invariant', () => {
     // exakt gräns.
     const oldestKeptTurn = Math.min(...state.wire.map((e) => e.turn))
     expect(oldestKeptTurn).toBeGreaterThan(0)
-    // Taket höjt 200→450 i P45: attrition.ts (P43), materielNeed-påfyllningen
-    // (P44) och den behovsdrivna utlysningen (P45, ersätter en 35 %-chans) höjer
+    // Taket höjt 200→450 i P35: attrition.ts (P33), materielNeed-påfyllningen
+    // (P34) och den behovsdrivna utlysningen (P35, ersätter en 35 %-chans) höjer
     // den naturliga wire-volymen per tur rejält — en faktion cyklar nu genom
     // utlys→förbruka→fyll på→utlys igen om och om under ett 20-tursparti (378
     // uppmätt här), i stället för den gamla slumpmässiga, sällsynta genereringen.
-    // Höjt igen 450→600 i P50: engagement.ts (P49) och den namngivna
-    // ersättningskedjan (P50, avsnitt 5.4 — varje mauled/destroyed lägger minst
+    // Höjt igen 450→600 i P40: engagement.ts (P39) och den namngivna
+    // ersättningskedjan (P40, avsnitt 5.4 — varje mauled/destroyed lägger minst
     // två nya händelser, ofta tre med en lyckad ersättningsorder) höjer volymen
     // ytterligare (491 uppmätt med den här exakta seeden). Fortfarande "långt
     // under vad 20 obeskurna turer hade gett", bara en ny, betydligt högre

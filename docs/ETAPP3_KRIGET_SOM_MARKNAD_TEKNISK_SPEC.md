@@ -5,7 +5,7 @@
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
 
-Specen är **fryst under P43–P52**. Den får ändras mellan promptar om en byggd sanning visar sig
+Specen är **fryst under P33–P42**. Den får ändras mellan promptar om en byggd sanning visar sig
 strida mot den, men aldrig av en kodsession på eget initiativ. Se `CLAUDE.md`.
 
 ---
@@ -164,7 +164,7 @@ Nya fält i `balance.json`:
 **Kalibreringsunderlag.** Uppmätt slutlager hos sida A är median 448 enheter efter ~11 turer.
 `frontBaseAttritionPct` är 1,5. Med kopplingen 4,0 och sårbarhet 0,5–0,9 ger det 3–11 % lager
 förbrukat per tur, alltså 15–50 enheter — samma storleksordning som `orderQuantityMin/Max`
-(20–185). Det är utgångspunkten för P52:s balanspass, inte en fastslagen sanning.
+(20–185). Det är utgångspunkten för P42:s balanspass, inte en fastslagen sanning.
 
 ### 3.2 Två konsekvenser som är hela poängen
 
@@ -439,16 +439,16 @@ att rita, och de rör sig av skäl spelaren kan följa.
 simuleringen. Spelarens enda inflytande är kommersiellt: vem som får köpa vad, hur fort, till
 vilket pris. Det skyddsräcket är icke förhandlingsbart — se avsnitt 7.
 
-### 5.5.1 Tillägg (2026-09-15, P51): `THE_WORLD`-spec-innehållet, skrivet i efterhand
+### 5.5.1 Tillägg (2026-09-15, P41): `THE_WORLD`-spec-innehållet, skrivet i efterhand
 
 Den här sektionen — och skyddsräcke 1/3 i avsnitt 7 — refererade upprepade gånger till en
 `THE_WORLD`-spec med `deriveDeployment`, `MovementArrow`, `sectorId` och ett INTEL-lager som om
 de redan fanns. De gjorde det inte (`CLAUDE.md`, `docs/ANDRINGSLOGG.md`, 2026-09-15). Ägaren
-tillfrågad vid antagandet valde först att hoppa över P51; tillfrågad igen (samma datum) valde
+tillfrågad vid antagandet valde först att hoppa över P41; tillfrågad igen (samma datum) valde
 att skriva innehållet här, i efterhand, i stället för en egen `THE_WORLD`-tillsatsspec — en
 ändring av EXAKT den storlek `CLAUDE.md`s "Om specen och verkligheten inte stämmer" beskriver.
 
-**`sectorId`.** Inget att lägga till — `Formation.sectorId` (avsnitt 5.2, P48) är redan
+**`sectorId`.** Inget att lägga till — `Formation.sectorId` (avsnitt 5.2, P38) är redan
 sanningskällan. `deriveDeployment` ersätts genom att aldrig anropas: `TheWorld.tsx` grupperar
 `front.formations` direkt på `sectorId`.
 
@@ -491,7 +491,7 @@ intäkt. Att byta den från 35 %-tärning till behovsdriven flyttar varje rad i 
 ett till efter 3B.
 
 **Golden-snapshoten fryses om två gånger**, en gång per etapphalva, var och en i en egen commit
-med loggrad. Ingen annan ändring får ligga i de commitarna. (P51, i efterhand: `balance.json`
+med loggrad. Ingen annan ändring får ligga i de commitarna. (P41, i efterhand: `balance.json`
 växte med två UI-lästa fält, `fixtures/balance.frozen.json` hölls i synk som en mekanisk
 kopia — men de tre uppmätta hash-VÄRDENA rörde sig aldrig, empiriskt verifierat, eftersom
 `queries.ts` aldrig läses av `resolveTurn`-pipelinen. Ingen tredje omfrysning i den mening det
@@ -532,15 +532,15 @@ sitt syfte.
 
 ## 8. Måltabell
 
-Mätt läge i högerkolumnen är P52 (efter `53b2512`), 200 partier `balanced`, om inget annat
-anges — P51 (byggd i efterhand, se blockquote nedan) rör inget av det härnessen mäter.
+Mätt läge i högerkolumnen är P42 (efter `53b2512`), 200 partier `balanced`, om inget annat
+anges — P41 (byggd i efterhand, se blockquote nedan) rör inget av det härnessen mäter.
 
-> **Rad omprövad under P45, se `docs/ANDRINGSLOGG.md`.** "Produkter som beställs minst en gång
+> **Rad omprövad under P35, se `docs/ANDRINGSLOGG.md`.** "Produkter som beställs minst en gång
 > per 100 partier" kan strukturellt aldrig nå 6 av 7: fyra av de sju produkterna (armour/
 > aviation/naval/electronics) kräver `faction.techLevel ≥ 3`, men ingen faktion i
 > `indochina-slice.json` har `techLevelDefault` över 2 (`rvn`), och ingen mekanik i etapp 1–3
 > höjer en FAKTIONS tekniknivå (till skillnad från husets egen, som `REPRIORITISE_RND` styr).
-> P45:s eget klart när kräver 3 av 7 (m1_rifle, 105mm_field_gun, mk9_longhand_shell) — uppmätt
+> P35:s eget klart när kräver 3 av 7 (m1_rifle, 105mm_field_gun, mk9_longhand_shell) — uppmätt
 > 100 % av partier når alla tre, efter en golvningsfix i `orders.ts` (se samma loggrad:
 > `need[c] -= quantity` drev annars behovet djupt negativt så fort en produkts
 > `orderQuantityMin` översteg dess `orderTriggerThreshold`, vilket permanent kvävde framtida
@@ -548,23 +548,23 @@ anges — P51 (byggd i efterhand, se blockquote nedan) rör inget av det härnes
 > egen tekniknivåstillväxt — ägaren tillfrågad, valde revision i stället för att bygga den
 > mekaniken i förbigående här.
 
-> **P47: "balanced" slutar nu praktiskt taget alltid i `BUYOUT` — två fetstilta rader kunde
+> **P37: "balanced" slutar nu praktiskt taget alltid i `BUYOUT` — två fetstilta rader kunde
 > därför inte nås inom mandatet ("Ingen kod. ... Skruva bara balance.json"), se
 > `docs/ANDRINGSLOGG.md`.** Styrelsegranskningen (`board.ts`, P30, etapp 2) förutsätter linjär
-> intäkt från tur 0 mot 2× grundkapitalet (8 Mkr) vid tur 20. P45:s behovsdrivna ordrar ger i
+> intäkt från tur 0 mot 2× grundkapitalet (8 Mkr) vid tur 20. P35:s behovsdrivna ordrar ger i
 > stället en uppvärmningsperiod (första leverans typiskt tur 4–7) och en total marknadsvolym en
 > storleksordning under det målet — uppmätt medianprogress ~7 % av målet vid tur 20, ett läge som
 > inte förbättras av VILKEN tur granskningen förläggs till (testat separat, se ANDRINGSLOGG).
 > Konsekvens: 200/200 `balanced`-partier slutade i `BUYOUT`, i snitt vid tur ~11. Ägaren
-> tillfrågad två gånger under P47 (en tajmingfix, sedan en större omskalning av `boardTarget`);
+> tillfrågad två gånger under P37 (en tajmingfix, sedan en större omskalning av `boardTarget`);
 > valde att lämna styrelsemålet OFÖRÄNDRAT — det är ingen av de fem fetstilta raderna, och en
 > riktig fix är en egen omkalibrering, inte en balanspass-justering. Kvarstår som ett öppet,
-> loggat spänningsförhållande mellan P30 och P45 för ett framtida beslut.
+> loggat spänningsförhållande mellan P30 och P35 för ett framtida beslut.
 >
 > Två fetstilta rader av samma skäl inte nåbara med bara `balance.json`:
 > - **Andel ordrar som är gevär** (67 %, mål < 45 %): `orderTriggerThreshold`/
->   `peacetimeReplacement` är specens egna, ordagranna tal (P44:s not i `balance.json`) — inte
->   provisoriska, alltså inte P47:s att skruva. Roten ligger heller inte där: fyra av sex
+>   `peacetimeReplacement` är specens egna, ordagranna tal (P34:s not i `balance.json`) — inte
+>   provisoriska, alltså inte P37:s att skruva. Roten ligger heller inte där: fyra av sex
 >   kategorier (armour/aviation/naval/electronics) saknar en beställningsbar produkt för de
 >   flesta faktioners tekniknivå (samma orsak som blockquoten ovan) och faller ständigt till
 >   `UNMET NEED` i stället för en order — bara gevär konverterar tillförlitligt behov till en
@@ -579,31 +579,31 @@ anges — P51 (byggd i efterhand, se blockquote nedan) rör inget av det härnes
 > knappast något om långsiktig materieltillväxt — radens egentliga syfte. Uppfylld bokstavligt,
 > inte i avsedd mening.
 
-> **P50: "Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`" reviderad, 40 % → 15–20 %,
-> ägaren tillfrågad två gånger.** Samma tekniknivå-lucka som P45:s blockquote ovan
+> **P40: "Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`" reviderad, 40 % → 15–20 %,
+> ägaren tillfrågad två gånger.** Samma tekniknivå-lucka som P35:s blockquote ovan
 > (`rvn` techLevel 2, `nlf`/`laos` 1 — bara gevär köpbart av alla tre, artilleri bara av `rvn`,
 > pansar/luftvärn/elektronik/marint av ingen): ett mauled/destroyed förband vars förlust ligger i
 > en spärrad kategori blir `UNMET NEED` i stället för en namngiven order. Första mätningen
-> (P48:s ursprungliga roster, en jämn blandning av doktriner): 12,7 %. Ägaren tillfrågad, valde
+> (P38:s ursprungliga roster, en jämn blandning av doktriner): 12,7 %. Ägaren tillfrågad, valde
 > att göra rostret mer infanteritungt (`indochina-slice.json`s `front.formations` — egen
 > scenariodata, inte specbunden) i stället för att revidera direkt — höjde måttet till 16,9 %,
 > en verklig, kvarhållen förbättring (konverteringsgraden för en FAKTISK mauling/förstöring steg
 > till ~67 %). Kvarstående gap är volym, inte konvertering: `PEACETIME_REPLACEMENT` (69 %) byggs
 > upp betydligt snabbare än förbandsstrid hinner utveckla sig, förstärkt av den redan loggade
-> P47-kaskaden (partier slutar ofta runt tur 10, se `SCENARIO_COMPLETE`-raden nedan) som lämnar
+> P37-kaskaden (partier slutar ofta runt tur 10, se `SCENARIO_COMPLETE`-raden nedan) som lämnar
 > för lite tid för upprepad strid. Ägaren tillfrågad en andra gång; valde att behålla
 > rosterfixen och revidera målet i stället för att jaga volymen vidare (skulle kräva att röra
-> `boardTarget` igen, redan avgjort orört i P47) | Uppmätt 16,9 % (n=200, `balanced`) — inom det
+> `boardTarget` igen, redan avgjort orört i P37) | Uppmätt 16,9 % (n=200, `balanced`) — inom det
 > reviderade intervallet |
 
-> **P52: invarianten i 5.1 höll INTE — en äkta bugg hittad och rättad, ägaren tillfrågad.**
+> **P42: invarianten i 5.1 höll INTE — en äkta bugg hittad och rättad, ägaren tillfrågad.**
 > Härnessmätningen (n=200, `balanced`, full `resolveTurn`) visade 800 brutna kontroller av
 > 28 800, alltid `strength`, aldrig `equipment`. Grundorsak: `steps/fronts.ts`s `resolveFront`
 > (P6, långt före förbanden) minskar `front.strength[sida]` direkt via sin egen förlustformel,
 > utan att röra formationerna — den körs direkt EFTER `engagement()` i samma `fronts()`-anrop,
 > så den desynkar `front.strength` från förbanden igen varje stridstur (`attrition.ts`s
-> motsvarande brist för `equipment` hittades och rättades redan i P49 — den här var samma
-> mönster, bara för `strength`, och missades då). P52:s eget mandat är "ingen kod", så ägaren
+> motsvarande brist för `equipment` hittades och rättades redan i P39 — den här var samma
+> mönster, bara för `strength`, och missades då). P42:s eget mandat är "ingen kod", så ägaren
 > tillfrågad innan fixen gjordes: en ny `reduceFormationsStrength` (`steps/fronts.ts`, samma
 > proportionella fördelning som `attrition.ts`s `reduceFormationsEquipment`) håller nu
 > `front.strength[sida]` i synk med formationerna, verifierat: 0 brutna kontroller av 33 600
@@ -613,27 +613,27 @@ anges — P51 (byggd i efterhand, se blockquote nedan) rör inget av det härnes
 > **(3B) Förband som blir `mauled` per parti** (1,45, mål 2–6) inte nått — samma `BUYOUT`-kaskad
 > som redan förklarar de flesta ouppfyllda raderna ovan: partier slutar i snitt vid tur ~11, för
 > kort tid för flera mauled-cykler per parti, och `destroyThreshold`/`maulThreshold` är specens
-> egna, ordagranna tal (P49:s not) — inte P52:s att skruva för att flytta fler händelser från
-> `destroyed` till `mauled`. Destroyed-frekvensen (2,35/parti) är hög av samma skäl P50:s roster-
-> omkalibrering redan gav (mindre formationer, se P50-blockquoten) — en avvägning som redan gjord,
+> egna, ordagranna tal (P39:s not) — inte P42:s att skruva för att flytta fler händelser från
+> `destroyed` till `mauled`. Destroyed-frekvensen (2,35/parti) är hög av samma skäl P40:s roster-
+> omkalibrering redan gav (mindre formationer, se P40-blockquoten) — en avvägning som redan gjord,
 > inte omprövad här |
 
 | Kriterium | Målvärde | Mätt nu |
 |---|---|---|
 | **Produkter som beställs minst en gång per 100 partier** | **3 av 3 möjliga** (se blockquote ovan) | **3 av 3 (100 %)** |
-| **Andel ordrar som är gevär** | **< 45 %** | **70,3 % — ej uppfyllt, se P47-blockquote** |
+| **Andel ordrar som är gevär** | **< 45 %** | **70,3 % — ej uppfyllt, se P37-blockquote** |
 | Utlysta ordrar per tur | 1,0–1,8 | 1,33 |
-| **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | **1,06 (max 1,26) — uppfyllt, men trivialt, se P47-blockquote** |
-| **Partier där fronten byter riktning minst en gång** | **> 30 %** | **0 % — ej uppfyllt, se P47-blockquote** |
+| **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | **1,06 (max 1,26) — uppfyllt, men trivialt, se P37-blockquote** |
+| **Partier där fronten byter riktning minst en gång** | **> 30 %** | **0 % — ej uppfyllt, se P37-blockquote** |
 | **Ordrar med `weights.delivery > weights.price`** | **8–25 %** | **20,9 %** |
 | Partier där en köpare har `UNMET NEED` minst en tur | 20–60 % | 100 % |
-| **(3B) Förband som blir `mauled` per parti** | **2–6** | **1,45 — ej uppfyllt, se P52-blockquote** |
-| **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **15–20 % (reviderat, se P50-blockquote)** | **19,5 %** |
-| **Invarianten i 5.1 håller över 20 turer** | **alltid** | **Ja, 0/33 600 brutna kontroller — se P52-blockquote (bugfix)** |
+| **(3B) Förband som blir `mauled` per parti** | **2–6** | **1,45 — ej uppfyllt, se P42-blockquote** |
+| **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **15–20 % (reviderat, se P40-blockquote)** | **19,5 %** |
+| **Invarianten i 5.1 håller över 20 turer** | **alltid** | **Ja, 0/33 600 brutna kontroller — se P42-blockquote (bugfix)** |
 | Rivalerna vinner ordrar (`balanced`) | 25–45 % | 71,2 % |
-| `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 0 % (200/200 `BUYOUT`, se P47-blockquote) |
+| `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 0 % (200/200 `BUYOUT`, se P37-blockquote) |
 
-**P51 byggd (2026-09-15, samma dag, i en separat commit efter P52).** Den lucka som blockerade
+**P41 byggd (2026-09-15, samma dag, i en separat commit efter P42).** Den lucka som blockerade
 den första gången (`THE_WORLD`-specens innehåll saknades helt) löstes genom att skriva
 innehållet i efterhand, se avsnitt 5.5.1. De tre klart-när-testerna finns och är gröna:
 `packages/core/test/queries.formationDisplay.test.ts` (UNKNOWN FORMATION),
@@ -649,52 +649,52 @@ beslut med en motivering och en loggrad.
 
 ## 9. Promptsekvens
 
-**P43 — materielförslitning**
+**P33 — materielförslitning**
 > Bryt ut `resolve/steps/attrition.ts` och sätt in det i pipelinen direkt efter `fronts`. Implementera 3.1 och wire-händelsen i 3.3. Ingen ordergenereringsändring.
 >
 > *Klart när:* ett test visar att `front.equipment` minskar efter en stridstur och aldrig går under noll; ett test visar att förlorande sida förbrukar mer än vinnande; ett test visar att en front utan strid inte förbrukar något; golden-snapshoten omfryst i **denna commit och ingen annan**, med loggrad.
 
-**P44 — behovsregistret**
+**P34 — behovsregistret**
 > Lägg till `Faction.materielNeed`. Låt `attrition.ts` fylla på det och `factions.ts` addera `peacetimeReplacement` och klampa mot `needCeiling`. Ingen utlysningsändring än.
 >
 > *Klart när:* ett test visar att behovet växer med förlusterna och aldrig överstiger taket; ett test visar att fredstidspåfyllningen ensam når `orderTriggerThreshold` för `infantry` inom 5 turer utan strid.
 
-**P45 — behovsdriven utlysning**
+**P35 — behovsdriven utlysning**
 > Ersätt `orders.ts`:s ordinarie gren enligt 4.2. Ta bort `orderGenerationChancePct`. Behåll den scriptade grenen oförändrad. Emitta `UNMET NEED` och `CANNOT AFFORD` som tickers.
 >
 > *Klart när:* ett test visar att en faktion utlyser en order i den kategori där behovet är störst; ett test visar att behovet konsumeras vid utlysning; ett test visar att en faktion utan råd inte utlyser; härnessen visar minst 6 av 7 produkter beställda över 100 partier.
 
-**P46 — frontläget sätter vikterna**
+**P36 — frontläget sätter vikterna**
 > Implementera `pressure` och viktförskjutningen enligt 4.3, härledd ur `front.trace`.
 >
 > *Klart när:* ett test visar att en faktion som förlorar mark får `weights.delivery > weights.price`; ett test visar att `Order.weights` aldrig exponeras i något UI-element; härnessen visar 8–25 % ordrar med leveransövervikt.
 
-**P47 — balanspass 3A**
+**P37 — balanspass 3A**
 > Ingen kod. Kör härnessen mot avsnitt 8:s rader som inte är märkta (3B). Skruva bara `balance.json`. Frys om golden när tabellen står.
 >
 > *Klart när:* de fem fetstilta 3A-raderna är uppfyllda eller reviderade med motivering och loggrad; hela CI-kedjan grön.
 
-**P48 — `Formation`-modellen**
+**P38 — `Formation`-modellen**
 > Lägg till `Formation`, `Front.formations` och `doctrineProfile`. Skriv förbandsordningen i `indochina-slice.json` (6–10 förband, summerande till dagens startstyrkor). Låt `deliveries.ts` fördela ankommen materiel över förbanden enligt doktrin. Ingen stridsupplösning än.
 >
 > *Klart när:* ett test visar att invarianten i 5.1 håller efter 20 turers leveranser; ett test visar att ett `mechanised`-förband får mer `armour` än ett `infantry`-förband av samma leverans; **golden omfryst i denna commit och ingen annan**.
 
-**P49 — engagemanget**
+**P39 — engagemanget**
 > Bygg `resolve/engagement.ts` enligt 5.3 och anropa det från `fronts.ts` före aggregatberäkningen. Implementera status, `mauled`, `destroyed` och `refitting`.
 >
 > *Klart när:* ett test visar att invarianten håller efter 20 turers strid; ett test visar att ett förband med övertag tar mindre förluster; ett test visar att ett `destroyed`-förband lämnar linjen och att aggregaten minskar i motsvarande grad; ett test visar att `categoryCombatWeight` gör infanteri icke-noll i utfallet.
 
-**P50 — namngiven efterfrågan**
+**P40 — namngiven efterfrågan**
 > Lägg till `Order.reason` enligt 5.4. Låt `mauled`/`destroyed` utlysa namngivna ersättningsordrar med `causeId` bakåt till striden.
 >
 > *Klart när:* ett test följer kedjan strid → mauled → order genom `causeId` i tre led; ett test visar att kedjan överlever `pruneWire` över 8 turer; härnessen visar > 40 % ordrar med `REPLACE_FORMATION_LOSSES`.
 
-**P51 — förbanden på lägesbordet**
+**P41 — förbanden på lägesbordet**
 > Ersätt `deriveDeployment` med förbandens faktiska `sectorId`. Uppgradera `REDEPLOY` och `SUPPLY_ARRIVAL` enligt 5.5. Bygg INTEL-lagrets dimning enligt skyddsräcke 3.
 >
 > *Klart när:* ett test visar att ett förband utan station i landet visas som `UNKNOWN FORMATION`; ett test visar att `MovementArrow` fortfarande inte tar någon state-ändrande prop; ett test visar att inget fält i `TurnSubmission` kan referera ett `formationId`.
 
-**P52 — balanspass 3B**
+**P42 — balanspass 3B**
 > Ingen kod. Kör härnessen mot hela avsnitt 8. Skruva `balance.json` och scenariodata. Frys om golden när tabellen står.
 >
 > *Klart när:* alla rader uppfyllda eller reviderade med motivering och loggrad; hela CI-kedjan grön.

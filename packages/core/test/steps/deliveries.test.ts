@@ -529,8 +529,8 @@ describe('deliveries — rivalernas leverans/attribution (P25, avsnitt 2.3)', ()
   })
 })
 
-describe('förbandsfördelning (P48, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2)', () => {
-  it('(P48 klart-når) ett mechanised-förband får mer armour än ett infantry-förband av samma leverans', () => {
+describe('förbandsfördelning (P38, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2)', () => {
+  it('(P38 klart-når) ett mechanised-förband får mer armour än ett infantry-förband av samma leverans', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     front.formations = [
@@ -591,7 +591,7 @@ describe('förbandsfördelning (P48, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md a
     }
   }
 
-  it('(P48 klart-när) invarianten i 5.1 håller efter 20 turers leveranser, alla kategorier, båda sidor', () => {
+  it('(P38 klart-när) invarianten i 5.1 håller efter 20 turers leveranser, alla kategorier, båda sidor', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     invariantHolds(front) // 0 = 0 vid start

@@ -209,7 +209,7 @@ describe('factions — militaryBudget-påfyllnad (ETAPP1_5_TEKNISK_SPEC.md avsni
   })
 })
 
-describe('factions — materielNeed peacetidspåfyllnad (P44 klart-når, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1)', () => {
+describe('factions — materielNeed peacetidspåfyllnad (P34 klart-når, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1)', () => {
   it('fredstidspåfyllningen ensam når orderTriggerThreshold för infantry inom 5 turer, utan strid', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const faction = state.factions['rvn']!

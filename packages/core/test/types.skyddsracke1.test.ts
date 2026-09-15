@@ -1,4 +1,4 @@
-// types.skyddsracke1.test.ts — P51 klart-när: "ett test visar att inget fält i
+// types.skyddsracke1.test.ts — P41 klart-när: "ett test visar att inget fält i
 // TurnSubmission kan referera ett formationId" (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
 // avsnitt 7, skyddsräcke 1: "Inga order till förband, någonsin.").
 //

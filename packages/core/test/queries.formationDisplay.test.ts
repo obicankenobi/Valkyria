@@ -1,4 +1,4 @@
-// queries.formationDisplay.test.ts — P51 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
+// queries.formationDisplay.test.ts — P41 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
 // avsnitt 7, skyddsräcke 3): "Spelaren ser aldrig ett förbands dolda värden. readiness
 // och exakt equipment per förband visas bara på den underrättelsenivå Station.depth i
 // landet medger — samma princip som bidEstimate. Utan station: UNKNOWN FORMATION och
@@ -18,7 +18,7 @@ function withStations(state: GameState, stations: Station[]): GameState {
 }
 
 describe('formationDisplay (avsnitt 7, skyddsräcke 3)', () => {
-  it('(P51 klart-när) ett förband utan aktiv station i sin faktions land visas som UNKNOWN FORMATION, readiness/equipment/exakt strength dolda', () => {
+  it('(P41 klart-när) ett förband utan aktiv station i sin faktions land visas som UNKNOWN FORMATION, readiness/equipment/exakt strength dolda', () => {
     const state = withStations(createInitialState('indochina-slice', 'formation-display-seed'), [])
     const formation = state.fronts['front-1']!.formations[0]!
 

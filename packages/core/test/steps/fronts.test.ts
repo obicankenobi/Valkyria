@@ -7,7 +7,7 @@ import type { Front, GameState, TechCategory, TurnSubmission, WireEvent } from '
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
-// P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): fronts() anropar
+// P39 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): fronts() anropar
 // numera engagement() internt, som skriver om front.equipment/strength UR
 // FÖRBANDEN varje gång (steg 5, invarianten). Ett test som bara sätter
 // front.equipment direkt (den här filens mönster sedan P6, innan förbanden
@@ -44,7 +44,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     const { ctx, emitted } = makeCtx(state, 'front-seed')
     fronts(ctx)
 
-    // P46 (avsnitt 4.3): trace skrivs VARJE tur, även en stagnerad front —
+    // P36 (avsnitt 4.3): trace skrivs VARJE tur, även en stagnerad front —
     // annars får "position senaste tre turerna" hål, se orders.ts:s
     // computePressureForBuyer. Samma position upprepad, inte "orört" i strikt
     // mening, men "stagnerar" gäller fortfarande allt ANNAT nedan.
@@ -139,7 +139,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     expect(state.fronts['front-2']!.position).toBe(0) // stagnerade — ingen materiel där
   })
 
-  describe('invarianten i 5.1 (P52, upptäckt under härnessmätningen — se ANDRINGSLOGG.md)', () => {
+  describe('invarianten i 5.1 (P42, upptäckt under härnessmätningen — se ANDRINGSLOGG.md)', () => {
     it('resolveFronts egen styrkeförlust speglas i formationerna, inte bara i front.strength', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!
@@ -154,7 +154,7 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     })
   })
 
-  describe('trace (P46, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
+  describe('trace (P36, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
     it('växer med ett värde per tur och hålls kort — de fyra senaste positionerna, äldst först', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!

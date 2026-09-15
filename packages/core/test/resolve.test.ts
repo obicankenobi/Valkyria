@@ -272,7 +272,7 @@ describe('resolveTurn — P6: front och attribution', () => {
       state = resolveTurn(state, EMPTY_SUBMISSION).state
     }
 
-    // P46 (avsnitt 4.3): trace skrivs varje tur, även stagnerad — samma
+    // P36 (avsnitt 4.3): trace skrivs varje tur, även stagnerad — samma
     // position upprepad om och om, kapad vid fyra punkter (fronts.ts).
     const front = state.fronts['front-1']!
     expect(front.trace).toEqual(Array(4).fill(before.position))
@@ -318,7 +318,7 @@ describe('resolveTurn — P6: front och attribution', () => {
 
     expect(state.fronts['front-1']!.position).toBeLessThan(positionBefore) // mot -100, rvn:s sida
     expect(state.fronts['front-1']!.attribution['player']).toBe(deliveredQuantity)
-    // P43 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3): equipment
+    // P33 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3): equipment
     // förbrukas nu av attrition.ts varje stridstur — leveranser som ankommit
     // TIDIGT i loopen ovan har redan hunnit tära ner innan sista leveransen
     // kom in, så lagret på fronten är INTE längre garanterat lika med summan

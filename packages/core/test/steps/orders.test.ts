@@ -60,7 +60,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
   })
 
   it('ordinarie generering väljer aldrig en restricted produkt, oavsett hur högt behovet är', () => {
-    // P45: artilleribehovet satt SKYHÖGT (300, långt över orderTriggerThreshold
+    // P35: artilleribehovet satt SKYHÖGT (300, långt över orderTriggerThreshold
     // 12) — om restricted-spärren någonsin brast skulle mk9 (restricted, samma
     // kategori) vara den mest lockande kandidaten.
     for (const seed of ['a', 'b', 'c', 'd', 'e']) {
@@ -96,7 +96,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     }
   })
 
-  describe('behovsdriven utlysning (P45 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2)', () => {
+  describe('behovsdriven utlysning (P35 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2)', () => {
     it('en faktion utlyser i fallande behovsordning — kategorin med störst behov utlyses (och skrivs till openOrders) först', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const rvn = state.factions['rvn']!
@@ -126,7 +126,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     })
 
     it('behovet golvas vid 0, aldrig negativt — en utlyst kvantitet över quantityMin får inte skuldsätta framtida behov', () => {
-      // Bugg upptäckt under P45 (se ANDRINGSLOGG.md): need[c] -= quantity,
+      // Bugg upptäckt under P35 (se ANDRINGSLOGG.md): need[c] -= quantity,
       // ordagrant enligt avsnitt 4.2, driver need djupt negativt så fort
       // orderQuantityMin > orderTriggerThreshold — exakt fallet för m1_rifle
       // (min 500, infantry-tröskeln 60). Ett djupt negativt behov hade tagit
@@ -247,7 +247,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     expect(state.market.openOrders.some((o) => o.buyerId === 'laos')).toBe(true)
   })
 
-  describe('frontläget sätter vikterna (P46 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
+  describe('frontläget sätter vikterna (P36 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
     it('en faktion som förlorar mark (position rör sig mot motståndarens pol) och ligger under i moral får weights.delivery > weights.price', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!

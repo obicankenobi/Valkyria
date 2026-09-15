@@ -54,7 +54,7 @@ const PIPELINE: ResolveStep[] = [
   production, // linjer producerar mot kontrakt; styckkostnad bokförs HÄR
   deliveries, // leveranser anländer, betalning, materiel in på front
   fronts, // frontresolve + attribution
-  attrition, // materielförslitning — ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3, insatt direkt efter fronts (P43)
+  attrition, // materielförslitning — ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3, insatt direkt efter fronts (P33)
   factions, // ekonomi, publicSupport, bankrutt
   heat, // per teater
   supply, // supplyCostIndex — ETAPP1_5_TEKNISK_SPEC.md avsnitt 3, insatt mellan heat och doomsday

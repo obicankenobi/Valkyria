@@ -1,27 +1,27 @@
 // engagement — förbandens sammandrabbning. Se
 // ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3.
 //
-// INTE ett eget PIPELINE-steg (CLAUDE.md hård regel 7 rörs alltså inte) — P49:s
+// INTE ett eget PIPELINE-steg (CLAUDE.md hård regel 7 rörs alltså inte) — P39:s
 // egen instruktion säger uttryckligen "anropa det från fronts.ts, FÖRE dess egen
 // aggregatberäkning", så engagement() anropas direkt från steps/fronts.ts:s
 // resolveFront-passage, en funktion, inte ett registrerat steg. Formationerna
 // löser sin egen strid FÖRST och skriver om aggregaten (steg 5, invarianten i
 // 5.1) — fronts.ts:s befintliga formler (equipmentRatio m.m.) räknar sedan
 // vidare på de UPPDATERADE aggregaten, samma tur. Samma stagnationsgrind som
-// fronts.ts/attrition.ts redan använder (P43:s etablerade definition av "ingen
+// fronts.ts/attrition.ts redan använder (P33:s etablerade definition av "ingen
 // strid": båda sidors artilleri 0) gäller redan i anropsplatsen — den här filen
 // antar att den redan passerat.
 //
 // Tolkning (spec), motiverad: avsnitt 5.3:s formel skriver "D.supplyStress −
 // A.supplyStress" som om formationerna (A/D) hade ett eget supplyStress-fält —
-// avsnitt 5.2:s datamodel (P48, ordagrann) ger dem inget sådant. Läst som
+// avsnitt 5.2:s datamodel (P38, ordagrann) ger dem inget sådant. Läst som
 // front.supplyStress[sida], EXAKT samma fält och samma differens som
 // fronts.ts:s egen (redan committade) formel använder för sin aggregatversion
 // (steps/fronts.ts: `front.supplyStress[defender] - front.supplyStress[attacker]`)
 // — supplyStress är en front-/teaterbred belastning, ingen mekanik ger
 // formationer en egen.
 //
-// P50 (avsnitt 5.4): tar nu emot `draft` för att kunna lägga en
+// P40 (avsnitt 5.4): tar nu emot `draft` för att kunna lägga en
 // FormationReplacementRequest i draft.pendingFormationReplacements när ett
 // förband blir mauled/destroyed — steps/orders.ts (senare i SAMMA turs
 // pipeline) tömmer kön och utlyser namngivna ersättningsordrar.
@@ -136,7 +136,7 @@ function resolvePair(
 // prosa, inte formel).
 function applyLosses(draft: GameState, f: Formation, lossPct: number, causeId: string, emit: ResolveContext['emit']): void {
   const readinessBefore = f.readiness
-  // P50 (avsnitt 5.4): en snapshot av innehavet FÖRE den här förlustomgången —
+  // P40 (avsnitt 5.4): en snapshot av innehavet FÖRE den här förlustomgången —
   // "destroyed" utlyser "hela dess behov" (5.3 punkt 4, ordagrant), dvs. ALLT
   // som fanns kvar precis innan utplåningen, inte bara den här drabbningens
   // marginella förlust. "mauled" har ingen sådan fras — där används i stället
@@ -191,7 +191,7 @@ function applyLosses(draft: GameState, f: Formation, lossPct: number, causeId: s
   }
 }
 
-// P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): "utlyser dess
+// P40 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): "utlyser dess
 // återanskaffningsbehov som en namngiven order" — lägger en begäran per
 // kategori med faktisk förlust i draft.pendingFormationReplacements, konsumerad
 // av steps/orders.ts SENARE I SAMMA TURS pipeline (fronts, som anropar det här,
@@ -221,7 +221,7 @@ function queueReplacements(
 // Avsnitt 5.3, punkt 4: "'mauled' utan strid i 2 turer → 'refitting' → 'active'
 // när readiness > refitThreshold." Ingen mekanik ger readiness en väg uppåt
 // under refitting i specens EGEN formel — nödvändigt tillägg (se ANDRINGSLOGG.md
-// och balance.json:s _p49_note), annars fastnar varje mauled förband permanent
+// och balance.json:s _p39_note), annars fastnar varje mauled förband permanent
 // (readiness < maulThreshold kan aldrig av sig själv passera refitThreshold).
 function advanceRecovery(f: Formation): void {
   if (f.status === 'mauled') {

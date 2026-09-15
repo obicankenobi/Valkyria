@@ -26,7 +26,7 @@ function strengthBandTone(band: FormationDisplay['strengthBand']): 'green' | 'am
   return 'red'
 }
 
-// P51 (avsnitt 5.5): "THE_WORLD-specens deriveDeployment blir överflödig och
+// P41 (avsnitt 5.5): "THE_WORLD-specens deriveDeployment blir överflödig och
 // ersätts: förbanden har redan en sectorId. Utgruppering behöver inte längre
 // härledas — den finns." Grupperar bara, härleder ingenting.
 function groupBySector(state: GameState, front: Front): Map<string, FormationDisplay[]> {
@@ -124,7 +124,7 @@ export function TheWorld({ state }: { state: GameState }) {
                 />
               </div>
 
-              {/* P51 (avsnitt 5.1/5.5): förbanden, grupperade per sectorId — inte
+              {/* P41 (avsnitt 5.1/5.5): förbanden, grupperade per sectorId — inte
                   en karta (DESIGN.md §18/§21), samma typografiska lägesbord som
                   resten av vyn. Namn/readiness/equipment dimmas per formationDisplay
                   (skyddsräcke 3); status/doktrin/sektor visas alltid. */}

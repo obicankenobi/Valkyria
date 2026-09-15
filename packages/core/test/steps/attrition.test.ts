@@ -10,9 +10,9 @@ import type { Front, GameState, TechCategory, TurnSubmission, WireEvent } from '
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
-// P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): fronts() anropar
+// P39 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1): fronts() anropar
 // numera engagement() internt, som skriver om front.equipment/strength UR
-// FÖRBANDEN (steg 5, invarianten) — den här filens mönster sedan P43 (sätta
+// FÖRBANDEN (steg 5, invarianten) — den här filens mönster sedan P33 (sätta
 // front.equipment direkt, innan förbanden fanns) skulle annars tyst nollställas
 // av det första fronts()-anropet. Sätt därför alltid på BÅDA ställena.
 function seedEquipment(front: Front, side: 'a' | 'b', record: Record<TechCategory, number>): void {
@@ -38,7 +38,7 @@ function makeCtx(state: GameState, seed: string): { ctx: ResolveContext; emitted
 }
 
 describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3)', () => {
-  it('(P43 klart-när) front.equipment minskar efter en stridstur och går aldrig under noll', () => {
+  it('(P33 klart-när) front.equipment minskar efter en stridstur och går aldrig under noll', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     seedEquipment(front, 'a', { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
@@ -58,7 +58,7 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
     }
   })
 
-  it('(P43 klart-när) förlorande sida förbrukar mer än vinnande, mätt på en kategori båda sidor startar lika i', () => {
+  it('(P33 klart-när) förlorande sida förbrukar mer än vinnande, mätt på en kategori båda sidor startar lika i', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     // front-1: attacker 'b', strengthA 100/strengthB 80, terrainBonus 5 (gynnar
@@ -80,7 +80,7 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
     expect(infantryDestroyedB).toBeGreaterThan(infantryDestroyedA)
   })
 
-  it('(P43 klart-når) en front utan strid förbrukar ingenting', () => {
+  it('(P33 klart-når) en front utan strid förbrukar ingenting', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     // Ingen materiel levererad än — samma stagnationsvillkor som fronts.ts.
@@ -130,7 +130,7 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
     expect(state.fronts['front-2']!.equipment.a.infantry).toBe(0) // front-2 stagnerade
   })
 
-  describe('materielNeed (P44 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1)', () => {
+  describe('materielNeed (P34 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1)', () => {
     it('behovet växer med förlusterna och överstiger aldrig needCeiling', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!

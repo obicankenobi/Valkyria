@@ -32,42 +32,42 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // balanspass tyst spela mot fel tal och producera ett meningslöst snapshot.
 //
 // Återaktiverad i P32 (ETAPP2_TEKNISK_SPEC.md avsnitt 9), omfryst mot P24–P31s
-// balans. PENDAD IGEN från och med P44 (ägarbeslut 2026-09-15, se
+// balans. PENDAD IGEN från och med P34 (ägarbeslut 2026-09-15, se
 // ANDRINGSLOGG.md samma datum): ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
 // avsnitt 6 säger uttryckligen "golden-snapshoten fryses om TVÅ GÅNGER, en
-// gång per etapphalva" — dvs. P47 (balanspass 3A) är den avsedda
-// omfrysningspunkten för hela 3A (P43–P46), inte varje enskild prompt inom
+// gång per etapphalva" — dvs. P37 (balanspass 3A) är den avsedda
+// omfrysningspunkten för hela 3A (P33–P36), inte varje enskild prompt inom
 // den. P44s materielNeed-påfyllnad (varje tur, för varje faktion) bryter
 // redan hash-en även om ingen balanssiffra "skruvats" i vanlig mening — precis
-// den sortens förväntad, avsedd konsekvens P47 finns till för att samla ihop
-// och frysa om på en gång, inte P43/P44/P45/P46 var för sig. Samma mönster
+// den sortens förväntad, avsedd konsekvens P37 finns till för att samla ihop
+// och frysa om på en gång, inte P33/P34/P35/P36 var för sig. Samma mönster
 // och samma motivering som P24s pendning (se den raden i ANDRINGSLOGG.md):
 // hellre pendat och synligt kommenterat än rött i fyra commit-cykler eller
-// omfryst fyra separata gånger. Återaktiverad och omfryst i P47 (se
-// ANDRINGSLOGG.md, 2026-09-15) — balance.json självt oförändrat sedan P46,
-// men hela P43–P46-sekvensens ackumulerade beteendeändringar (materielNeed,
+// omfryst fyra separata gånger. Återaktiverad och omfryst i P37 (se
+// ANDRINGSLOGG.md, 2026-09-15) — balance.json självt oförändrat sedan P36,
+// men hela P33–P36-sekvensens ackumulerade beteendeändringar (materielNeed,
 // behovsdriven utlysning, pressure-vikter, front.trace) bryter sluttillståndets
-// hash ändå. Omfryst IGEN i P48 (samma datum) — P48:s eget klart när kräver
+// hash ändå. Omfryst IGEN i P38 (samma datum) — P38:s eget klart när kräver
 // uttryckligen omfrysning i just den commiten: Front.formations och
 // balance.json:s doctrineProfile är nya fält i det hashade sluttillståndet.
-// PENDAD IGEN i P49 (samma mönster som P44 ovan): engagement.ts:s nya fält
+// PENDAD IGEN i P39 (samma mönster som P34 ovan): engagement.ts:s nya fält
 // (categoryCombatWeight m.fl.) och formationernas egen strid bryter både
-// balansfixturen och sluttillståndets hash, men P49:s eget klart när ber INTE
+// balansfixturen och sluttillståndets hash, men P39:s eget klart när ber INTE
 // om en omfrysning ("...", inget golden-villkor alls) — nästa avsedda
-// omfrysningspunkt är P52 (balanspass 3B, avsnitt 6:s "en gång per
+// omfrysningspunkt är P42 (balanspass 3B, avsnitt 6:s "en gång per
 // etapphalva"), inte varje enskild 3B-prompt.
 //
-// Återaktiverad och omfryst i P52 (2026-09-15, sista prompten i etapp 3) —
-// P50:s namngivna ersättningsordrar, P50:s omkalibrerade förbandsroster
-// (indochina-slice.json) och P52:s egen invariant-bugfix (resolveFront synkar
+// Återaktiverad och omfryst i P42 (2026-09-15, sista prompten i etapp 3) —
+// P40:s namngivna ersättningsordrar, P40:s omkalibrerade förbandsroster
+// (indochina-slice.json) och P42:s egen invariant-bugfix (resolveFront synkar
 // nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
 it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
 describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
-  // P47 (se ANDRINGSLOGG.md, 2026-09-15): alla tre golden-partierna slutar nu i
-  // BUYOUT vid tur 10 (den dokumenterade P30/P45-spänningen, lämnad orörd på
+  // P37 (se ANDRINGSLOGG.md, 2026-09-15): alla tre golden-partierna slutar nu i
+  // BUYOUT vid tur 10 (den dokumenterade P30/P35-spänningen, lämnad orörd på
   // ägarens beslut) — kortare partier ger färre rubriker. `passive` mäter nu
   // exakt 12 (var väl över tidigare), så tröskeln sänkt till > 8 med marginal
   // kvar mot alla tre policyer, i stället för att höja den siffra som faktiskt

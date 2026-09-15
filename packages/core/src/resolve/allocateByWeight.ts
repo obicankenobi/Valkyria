@@ -2,7 +2,7 @@
 // restposter tilldelade störst bråkdel först (deterministiskt, ingen RNG —
 // CLAUDE.md hård regel 2, tie-break på lägst index). Summan av returvärdet är
 // ALLTID exakt `units` (så länge summan av weights > 0) — både deliveries.ts
-// (P48, doktrinvikter) och attrition.ts (P49, förbandens nuvarande innehav)
+// (P38, doktrinvikter) och attrition.ts (P39, förbandens nuvarande innehav)
 // behöver den garantin för att hålla invarianten i
 // ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1 EXAKT, inte bara
 // "ungefär".

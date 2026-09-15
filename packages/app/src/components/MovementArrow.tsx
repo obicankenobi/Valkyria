@@ -1,4 +1,4 @@
-// MovementArrow — P51 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.5): en
+// MovementArrow — P41 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.5): en
 // ren presentationskomponent för de två rörelsetyper 3B "uppgraderar" till att
 // gälla ETT NAMNGIVET förband (REDEPLOY, SUPPLY_ARRIVAL). FRONT_SHIFT/CAPTURE är
 // "Oförändrat" per avsnitt 5.5:s egen tabell och ritas inte om här — de hör till
@@ -7,7 +7,7 @@
 // Tar INGEN state-ändrande prop — ingen callback, inget event-handtag, ingen
 // onClick. Skyddsräcke 1 (avsnitt 7): spelaren kan aldrig, via den här
 // komponenten eller någon annan, skicka en handling som rör ett förband. Det är
-// P51:s eget klart när, fäst av ett typnivå-test i
+// P41:s eget klart när, fäst av ett typnivå-test i
 // packages/app/test/MovementArrow.test.tsx.
 //
 // Inte kopplad till någon PRODUKTION av riktig data i den här commiten: REDEPLOY

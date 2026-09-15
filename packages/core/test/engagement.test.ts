@@ -52,7 +52,7 @@ function invariantHolds(front: Front): void {
 }
 
 describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3)', () => {
-  it('(P49 klart-når) invarianten i 5.1 håller efter 20 turers strid', () => {
+  it('(P39 klart-når) invarianten i 5.1 håller efter 20 turers strid', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     front.terrainBonus = 0
@@ -103,7 +103,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     }
   })
 
-  it('(P49 klart-når) ett förband med övertag tar mindre förluster', () => {
+  it('(P39 klart-når) ett förband med övertag tar mindre förluster', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     front.terrainBonus = 0
@@ -135,7 +135,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     expect(attackerLoss).toBeLessThan(defenderLoss)
   })
 
-  it('(P49 klart-når) ett destroyed-förband lämnar linjen och aggregaten minskar i motsvarande grad', () => {
+  it('(P39 klart-når) ett destroyed-förband lämnar linjen och aggregaten minskar i motsvarande grad', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     front.terrainBonus = 0
@@ -185,7 +185,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     invariantHolds(front)
   })
 
-  it('(P49 klart-når) categoryCombatWeight gör infanteri icke-noll i utfallet', () => {
+  it('(P39 klart-når) categoryCombatWeight gör infanteri icke-noll i utfallet', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!
     front.terrainBonus = 0

@@ -36,17 +36,17 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-// Exporterad — resolve/steps/attrition.ts (P43) behöver samma sidbytesfunktion.
+// Exporterad — resolve/steps/attrition.ts (P33) behöver samma sidbytesfunktion.
 export function otherSide(side: 'a' | 'b'): 'a' | 'b' {
   return side === 'a' ? 'b' : 'a'
 }
 
 // Given-formeln (spec 5): equipmentRatio = attackerArtillery / max(1, defenderArtillery).
 // Generaliserad till "fördel" (ratio − 1, > 0 gynnar den första sidan) så samma
-// funktion kan användas för både materiel och manskap. Exporterad sedan P49 —
+// funktion kan användas för både materiel och manskap. Exporterad sedan P39 —
 // resolve/engagement.ts (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3)
 // kräver uttryckligen "SAMMA matematik som fronts.ts redan använder", samma
-// återanvändningsmönster som otherSide (P43).
+// återanvändningsmönster som otherSide (P33).
 export function ratioAdvantage(first: number, second: number): number {
   return first / Math.max(1, second) - 1
 }
@@ -61,12 +61,12 @@ function applyCasualtiesToFaction(faction: Faction | undefined, casualties: numb
   faction.publicSupport = clamp(faction.publicSupport - casualties * BALANCE.publicSupportLossPerCasualty, 0, 100)
 }
 
-// P52 (upptäckt under härnessmätningen, ägaren tillfrågad — se ANDRINGSLOGG.md):
+// P42 (upptäckt under härnessmätningen, ägaren tillfrågad — se ANDRINGSLOGG.md):
 // resolveFront minskar front.strength[sida] direkt via sin egen, redan sedan P6
 // existerande förlustformel, utan att röra formationerna — bröt invarianten i
-// avsnitt 5.1 så fort P48/P49:s förband fanns (Σ formations[sida].strength drev
+// avsnitt 5.1 så fort P38/P39:s förband fanns (Σ formations[sida].strength drev
 // isär från front.strength, mätt: alltid strength, aldrig equipment). Samma
-// mönster som attrition.ts:s (P49) motsvarande fix för equipment — vikten är
+// mönster som attrition.ts:s (P39) motsvarande fix för equipment — vikten är
 // formationernas NUVARANDE styrka (aggregatets kollektiva förlustformel bryr
 // sig inte om vilket enskilt förband som råkar tappa mest).
 function reduceFormationsStrength(front: Front, side: 'a' | 'b', casualties: number): void {
@@ -83,7 +83,7 @@ function reduceFormationsStrength(front: Front, side: 'a' | 'b', casualties: num
   })
 }
 
-// P46 (avsnitt 4.3): pressure härleds ur "position-förändring senaste 3
+// P36 (avsnitt 4.3): pressure härleds ur "position-förändring senaste 3
 // turerna" — fyra punkter (nu + tre bakåt) räcker för den jämförelsen, se
 // orders.ts:s computePressureForBuyer. Ingen balanssiffra — ett rent
 // datastrukturfönster, samma sorts kodkonstant som wire.ts:s WIRE_WINDOW_TURNS.
@@ -109,8 +109,8 @@ export const fronts: ResolveStep = (ctx) => {
       continue
     }
 
-    // P49 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3/9): förbandens
-    // egen strid löses FÖRE aggregatberäkningen (P49:s egen instruktion,
+    // P39 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.3/9): förbandens
+    // egen strid löses FÖRE aggregatberäkningen (P39:s egen instruktion,
     // ordagrant) — engagement() skriver om front.equipment/front.strength ur
     // formationerna (steg 5, invarianten i 5.1), och resolveFront nedan räknar
     // sedan vidare på de UPPDATERADE aggregaten, samma tur.
@@ -167,7 +167,7 @@ function resolveFront(
   front.morale[attacker] = clamp(front.morale[attacker] + moraleShift, 0, 100)
   front.morale[defender] = clamp(front.morale[defender] - moraleShift, 0, 100)
 
-  // P43 (avsnitt 3.1/3.3): resolve/steps/attrition.ts körs direkt efter det här
+  // P33 (avsnitt 3.1/3.3): resolve/steps/attrition.ts körs direkt efter det här
   // steget och behöver både clampedAdvantage och den här tickerns id (causeId till
   // förslitningens egen ticker, kedjans första led). Skrivs bara här, i samma
   // ögonblick värdena faktiskt finns — se types.ts:s kommentar på fälten.

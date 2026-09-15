@@ -59,7 +59,7 @@ function riggedState(seed: string) {
   // fronts.ts:s stagnationsgrind läser front.equipment DIREKT (inte
   // formationerna) för att avgöra om det finns strid att lösa den här turen —
   // måste alltså synkas manuellt, samma mönster som fronts.test.ts:s
-  // giveEquipment (se ANDRINGSLOGG.md, P49).
+  // giveEquipment (se ANDRINGSLOGG.md, P39).
   front.equipment = {
     a: { ...attacker.equipment },
     b: { ...target.equipment },
@@ -68,8 +68,8 @@ function riggedState(seed: string) {
   return { state, target }
 }
 
-describe('namngiven efterfrågan (P50, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4)', () => {
-  it('(P50 klart-når) kedjan strid → mauled → order syns i tre led genom causeId', () => {
+describe('namngiven efterfrågan (P40, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4)', () => {
+  it('(P40 klart-når) kedjan strid → mauled → order syns i tre led genom causeId', () => {
     const { state, target } = riggedState('formation-replacement-seed')
 
     const result = resolveTurn(state, EMPTY_SUBMISSION)
@@ -102,7 +102,7 @@ describe('namngiven efterfrågan (P50, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
     }
   })
 
-  it('(P50 klart-når) kedjan överlever pruneWire över 8 turer', () => {
+  it('(P40 klart-når) kedjan överlever pruneWire över 8 turer', () => {
     const { state } = riggedState('formation-replacement-prune-seed')
 
     let result = resolveTurn(state, EMPTY_SUBMISSION)

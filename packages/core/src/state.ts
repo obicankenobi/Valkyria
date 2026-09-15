@@ -111,7 +111,7 @@ interface ScenarioFile {
     strengthA: number
     strengthB: number
     terrainBonus: number
-    // P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2): förbandsordningen,
+    // P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2): förbandsordningen,
     // en ergonomisk startmall (bara det scenariofilen behöver ange per förband —
     // equipment/readiness/status/engagedWith är alltid samma startvärde, satta av
     // buildWorld nedan, inte upprepade i varje post här).
@@ -275,7 +275,7 @@ function buildFormations(f: ScenarioFile['front']): Formation[] {
     sectorId: seed.sectorId,
     doctrine: seed.doctrine,
     strength: seed.strength,
-    // P49: strengthAtFull sätts en gång, vid uppresning — förbandets startstyrka
+    // P39: strengthAtFull sätts en gång, vid uppresning — förbandets startstyrka
     // ÄR dess fulla, avsedda styrka (TOE) innan någon strid ägt rum.
     strengthAtFull: seed.strength,
     // Ingen leverans har skett än — samma startpunkt som front.equipment.
