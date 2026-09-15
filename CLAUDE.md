@@ -4,20 +4,23 @@ Turbaserad kallakrigssimulator. TypeScript, strict. Kärnan är headless och ren
 
 Designdokumentet är `docs/DESIGN.md`. Den tekniska specen för etapp 1 är
 `docs/ETAPP1_TEKNISK_SPEC.md` (P0–P12, klar). Etapp 1,5, `docs/ETAPP1_5_TEKNISK_SPEC.md`
-(P13–P22), är också klar — sista prompten (P22, balanspass + golden-test) är committad. Etapp
-2, "Motståndet", `docs/ETAPP2_TEKNISK_SPEC.md` (P23–P32, antagen som ägarbeslut 2026-09-14), är
-ÄVEN DEN klar — sista prompten (P32, balanspass mot avsnitt 6.3 + golden-test omfryst) är
-committad, se avsnitt 6.3:s egen blockquote för balanspassets fulla facit (fem av åtta
-fetstilta rader nådda, tre strukturellt reviderade). Etapp 2 ersatte etapp 1,5-specens avsnitt
-13-måltabell och sköt `DESIGN.md` §20:s bredd-etapp (andra fronten, råvarumarknad, kupper,
-`SUEZ`/`OCTOBER`) ett steg, till etapp 3, av ett mätt (inte tyckt) skäl: se etapp 2-specens
-avsnitt 1. Etapp 1, 1,5 och 2 lämnas stående som historik. Bakgrunden till etapp 2 finns i dess
-egna avsnitt 0 (facit mot P22) och avsnitt 1 (varför den inte är bredd); den ärver etapp 1,5:s
-egen bakgrund i `docs/RAPPORT1_GRANSKNING.md` (extern granskning) och
-`docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan). Ingen etapp 3-spec finns ännu — nästa
-session som ska bygga vidare behöver en, se avsnitt 10 i etapp 2-specen ("Vad som händer efter
-P32") för vad den bör innehålla. **Läs den promptens avsnitt i den spec som gäller innan du
-börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
+(P13–P22), är också klar. Etapp 2, "Motståndet", `docs/ETAPP2_TEKNISK_SPEC.md` (P23–P32), är
+ÄVEN DEN klar — se avsnitt 6.3:s blockquote för balanspassets fulla facit (fem av åtta
+fetstilta rader nådda, tre strukturellt reviderade). Den aktiva specen är nu **etapp 3, "Kriget
+som marknad"**, `docs/ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md` (P43–P52, antagen som
+ägarbeslut 2026-09-15, validerad mot commit `e650be2`) — den ersätter `orderGenerationChancePct`s
+tärningsdrivna ordergenerering med en behovsdriven modell kopplad till materielförluster på
+fronten, i två halvor: 3A (förbrukning, P43–P47, rör INTE balansen förrän P47) och 3B (namngivna
+förband, `Formation`, P48–P52). Se specens egna avsnitt 0–1 för de fyra mätta fynd den bygger på.
+Etapp 1, 1,5 och 2 lämnas stående som historik. **Känd lucka, upptäckt vid antagandet (se
+`docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3 (etapp 3B) refererar
+upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`, `MovementArrow`, `sectorId` och
+ett INTEL-lager som om de redan finns — sökt igenom hela repot, noll träffar. Blockerar INTE
+P43–P47 (3A rör ingen av dessa), men måste lösas (skriv den saknade specen, eller skriv om
+5.5/skyddsräcke 1&3) innan P51.** Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
+ärver etapp 1,5:s egen bakgrund i `docs/RAPPORT1_GRANSKNING.md` (extern granskning) och
+`docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan). **Läs den promptens avsnitt i den spec som
+gäller innan du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
 
 ## Hårda regler
 
