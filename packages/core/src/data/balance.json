@@ -57,7 +57,6 @@
   "blocPenaltyScale": 15,
   "relationBoostMin": 4,
   "relationBoostMax": 8,
-  "orderGenerationChancePct": 35,
   "orderQuantityMin": 20,
   "orderQuantityMax": 185,
   "orderDeliverySlackTurns": 3,
@@ -187,5 +186,7 @@
     "aviation": 2,
     "naval": 2,
     "electronics": 6
-  }
+  },
+  "_p45_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2 ger maxOrdersPerFactionPerTurn(2) direkt i pseudokoden, inte i avsnitt 4.1:s fältlista -- specens eget tal, inte provisoriskt. orderGenerationChancePct borttagen helt (avsnitt 9:s egen instruktion: 'Ta bort orderGenerationChancePct') -- P4:s ursprungliga tärningsregel, ersatt av den behovsdrivna utlysningen.",
+  "maxOrdersPerFactionPerTurn": 2
 }

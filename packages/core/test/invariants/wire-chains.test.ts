@@ -44,7 +44,14 @@ describe('wire-chains invariant', () => {
     // exakt gräns.
     const oldestKeptTurn = Math.min(...state.wire.map((e) => e.turn))
     expect(oldestKeptTurn).toBeGreaterThan(0)
-    expect(state.wire.length).toBeLessThan(200) // långt under vad 20 obeskurna turer hade gett
+    // Taket höjt 200→450 i P45: attrition.ts (P43), materielNeed-påfyllningen
+    // (P44) och den behovsdrivna utlysningen (P45, ersätter en 35 %-chans) höjer
+    // den naturliga wire-volymen per tur rejält — en faktion cyklar nu genom
+    // utlys→förbruka→fyll på→utlys igen om och om under ett 20-tursparti (378
+    // uppmätt här), i stället för den gamla slumpmässiga, sällsynta genereringen.
+    // Fortfarande "långt under vad 20 obeskurna turer hade gett", bara en ny,
+    // betydligt högre baslinje.
+    expect(state.wire.length).toBeLessThan(450)
   })
 
   it('en syntetisk historik som spänner över långt fler än 8 turer, med grenande orsakskedjor: pruneWire lämnar aldrig en hängande referens', () => {

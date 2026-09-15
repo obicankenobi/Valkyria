@@ -58,36 +58,146 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     expect(ratio).toBeLessThanOrEqual(5)
   })
 
-  it('ordinarie generering väljer aldrig en restricted produkt', () => {
-    // Kör många turer/seeds för att ge slumpen chans att välja fel om den kunde.
+  it('ordinarie generering väljer aldrig en restricted produkt, oavsett hur högt behovet är', () => {
+    // P45: artilleribehovet satt SKYHÖGT (300, långt över orderTriggerThreshold
+    // 12) — om restricted-spärren någonsin brast skulle mk9 (restricted, samma
+    // kategori) vara den mest lockande kandidaten.
     for (const seed of ['a', 'b', 'c', 'd', 'e']) {
       const trial = createInitialState('indochina-slice', 'seed')
-      for (let turn = 0; turn < 7; turn++) {
-        // Stannar före tur 7 så ingen av de TRE scriptade restricted-ordrarna
-        // (P30, avsnitt 5.3: tur 7/10/16) blandas in — den här testar bara den
-        // ordinarie genereringens produktval.
-        trial.meta.turn = turn
-        orders(makeCtx(trial, seed + turn).ctx)
-      }
+      trial.factions['rvn']!.materielNeed.artillery = 300
+      trial.meta.turn = 0 // före tur 7 (P30: tidigaste scriptade restricted-order)
+      orders(makeCtx(trial, seed).ctx)
       expect(trial.market.openOrders.some((o) => o.productId === 'mk9_longhand_shell')).toBe(false)
+      expect(trial.market.openOrders.some((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')).toBe(true)
     }
   })
 
-  it('genererar inga ordrar för en bankrutt eller embargerad faktion', () => {
+  it('genererar inga ordrar för en bankrutt eller embargerad faktion, trots högt behov hos alla tre', () => {
     const state = createInitialState('indochina-slice', 'seed')
+    for (const factionId of ['rvn', 'nlf', 'laos']) {
+      state.factions[factionId]!.materielNeed.infantry = 100 // över orderTriggerThreshold (60) för alla
+    }
     state.factions['rvn']!.bankrupt = true
     state.factions['nlf']!.embargoed = true
     orders(makeCtx(state, 'orders-seed').ctx)
     expect(state.market.openOrders.every((o) => o.buyerId === 'laos')).toBe(true)
+    expect(state.market.openOrders.length).toBeGreaterThan(0) // kontroll: genereringen fungerar alls
   })
 
   it('varje genererad order har expiresTurn > skapelseturen (order-lifetime-invarianten)', () => {
     const state = createInitialState('indochina-slice', 'seed')
+    state.factions['rvn']!.materielNeed.infantry = 100
     state.meta.turn = 3
     orders(makeCtx(state, 'orders-seed').ctx)
+    expect(state.market.openOrders.length).toBeGreaterThan(0)
     for (const order of state.market.openOrders) {
       expect(order.expiresTurn).toBeGreaterThan(3)
     }
+  })
+
+  describe('behovsdriven utlysning (P45 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2)', () => {
+    it('en faktion utlyser i fallande behovsordning — kategorin med störst behov utlyses (och skrivs till openOrders) först', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.materielNeed.artillery = 300 // störst behov
+      rvn.materielNeed.infantry = 61 // precis över tröskeln (60) — minst
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const rvnOrders = state.market.openOrders.filter((o) => o.buyerId === 'rvn')
+      expect(rvnOrders.length).toBe(2) // båda rvns enda två köpbara kategorier korsar sin tröskel
+      expect(rvnOrders[0]!.productId).toBe('105mm_field_gun') // artillery, störst behov, kommer först
+      expect(rvnOrders[1]!.productId).toBe('m1_rifle') // infantry, minst behov, kommer sist
+    })
+
+    it('behovet konsumeras vid utlysning, med exakt den utlysta kvantiteten', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.materielNeed.artillery = 80 // inom orderQuantityMin/Max (20–150) för 105mm_field_gun
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+      expect(order).toBeDefined()
+      expect(rvn.materielNeed.artillery).toBeCloseTo(80 - order.quantity, 6)
+    })
+
+    it('behovet golvas vid 0, aldrig negativt — en utlyst kvantitet över quantityMin får inte skuldsätta framtida behov', () => {
+      // Bugg upptäckt under P45 (se ANDRINGSLOGG.md): need[c] -= quantity,
+      // ordagrant enligt avsnitt 4.2, driver need djupt negativt så fort
+      // orderQuantityMin > orderTriggerThreshold — exakt fallet för m1_rifle
+      // (min 500, infantry-tröskeln 60). Ett djupt negativt behov hade tagit
+      // decennier av peacetimeReplacement att arbeta av, vilket permanent
+      // kvävt framtida ordrar i den kategorin.
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.materielNeed.infantry = 61 // precis över tröskeln (60), långt under m1_rifles min (500)
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === 'm1_rifle')!
+      expect(order).toBeDefined()
+      expect(order.quantity).toBe(500) // clampat upp till orderQuantityMin, inte 61
+      expect(rvn.materielNeed.infantry).toBe(0) // golvat, INTE 61 − 500 = −439
+    })
+
+    it('ett behov under orderTriggerThreshold hoppas över — ingen order, behovet orört', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.materielNeed.artillery = 11 // under tröskeln (12)
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      expect(state.market.openOrders.some((o) => o.buyerId === 'rvn')).toBe(false)
+      expect(rvn.materielNeed.artillery).toBe(11)
+    })
+
+    it('en faktion utan råd utlyser inte — kvantiteten prutas i 25 %-steg, och CANNOT AFFORD emitteras om det ändå inte räcker', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.materielNeed.artillery = 100
+      rvn.militaryBudget = 0
+      state.meta.turn = 0
+
+      const { ctx, emitted } = makeCtx(state, 'orders-seed')
+      orders(ctx)
+
+      expect(state.market.openOrders.some((o) => o.buyerId === 'rvn')).toBe(false)
+      expect(rvn.materielNeed.artillery).toBe(100) // orört — ingen order utlystes
+      expect(emitted.some((e) => e.headline.includes('CANNOT AFFORD') && e.subjectId === 'rvn')).toBe(true)
+    })
+
+    it('UNMET NEED emitteras när behovet är över tröskeln men ingen köpbar produkt finns i kategorin', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const nlf = state.factions['nlf']! // techLevel 1 — kan bara köpa m1_rifle (infantry)
+      nlf.materielNeed.artillery = 300 // långt över tröskeln (12), men ingen icke-restricted artilleriprodukt nlf får köpa
+      state.meta.turn = 0
+
+      const { ctx, emitted } = makeCtx(state, 'orders-seed')
+      orders(ctx)
+
+      expect(state.market.openOrders.some((o) => o.buyerId === 'nlf')).toBe(false)
+      expect(emitted.some((e) => e.headline.includes('UNMET NEED') && e.subjectId === 'nlf')).toBe(true)
+    })
+
+    it('högst maxOrdersPerFactionPerTurn ordrar per faktion och tur', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      // rvn har bara två köpbara kategorier (techLevel 2) — sätt båda över
+      // tröskeln för att bekräfta taket inte är lägre än vad som faktiskt går
+      // att nå, snarare än att härleda det indirekt.
+      rvn.materielNeed.artillery = 100
+      rvn.materielNeed.infantry = 100
+      state.meta.turn = 0
+
+      orders(makeCtx(state, 'orders-seed').ctx)
+
+      expect(state.market.openOrders.filter((o) => o.buyerId === 'rvn').length).toBe(2)
+    })
   })
 
   it('statedBudget är aldrig högre än trueBudget', () => {
@@ -118,6 +228,9 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     state.factions['rvn']!.militaryBudget = 0
     state.factions['nlf']!.militaryBudget = 0
+    for (const factionId of ['rvn', 'nlf', 'laos']) {
+      state.factions[factionId]!.materielNeed.infantry = 100 // över tröskeln för alla tre
+    }
     // laos har kvar sin normala budget — kontroll: genereringen fungerar alls.
 
     for (let turn = 0; turn < 7; turn++) {

@@ -37,7 +37,6 @@ interface Balance {
   blocPenaltyScale: number
   relationBoostMin: number
   relationBoostMax: number
-  orderGenerationChancePct: number
   orderQuantityMin: number
   orderQuantityMax: number
   orderDeliverySlackTurns: number

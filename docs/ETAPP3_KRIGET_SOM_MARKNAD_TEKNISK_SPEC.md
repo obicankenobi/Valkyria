@@ -490,9 +490,22 @@ sitt syfte.
 
 Mätt läge i högerkolumnen är `e650be2`, 200 partier `balanced`.
 
+> **Rad omprövad under P45, se `docs/ANDRINGSLOGG.md`.** "Produkter som beställs minst en gång
+> per 100 partier" kan strukturellt aldrig nå 6 av 7: fyra av de sju produkterna (armour/
+> aviation/naval/electronics) kräver `faction.techLevel ≥ 3`, men ingen faktion i
+> `indochina-slice.json` har `techLevelDefault` över 2 (`rvn`), och ingen mekanik i etapp 1–3
+> höjer en FAKTIONS tekniknivå (till skillnad från husets egen, som `REPRIORITISE_RND` styr).
+> P45:s eget klart när kräver 3 av 7 (m1_rifle, 105mm_field_gun, mk9_longhand_shell) — uppmätt
+> 100 % av partier når alla tre, efter en golvningsfix i `orders.ts` (se samma loggrad:
+> `need[c] -= quantity` drev annars behovet djupt negativt så fort en produkts
+> `orderQuantityMin` översteg dess `orderTriggerThreshold`, vilket permanent kvävde framtida
+> ordrar i den kategorin). Målvärdet sänkt till 3 av 7 tills en framtida etapp ger faktioner en
+> egen tekniknivåstillväxt — ägaren tillfrågad, valde revision i stället för att bygga den
+> mekaniken i förbigående här.
+
 | Kriterium | Målvärde | Mätt nu |
 |---|---|---|
-| **Produkter som beställs minst en gång per 100 partier** | **≥ 6 av 7** | **3 av 7** |
+| **Produkter som beställs minst en gång per 100 partier** | **3 av 3 möjliga** (se blockquote ovan) | **3 av 3 (100 %)** |
 | **Andel ordrar som är gevär** | **< 45 %** | **69 %** |
 | Utlysta ordrar per tur | 1,0–1,8 | 1,18 |
 | **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | monotont växande, obegränsat |
