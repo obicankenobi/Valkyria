@@ -27,7 +27,7 @@ import { round } from '../../money.js'
 import { getProduct } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import type { ResolveStep } from '../index.js'
-import type { Front, GameState, Grade } from '../../types.js'
+import type { Doctrine, Front, GameState, Grade, TechCategory } from '../../types.js'
 
 interface Balance {
   reliabilityLatePenalty: number
@@ -39,8 +39,51 @@ interface Balance {
   reliabilityLateEscalationPerTurn: number
   contractGracePeriodTurns: number
   voidedContractRelationPenalty: number
+  doctrineProfile: Record<Doctrine, Partial<Record<TechCategory, number>>>
 }
 const BALANCE = balanceData as unknown as Balance
+
+// P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en ankommen
+// leverans delas ut över SIDANS förband enligt doktrinernas vikter — front.equipment
+// självt rörs inte här, det ökas separat (samma anropsplats, precis intill) precis
+// som innan P48. Håller invarianten i 5.1 genom konstruktion: samma `units` läggs
+// till på båda ställena, varje tur, aldrig i olika steg.
+//
+// Nödvändigt tillägg (se ANDRINGSLOGG.md): doctrineProfile (avsnitt 5.2) ger ingen
+// doktrin någon vikt alls för aviation/naval — utan en reserv bryts invarianten så
+// fort en sådan leverans anländer (ingen förband skulle ta emot något, men
+// front.equipment[side][cat] hade ändå ökat). Faller då tillbaka till en
+// strength-proportionell fördelning i stället.
+function distributeUnitsToFormations(front: Front, side: 'a' | 'b', category: TechCategory, units: number): void {
+  if (units <= 0) return
+  const sideFormations = front.formations.filter((f) => f.side === side)
+  if (sideFormations.length === 0) return
+
+  const doctrineWeights = sideFormations.map((f) => BALANCE.doctrineProfile[f.doctrine][category] ?? 0)
+  const totalDoctrineWeight = doctrineWeights.reduce((sum, w) => sum + w, 0)
+  const weights = totalDoctrineWeight > 0 ? doctrineWeights : sideFormations.map((f) => f.strength)
+  const weightSum = weights.reduce((sum, w) => sum + w, 0)
+  if (weightSum <= 0) return // inget förband kan ta emot — front.equipment ökar ändå, invarianten håller (0 på den här sidan)
+
+  const raw = weights.map((w) => (w / weightSum) * units)
+  const allocated = raw.map(Math.floor)
+  let remainder = units - allocated.reduce((sum, v) => sum + v, 0)
+
+  // Största resten till formationerna med störst bråkdel — deterministiskt, ingen
+  // RNG (CLAUDE.md hård regel 2), tie-break på lägst index.
+  const byRemainingFraction = raw
+    .map((v, i) => ({ i, fraction: v - Math.floor(v) }))
+    .sort((a, b) => b.fraction - a.fraction || a.i - b.i)
+
+  for (let k = 0; k < byRemainingFraction.length && remainder > 0; k++) {
+    allocated[byRemainingFraction[k]!.i]!++
+    remainder--
+  }
+
+  sideFormations.forEach((formation, i) => {
+    formation.equipment[category] += allocated[i]!
+  })
+}
 
 // House (till skillnad från RivalHouse) har inget eget id-fält — det finns bara ett
 // hus, spelarens eget. attribution (Front.attribution: "houseId | rivalId → ...")
@@ -124,6 +167,7 @@ export const deliveries: ResolveStep = (ctx) => {
     if (frontMatch) {
       const { front, side } = frontMatch
       front.equipment[side][product.category] += shipment.units
+      distributeUnitsToFormations(front, side, product.category, shipment.units)
       front.attribution[PLAYER_ATTRIBUTION_KEY] = (front.attribution[PLAYER_ATTRIBUTION_KEY] ?? 0) + shipment.units
 
       // P7-tillägg: heatFromDeliveries (spec 5, "Heat") behöver "denna turs
@@ -285,6 +329,7 @@ export const deliveries: ResolveStep = (ctx) => {
         if (frontMatch) {
           const { front, side } = frontMatch
           front.equipment[side][product.category] += delivered
+          distributeUnitsToFormations(front, side, product.category, delivered)
           front.attribution[rival.id] = (front.attribution[rival.id] ?? 0) + delivered
 
           const theatre = draft.theatres[front.theatreId]

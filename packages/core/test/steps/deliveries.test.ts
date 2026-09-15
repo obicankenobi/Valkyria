@@ -528,3 +528,98 @@ describe('deliveries — rivalernas leverans/attribution (P25, avsnitt 2.3)', ()
     expect(rival.contracts[0]!.unitsDelivered).toBe(100) // orört
   })
 })
+
+describe('förbandsfördelning (P48, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2)', () => {
+  it('(P48 klart-når) ett mechanised-förband får mer armour än ett infantry-förband av samma leverans', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.formations = [
+      {
+        id: 'test-infantry',
+        name: 'Test Infantry',
+        factionId: 'rvn',
+        frontId: front.id,
+        side: 'a',
+        sectorId: 'test-sector',
+        doctrine: 'infantry',
+        strength: 50,
+        equipment: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 },
+        readiness: 100,
+        status: 'active',
+        engagedWith: null,
+      },
+      {
+        id: 'test-mechanised',
+        name: 'Test Mechanised',
+        factionId: 'rvn',
+        frontId: front.id,
+        side: 'a',
+        sectorId: 'test-sector',
+        doctrine: 'mechanised',
+        strength: 50,
+        equipment: { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 },
+        readiness: 100,
+        status: 'active',
+        engagedWith: null,
+      },
+    ]
+
+    const contract = activeContract({ id: 'contract-armour-0', buyerId: 'rvn', productId: 'm3_apc', quantity: 100 })
+    state.market.contracts = [contract]
+    state.market.shipments = [shipment({ contractId: 'contract-armour-0', units: 100, arrivalTurn: 0 })]
+    state.meta.turn = 0
+
+    deliveries(makeCtx(state, 'del-seed').ctx)
+
+    const infantryArmour = front.formations.find((f) => f.id === 'test-infantry')!.equipment.armour
+    const mechanisedArmour = front.formations.find((f) => f.id === 'test-mechanised')!.equipment.armour
+    expect(mechanisedArmour).toBeGreaterThan(infantryArmour)
+  })
+
+  function invariantHolds(front: ReturnType<typeof createInitialState>['fronts'][string]): void {
+    for (const side of ['a', 'b'] as const) {
+      const sideFormations = front!.formations.filter((f) => f.side === side)
+      const categories = Object.keys(front!.equipment[side]) as (keyof typeof front.equipment.a)[]
+      for (const category of categories) {
+        const summed = sideFormations.reduce((sum, f) => sum + f.equipment[category], 0)
+        expect(summed).toBe(front!.equipment[side][category])
+      }
+    }
+  }
+
+  it('(P48 klart-när) invarianten i 5.1 håller efter 20 turers leveranser, alla kategorier, båda sidor', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    invariantHolds(front) // 0 = 0 vid start
+
+    // En leverans per tur, växlande sida, produkt (inkl. aviation/naval — den
+    // fallback som ANDRINGSLOGG.md dokumenterar, ingen doktrin ger dem vikt) och
+    // kvantitet, i 20 turer.
+    const productsByTurn: { buyerId: 'rvn' | 'nlf'; productId: string; units: number }[] = [
+      { buyerId: 'rvn', productId: 'm1_rifle', units: 500 },
+      { buyerId: 'nlf', productId: 'm1_rifle', units: 500 },
+      { buyerId: 'rvn', productId: '105mm_field_gun', units: 37 },
+      { buyerId: 'nlf', productId: 'm3_apc', units: 23 },
+      { buyerId: 'rvn', productId: 'ch3_transport_helicopter', units: 5 },
+      { buyerId: 'nlf', productId: 'coastal_patrol_boat', units: 3 },
+      { buyerId: 'rvn', productId: 'tac_radio_suite', units: 41 },
+      { buyerId: 'nlf', productId: '105mm_field_gun', units: 17 },
+      { buyerId: 'rvn', productId: 'm3_apc', units: 29 },
+      { buyerId: 'nlf', productId: 'tac_radio_suite', units: 13 },
+    ]
+
+    for (let turn = 0; turn < 20; turn++) {
+      const spec = productsByTurn[turn % productsByTurn.length]!
+      const contractId = `contract-inv-${turn}`
+      state.market.contracts.push(
+        activeContract({ id: contractId, buyerId: spec.buyerId, productId: spec.productId, quantity: spec.units }),
+      )
+      state.market.shipments.push(shipment({ contractId, units: spec.units, arrivalTurn: turn }))
+      state.meta.turn = turn
+
+      deliveries(makeCtx(state, `del-seed-inv-${turn}`).ctx)
+
+      invariantHolds(front)
+    }
+  })
+})

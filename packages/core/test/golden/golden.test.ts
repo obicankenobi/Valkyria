@@ -47,7 +47,9 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // ANDRINGSLOGG.md, 2026-09-15) — balance.json självt oförändrat sedan P46,
 // men hela P43–P46-sekvensens ackumulerade beteendeändringar (materielNeed,
 // behovsdriven utlysning, pressure-vikter, front.trace) bryter sluttillståndets
-// hash ändå.
+// hash ändå. Omfryst IGEN i P48 (samma datum) — P48:s eget klart när kräver
+// uttryckligen omfrysning i just den commiten: Front.formations och
+// balance.json:s doctrineProfile är nya fält i det hashade sluttillståndet.
 it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
@@ -60,9 +62,9 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // kvar mot alla tre policyer, i stället för att höja den siffra som faktiskt
   // brast.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '125c85681e53d8' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '17e44867b32794' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '79302a844f37a' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '15ee239b0d2345' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '556479d755dc5' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '120551be2e95c0' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

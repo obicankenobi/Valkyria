@@ -63,6 +63,32 @@ describe('createInitialState', () => {
     expect(state.factions[front!.sideB]).toBeDefined()
   })
 
+  it('(P48) förbandens styrka summerar till frontens startstyrkor per sida, och invarianten i 5.1 håller (0 = 0) vid start', () => {
+    const state = createInitialState('indochina-slice', 'test-seed')
+    const front = Object.values(state.fronts)[0]!
+    expect(front.formations.length).toBeGreaterThanOrEqual(6)
+    expect(front.formations.length).toBeLessThanOrEqual(10)
+
+    const strengthA = front.formations.filter((f) => f.side === 'a').reduce((sum, f) => sum + f.strength, 0)
+    const strengthB = front.formations.filter((f) => f.side === 'b').reduce((sum, f) => sum + f.strength, 0)
+    expect(strengthA).toBe(front.strength.a)
+    expect(strengthB).toBe(front.strength.b)
+
+    for (const side of ['a', 'b'] as const) {
+      const sideFormations = front.formations.filter((f) => f.side === side)
+      for (const category of Object.keys(front.equipment[side]) as (keyof typeof front.equipment.a)[]) {
+        const summed = sideFormations.reduce((sum, f) => sum + f.equipment[category], 0)
+        expect(summed).toBe(front.equipment[side][category])
+      }
+      for (const formation of sideFormations) {
+        expect(formation.readiness).toBe(100)
+        expect(formation.status).toBe('active')
+        expect(formation.engagedWith).toBeNull()
+        expect(formation.frontId).toBe(front.id)
+      }
+    }
+  })
+
   it('kastar på okänt scenarioId', () => {
     expect(() => createInitialState('does-not-exist', 'test-seed')).toThrow()
   })

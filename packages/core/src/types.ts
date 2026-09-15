@@ -22,6 +22,9 @@ export type TechCategory =
 
 export type Grade = 'A' | 'B' | 'C'
 
+// P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
+export type Doctrine = 'infantry' | 'mechanised' | 'armoured' | 'artillery' | 'irregular'
+
 // ── 2.2 GameState ────────────────────────────────────────────────────────────
 //
 // GameState är den enda sanningen. Allt som behövs för att fortsätta ett parti
@@ -341,6 +344,29 @@ export interface Front {
   // först. Hålls kort (fyra punkter räcker för en tre-turers jämförelse) —
   // ingen anledning att spara hela partiets historik här.
   trace: number[]
+  // P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en
+  // dekomposition av front.equipment/strength, inte ett andra lager sanning —
+  // fronts.ts:s egna formler (ratioAdvantage, genombrottströskeln) rörs inte,
+  // de räknar vidare på aggregaten. Invariant (5.1, fäst av ett eget test):
+  // Σ formations[side].equipment[c] === front.equipment[side][c] för varje c,
+  // Σ formations[side].strength === front.strength[side].
+  formations: Formation[]
+}
+
+// P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
+export interface Formation {
+  id: string
+  name: string
+  factionId: FactionId
+  frontId: FrontId
+  side: 'a' | 'b'
+  sectorId: string
+  doctrine: Doctrine
+  strength: number
+  equipment: Record<TechCategory, number>
+  readiness: Pct // 0 = utslaget, 100 = stridsdugligt
+  status: 'active' | 'mauled' | 'refitting' | 'destroyed'
+  engagedWith: string | null // motståndarförbandets id, denna tur
 }
 
 export interface RivalHouse {

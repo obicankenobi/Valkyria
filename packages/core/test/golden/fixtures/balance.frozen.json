@@ -191,5 +191,13 @@
   "maxOrdersPerFactionPerTurn": 2,
   "_p46_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3 ger weightPressureShift(0,25) ordagrant. pressurePositionSpan är PROVISORISKT -- specen ger 'position-förändring senaste 3 turerna' och en 0..1-skala men aldrig vilket antal positionspoäng som motsvarar full pressure (1,0). Kalibrerat mot frontBreakthroughMagnitude (5 positionspoäng per genombrott) -- två genombrott på tre turer räcker för full pressure via positionskomponenten ensam, empiriskt avstämt mot härnessens 8-25%-mål (avsnitt 8). Se docs/ANDRINGSLOGG.md.",
   "weightPressureShift": 0.25,
-  "pressurePositionSpan": 10
+  "pressurePositionSpan": 10,
+  "_p48_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2 ger doctrineProfile ordagrant -- specens eget tal. Ingen doktrin ger aviation eller naval en vikt alls (specen namner bara infantry/artillery/armour/electronics per doktrin) -- se deliveries.ts:s fallback (nödvändigt tillägg, ANDRINGSLOGG.md) för hur en sådan leverans ändå håller invarianten i 5.1.",
+  "doctrineProfile": {
+    "infantry": { "infantry": 0.75, "artillery": 0.15, "armour": 0.05, "electronics": 0.05 },
+    "mechanised": { "infantry": 0.40, "armour": 0.35, "artillery": 0.15, "electronics": 0.10 },
+    "armoured": { "armour": 0.60, "infantry": 0.20, "artillery": 0.15, "electronics": 0.05 },
+    "artillery": { "artillery": 0.70, "infantry": 0.20, "electronics": 0.10 },
+    "irregular": { "infantry": 0.95, "artillery": 0.05 }
+  }
 }

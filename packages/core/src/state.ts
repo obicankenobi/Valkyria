@@ -8,8 +8,10 @@ import rivalsCatalog from './data/rivals.json' with { type: 'json' }
 import indochinaSlice from './data/scenarios/indochina-slice.json' with { type: 'json' }
 import type {
   BoardTarget,
+  Doctrine,
   Faction,
   FactionId,
+  Formation,
   Front,
   GameState,
   House,
@@ -109,6 +111,19 @@ interface ScenarioFile {
     strengthA: number
     strengthB: number
     terrainBonus: number
+    // P48 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2): förbandsordningen,
+    // en ergonomisk startmall (bara det scenariofilen behöver ange per förband —
+    // equipment/readiness/status/engagedWith är alltid samma startvärde, satta av
+    // buildWorld nedan, inte upprepade i varje post här).
+    formations: {
+      id: string
+      name: string
+      factionId: FactionId
+      side: 'a' | 'b'
+      sectorId: string
+      doctrine: Doctrine
+      strength: number
+    }[]
   }
   // Konsumeras av orders.ts (P4), som avgör det exakta formatet då. Oanvänd här —
   // createInitialState bygger bara startläget, inte framtida turers utlysningar.
@@ -250,6 +265,24 @@ function buildRivals(scenario: ScenarioFile): Record<RivalId, RivalHouse> {
   return rivals
 }
 
+function buildFormations(f: ScenarioFile['front']): Formation[] {
+  return f.formations.map((seed) => ({
+    id: seed.id,
+    name: seed.name,
+    factionId: seed.factionId,
+    frontId: f.id,
+    side: seed.side,
+    sectorId: seed.sectorId,
+    doctrine: seed.doctrine,
+    strength: seed.strength,
+    // Ingen leverans har skett än — samma startpunkt som front.equipment.
+    equipment: uniformCategoryRecord(0),
+    readiness: 100,
+    status: 'active',
+    engagedWith: null,
+  }))
+}
+
 function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } {
   const f = scenario.front
 
@@ -271,6 +304,7 @@ function buildWorld(scenario: ScenarioFile): { theatre: Theatre; front: Front } 
     lastClampedAdvantage: 0,
     lastCasualtyEventId: null,
     trace: [f.position],
+    formations: buildFormations(f),
   }
 
   const theatre: Theatre = {
