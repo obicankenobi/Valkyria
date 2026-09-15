@@ -89,13 +89,20 @@ export function TheWorld({ state }: { state: GameState }) {
           const sideB = state.factions[front.sideB]
           const markerPct = ((front.position + 100) / 200) * 100
           const totalCasualties = front.casualtiesTotal.a + front.casualtiesTotal.b
+          // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "visa per front i THE
+          // WORLD vilka kontrakt som matar den." Bara aktiva/sena — fulfilled/
+          // voided levererar inte mer.
+          const feedingContracts = state.market.contracts.filter(
+            (c) => c.frontId === front.id && (c.status === 'active' || c.status === 'late'),
+          ).length
 
           return (
             <div className="front" key={front.id}>
               <div className="front-sides">
                 <span className="side-a">{sideA ? sideA.name : front.sideA}</span>
                 <span className="meter-label">
-                  {front.id} · attacking: side {front.attacker.toUpperCase()} · {totalCasualties} casualties
+                  {front.id} · attacking: side {front.attacker.toUpperCase()} · {totalCasualties} casualties ·{' '}
+                  {feedingContracts} contract{feedingContracts === 1 ? '' : 's'} feeding
                 </span>
                 <span className="side-b">{sideB ? sideB.name : front.sideB}</span>
               </div>

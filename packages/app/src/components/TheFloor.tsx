@@ -25,6 +25,9 @@ function OrderRow({
   const product = getProduct(order.productId)
   const buyer = state.factions[order.buyerId]
   const turnsLeft = order.expiresTurn - state.meta.turn
+  // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "en order utan frontId ska
+  // inte krascha vyn" — SCRIPTED-ordrar och krisköp har frontId: null.
+  const frontLabel = order.frontId ?? 'No front'
 
   return (
     <div className="order">
@@ -38,6 +41,7 @@ function OrderRow({
 
         <span className="order-meta">
           <span className="meter-label">Stated budget {formatMoney(order.statedBudget)}</span>
+          <Tag>{frontLabel}</Tag>
           <Tag tone={turnsLeft <= 0 ? 'red' : 'neutral'}>
             {turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`}
           </Tag>
@@ -109,6 +113,7 @@ export function TheFloor({
                 <th>Contract</th>
                 <th>Buyer</th>
                 <th>Product</th>
+                <th>Front</th>
                 <th>Delivered</th>
                 <th>Deadline</th>
                 <th>Status</th>
@@ -122,6 +127,7 @@ export function TheFloor({
                     <td className="is-key">{contract.id}</td>
                     <td>{buyer ? buyer.name : contract.buyerId}</td>
                     <td>{getProduct(contract.productId).name}</td>
+                    <td>{contract.frontId ?? '—'}</td>
                     <td>
                       {contract.unitsDelivered}/{contract.quantity}
                     </td>
