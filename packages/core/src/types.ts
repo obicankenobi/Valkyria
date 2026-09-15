@@ -285,6 +285,11 @@ export interface Faction {
   // ("treasury < 0 i två turer", "publicSupport < 25 i tre turer").
   negativeTreasuryTurns: number
   lowSupportTurns: number
+  // P44 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1). Skrivs av
+  // attrition.ts (+= denna faktions sidas förlorade materiel), orders.ts
+  // (−= utlyst kvantitet, P45) och factions.ts (+= peacetimeReplacement,
+  // klampat till needCeiling) — av ingen annan.
+  materielNeed: Record<TechCategory, number>
 }
 
 export interface Theatre {

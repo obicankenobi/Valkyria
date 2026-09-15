@@ -226,6 +226,7 @@ function buildFactions(scenario: ScenarioFile): Record<FactionId, Faction> {
       bankrupt: false,
       negativeTreasuryTurns: 0,
       lowSupportTurns: 0,
+      materielNeed: uniformCategoryRecord(0),
     }
   }
   return factions

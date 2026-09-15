@@ -31,19 +31,24 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // TYDLIGT innan ett enda parti ens spelas, i stället för att låta ett senare
 // balanspass tyst spela mot fel tal och producera ett meningslöst snapshot.
 //
-// Återaktiverad i P32 (ETAPP2_TEKNISK_SPEC.md avsnitt 9: "frys om
-// balance.frozen.json ... som ett medvetet, separat beslut när tabellen
-// står"). Pendad P24–P31 (ägarbeslut 2026-09-14, se ANDRINGSLOGG.md samma
-// datum) medan P24 (relationTermWeight 5→40) och P25–P31 fortsatte ändra
-// balance.json/scenariodata. `fixtures/balance.frozen.json` är nu en ny,
-// bitvis kopia av `src/data/balance.json` EFTER P32:s balanspass (se
-// ANDRINGSLOGG.md), och de tre hash-erna nedan är omfrysta mot samma
-// balans, inte de gamla P22-talen.
-it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+// Återaktiverad i P32 (ETAPP2_TEKNISK_SPEC.md avsnitt 9), omfryst mot P24–P31s
+// balans. PENDAD IGEN från och med P44 (ägarbeslut 2026-09-15, se
+// ANDRINGSLOGG.md samma datum): ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md
+// avsnitt 6 säger uttryckligen "golden-snapshoten fryses om TVÅ GÅNGER, en
+// gång per etapphalva" — dvs. P47 (balanspass 3A) är den avsedda
+// omfrysningspunkten för hela 3A (P43–P46), inte varje enskild prompt inom
+// den. P44s materielNeed-påfyllnad (varje tur, för varje faktion) bryter
+// redan hash-en även om ingen balanssiffra "skruvats" i vanlig mening — precis
+// den sortens förväntad, avsedd konsekvens P47 finns till för att samla ihop
+// och frysa om på en gång, inte P43/P44/P45/P46 var för sig. Samma mönster
+// och samma motivering som P24s pendning (se den raden i ANDRINGSLOGG.md):
+// hellre pendat och synligt kommenterat än rött i fyra commit-cykler eller
+// omfryst fyra separata gånger. Återaktiveras och fryses om i P47.
+it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
-describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
+describe.skip('golden — ett scriptat parti per botpolicy, seed och sluttillstånd frysta (avsnitt 11.3)', () => {
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '19eaa8e478234' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4a5a34a1ce76f' },

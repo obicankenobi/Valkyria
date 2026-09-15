@@ -208,3 +208,48 @@ describe('factions — militaryBudget-påfyllnad (ETAPP1_5_TEKNISK_SPEC.md avsni
     expect(faction.militaryBudget).toBe(before)
   })
 })
+
+describe('factions — materielNeed peacetidspåfyllnad (P44 klart-når, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1)', () => {
+  it('fredstidspåfyllningen ensam når orderTriggerThreshold för infantry inom 5 turer, utan strid', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    // Ingen attrition inblandad — bara factions.ts:s egen peacetimeReplacement.
+    // peacetimeReplacement.infantry (12) × 5 = 60 = orderTriggerThreshold.infantry.
+
+    for (let turn = 0; turn < 5; turn++) {
+      factions(makeCtx(state, `peacetime-seed-${turn}`).ctx)
+    }
+
+    expect(faction.materielNeed.infantry).toBeGreaterThanOrEqual(balance.orderTriggerThreshold.infantry)
+  })
+
+  it('materielNeed klampas till högst needCeiling', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.materielNeed.infantry = balance.needCeiling - 5 // 5 kvar till taket, påfyllnaden (12) skulle annars gå över
+
+    factions(makeCtx(state, 'peacetime-ceiling-seed').ctx)
+
+    expect(faction.materielNeed.infantry).toBe(balance.needCeiling)
+  })
+
+  it('en bankrutt faktion får ingen materielNeed-påfyllnad', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const faction = state.factions['rvn']!
+    faction.bankrupt = true
+    const before = { ...faction.materielNeed }
+
+    factions(makeCtx(state, 'peacetime-bankrupt-seed').ctx)
+
+    expect(faction.materielNeed).toEqual(before)
+  })
+
+  it('emittar en ticker när behovet faktiskt växer (CLAUDE.md hård regel 4)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const { ctx, emitted } = makeCtx(state, 'peacetime-emit-seed')
+
+    factions(ctx)
+
+    expect(emitted.some((e) => e.headline.includes('MATERIEL NEED GROWS'))).toBe(true)
+  })
+})

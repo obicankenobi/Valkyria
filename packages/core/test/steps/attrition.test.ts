@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { attrition } from '../../src/resolve/steps/attrition.js'
 import { fronts } from '../../src/resolve/steps/fronts.js'
+import { factions } from '../../src/resolve/steps/factions.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
+import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
 
@@ -115,5 +117,32 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
 
     expect(front1.equipment.a.infantry).toBeLessThan(500) // front-1 hade strid
     expect(state.fronts['front-2']!.equipment.a.infantry).toBe(0) // front-2 stagnerade
+  })
+
+  describe('materielNeed (P44 klart-när, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1)', () => {
+    it('behovet växer med förlusterna och överstiger aldrig needCeiling', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      // Extremt övertag åt A — garanterar tunga, upprepade förluster för B
+      // (front.sideB) varje tur, över tillräckligt många turer för att
+      // materielNeed ska hinna nå taket om det INTE klampades.
+      front.equipment.a = { infantry: 2000, artillery: 2000, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 }
+      front.equipment.b = { infantry: 2000, artillery: 50, armour: 2000, aviation: 2000, naval: 2000, electronics: 2000 }
+      const sideBFaction = state.factions[front.sideB]!
+
+      for (let turn = 0; turn < 40; turn++) {
+        const { ctx } = makeCtx(state, `materiel-need-seed-${turn}`)
+        fronts(ctx)
+        attrition(ctx)
+        factions(ctx) // klampar mot needCeiling i samma tur, se factions.ts
+
+        for (const category of Object.keys(sideBFaction.materielNeed) as (keyof typeof sideBFaction.materielNeed)[]) {
+          expect(sideBFaction.materielNeed[category]).toBeLessThanOrEqual(balance.needCeiling)
+        }
+      }
+
+      expect(sideBFaction.materielNeed.infantry).toBeGreaterThan(0)
+      expect(sideBFaction.materielNeed.infantry).toBe(balance.needCeiling) // 40 tunga stridsturer räcker gott för att nå taket
+    })
   })
 })

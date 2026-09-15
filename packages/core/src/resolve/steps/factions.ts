@@ -18,7 +18,7 @@
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type { Faction, GameState } from '../../types.js'
+import type { Faction, GameState, TechCategory } from '../../types.js'
 
 interface Balance {
   factionBankruptcyTurns: number
@@ -26,8 +26,12 @@ interface Balance {
   factionLowSupportThreshold: number
   embargoTreasuryDrainPerTurn: number
   militaryBudgetQuarterlyShare: number
+  peacetimeReplacement: Record<TechCategory, number>
+  needCeiling: number
 }
 const BALANCE = balanceData as unknown as Balance
+
+const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
 
 export const factions: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
@@ -36,9 +40,44 @@ export const factions: ResolveStep = (ctx) => {
     if (faction.bankrupt) continue // redan avgjort för den här faktionen
 
     processEconomicDistress(faction, draft, emit)
-    if (!faction.bankrupt) replenishMilitaryBudget(faction, emit)
+    if (!faction.bankrupt) {
+      replenishMilitaryBudget(faction, emit)
+      replenishMaterielNeed(faction, emit)
+    }
     processLowSupport(faction, emit)
   }
+}
+
+// P44 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1): "need[cat] +=
+// peacetimeReplacement[cat]; need[cat] = min(need[cat], needCeiling)" — golvet
+// som håller marknaden vid liv innan attrition.ts någonsin haft en stridstur
+// att förbruka materiel i. Samma "emit bara på faktisk ändring"-mönster som
+// replenishMilitaryBudget ovan (redan i den här filen) — en faktion redan vid
+// taket i alla kategorier ger inget att rapportera.
+function replenishMaterielNeed(faction: Faction, emit: ResolveContext['emit']): void {
+  const delta: Record<string, number> = {}
+  const grown: string[] = []
+
+  for (const category of TECH_CATEGORIES) {
+    const before = faction.materielNeed[category]
+    const next = Math.min(before + BALANCE.peacetimeReplacement[category], BALANCE.needCeiling)
+    if (next === before) continue
+
+    faction.materielNeed[category] = next
+    delta[`materielNeed.${category}`] = next - before
+    grown.push(`${Number((next - before).toFixed(1))} ${category.toUpperCase()}`)
+  }
+  if (grown.length === 0) return
+
+  emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${faction.name.toUpperCase()}'S MATERIEL NEED GROWS: ${grown.join(', ')} (PEACETIME REPLACEMENT)`,
+    causeId: null,
+    delta,
+    actorIsPlayer: false,
+    subjectId: faction.id,
+  })
 }
 
 // Avsnitt 7.1.B: militaryBudget är annars en engångstilldelning från

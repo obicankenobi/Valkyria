@@ -169,5 +169,23 @@
     "aviation": 0.30,
     "naval": 0.10,
     "electronics": 0.40
+  },
+  "_p44_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.1 ger peacetimeReplacement, needCeiling(400) och orderTriggerThreshold ordagrant -- specens egna tal. orderTriggerThreshold konsumeras inte förrän P45:s utlysning, men P44:s eget klart när mäter fredstidspåfyllningen mot just detta tal (infantry-tröskeln), så fältet måste finnas redan här.",
+  "peacetimeReplacement": {
+    "infantry": 12,
+    "artillery": 2,
+    "armour": 1,
+    "aviation": 0.3,
+    "naval": 0.2,
+    "electronics": 1
+  },
+  "needCeiling": 400,
+  "orderTriggerThreshold": {
+    "infantry": 60,
+    "artillery": 12,
+    "armour": 8,
+    "aviation": 2,
+    "naval": 2,
+    "electronics": 6
   }
 }

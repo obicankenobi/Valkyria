@@ -52,6 +52,8 @@ export const attrition: ResolveStep = (ctx) => {
 
     for (const side of ['a', 'b'] as const) {
       const attritionPct = intensity * BALANCE.equipmentAttritionCoupling * (side === loser ? BALANCE.attritionLoserMultiplier : 1)
+      const factionId = side === 'a' ? front.sideA : front.sideB
+      const faction = draft.factions[factionId]
 
       const destroyedByCategory: Partial<Record<TechCategory, number>> = {}
       let totalDestroyed = 0
@@ -63,11 +65,17 @@ export const attrition: ResolveStep = (ctx) => {
         front.equipment[side][category] = Math.max(0, before - destroyed)
         destroyedByCategory[category] = destroyed
         totalDestroyed += destroyed
+        // P44 (avsnitt 4.1): "fronts.ts (efter förslitning) need[cat] +=
+        // destroyed(denna faktions sida, cat)" — den kod som faktiskt
+        // beräknar `destroyed` är attrition.ts (P43 bröt ut den till ett eget
+        // steg, se filens huvudkommentar), så det är här ackumuleringen hör
+        // hemma, inte i fronts.ts. Ordagrant på formelnivå — bara filnamnet i
+        // specens prosa är efter P43 inaktuellt, inte den avsedda platsen i
+        // pipelinen (P44:s eget avsnitt 9-prompt säger redan "attrition.ts").
+        if (faction) faction.materielNeed[category] += destroyed
       }
       if (totalDestroyed === 0) continue // inget faktiskt förlorat — inget att emitta (CLAUDE.md hård regel 4 gäller bara verkliga ändringar)
 
-      const factionId = side === 'a' ? front.sideA : front.sideB
-      const faction = draft.factions[factionId]
       const factionName = faction ? faction.name.toUpperCase() : factionId.toUpperCase()
       const lossText = TECH_CATEGORIES.filter((c) => destroyedByCategory[c] !== undefined)
         .map((c) => `${destroyedByCategory[c]} ${c.toUpperCase()}`)
