@@ -98,7 +98,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
 
     const { emit } = makeEmit()
     for (let turn = 0; turn < 20; turn++) {
-      engagement(front, front.attacker, front.attacker === 'a' ? 'b' : 'a', emit)
+      engagement(state, front, front.attacker, front.attacker === 'a' ? 'b' : 'a', emit)
       invariantHolds(front)
     }
   })
@@ -128,7 +128,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     const strengthBeforeAttacker = strongAttacker.strength
     const strengthBeforeDefender = weakDefender.strength
 
-    engagement(front, 'a', 'b', makeEmit().emit)
+    engagement(state, front, 'a', 'b', makeEmit().emit)
 
     const attackerLoss = strengthBeforeAttacker - strongAttacker.strength
     const defenderLoss = strengthBeforeDefender - weakDefender.strength
@@ -172,7 +172,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     })
     front.formations = [overwhelmingAttacker, nearDeath, untouchedReserve]
 
-    engagement(front, 'a', 'b', makeEmit().emit)
+    engagement(state, front, 'a', 'b', makeEmit().emit)
 
     expect(nearDeath.status).toBe('destroyed')
     expect(nearDeath.strength).toBe(0)
@@ -216,7 +216,7 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     const attackerStrengthBefore = infantryOnlyAttacker.strength
     const defenderStrengthBefore = emptyDefender.strength
 
-    engagement(front, 'a', 'b', makeEmit().emit)
+    engagement(state, front, 'a', 'b', makeEmit().emit)
 
     const attackerLoss = attackerStrengthBefore - infantryOnlyAttacker.strength
     const defenderLoss = defenderStrengthBefore - emptyDefender.strength
@@ -247,17 +247,17 @@ describe('engagement (resolve/engagement.js, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_S
     const { emit } = makeEmit()
 
     // Tur 1: fortfarande mauled (bara EN tur utan strid hittills).
-    engagement(front, 'b', 'a', emit)
+    engagement(state, front, 'b', 'a', emit)
     expect(mauledFormation.status).toBe('mauled')
     expect(mauledFormation.turnsMauled).toBe(1)
 
     // Tur 2: två turer utan strid i rad — övergår till refitting.
-    engagement(front, 'b', 'a', emit)
+    engagement(state, front, 'b', 'a', emit)
     expect(mauledFormation.status).toBe('refitting')
 
     // Ytterligare turer: readiness stiger tills refitThreshold (70) passeras.
     for (let turn = 0; turn < 10 && mauledFormation.status === 'refitting'; turn++) {
-      engagement(front, 'b', 'a', emit)
+      engagement(state, front, 'b', 'a', emit)
     }
     expect(mauledFormation.status).toBe('active')
     expect(mauledFormation.readiness).toBeGreaterThan(70)

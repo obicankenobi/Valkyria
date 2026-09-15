@@ -19,6 +19,7 @@ function buildOrder(state: GameState, overrides: Partial<Order>): Order {
     competingRivals: Object.keys(state.rivals),
     weights: { price: 0.55, delivery: 0.3, relationship: 0.15 },
     inspectorIntegrity: 50,
+    reason: { kind: 'PEACETIME_REPLACEMENT' },
     ...overrides,
   }
 }

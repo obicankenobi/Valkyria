@@ -20,10 +20,15 @@
 // (steps/fronts.ts: `front.supplyStress[defender] - front.supplyStress[attacker]`)
 // — supplyStress är en front-/teaterbred belastning, ingen mekanik ger
 // formationer en egen.
+//
+// P50 (avsnitt 5.4): tar nu emot `draft` för att kunna lägga en
+// FormationReplacementRequest i draft.pendingFormationReplacements när ett
+// förband blir mauled/destroyed — steps/orders.ts (senare i SAMMA turs
+// pipeline) tömmer kön och utlyser namngivna ersättningsordrar.
 import balanceData from '../data/balance.json' with { type: 'json' }
 import { ratioAdvantage } from './steps/fronts.js'
 import type { ResolveContext } from './index.js'
-import type { Formation, Front, TechCategory } from '../types.js'
+import type { Formation, Front, GameState, TechCategory } from '../types.js'
 
 interface Balance {
   categoryCombatWeight: Record<TechCategory, number>
@@ -54,7 +59,13 @@ function byDescendingStrength(a: Formation, b: Formation): number {
   return b.strength - a.strength || a.id.localeCompare(b.id) // deterministisk tie-break, ingen RNG (hård regel 2)
 }
 
-export function engagement(front: Front, attacker: 'a' | 'b', defender: 'a' | 'b', emit: ResolveContext['emit']): void {
+export function engagement(
+  draft: GameState,
+  front: Front,
+  attacker: 'a' | 'b',
+  defender: 'a' | 'b',
+  emit: ResolveContext['emit'],
+): void {
   // Nollställs varje tur (types.ts: "denna tur") innan parning — annars läcker
   // förra turens engagedWith in i den här turens reservberäkning.
   for (const f of front.formations) f.engagedWith = null
@@ -66,7 +77,7 @@ export function engagement(front: Front, attacker: 'a' | 'b', defender: 'a' | 'b
   const pairCount = Math.min(attackerActive.length, defenderActive.length)
 
   for (let i = 0; i < pairCount; i++) {
-    resolvePair(front, attacker, defender, attackerActive[i]!, defenderActive[i]!, emit)
+    resolvePair(draft, front, attacker, defender, attackerActive[i]!, defenderActive[i]!, emit)
   }
 
   // 4) mauled/refitting-övergångar för förband som INTE stred den här turen —
@@ -84,6 +95,7 @@ export function engagement(front: Front, attacker: 'a' | 'b', defender: 'a' | 'b
 }
 
 function resolvePair(
+  draft: GameState,
   front: Front,
   attackerSide: 'a' | 'b',
   defenderSide: 'a' | 'b',
@@ -116,14 +128,21 @@ function resolvePair(
     subjectId: front.id,
   })
 
-  applyLosses(attackerFormation, attackerLossPct, engagementId, emit)
-  applyLosses(defenderFormation, defenderLossPct, engagementId, emit)
+  applyLosses(draft, attackerFormation, attackerLossPct, engagementId, emit)
+  applyLosses(draft, defenderFormation, defenderLossPct, engagementId, emit)
 }
 
 // Avsnitt 5.3, punkt 3/4, ordagrant (utom statusövergångarna, som punkt 4 ger i
 // prosa, inte formel).
-function applyLosses(f: Formation, lossPct: number, causeId: string, emit: ResolveContext['emit']): void {
+function applyLosses(draft: GameState, f: Formation, lossPct: number, causeId: string, emit: ResolveContext['emit']): void {
   const readinessBefore = f.readiness
+  // P50 (avsnitt 5.4): en snapshot av innehavet FÖRE den här förlustomgången —
+  // "destroyed" utlyser "hela dess behov" (5.3 punkt 4, ordagrant), dvs. ALLT
+  // som fanns kvar precis innan utplåningen, inte bara den här drabbningens
+  // marginella förlust. "mauled" har ingen sådan fras — där används i stället
+  // den faktiska förlusten denna drabbning (equipmentLossByCategory nedan).
+  const equipmentBeforeLoss = { ...f.equipment }
+  const equipmentLossByCategory: Partial<Record<TechCategory, number>> = {}
 
   f.strength = Math.max(0, f.strength - Math.round(f.strength * (lossPct / 100)))
   for (const category of TECH_CATEGORIES) {
@@ -132,6 +151,7 @@ function applyLosses(f: Formation, lossPct: number, causeId: string, emit: Resol
     const loss = Math.round(before * (lossPct / 100) * BALANCE.categoryVulnerability[category])
     if (loss <= 0) continue
     f.equipment[category] = Math.max(0, before - loss)
+    equipmentLossByCategory[category] = loss
   }
   f.readiness = clamp(f.readiness - lossPct * BALANCE.readinessLossMultiplier, 0, 100)
 
@@ -144,7 +164,7 @@ function applyLosses(f: Formation, lossPct: number, causeId: string, emit: Resol
     for (const category of TECH_CATEGORIES) f.equipment[category] = 0
     f.turnsMauled = 0
 
-    emit({
+    const destroyedId = emit({
       severity: 'headline',
       scope: 'front',
       headline: `${f.name.toUpperCase()} DESTROYED — TAKEN OUT OF THE LINE`,
@@ -153,11 +173,12 @@ function applyLosses(f: Formation, lossPct: number, causeId: string, emit: Resol
       actorIsPlayer: false,
       subjectId: f.frontId,
     })
+    queueReplacements(draft, f, equipmentBeforeLoss, destroyedId, causeId)
   } else if (f.readiness < BALANCE.maulThreshold && f.status !== 'mauled') {
     f.status = 'mauled'
     f.turnsMauled = 0
 
-    emit({
+    const mauledId = emit({
       severity: 'headline',
       scope: 'front',
       headline: `${f.name.toUpperCase()} MAULED — READINESS ${Math.round(readinessBefore)} → ${Math.round(f.readiness)}`,
@@ -165,6 +186,34 @@ function applyLosses(f: Formation, lossPct: number, causeId: string, emit: Resol
       delta: { readiness: f.readiness - readinessBefore },
       actorIsPlayer: false,
       subjectId: f.frontId,
+    })
+    queueReplacements(draft, f, equipmentLossByCategory, mauledId, causeId)
+  }
+}
+
+// P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): "utlyser dess
+// återanskaffningsbehov som en namngiven order" — lägger en begäran per
+// kategori med faktisk förlust i draft.pendingFormationReplacements, konsumerad
+// av steps/orders.ts SENARE I SAMMA TURS pipeline (fronts, som anropar det här,
+// körs före orders — se PIPELINE i resolve/index.ts).
+function queueReplacements(
+  draft: GameState,
+  f: Formation,
+  byCategory: Partial<Record<TechCategory, number>>,
+  statusEventId: string,
+  engagementWireId: string,
+): void {
+  for (const category of TECH_CATEGORIES) {
+    const quantity = byCategory[category] ?? 0
+    if (quantity <= 0) continue
+    draft.pendingFormationReplacements.push({
+      factionId: f.factionId,
+      formationId: f.id,
+      formationName: f.name,
+      category,
+      quantity,
+      statusEventId,
+      engagementWireId,
     })
   }
 }

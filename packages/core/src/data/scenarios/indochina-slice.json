@@ -83,14 +83,14 @@
     "strengthB": 80,
     "terrainBonus": 5,
     "formations": [
-      { "id": "rvn-1st-infantry", "name": "1st Infantry Division", "factionId": "rvn", "side": "a", "sectorId": "hue", "doctrine": "infantry", "strength": 35 },
-      { "id": "rvn-5th-infantry", "name": "5th Infantry Division", "factionId": "rvn", "side": "a", "sectorId": "da-nang", "doctrine": "infantry", "strength": 25 },
-      { "id": "rvn-1st-armoured-cavalry", "name": "1st Armoured Cavalry Regiment", "factionId": "rvn", "side": "a", "sectorId": "an-loc", "doctrine": "armoured", "strength": 20 },
+      { "id": "rvn-1st-infantry", "name": "1st Infantry Division", "factionId": "rvn", "side": "a", "sectorId": "hue", "doctrine": "infantry", "strength": 40 },
+      { "id": "rvn-5th-infantry", "name": "5th Infantry Division", "factionId": "rvn", "side": "a", "sectorId": "da-nang", "doctrine": "infantry", "strength": 30 },
+      { "id": "rvn-1st-armoured-cavalry", "name": "1st Armoured Cavalry Regiment", "factionId": "rvn", "side": "a", "sectorId": "an-loc", "doctrine": "armoured", "strength": 10 },
       { "id": "rvn-18th-artillery", "name": "18th Artillery Group", "factionId": "rvn", "side": "a", "sectorId": "hue", "doctrine": "artillery", "strength": 20 },
-      { "id": "nlf-9th-division", "name": "9th Division", "factionId": "nlf", "side": "b", "sectorId": "cu-chi", "doctrine": "infantry", "strength": 30 },
-      { "id": "nlf-main-force", "name": "Main Force Battalion Group", "factionId": "nlf", "side": "b", "sectorId": "cu-chi", "doctrine": "irregular", "strength": 25 },
-      { "id": "nlf-d1-mechanised", "name": "D-1 Mechanised Regiment", "factionId": "nlf", "side": "b", "sectorId": "da-nang", "doctrine": "mechanised", "strength": 15 },
-      { "id": "nlf-c10-artillery", "name": "C-10 Artillery Battalion", "factionId": "nlf", "side": "b", "sectorId": "an-loc", "doctrine": "artillery", "strength": 10 }
+      { "id": "nlf-9th-division", "name": "9th Division", "factionId": "nlf", "side": "b", "sectorId": "cu-chi", "doctrine": "infantry", "strength": 35 },
+      { "id": "nlf-main-force", "name": "Main Force Battalion Group", "factionId": "nlf", "side": "b", "sectorId": "cu-chi", "doctrine": "irregular", "strength": 30 },
+      { "id": "nlf-d1-mechanised", "name": "D-1 Mechanised Regiment", "factionId": "nlf", "side": "b", "sectorId": "da-nang", "doctrine": "mechanised", "strength": 10 },
+      { "id": "nlf-c10-artillery", "name": "C-10 Artillery Battalion", "factionId": "nlf", "side": "b", "sectorId": "an-loc", "doctrine": "artillery", "strength": 5 }
     ]
   },
   "scriptedEvents": [

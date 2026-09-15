@@ -534,6 +534,23 @@ Mätt läge i högerkolumnen är P47 (efter `39b863a`), 200 partier `balanced`, 
 > knappast något om långsiktig materieltillväxt — radens egentliga syfte. Uppfylld bokstavligt,
 > inte i avsedd mening.
 
+> **P50: "Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`" reviderad, 40 % → 15–20 %,
+> ägaren tillfrågad två gånger.** Samma tekniknivå-lucka som P45:s blockquote ovan
+> (`rvn` techLevel 2, `nlf`/`laos` 1 — bara gevär köpbart av alla tre, artilleri bara av `rvn`,
+> pansar/luftvärn/elektronik/marint av ingen): ett mauled/destroyed förband vars förlust ligger i
+> en spärrad kategori blir `UNMET NEED` i stället för en namngiven order. Första mätningen
+> (P48:s ursprungliga roster, en jämn blandning av doktriner): 12,7 %. Ägaren tillfrågad, valde
+> att göra rostret mer infanteritungt (`indochina-slice.json`s `front.formations` — egen
+> scenariodata, inte specbunden) i stället för att revidera direkt — höjde måttet till 16,9 %,
+> en verklig, kvarhållen förbättring (konverteringsgraden för en FAKTISK mauling/förstöring steg
+> till ~67 %). Kvarstående gap är volym, inte konvertering: `PEACETIME_REPLACEMENT` (69 %) byggs
+> upp betydligt snabbare än förbandsstrid hinner utveckla sig, förstärkt av den redan loggade
+> P47-kaskaden (partier slutar ofta runt tur 10, se `SCENARIO_COMPLETE`-raden nedan) som lämnar
+> för lite tid för upprepad strid. Ägaren tillfrågad en andra gång; valde att behålla
+> rosterfixen och revidera målet i stället för att jaga volymen vidare (skulle kräva att röra
+> `boardTarget` igen, redan avgjort orört i P47) | Uppmätt 16,9 % (n=200, `balanced`) — inom det
+> reviderade intervallet |
+
 | Kriterium | Målvärde | Mätt nu |
 |---|---|---|
 | **Produkter som beställs minst en gång per 100 partier** | **3 av 3 möjliga** (se blockquote ovan) | **3 av 3 (100 %)** |
@@ -544,7 +561,7 @@ Mätt läge i högerkolumnen är P47 (efter `39b863a`), 200 partier `balanced`, 
 | **Ordrar med `weights.delivery > weights.price`** | **8–25 %** | **21,9 %** |
 | Partier där en köpare har `UNMET NEED` minst en tur | 20–60 % | 100 % |
 | **(3B) Förband som blir `mauled` per parti** | **2–6** | — |
-| **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **> 40 %** | — |
+| **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **15–20 % (reviderat, se P50-blockquote)** | **16,9 %** |
 | Invarianten i 5.1 håller över 20 turer | alltid | — |
 | Rivalerna vinner ordrar (`balanced`) | 25–45 % | 68,2 % |
 | `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 0 % (200/200 `BUYOUT`, se P47-blockquote) |

@@ -17,7 +17,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForBuyer, computeReferencePrice, getProduct } from '../../pricing.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
-import type { Faction, FactionId, GameState, Order, Product, RivalId, TechCategory } from '../../types.js'
+import type { Faction, FactionId, GameState, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
 
 interface NeedBalance {
   orderTriggerThreshold: Record<TechCategory, number>
@@ -57,6 +57,7 @@ interface NewOrderParams {
   supplyCostIndex: number
   weights: { price: number; delivery: number; relationship: number }
   rng: import('../../rng.js').Rng
+  reason: OrderReason
 }
 
 function buildOrder(p: NewOrderParams): Order {
@@ -90,6 +91,7 @@ function buildOrder(p: NewOrderParams): Order {
     competingRivals: p.competingRivals,
     weights: p.weights,
     inspectorIntegrity,
+    reason: p.reason,
   }
 }
 
@@ -166,6 +168,7 @@ export const orders: ResolveStep = (ctx) => {
         supplyCostIndex: draft.market.supplyCostIndex,
         weights: weightsForPressure(computePressureForBuyer(draft, scripted.buyerId)),
         rng,
+        reason: { kind: 'SCRIPTED' },
       })
       draft.market.openOrders.push(order)
       emit({
@@ -180,12 +183,133 @@ export const orders: ResolveStep = (ctx) => {
     }
   }
 
-  // 2) Ordinarie generering — behovsdriven (P45, avsnitt 4.2), inte längre ett
-  // tärningskast. Se generateNeedDrivenOrders nedan.
+  // 2) NYTT (P50, avsnitt 5.4): namngivna ersättningsordrar för förband som
+  // blivit mauled/destroyed DEN HÄR TURENS strid — resolve/engagement.ts (kört
+  // inuti steps/fronts.ts, tidigare i SAMMA turs pipeline) har redan fyllt
+  // draft.pendingFormationReplacements.
+  //
+  // Tolkning (spec), motiverad: EGEN budget (maxOrdersPerFactionPerTurn),
+  // separat från steg 3:s anonyma pool, inte delad med den. Avsnitt 5.3 punkt
+  // 4 kallar den här efterfrågan uttryckligen "akut" — en faktion vars förband
+  // just blev mauled har inget VAL att avstå, till skillnad från anonym
+  // fredstidspåfyllning. En delad pool lät den anonyma grenen (eller flera
+  // samtidiga mauled-händelser i SAMMA tur, vanligt eftersom en illa gynnad
+  // tur ofta skadar flera förband på samma sida på en gång) konkurrera bort
+  // "akuta" ersättningar — uppmätt (härnessen, n=200): tre samtidiga mauled-
+  // händelser för samma faktion, bara två resulterade i en order, den tredje
+  // föll bort tyst på den DELADE budgeten. Se docs/ANDRINGSLOGG.md.
+  const namedOrdersIssuedThisTurn: Record<FactionId, number> = {}
+  for (const request of draft.pendingFormationReplacements) {
+    const faction = draft.factions[request.factionId]
+    if (!faction || faction.bankrupt || faction.embargoed) continue
+
+    const issued = namedOrdersIssuedThisTurn[request.factionId] ?? 0
+    if (issued >= NEED_BALANCE.maxOrdersPerFactionPerTurn) continue
+
+    const heat = computeHeatForBuyer(draft, request.factionId)
+    const weights = weightsForPressure(computePressureForBuyer(draft, request.factionId))
+    const issuedOrder = tryIssueOrder(ctx, request.factionId, faction, request.category, request.quantity, heat, weights, nextId, {
+      kind: 'REPLACE_FORMATION_LOSSES',
+      formationId: request.formationId,
+      formationName: request.formationName,
+      engagementWireId: request.engagementWireId,
+    })
+    if (!issuedOrder) continue
+
+    namedOrdersIssuedThisTurn[request.factionId] = issued + 1
+    emit({
+      severity: 'headline',
+      scope: 'market',
+      headline: `${faction.name.toUpperCase()} SEEKS ${issuedOrder.product.name.toUpperCase()} × ${issuedOrder.quantity} — REPLACING ${request.formationName.toUpperCase()}'S LOSSES`,
+      causeId: request.statusEventId,
+      delta: { referencePrice: issuedOrder.order.referencePrice },
+      actorIsPlayer: false,
+      subjectId: request.factionId,
+    })
+  }
+  // Konsumerad denna tur, oavsett utfall (UNMET NEED/CANNOT AFFORD droppar den
+  // — samma "inget omförsök samma tur"-princip som steg 3:s anonyma gren).
+  draft.pendingFormationReplacements = []
+
+  // 3) Ordinarie generering — behovsdriven (P45, avsnitt 4.2), inte längre ett
+  // tärningskast. Egen budget, se steg 2:s motivering ovan. Se
+  // generateNeedDrivenOrders nedan.
   for (const [factionId, faction] of Object.entries(draft.factions)) {
     if (faction.bankrupt || faction.embargoed) continue
-    generateNeedDrivenOrders(ctx, factionId, faction, allRivalIds, nextId)
+    generateNeedDrivenOrders(ctx, factionId, faction, nextId)
   }
+}
+
+// Delad av steg 2 (namngiven) och generateNeedDrivenOrders (anonym): väljer
+// produkt, klampar kvantitet mot produktens min/max, prutar mot militaryBudget
+// i 25 %-steg (avsnitt 7.1.C/4.2), och bygger ordern om den går att få under
+// budget. Emittar UNMET NEED/CANNOT AFFORD och returnerar null annars —
+// anropspunkten avgör sin egen "SEEKS"-rubrik (de två grenarna har olika text).
+function tryIssueOrder(
+  ctx: ResolveContext,
+  factionId: FactionId,
+  faction: Faction,
+  category: TechCategory,
+  rawQuantity: number,
+  heat: number,
+  weights: { price: number; delivery: number; relationship: number },
+  nextId: () => string,
+  reason: OrderReason,
+): { order: Order; product: Product; quantity: number } | null {
+  const { draft, rng, emit } = ctx
+
+  const product = bestEligibleProduct(category, faction)
+  if (!product) {
+    emit({
+      severity: 'ticker',
+      scope: 'market',
+      headline: `${faction.name.toUpperCase()}: UNMET NEED FOR ${category.toUpperCase()}`,
+      causeId: null,
+      delta: {},
+      actorIsPlayer: false,
+      subjectId: factionId,
+    })
+    return null
+  }
+
+  const quantityMin = product.orderQuantityMin ?? BALANCE.orderQuantityMin
+  const quantityMax = product.orderQuantityMax ?? BALANCE.orderQuantityMax
+  let quantity = clampQuantity(Math.round(rawQuantity), quantityMin, quantityMax)
+  let referencePrice = computeReferencePrice(product, quantity, heat, draft.market.supplyCostIndex)
+
+  while (referencePrice > faction.militaryBudget && quantity > quantityMin) {
+    quantity = Math.floor(quantity * 0.75)
+    referencePrice = computeReferencePrice(product, quantity, heat, draft.market.supplyCostIndex)
+  }
+  if (referencePrice > faction.militaryBudget) {
+    emit({
+      severity: 'ticker',
+      scope: 'market',
+      headline: `${faction.name.toUpperCase()} CANNOT AFFORD ${product.name.toUpperCase()} — NEED FOR ${category.toUpperCase()} GOES UNMET`,
+      causeId: null,
+      delta: {},
+      actorIsPlayer: false,
+      subjectId: factionId,
+    })
+    return null
+  }
+
+  const order = buildOrder({
+    id: nextId(),
+    buyerId: factionId,
+    product,
+    quantity,
+    requiredDeliveryTurns: product.minDelivery + BALANCE.orderDeliverySlackTurns,
+    currentTurn: draft.meta.turn,
+    competingRivals: Object.keys(draft.rivals),
+    heat,
+    supplyCostIndex: draft.market.supplyCostIndex,
+    weights,
+    rng,
+    reason,
+  })
+  draft.market.openOrders.push(order)
+  return { order, product, quantity }
 }
 
 // Bästa produkt i en kategori en faktion får beställa: icke-restricted, och
@@ -210,77 +334,26 @@ function bestEligibleProduct(category: TechCategory, faction: Faction): Product 
 // annars utlyser faktionen samma behov om och om igen innan någon hunnit
 // leverera). Högst NEED_BALANCE.maxOrdersPerFactionPerTurn ordrar per faktion
 // och tur — därefter är resten av kategorierna moot, så loopen avbryts helt.
-function generateNeedDrivenOrders(
-  ctx: ResolveContext,
-  factionId: FactionId,
-  faction: Faction,
-  allRivalIds: RivalId[],
-  nextId: () => string,
-): void {
-  const { draft, rng, emit } = ctx
+function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, faction: Faction, nextId: () => string): void {
+  const { draft, emit } = ctx
   const categoriesByFallingNeed = [...TECH_CATEGORIES].sort(
     (a, b) => faction.materielNeed[b] - faction.materielNeed[a],
   )
   const heat = computeHeatForBuyer(draft, factionId)
   const weights = weightsForPressure(computePressureForBuyer(draft, factionId))
 
+  // Egen budget (maxOrdersPerFactionPerTurn), separat från steg 2:s namngivna
+  // ersättningsordrar — se steg 2:s motivering (P50, avsnitt 5.4).
   let ordersIssued = 0
   for (const category of categoriesByFallingNeed) {
     if (ordersIssued >= NEED_BALANCE.maxOrdersPerFactionPerTurn) break
     if (faction.materielNeed[category] < NEED_BALANCE.orderTriggerThreshold[category]) continue
 
-    const product = bestEligibleProduct(category, faction)
-    if (!product) {
-      emit({
-        severity: 'ticker',
-        scope: 'market',
-        headline: `${faction.name.toUpperCase()}: UNMET NEED FOR ${category.toUpperCase()}`,
-        causeId: null,
-        delta: {},
-        actorIsPlayer: false,
-        subjectId: factionId,
-      })
-      continue
-    }
-
-    const quantityMin = product.orderQuantityMin ?? BALANCE.orderQuantityMin
-    const quantityMax = product.orderQuantityMax ?? BALANCE.orderQuantityMax
-    let quantity = clampQuantity(Math.round(faction.materielNeed[category]), quantityMin, quantityMax)
-    let referencePrice = computeReferencePrice(product, quantity, heat, draft.market.supplyCostIndex)
-
-    // Avsnitt 7.1.C/4.2: militaryBudget är en verklig gräns — pruta kvantiteten
-    // ner i 25 %-steg innan ordern ges upp helt.
-    while (referencePrice > faction.militaryBudget && quantity > quantityMin) {
-      quantity = Math.floor(quantity * 0.75)
-      referencePrice = computeReferencePrice(product, quantity, heat, draft.market.supplyCostIndex)
-    }
-    if (referencePrice > faction.militaryBudget) {
-      emit({
-        severity: 'ticker',
-        scope: 'market',
-        headline: `${faction.name.toUpperCase()} CANNOT AFFORD ${product.name.toUpperCase()} — NEED FOR ${category.toUpperCase()} GOES UNMET`,
-        causeId: null,
-        delta: {},
-        actorIsPlayer: false,
-        subjectId: factionId,
-      })
-      continue
-    }
-
-    const order = buildOrder({
-      id: nextId(),
-      buyerId: factionId,
-      product,
-      quantity,
-      requiredDeliveryTurns: product.minDelivery + BALANCE.orderDeliverySlackTurns,
-      currentTurn: draft.meta.turn,
-      competingRivals: allRivalIds,
-      heat,
-      supplyCostIndex: draft.market.supplyCostIndex,
-      weights,
-      rng,
+    const issuedOrder = tryIssueOrder(ctx, factionId, faction, category, faction.materielNeed[category], heat, weights, nextId, {
+      kind: 'PEACETIME_REPLACEMENT',
     })
-    draft.market.openOrders.push(order)
+    if (!issuedOrder) continue
+
     // Golvat vid 0 (samma symmetri som needCeiling golvar taket) — se
     // ANDRINGSLOGG.md: en bokstavlig `need[c] -= quantity` driver need långt
     // negativt varje gång quantityMin > orderTriggerThreshold (m1_rifle: min
@@ -289,15 +362,18 @@ function generateNeedDrivenOrders(
     // beställer aldrig fler. Utan golvet uppfylls inte P45:s eget klart när
     // ("minst 6 av 7 produkter beställda över 100 partier"), uppmätt 2/7.
     const needBefore = faction.materielNeed[category]
-    faction.materielNeed[category] = Math.max(0, needBefore - quantity)
+    faction.materielNeed[category] = Math.max(0, needBefore - issuedOrder.quantity)
     ordersIssued++
 
     emit({
       severity: 'report',
       scope: 'market',
-      headline: `${faction.name.toUpperCase()} SEEKS ${product.name.toUpperCase()} × ${quantity}`,
+      headline: `${faction.name.toUpperCase()} SEEKS ${issuedOrder.product.name.toUpperCase()} × ${issuedOrder.quantity}`,
       causeId: null,
-      delta: { referencePrice: order.referencePrice, [`materielNeed.${category}`]: faction.materielNeed[category] - needBefore },
+      delta: {
+        referencePrice: issuedOrder.order.referencePrice,
+        [`materielNeed.${category}`]: faction.materielNeed[category] - needBefore,
+      },
       actorIsPlayer: false,
       subjectId: factionId,
     })

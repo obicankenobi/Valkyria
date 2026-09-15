@@ -49,9 +49,13 @@ describe('wire-chains invariant', () => {
     // den naturliga wire-volymen per tur rejält — en faktion cyklar nu genom
     // utlys→förbruka→fyll på→utlys igen om och om under ett 20-tursparti (378
     // uppmätt här), i stället för den gamla slumpmässiga, sällsynta genereringen.
-    // Fortfarande "långt under vad 20 obeskurna turer hade gett", bara en ny,
-    // betydligt högre baslinje.
-    expect(state.wire.length).toBeLessThan(450)
+    // Höjt igen 450→600 i P50: engagement.ts (P49) och den namngivna
+    // ersättningskedjan (P50, avsnitt 5.4 — varje mauled/destroyed lägger minst
+    // två nya händelser, ofta tre med en lyckad ersättningsorder) höjer volymen
+    // ytterligare (491 uppmätt med den här exakta seeden). Fortfarande "långt
+    // under vad 20 obeskurna turer hade gett", bara en ny, betydligt högre
+    // baslinje.
+    expect(state.wire.length).toBeLessThan(600)
   })
 
   it('en syntetisk historik som spänner över långt fler än 8 turer, med grenande orsakskedjor: pruneWire lämnar aldrig en hängande referens', () => {

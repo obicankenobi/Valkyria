@@ -62,6 +62,13 @@ export interface GameState {
     // annulleras") ett tal att annullera utan en hel ny per-tur-array på House.
     restrictedRevenueThisTurn: Money
   }
+  // P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): nödvändig
+  // transportkanal, samma mönster som pendingCrisis nedan — resolve/engagement.ts
+  // (körs inuti steps/fronts.ts) fyller på den när ett förband blir mauled/
+  // destroyed, steps/orders.ts (senare i SAMMA turs pipeline) tömmer den och
+  // utlyser namngivna ersättningsordrar. Specen ger inget eget fältnamn för den
+  // här kön — bara Order.reason:s form (avsnitt 5.4:s egen jsonc-block).
+  pendingFormationReplacements: FormationReplacementRequest[]
   doomsday: Pct
   doomsdayPeak: Pct // för RESTRAINT i epilogen
   // ETAPP1_5_TEKNISK_SPEC.md avsnitt 9.2/9.3 — satt av doomsday.ts när doomsday
@@ -231,7 +238,14 @@ export interface Order {
     relationship: number
   }
   inspectorIntegrity: Pct // dold, avgör mutans effekt
+  reason: OrderReason
 }
+
+// P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4), ordagrant.
+export type OrderReason =
+  | { kind: 'REPLACE_FORMATION_LOSSES'; formationId: string; formationName: string; engagementWireId: string }
+  | { kind: 'PEACETIME_REPLACEMENT' }
+  | { kind: 'SCRIPTED' }
 
 export interface Bid {
   orderId: string
@@ -381,6 +395,22 @@ export interface Formation {
   // VAR mauled före den här turen (ett förband som precis BLEV mauled har per
   // definition just stridit, se resolve/engagement.ts).
   turnsMauled: number
+}
+
+// P50 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4): en väntande
+// begäran, skriven av resolve/engagement.ts när ett förband blir mauled/
+// destroyed, konsumerad av steps/orders.ts SAMMA tur. statusEventId är den
+// mauled/destroyed-händelsens EGNA id (Order.causeId kedjar hit — nästa led,
+// tre led totalt); engagementWireId är själva drabbningens id (Order.reason:s
+// egen referens, "kedjan bakåt till striden").
+export interface FormationReplacementRequest {
+  factionId: FactionId
+  formationId: string
+  formationName: string
+  category: TechCategory
+  quantity: number
+  statusEventId: string
+  engagementWireId: string
 }
 
 export interface RivalHouse {

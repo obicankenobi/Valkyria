@@ -348,6 +348,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
       supplyCostIndex: 100,
       restrictedRevenueThisTurn: 0,
     },
+    pendingFormationReplacements: [],
     doomsday: 0,
     doomsdayPeak: 0,
     wire: [],

@@ -91,7 +91,7 @@ export const fronts: ResolveStep = (ctx) => {
     // ordagrant) — engagement() skriver om front.equipment/front.strength ur
     // formationerna (steg 5, invarianten i 5.1), och resolveFront nedan räknar
     // sedan vidare på de UPPDATERADE aggregaten, samma tur.
-    engagement(front, attacker, defender, emit)
+    engagement(draft, front, attacker, defender, emit)
 
     resolveFront(front, attacker, defender, draft.factions, emit)
   }

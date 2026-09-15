@@ -32,6 +32,7 @@ function makeOrder(state: GameState): Order {
     competingRivals: [],
     weights: DISTINCTIVE_WEIGHTS,
     inspectorIntegrity: 50,
+    reason: { kind: 'PEACETIME_REPLACEMENT' },
   }
 }
 
