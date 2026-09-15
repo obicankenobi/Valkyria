@@ -13,9 +13,20 @@ datum.** Den ersätter `orderGenerationChancePct`s tärningsdrivna ordergenereri
 behovsdriven modell kopplad till materielförluster på fronten, i två halvor: 3A (förbrukning,
 P33–P37) och 3B (namngivna förband, `Formation`, P38–P42). Se specens egna avsnitt 0–1 för de
 fyra mätta fynd den bygger på, och avsnitt 8:s måltabell/blockquotes för balanspassens fulla
-facit (P37 för 3A, P42 för 3B). Ingen aktiv spec finns ännu för det som kommer härnäst —
-avsnitt 10:s "vad som lämnas till etapp 4" är en lista över avsiktligt uteslutet innehåll,
-inte en skriven spec. Etapp 1, 1,5 och 2 lämnas stående som historik. **Känd lucka, upptäckt
+facit (P37 för 3A, P42 för 3B). Etapp 4, "Två krig, en kassabok",
+`docs/ETAPP4_TEKNISK_SPEC.md` (P43–P52, antagen som ägarbeslut 2026-09-15, validerad mot
+commit `42bb924`) är den **aktiva** specen — ingen prompt körd än. Den bygger vidare på 3B:s
+förband i två oberoende halvor: 4A (en andra front, ny teater `LAOS`, P43–P47) och 4B
+(råvarumarknaden — fem spor i stället för en enda `supplyCostIndex`-siffra, P48–P52). Se
+specens avsnitt 1 för de fem premisskontrollerade fynd den bygger på (bl.a. att
+`computePressureForFront` har samma "tar första matchande front"-brist som `deliveries.ts`s
+`findFrontForBuyer` redan hade, och att `supplyCostIndex` kan bli ett härlett aggregat av de
+fem råvarorna utan att röra `computeReferencePrice`). Avsnitt 10 protokollför de tre besluten
+som togs vid antagandet: `DESIGN.md` avsnitt 16 uppdateras i samma commit som P45 (den raden
+beskriver `INDOCHINA_SLICE` som enfronts, vilket P45 upphäver); `boardTarget`/`BUYOUT`-
+kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som en mätbar rad i
+P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
+Etapp 1, 1,5, 2 och 3 lämnas stående som historik. **Känd lucka, upptäckt
 vid antagandet (se `docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3
 (etapp 3B) refererade upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`,
 `MovementArrow`, `sectorId` och ett INTEL-lager som om de redan fanns — sökt igenom hela repot,

@@ -1,13 +1,16 @@
-# THE SEVENTH FRONT — Teknisk spec, etapp 4: TVÅ KRIG, EN VERKSTAD
+# THE SEVENTH FRONT — Teknisk spec, etapp 4: TVÅ KRIG, EN KASSABOK
 
-**Version 1.0 — förslag, ej antagen.** Validerad mot `obicankenobi/Valkyria` commit **`34c7fae`**.
+**Version 1.0 — antagen (ägarbeslut 2026-09-15).** Validerad mot `obicankenobi/Valkyria` commit
+`42bb924` (förslaget). Tre öppna punkter avgjorda vid antagandet, samma datum: avsnitt 10:s
+DESIGN.md-koppling och `boardTarget`-hanteringen godkända som föreslaget; namnet satt till "Två
+krig, en kassabok" (var "Två krig, en verkstad" i förslaget). Se avsnitt 10 och
+`docs/ANDRINGSLOGG.md` för hela beslutet. Övrigt innehåll oförändrat mot förslaget.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
 
-Specen ska vara **fryst under P43–P52** när den antagits. Den får ändras mellan promptar om en
-byggd sanning visar sig strida mot den, men aldrig av en kodsession på eget initiativ. Se
-`CLAUDE.md`.
+Specen är **fryst under P43–P52**. Den får ändras mellan promptar om en byggd sanning visar sig
+strida mot den, men aldrig av en kodsession på eget initiativ. Se `CLAUDE.md`.
 
 > **Numrering:** etapp 3 omnumrerades P43–P52 → P33–P42 (`34c7fae`, se `docs/ANDRINGSLOGG.md`)
 > för att stänga det glapp som fanns efter P32. Etapp 4 är därför P43–P52, direkt efter P42.
@@ -462,16 +465,24 @@ spelarens interaktion med människor, inte med marknader.
 
 ---
 
-## 10. Beslut som krävs innan antagande
+## 10. Beslut vid antagandet (2026-09-15)
+
+Tre punkter var öppna i förslaget. Alla tre avgjorda av ägaren samma dag specen antogs.
 
 1. **`DESIGN.md` avsnitt 16:s rad om `INDOCHINA_SLICE`** beskriver skivan som enfronts och
-   reserverar två fronter åt fulla `INDOCHINA`. P45 motsäger den. Förslaget: uppdatera raden i
-   samma commit, med loggrad. Alternativet är att skivan förblir enfronts och att den andra
-   fronten bara finns i en testfixtur — vilket gör balanspasset i P47 meningslöst.
+   reserverar två fronter åt fulla `INDOCHINA`. P45 motsäger den. **Avgjort: uppdatera raden i
+   samma commit som P45, med loggrad** — inte kvarlämnad som en tyst motsägelse, och inte en
+   andra front som bara finns i en testfixtur. Detta ligger redan i P45:s eget klart-när
+   (avsnitt 8) — ingen ytterligare ändring krävs av den här specen.
 
-2. **`boardTarget` och `BUYOUT`-kaskaden** lämnas fortsatt orörd i den här specen. Om P47:s
-   mätning visar att andra fronten inte löser den, krävs ett eget ägarbeslut om omkalibrering —
-   det är då tredje gången frågan ställs.
+2. **`boardTarget` och `BUYOUT`-kaskaden. Avgjort: lämnas orörd**, precis som i förslaget.
+   "Löser andra fronten `BUYOUT`-kaskaden?" står kvar som en mätbar rad i avsnitt 7:s
+   måltabell, inte ett antagande. Visar P47:s mätning att den inte gör det krävs ett eget,
+   separat ägarbeslut om omkalibrering av `boardTarget` — det blir då tredje gången frågan
+   ställs (se avsnitt 2).
 
-3. **Namnet `TVÅ KRIG, EN VERKSTAD`** är ett förslag. Etapp 2 heter "Motståndet", etapp 3
-   "Kriget som marknad".
+3. **Namnet.** `TVÅ KRIG, EN VERKSTAD` var förslagets arbetsnamn. **Avgjort: "Två krig, en
+   kassabok"** — samma bild som avsnitt 0 redan bygger på (en verkstad som betjänar två fronter
+   samtidigt), men kassaboken pekar tydligare på var beslutet faktiskt fattas: inte i
+   produktionen utan i vilken kund som får varje enhet. Namnet är genomfört i hela specen från
+   och med denna version.
