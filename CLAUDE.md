@@ -17,7 +17,13 @@ Etapp 1, 1,5 och 2 lämnas stående som historik. **Känd lucka, upptäckt vid a
 upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`, `MovementArrow`, `sectorId` och
 ett INTEL-lager som om de redan finns — sökt igenom hela repot, noll träffar. Blockerar INTE
 P43–P47 (3A rör ingen av dessa), men måste lösas (skriv den saknade specen, eller skriv om
-5.5/skyddsräcke 1&3) innan P51.** Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
+5.5/skyddsräcke 1&3) innan P51.** **Ytterligare känd spänning, upptäckt under P47 (se
+`docs/ANDRINGSLOGG.md`, 2026-09-15): styrelsegranskningens linjära intäktsmål (`board.ts`, P30,
+etapp 2) och P45:s behovsdrivna ordrar går inte längre ihop — 200/200 `balanced`-partier slutar
+i `BUYOUT`, i snitt vid tur ~11. Ägaren tillfrågad två gånger, valde att lämna `boardTarget`
+(`indochina-slice.json`) orört; en riktig fix är en egen omkalibrering, inte gjord här.** Se
+avsnitt 8:s P47-blockquote i `docs/ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md` för hela fyndet.
+Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
 ärver etapp 1,5:s egen bakgrund i `docs/RAPPORT1_GRANSKNING.md` (extern granskning) och
 `docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan). **Läs den promptens avsnitt i den spec som
 gäller innan du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.

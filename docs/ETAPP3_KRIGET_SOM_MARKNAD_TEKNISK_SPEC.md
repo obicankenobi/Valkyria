@@ -488,7 +488,7 @@ sitt syfte.
 
 ## 8. Måltabell
 
-Mätt läge i högerkolumnen är `e650be2`, 200 partier `balanced`.
+Mätt läge i högerkolumnen är P47 (efter `39b863a`), 200 partier `balanced`, om inget annat anges.
 
 > **Rad omprövad under P45, se `docs/ANDRINGSLOGG.md`.** "Produkter som beställs minst en gång
 > per 100 partier" kan strukturellt aldrig nå 6 av 7: fyra av de sju produkterna (armour/
@@ -503,20 +503,51 @@ Mätt läge i högerkolumnen är `e650be2`, 200 partier `balanced`.
 > egen tekniknivåstillväxt — ägaren tillfrågad, valde revision i stället för att bygga den
 > mekaniken i förbigående här.
 
+> **P47: "balanced" slutar nu praktiskt taget alltid i `BUYOUT` — två fetstilta rader kunde
+> därför inte nås inom mandatet ("Ingen kod. ... Skruva bara balance.json"), se
+> `docs/ANDRINGSLOGG.md`.** Styrelsegranskningen (`board.ts`, P30, etapp 2) förutsätter linjär
+> intäkt från tur 0 mot 2× grundkapitalet (8 Mkr) vid tur 20. P45:s behovsdrivna ordrar ger i
+> stället en uppvärmningsperiod (första leverans typiskt tur 4–7) och en total marknadsvolym en
+> storleksordning under det målet — uppmätt medianprogress ~7 % av målet vid tur 20, ett läge som
+> inte förbättras av VILKEN tur granskningen förläggs till (testat separat, se ANDRINGSLOGG).
+> Konsekvens: 200/200 `balanced`-partier slutade i `BUYOUT`, i snitt vid tur ~11. Ägaren
+> tillfrågad två gånger under P47 (en tajmingfix, sedan en större omskalning av `boardTarget`);
+> valde att lämna styrelsemålet OFÖRÄNDRAT — det är ingen av de fem fetstilta raderna, och en
+> riktig fix är en egen omkalibrering, inte en balanspass-justering. Kvarstår som ett öppet,
+> loggat spänningsförhållande mellan P30 och P45 för ett framtida beslut.
+>
+> Två fetstilta rader av samma skäl inte nåbara med bara `balance.json`:
+> - **Andel ordrar som är gevär** (67 %, mål < 45 %): `orderTriggerThreshold`/
+>   `peacetimeReplacement` är specens egna, ordagranna tal (P44:s not i `balance.json`) — inte
+>   provisoriska, alltså inte P47:s att skruva. Roten ligger heller inte där: fyra av sex
+>   kategorier (armour/aviation/naval/electronics) saknar en beställningsbar produkt för de
+>   flesta faktioners tekniknivå (samma orsak som blockquoten ovan) och faller ständigt till
+>   `UNMET NEED` i stället för en order — bara gevär konverterar tillförlitligt behov till en
+>   faktisk utlysning. En riktig fix är fler produkter per kategori eller lägre `techRequired`,
+>   dvs. `products.json`, inte `balance.json`.
+> - **Partier där fronten byter riktning minst en gång** (0 %, mål > 30 %): partierna slutar i
+>   snitt vid tur ~11 — för kort tid för att en leverans ska hinna vända ett övertag. Direkt
+>   nedströms av samma `BUYOUT`-kaskad.
+>
+> **Materiellager hos en sida vid partiets slut < 2× lagret vid tur 10** klarar sig tekniskt
+> (1,05, max 1,15) men trivialt: partiet slutar i snitt bara en tur efter tur 10, så måttet säger
+> knappast något om långsiktig materieltillväxt — radens egentliga syfte. Uppfylld bokstavligt,
+> inte i avsedd mening.
+
 | Kriterium | Målvärde | Mätt nu |
 |---|---|---|
 | **Produkter som beställs minst en gång per 100 partier** | **3 av 3 möjliga** (se blockquote ovan) | **3 av 3 (100 %)** |
-| **Andel ordrar som är gevär** | **< 45 %** | **69 %** |
-| Utlysta ordrar per tur | 1,0–1,8 | 1,18 |
-| **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | monotont växande, obegränsat |
-| **Partier där fronten byter riktning minst en gång** | **> 30 %** | ~0 % (B har median 0 artilleri) |
-| **Ordrar med `weights.delivery > weights.price`** | **8–25 %** | **0 %** |
-| Partier där en köpare har `UNMET NEED` minst en tur | 20–60 % | — (mekaniken finns inte) |
+| **Andel ordrar som är gevär** | **< 45 %** | **67 % — ej uppfyllt, se P47-blockquote** |
+| Utlysta ordrar per tur | 1,0–1,8 | 1,10 |
+| **Materiellager hos en sida vid partiets slut** | **< 2× lagret vid tur 10** | **1,05 (max 1,15) — uppfyllt, men trivialt, se P47-blockquote** |
+| **Partier där fronten byter riktning minst en gång** | **> 30 %** | **0 % — ej uppfyllt, se P47-blockquote** |
+| **Ordrar med `weights.delivery > weights.price`** | **8–25 %** | **21,9 %** |
+| Partier där en köpare har `UNMET NEED` minst en tur | 20–60 % | 100 % |
 | **(3B) Förband som blir `mauled` per parti** | **2–6** | — |
 | **(3B) Ordrar med `reason.kind === 'REPLACE_FORMATION_LOSSES'`** | **> 40 %** | — |
 | Invarianten i 5.1 håller över 20 turer | alltid | — |
-| Rivalerna vinner ordrar (`balanced`) | 25–45 % | 15,0 % |
-| `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 92,1 % |
+| Rivalerna vinner ordrar (`balanced`) | 25–45 % | 68,2 % |
+| `balanced` når `SCENARIO_COMPLETE` | 50–75 % | 0 % (200/200 `BUYOUT`, se P47-blockquote) |
 
 **Måltabellen är hypoteser, inte acceptanskriterier.** Om härnessen envist säger något annat och
 partierna ändå är roliga att spela är det tabellen som ska skrivas om — men som ett medvetet
