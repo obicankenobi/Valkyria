@@ -15,9 +15,13 @@ P33–P37) och 3B (namngivna förband, `Formation`, P38–P42). Se specens egna 
 fyra mätta fynd den bygger på, och avsnitt 8:s måltabell/blockquotes för balanspassens fulla
 facit (P37 för 3A, P42 för 3B). Etapp 4, "Två krig, en kassabok",
 `docs/ETAPP4_TEKNISK_SPEC.md` (P43–P52, antagen som ägarbeslut 2026-09-15, validerad mot
-commit `42bb924`) är den **aktiva** specen — ingen prompt körd än. Den bygger vidare på 3B:s
-förband i två oberoende halvor: 4A (en andra front, ny teater `LAOS`, P43–P47) och 4B
-(råvarumarknaden — fem spor i stället för en enda `supplyCostIndex`-siffra, P48–P52). Se
+commit `42bb924`) är den **aktiva** specen — **4A klar (P43–P47), 4B återstår (P48–P52).** Den
+bygger vidare på 3B:s förband i två oberoende halvor: 4A (en andra front, ny teater `LAOS`,
+P43–P47) och 4B (råvarumarknaden — fem spor i stället för en enda `supplyCostIndex`-siffra,
+P48–P52). P47 (balanspass 4A, 2026-09-15) svarade definitivt nej på "löser andra fronten
+`BUYOUT`-kaskaden?" (`SCENARIO_COMPLETE` 0/200, alla partier slutar på exakt tur 10) — tredje
+gången frågan ställts (P37, P42, P47); ägaren valde tredje gången att åter lämna `boardTarget`
+orört och revidera 4A:s måltabellrader i stället, se specens avsnitt 7. Se
 specens avsnitt 1 för de fem premisskontrollerade fynd den bygger på (bl.a. att
 `computePressureForFront` har samma "tar första matchande front"-brist som `deliveries.ts`s
 `findFrontForBuyer` redan hade, och att `supplyCostIndex` kan bli ett härlett aggregat av de

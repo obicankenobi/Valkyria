@@ -340,19 +340,64 @@ Hypoteser, inte acceptanskriterier. Mäts med härnessen, 200 partier `balanced`
 anges. Om härnessen envist säger något annat och partierna ändå är roliga är det tabellen som
 ska skrivas om — men som ett medvetet beslut med motivering och loggrad.
 
-| Kriterium | Målvärde | Halva |
-|---|---|---|
-| **Andel ordrar som går till front 2** | **25–45 %** | 4A |
-| Ordrar med `frontId` härledd ur `reason` (regel c) | ≥ 15 % | 4A |
-| **Turer där antalet aktiva kontrakt överstiger antalet linjer** (kapacitetstryck) | **30–60 %** | 4A |
-| Partier där båda fronterna byter riktning minst en gång | > 20 % | 4A |
-| `nlf`s `materielNeed` fylls på från båda fronterna | alltid, när båda strider | 4A |
-| **Löser andra fronten `BUYOUT`-kaskaden?** (avsnitt 2) | **`SCENARIO_COMPLETE` > 25 %** | 4A |
-| **Spridning mellan dyraste och billigaste råvaran vid partiets slut** | **kvot > 1,3 i > 60 % av partier** | 4B |
-| Partier där minst två råvaror rör sig åt olika håll samma tur | > 50 % | 4B |
-| Andel partier där `BUY_FORWARD` hade varit lönsam i efterhand | 30–70 % | 4B |
-| `supplyCostIndex` stannar i `[supplyIndexMin, supplyIndexMax]` | alltid | 4B |
-| Invarianten i skyddsräcke 3 håller över 20 turer, båda fronterna | alltid | båda |
+Mätt läge i högerkolumnen (4A-raderna) är P47, n=200 `balanced`, mot `indochina-slice.json` med
+`front-laos` (P43–P46).
+
+> **P47: samma `BUYOUT`-kaskad som redan dokumenterad i `ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md`
+> (P37/P40/P42) — nu bekräftat RIGID, inte bara vanlig.** 200/200 `balanced`-partier slutar i
+> `BUYOUT`, och alla 200 slutar på EXAKT tur 10 (min = max = 10, inte bara ett snitt). Ingen av
+> 4A:s mekaniker hinner alltså utveckla sig innan partiet avgörs — andra fronten byggdes klart,
+> men fick aldrig chansen att visa vad den kan. Diagnostik körd före beslut: andelen ordrar till
+> `front-laos` faller över tid (33 % vid tur 4, ner mot 14 % vid tur 10) snarare än att stiga mot
+> målintervallet — `laos` (militaryBudget 1,2 Mkr mot `rvn`s 6 Mkr) är helt enkelt en mindre
+> ekonomi som genererar färre ordrar, en andra, delvis oberoende orsak till att raden missar sitt
+> mål även bortsett från kaskaden.
+>
+> **Löser andra fronten `BUYOUT`-kaskaden? Nej — definitivt besvarat.**
+> `SCENARIO_COMPLETE` 0/200, identiskt med läget innan P43–P46. Tredje gången frågan ställs
+> (P37, P42, nu P47) — se avsnitt 10, punkt 2 i den här specen. Ägaren tillfrågad en tredje gång:
+> valde att lämna `boardTarget` orört igen och revidera 4A:s rader i stället, samma linje som
+> P37/P42. Kvarstår som samma öppna, loggade spänning — inte löst av den här etappen, inte
+> avsett att lösas av den.
+>
+> Fyra rader av samma skäl inte nåbara med bara `balance.json`/scenariodata på tio turer:
+> - **Andel ordrar som går till front 2** (13,8 %, mål 25–45 %): dels kaskaden, dels `laos`s
+>   mindre ekonomi (ovan). En riktig fix för det andra (höjd `militaryBudget`/`materielNeed`-
+>   parametrar för `laos`) hade snedvridit scenariots redan etablerade ekonomiska förhållanden
+>   utan att röra grundorsaken (kaskaden) — inte gjort här.
+> - **Turer där antalet aktiva kontrakt överstiger antalet linjer** (0 %, mål 30–60 %):
+>   `house.lines.length` är 4; det tar fler än tio turer av ackumulerade kontrakt för att
+>   pressa fyra linjer, särskilt med `laos`s låga ordervolym (ovan) som håller nere den totala
+>   kontraktsmängden.
+> - **Partier där båda fronterna byter riktning minst en gång** (0 %, mål > 20 %): samma
+>   observation som `ETAPP3`s P37-blockquote gjorde för front-1 ensam — för kort tid för att en
+>   leverans ska hinna vända ett övertag, nu sant för BÅDA fronterna samtidigt.
+> - **`nlf`s `materielNeed` fylls på från båda fronterna, alltid när båda strider**: premissen
+>   ("när båda strider") uppfylldes 0/200 gånger i mätningen — `front-laos` hinner sällan se
+>   strid alls innan `BUYOUT`. Det här är INTE samma sak som att raden är falsk: den är
+>   strukturellt garanterad (`Faction.materielNeed` är ett enda, delat fält — se avsnitt 3.4)
+>   och verifierad direkt med ett konstruerat test i P45
+>   (`attrition.test.ts`, "nlf:s materielNeed växer av förluster på BÅDA fronterna"), som ger
+>   BÅDA fronterna strid inom en enda tur i stället för att vänta på att härnessen råkar göra
+>   det. Radens sanning vilar på testet, inte på den här mätningen.
+>
+> Endast raden om `Order.frontId` härlett ur `reason` möttes ograverad: **18,9 %** (mål ≥ 15 %)
+> — `REPLACE_FORMATION_LOSSES`-mekaniken (P40, etapp 3) fortsätter fungera identiskt, opåverkad
+> av kaskaden eftersom den utlöses av strid, inte av tid.
+
+| Kriterium | Målvärde | Halva | Mätt (P47) |
+|---|---|---|---|
+| **Andel ordrar som går till front 2** | **25–45 %** | 4A | **13,8 % — ej uppfyllt, se blockquote** |
+| Ordrar med `frontId` härledd ur `reason` (regel c) | ≥ 15 % | 4A | **18,9 % — uppfyllt** |
+| **Turer där antalet aktiva kontrakt överstiger antalet linjer** (kapacitetstryck) | **30–60 %** | 4A | **0 % — ej uppfyllt, se blockquote** |
+| Partier där båda fronterna byter riktning minst en gång | > 20 % | 4A | **0 % — ej uppfyllt, se blockquote** |
+| `nlf`s `materielNeed` fylls på från båda fronterna | alltid, när båda strider | 4A | **Premiss aldrig uppfylld i mätningen — håller strukturellt, se blockquote och P45-test** |
+| **Löser andra fronten `BUYOUT`-kaskaden?** (avsnitt 2) | **`SCENARIO_COMPLETE` > 25 %** | 4A | **Nej — 0 %, se blockquote** |
+| **Spridning mellan dyraste och billigaste råvaran vid partiets slut** | **kvot > 1,3 i > 60 % av partier** | 4B | — |
+| Partier där minst två råvaror rör sig åt olika håll samma tur | > 50 % | 4B | — |
+| Andel partier där `BUY_FORWARD` hade varit lönsam i efterhand | 30–70 % | 4B | — |
+| `supplyCostIndex` stannar i `[supplyIndexMin, supplyIndexMax]` | alltid | 4B | — |
+| Invarianten i skyddsräcke 3 håller över 20 turer, båda fronterna | alltid | båda | **Ja — se `fronts.test.ts`/`engagement.test.ts` och P45:s eget test** |
 
 ---
 
