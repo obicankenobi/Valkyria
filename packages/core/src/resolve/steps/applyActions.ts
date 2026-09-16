@@ -5,8 +5,10 @@
 // två av tre POLITICAL-op (BRIBE, STAGE_INCIDENT, BACK_CHANNEL — FUND_COUP förblir
 // etapp 2) och en minimal INTEL (EXPAND, RECRUIT, WITHDRAW — LEAK/SABOTAGE/TURN är
 // medvetna no-ops, avvisade med 'not implemented in this stage', avsnitt 8.4).
-// BROKER och MARKET förblir helt obyggda — ingen prompt i avsnitt 10 äger dem i
-// etapp 1,5 — men konsumerar fortfarande en actionPoint, se nedan.
+// BROKER och MARKET förblev helt obyggda i etapp 1,5 — ingen prompt i avsnitt
+// 10 ägde dem där. P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5) bygger MARKET
+// (BUY_FORWARD/RELEASE); BROKER förblir en no-op som konsumerar en
+// actionPoint, se filens slut.
 //
 // P20 bygger CRISIS (avsnitt 9). Till skillnad från alla andra PlayerAction-typer
 // KOSTAR den ingen actionPoint (krisen är inte valfri) och hanteras därför i en
@@ -28,8 +30,10 @@ import { addDoomsday } from '../doomsdayGate.js'
 import { advanceRndQueue, advanceStations } from '../upkeep.js'
 import { resolvePendingCrisis } from '../crisis.js'
 import { round } from '../../money.js'
+import { deriveSupplyCostIndex } from './supply.js'
 import type { ResolveStep } from '../index.js'
 import type {
+  Commodity,
   FactionId,
   GameState,
   Money,
@@ -60,8 +64,18 @@ interface Balance {
   intelExposureMax: number
   maxStations: number
   misattributionExposurePenalty: number
+  commodityIndexWeight: Record<Commodity, number>
+  marketReleaseCommodityImpactPerMoney: number
+  supplyIndexMin: number
+  supplyIndexMax: number
 }
 const BALANCE = balanceData as unknown as Balance
+
+const COMMODITIES: readonly Commodity[] = ['oil', 'steel', 'uranium', 'titanium', 'rare_earths']
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
 
 const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
 const HIRABLE_ROLES = ['chiefEngineer', 'chiefSalesman', 'chiefOfStaff'] as const
@@ -470,7 +484,85 @@ export const applyActions: ResolveStep = (ctx) => {
       continue
     }
 
-    // BROKER, MARKET: se filens huvudkommentar — obyggda i etapp 1,5, men har redan
-    // konsumerat en actionPoint ovan.
+    // P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5): MARKET byggd — hård regel 6
+    // gäller nu här också, ingen tyst-svälj-gren kvar. BROKER förblir helt
+    // obyggd (avsnitt 9), fortfarande en no-op som bara konsumerar en
+    // actionPoint (se testet för det).
+    if (action.type === 'MARKET') {
+      if (!(COMMODITIES as readonly string[]).includes(action.commodity)) {
+        rejected.push({ action, reason: 'unknown commodity' })
+        continue
+      }
+      if (!Number.isFinite(action.spend) || action.spend <= 0) {
+        rejected.push({ action, reason: 'invalid market spend amount' })
+        continue
+      }
+      const spend = round(action.spend)
+      const commodity = action.commodity
+
+      if (action.op === 'BUY_FORWARD') {
+        // Avsnitt 4.5: "köp ett innehav till dagens pris" — bygget läser
+        // innehavet som en pengadenominerad, förköpt subvention (spend kronor
+        // idag = spend kronor rabatt mot FRAMTIDA materialkostnad, se
+        // production.ts), inte en låst kvantitet/pris. 1:1-kursen ÄR
+        // mekaniken, se balance.json:s _p51_note — inget eget balanstal behövs
+        // för BUY_FORWARD.
+        if (spend > house.treasury) {
+          rejected.push({ action, reason: 'insufficient treasury' })
+          continue
+        }
+        house.treasury -= spend
+        house.commodityHoldings[commodity] += spend
+        emit({
+          severity: 'ticker',
+          scope: 'house',
+          headline: `${house.name.toUpperCase()} BUYS ${commodity.toUpperCase()} FORWARD (−£${spend.toLocaleString('en-GB')})`,
+          causeId: null,
+          delta: { treasury: -spend, [`commodityHoldings.${commodity}`]: spend },
+          actorIsPlayer: true,
+          subjectId: null,
+        })
+      } else {
+        // RELEASE: säljer tillbaka innehavet till samma 1:1-kurs (ger kassa) OCH
+        // trycker ner marknadspriset (avsnitt 4.4:s fjärde drivare, "egna
+        // inköp") — asymmetriskt mot BUY_FORWARD med avsikt, spec 4.5 ordagrant:
+        // bara RELEASE nämns "trycka ner priset ... hjälper dina konkurrenter".
+        if (spend > house.commodityHoldings[commodity]) {
+          rejected.push({ action, reason: 'release exceeds holding' })
+          continue
+        }
+        house.commodityHoldings[commodity] -= spend
+        house.treasury += spend
+
+        const commodityBefore = draft.market.commodities[commodity]
+        const commodityAfter = clamp(
+          commodityBefore - spend * BALANCE.marketReleaseCommodityImpactPerMoney,
+          BALANCE.supplyIndexMin,
+          BALANCE.supplyIndexMax,
+        )
+        draft.market.commodities[commodity] = commodityAfter
+        const indexBefore = draft.market.supplyCostIndex
+        draft.market.supplyCostIndex = deriveSupplyCostIndex(draft.market.commodities, BALANCE.commodityIndexWeight)
+
+        emit({
+          severity: 'ticker',
+          scope: 'house',
+          headline: `${house.name.toUpperCase()} RELEASES ${commodity.toUpperCase()} ONTO THE MARKET (+£${spend.toLocaleString('en-GB')}) — ${commodity.toUpperCase()} ${commodityBefore.toFixed(0)} → ${commodityAfter.toFixed(0)}`,
+          causeId: null,
+          delta: {
+            treasury: spend,
+            [`commodityHoldings.${commodity}`]: -spend,
+            [`commodities.${commodity}`]: commodityAfter - commodityBefore,
+            supplyCostIndex: draft.market.supplyCostIndex - indexBefore,
+          },
+          actorIsPlayer: true,
+          subjectId: null,
+        })
+      }
+      continue
+    }
+
+    // BROKER: se filens huvudkommentar — helt obyggd, men har redan konsumerat
+    // en actionPoint ovan.
   }
 }

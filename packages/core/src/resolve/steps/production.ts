@@ -8,9 +8,10 @@
 // Ingen spelarhandling för det finns (INTERNAL saknar en sådan op), så automatiskt
 // är det enda rimliga — annars skulle ett vunnet kontrakt aldrig producera något.
 import balanceData from '../../data/balance.json' with { type: 'json' }
-import { computeUnitCostNow, getProduct } from '../../pricing.js'
+import { computeUnitCostNow, getProduct, materialCostPerUnit } from '../../pricing.js'
+import { round } from '../../money.js'
 import type { ResolveStep } from '../index.js'
-import type { Contract, Shipment } from '../../types.js'
+import type { Commodity, Contract, Shipment } from '../../types.js'
 
 interface Balance {
   deliveryDelayMinTurns: number
@@ -127,9 +128,32 @@ export const production: ResolveStep = (ctx) => {
     if (plannedUnits <= 0) continue
 
     const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.commodities)
+    // affordableUnits räknas mot RÅ unitCostNow, inte mot kostnaden EFTER ett
+    // BUY_FORWARD-innehav — en medveten förenkling (P51, avsnitt 4.5): ett
+    // stort innehav sänker vad du FAKTISKT betalar, men relaxar inte hur
+    // mycket en linje planeras producera samma tur. Se ANDRINGSLOGG.md.
     const affordableUnits = unitCostNow > 0 ? Math.floor(house.treasury / unitCostNow) : plannedUnits
     const actualUnits = Math.max(0, Math.min(plannedUnits, affordableUnits))
-    const cost = unitCostNow * actualUnits
+
+    // P51 (avsnitt 4.5): BUY_FORWARD-innehav sänker den FAKTISKT bokförda
+    // materialkostnaden, per råvara — ett stålinnehav får aldrig subventionera
+    // en produkts oljeandel (materialCostPerUnit delar upp kostnaden per
+    // råvara, exakt samma termer computeUnitCostNow redan räknar, se
+    // pricing.ts). Innehavet töms krona för krona i takt med att det täcker.
+    const perUnitMaterialCost = materialCostPerUnit(product, line.grade, draft.market.commodities)
+    let holdingsDiscount = 0
+    const holdingsSpent: Partial<Record<Commodity, number>> = {}
+    for (const [commodity, costPerUnit] of Object.entries(perUnitMaterialCost) as [Commodity, number][]) {
+      if (costPerUnit <= 0 || actualUnits <= 0) continue
+      const totalMaterialCost = costPerUnit * actualUnits
+      const used = round(Math.min(house.commodityHoldings[commodity], totalMaterialCost))
+      if (used <= 0) continue
+      house.commodityHoldings[commodity] -= used
+      holdingsSpent[commodity] = used
+      holdingsDiscount += used
+    }
+
+    const cost = Math.max(0, round(unitCostNow * actualUnits - holdingsDiscount))
     house.treasury -= cost
 
     if (actualUnits < plannedUnits) {
@@ -159,12 +183,18 @@ export const production: ResolveStep = (ctx) => {
         units: actualUnits,
         arrivalTurn,
       })
+      const holdingsDelta = Object.fromEntries(
+        Object.entries(holdingsSpent).map(([commodity, used]) => [`commodityHoldings.${commodity}`, -used!]),
+      )
       emit({
         severity: 'ticker',
         scope: 'house',
-        headline: `${line.id.toUpperCase()} PRODUCES ${actualUnits}× ${product.name.toUpperCase()} FOR ${contract.id} (−£${cost.toLocaleString('en-GB')})`,
+        headline:
+          holdingsDiscount > 0
+            ? `${line.id.toUpperCase()} PRODUCES ${actualUnits}× ${product.name.toUpperCase()} FOR ${contract.id} (−£${cost.toLocaleString('en-GB')}, −£${round(holdingsDiscount).toLocaleString('en-GB')} FROM FORWARD HOLDINGS)`
+            : `${line.id.toUpperCase()} PRODUCES ${actualUnits}× ${product.name.toUpperCase()} FOR ${contract.id} (−£${cost.toLocaleString('en-GB')})`,
         causeId: null,
-        delta: { treasury: -cost },
+        delta: { treasury: -cost, ...holdingsDelta },
         actorIsPlayer: true,
         subjectId: null,
       })

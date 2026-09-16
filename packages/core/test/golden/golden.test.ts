@@ -109,10 +109,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // nedströms-kaskad (ordrar, bud, strid) från den tur en opportunist-rival
   // sabbar första gången, inte bara ett nytt tomt fält. headlines > 8 höll
   // oförändrat.
+  //
+  // Omfryst IGEN i P51 (avsnitt 4.5, samma generella regel som P50). Nytt fält:
+  // House.commodityHoldings (fem nollor i alla tre scriptade partier — ingen
+  // botpolicy skickar in en MARKET-handling, så BUY_FORWARD/RELEASE rörs aldrig
+  // här). Formen ändras alltså, inte trajektorin. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '14c2e940089641' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2cb5942bab418' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '189fe94a181154' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'cdcb04ad614ba' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '5737955b83923' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1c641a04f5db0f' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

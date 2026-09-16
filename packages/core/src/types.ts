@@ -157,6 +157,13 @@ export interface House {
   // aktiv) och nollställd av deliveries.ts själv när turen faktiskt nås
   // (reputation.quality återställs samtidigt).
   scandalUntilTurn: number | null
+  // P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5): pengar avsatta via BUY_FORWARD,
+  // ett prepaid-innehav per råvara (inte en låst kvantitet/pris — se
+  // applyActions.ts/production.ts för hela motiveringen). Sänker den FAKTISKT
+  // bokförda materialkostnaden i production.ts så länge det räcker, tappas ner
+  // krona för krona i takt med att den täcker produktion. RELEASE säljer
+  // tillbaka det, samma kurs.
+  commodityHoldings: Record<Commodity, Money>
 }
 
 export interface BoardTarget {
@@ -519,7 +526,11 @@ export type PlayerAction =
   | { type: 'BROKER'; buyerId: FactionId; productId: ProductId; quantity: number; price: Money }
   | { type: 'INTEL'; op: IntelOp; stationId: string; targetId?: string }
   | { type: 'POLITICAL'; op: PoliticalOp; targetFactionId: FactionId; spend: Money }
-  | { type: 'MARKET'; op: 'BUY_FORWARD' | 'RELEASE'; spend: Money }
+  // P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5): commodity tillagt — den ENDA
+  // ändringen av unionen i hela etapp 4 (skyddsräcke 4). Varianten fanns redan
+  // (fynd 1.5) men var obyggd fram till P51; utan commodity vet BUY_FORWARD/
+  // RELEASE inte VILKEN råvara handlingen gäller.
+  | { type: 'MARKET'; op: 'BUY_FORWARD' | 'RELEASE'; commodity: Commodity; spend: Money }
   | { type: 'INTERNAL'; op: InternalOp; payload: Record<string, unknown> }
   // Avsnitt 9.2 — den ENDA ändringen av den här unionen i hela etapp 1,5. Kostar
   // ingen actionPoint (krisen är inte valfri) — applyActions.ts hanterar den

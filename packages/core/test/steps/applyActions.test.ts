@@ -89,19 +89,16 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
     ])
   })
 
-  it('BROKER/MARKET förblir helt obyggda no-ops (ingen prompt äger dem i etapp 1,5) — men konsumerar en actionPoint', () => {
+  it('BROKER förblir en helt obyggd no-op (ingen prompt äger den ännu) — men konsumerar en actionPoint', () => {
     const state = createInitialState('indochina-slice', 'seed')
     state.house.actionPoints = 2
     const before = JSON.parse(JSON.stringify(state.house)) as typeof state.house
 
-    const { ctx, emitted } = makeCtx(state, [
-      { type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 100000 },
-      { type: 'MARKET', op: 'BUY_FORWARD', spend: 0 },
-    ])
+    const { ctx, emitted } = makeCtx(state, [{ type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 100000 }])
     applyActions(ctx)
 
-    expect(state.house).toEqual(before) // ingen ekonomisk effekt av något av de två
-    expect(ctx.rejected).toEqual([]) // inte AVVISADE (ogiltiga) — bara aldrig byggda i etapp 1,5
+    expect(state.house).toEqual(before) // ingen ekonomisk effekt
+    expect(ctx.rejected).toEqual([]) // inte AVVISAD (ogiltig) — bara aldrig byggd
     expect(emitted).toEqual([])
   })
 
@@ -784,5 +781,95 @@ describe('applyActions — P20: CRISIS (avsnitt 9.3, DESIGN.md §6.2) — löser
 
     expect(state.doomsday).toBe(doomsdayBefore)
     expect(emitted.some((e) => e.headline.includes('PUSH') || e.headline.includes('BACK DOWN') || e.headline.includes('SELL THE FILE'))).toBe(false)
+  })
+})
+
+// P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5) — MARKET-verbet, BUY_FORWARD/RELEASE.
+// "BUY_FORWARD sänker effektiv styckkostnad så länge innehavet räcker" är ett
+// production.ts-test (production.test.ts) — applyActions.ts bara SKAPAR
+// innehavet, den faktiska rabatten sker vid produktion.
+describe('applyActions — P51: MARKET (BUY_FORWARD/RELEASE, avsnitt 4.5)', () => {
+  it('(P51 klart-når) BUY_FORWARD flyttar spend från treasury till commodityHoldings, 1:1', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const treasuryBefore = state.house.treasury
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'MARKET', op: 'BUY_FORWARD', commodity: 'steel', spend: 500000 }])
+    applyActions(ctx)
+
+    expect(state.house.treasury).toBe(treasuryBefore - 500000)
+    expect(state.house.commodityHoldings.steel).toBe(500000)
+    expect(state.house.commodityHoldings.oil).toBe(0) // bara den köpta råvaran rörs
+    expect(ctx.rejected).toEqual([])
+    expect(emitted.some((e) => e.headline.includes('BUYS STEEL FORWARD'))).toBe(true)
+  })
+
+  it('(P51 klart-når) RELEASE ger kassa 1:1 och trycker ner PRECIS den råvarans pris, inte de andra', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.commodityHoldings.steel = 500000
+    const treasuryBefore = state.house.treasury
+    const steelBefore = state.market.commodities.steel
+    const indexBefore = state.market.supplyCostIndex
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'MARKET', op: 'RELEASE', commodity: 'steel', spend: 500000 }])
+    applyActions(ctx)
+
+    expect(state.house.treasury).toBe(treasuryBefore + 500000)
+    expect(state.house.commodityHoldings.steel).toBe(0)
+    expect(state.market.commodities.steel).toBeLessThan(steelBefore) // trycker ner priset
+    expect(state.market.commodities.oil).toBe(100) // orört — bara den släppta råvaran
+    expect(state.market.supplyCostIndex).toBeLessThan(indexBefore)
+    expect(ctx.rejected).toEqual([])
+    expect(emitted.some((e) => e.headline.includes('RELEASES STEEL ONTO THE MARKET'))).toBe(true)
+  })
+
+  it('(P51 klart-når) en MARKET-handling med okänd råvara hamnar i rejected — ingen effekt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const treasuryBefore = state.house.treasury
+
+    const action = { type: 'MARKET', op: 'BUY_FORWARD', commodity: 'plutonium', spend: 100000 } as unknown as PlayerAction
+    const { ctx, emitted } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([{ action, reason: 'unknown commodity' }])
+    expect(state.house.treasury).toBe(treasuryBefore)
+    expect(emitted).toEqual([])
+  })
+
+  it('(P51 klart-når) en MARKET-handling med ogiltigt belopp (0, negativt, icke-numeriskt) hamnar i rejected', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+
+    const zero: PlayerAction = { type: 'MARKET', op: 'BUY_FORWARD', commodity: 'steel', spend: 0 }
+    const negative: PlayerAction = { type: 'MARKET', op: 'BUY_FORWARD', commodity: 'steel', spend: -100 }
+    const notFinite = { type: 'MARKET', op: 'BUY_FORWARD', commodity: 'steel', spend: 'a lot' } as unknown as PlayerAction
+    const { ctx } = makeCtx(state, [zero, negative, notFinite])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([
+      { action: zero, reason: 'invalid market spend amount' },
+      { action: negative, reason: 'invalid market spend amount' },
+      { action: notFinite, reason: 'invalid market spend amount' },
+    ])
+  })
+
+  it('BUY_FORWARD avvisas om spend överstiger treasury', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const action: PlayerAction = { type: 'MARKET', op: 'BUY_FORWARD', commodity: 'steel', spend: state.house.treasury + 1 }
+
+    const { ctx } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([{ action, reason: 'insufficient treasury' }])
+  })
+
+  it('RELEASE avvisas om spend överstiger det faktiska innehavet', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.commodityHoldings.steel = 1000
+    const action: PlayerAction = { type: 'MARKET', op: 'RELEASE', commodity: 'steel', spend: 1001 }
+
+    const { ctx } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([{ action, reason: 'release exceeds holding' }])
+    expect(state.house.commodityHoldings.steel).toBe(1000) // orört
   })
 })

@@ -244,6 +244,7 @@ function buildHouse(scenario: ScenarioFile): House {
     // på turnollens värden ger 3 — ingen gissning, bara den frusna evalueringen.
     actionPoints: 3,
     scandalUntilTurn: null,
+    commodityHoldings: uniformCommodityRecord(0),
   }
 }
 

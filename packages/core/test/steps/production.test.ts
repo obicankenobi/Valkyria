@@ -287,4 +287,69 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       expect(state.market.shipments.find((s) => s.contractId === newContract.id)).toBeDefined()
     })
   })
+
+  // P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5, klart-når): "BUY_FORWARD sänker
+  // effektiv styckkostnad så länge innehavet räcker." applyActions.ts bara
+  // SKAPAR innehavet (se applyActions.test.ts) — den faktiska rabatten sker
+  // här, vid produktion.
+  describe('BUY_FORWARD-innehav sänker den faktiska materialkostnaden (P51, avsnitt 4.5)', () => {
+    it('ett innehav som räcker HELA vägen täcker precis materialandelen av kostnaden, inte mer', () => {
+      // 105mm_field_gun (artillery): bomDefaultByCategory.artillery = { steel: 0.45 }.
+      // 40 enheter/tur (unitsPerLineTurn), unitCostNow 10 000 ⇒ materialkostnad
+      // 10 000 × 0,45 × 40 = 180 000 — resten (arbete m.m.) kan aldrig subventioneras.
+      const state = createInitialState('indochina-slice', 'seed')
+      const contract = activeContract({ quantity: 1000 })
+      state.market.contracts = [contract]
+      state.house.lines[0]!.assignedContractId = contract.id
+      state.house.lines[0]!.productId = contract.productId
+      state.house.lines[0]!.grade = contract.grade
+      state.house.lines[0]!.status = 'running'
+      state.house.commodityHoldings.steel = 200000 // mer än vad 40 enheter kräver
+      const treasuryBefore = state.house.treasury
+
+      const { ctx, emitted } = makeCtx(state, 'holdings-seed')
+      production(ctx)
+
+      const rawCost = 10000 * 40 // unitCostNow × actualUnits, utan rabatt
+      const expectedDiscount = 10000 * 0.45 * 40 // materialandelen, stål
+      expect(treasuryBefore - state.house.treasury).toBe(rawCost - expectedDiscount)
+      expect(state.house.commodityHoldings.steel).toBe(200000 - expectedDiscount) // bara det som gick åt
+      expect(emitted.some((e) => e.headline.includes('FROM FORWARD HOLDINGS'))).toBe(true)
+    })
+
+    it('ett innehav som INTE räcker hela vägen täcker bara så mycket det räcker till, resten kostar fullt pris', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const contract = activeContract({ quantity: 1000 })
+      state.market.contracts = [contract]
+      state.house.lines[0]!.assignedContractId = contract.id
+      state.house.lines[0]!.productId = contract.productId
+      state.house.lines[0]!.grade = contract.grade
+      state.house.lines[0]!.status = 'running'
+      state.house.commodityHoldings.steel = 50000 // mindre än de 180 000 materialkostnaden hade krävt
+      const treasuryBefore = state.house.treasury
+
+      production(makeCtx(state, 'holdings-seed').ctx)
+
+      const rawCost = 10000 * 40
+      expect(treasuryBefore - state.house.treasury).toBe(rawCost - 50000)
+      expect(state.house.commodityHoldings.steel).toBe(0) // helt uttömt — "så länge det räcker"
+    })
+
+    it('ett innehav i en ANNAN råvara än produktens bom subventionerar ingenting', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const contract = activeContract({ quantity: 1000 }) // artillery, bara steel i bom
+      state.market.contracts = [contract]
+      state.house.lines[0]!.assignedContractId = contract.id
+      state.house.lines[0]!.productId = contract.productId
+      state.house.lines[0]!.grade = contract.grade
+      state.house.lines[0]!.status = 'running'
+      state.house.commodityHoldings.oil = 500000 // stort, men produkten bär ingen olja
+      const treasuryBefore = state.house.treasury
+
+      production(makeCtx(state, 'holdings-seed').ctx)
+
+      expect(treasuryBefore - state.house.treasury).toBe(10000 * 40) // fullt pris, ingen rabatt
+      expect(state.house.commodityHoldings.oil).toBe(500000) // orört
+    })
+  })
 })

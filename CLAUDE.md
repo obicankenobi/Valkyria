@@ -15,8 +15,8 @@ P33–P37) och 3B (namngivna förband, `Formation`, P38–P42). Se specens egna 
 fyra mätta fynd den bygger på, och avsnitt 8:s måltabell/blockquotes för balanspassens fulla
 facit (P37 för 3A, P42 för 3B). Etapp 4, "Två krig, en kassabok",
 `docs/ETAPP4_TEKNISK_SPEC.md` (P43–P52, antagen som ägarbeslut 2026-09-15, validerad mot
-commit `42bb924`) är den **aktiva** specen — **4A klar (P43–P47), 4B pågår (P48–P50 klara,
-P51–P52 återstår).** Den
+commit `42bb924`) är den **aktiva** specen — **4A klar (P43–P47), 4B pågår (P48–P51 klara,
+bara P52 — balanspasset — återstår).** Den
 bygger vidare på 3B:s förband i två oberoende halvor: 4A (en andra front, ny teater `LAOS`,
 P43–P47) och 4B (råvarumarknaden — fem spor i stället för en enda `supplyCostIndex`-siffra,
 P48–P52). P47 (balanspass 4A, 2026-09-15) svarade definitivt nej på "löser andra fronten
