@@ -8,3 +8,5 @@ coverage/
 harness-results.csv
 test-results/
 playwright-report/
+.vercel
+.env*
