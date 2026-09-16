@@ -54,3 +54,11 @@ finns inte i `packages/app`) — statiska filer, inga `rewrites` behövs.
 Verifierat lokalt innan kopplingen sattes upp: `npm ci && npm run build` (exakt
 `vercel.json`s kommandon) går igenom felfritt, och `packages/app/dist` serverad och öppnad i en
 riktig webbläsare (Chromium) renderar utan konsolfel.
+
+**Kopplingen är satt upp** (`vercel link`, Vercel-projekt `obicankenobi/valkyria`) och verifierad
+skarpt: en push till `claude/funny-lamport-nvno9f` (repots faktiska default-/produktionsgren —
+**ingen `main`-gren finns i det här repot**) triggade automatiskt en byggd och publicerad
+produktionsdeploy via GitHub-webhooken, inget manuellt `vercel deploy` behövdes. Spelet nås på
+**https://valkyria-rose.vercel.app**. Byter repots default-gren namn senare måste Vercels
+Project Settings → Git → Production Branch uppdateras till den nya, annars slutar
+auto-deployen matcha.
