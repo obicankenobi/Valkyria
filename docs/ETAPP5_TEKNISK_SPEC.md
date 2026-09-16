@@ -1,8 +1,9 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0 — FÖRSLAG, ej antagen.** Validerad mot `obicankenobi/Valkyria` commit `701c56a`
-(etapp 4 avslutad, alla P43–P52 körda, båda P52-fynden avgjorda). Åtta öppna beslutspunkter i
-avsnitt 10 — **ingen kod skrivs förrän ägaren avgjort dem.**
+**Version 1.0.1 — antagen (ägarbeslut 2026-09-16).** Validerad mot `obicankenobi/Valkyria`
+commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda, båda P52-fynden avgjorda). Samtliga åtta
+öppna beslutspunkter avgjorda enligt förslagets egna rekommendationer, se avsnitt 10. `P53` är
+nästa steg.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -178,10 +179,9 @@ produktion, leveransfördröjning, bokförd intäkt — före den första gransk
 granskningarna (tur 6 och 10) underkänns därför nästan med automatik, och två underkända i rad
 är `BUYOUT` (`endings.ts:54`).
 
-**Rekommendation: omkalibrera `boardTarget` som etappens FÖRSTA prompt (P53), före allt annat.**
-Det är en ändring i `indochina-slice.json` — scenariodata, inte kod — och den går att mäta direkt
-med härnessen. Se beslutspunkt 1 för alternativen, inklusive alternativet att åter lämna den
-orörd och i stället skära etapp 5 så att varje mekanik betalar sig inom fem turer.
+**Avgjort vid antagandet (avsnitt 10, punkt 1): `boardTarget` omkalibreras som etappens FÖRSTA
+prompt (P53), före allt annat.** Det är en ändring i `indochina-slice.json` — scenariodata, inte
+kod — och den går att mäta direkt med härnessen.
 
 ### 2.2 Genomgående krav för hela etappen
 
@@ -191,9 +191,8 @@ Utöver de krav som redan gäller (`CLAUDE.md`s tio hårda regler):
 Direkt lärdom av P52:s `BUY_FORWARD`-rad. Ett verb bara spelaren kan nå är ett verb balanspasset
 inte kan uttala sig om.
 
-**GK-B. Varje ny mekanik ska ha en avläsbar effekt inom fem turer.** Oavsett hur beslutspunkt 1
-faller. Inga femårslöften (`DESIGN.md` §13:s "förköpsrätt i fem år" för lyckad kupp skrivs om
-till något kortare, se 4.4).
+**GK-B. Varje ny mekanik ska ha en avläsbar effekt inom fem turer.** Inga femårslöften
+(`DESIGN.md` §13:s "förköpsrätt i fem år" för lyckad kupp skrivs om till något kortare, se 4.4).
 
 **GK-C. Ingen ny slumpkälla, inget nytt magiskt tal.** Hård regel 2 och 5. Alla politiska
 sannolikheter i `balance.json`, all slump via `ctx.rng`.
@@ -366,9 +365,10 @@ tjänst och livsfarliga mot ett med stark.
 därefter. Vid misslyckande: förlorade pengar, larmad kontraspionage
 (`counterIntelligence` upp), permanent skadad relation.
 
-**Ändring mot designdokumentet, som kräver ägarens godkännande:** §13:s "förköpsrätt i **fem
-år**" (tjugo turer) skrivs om till ett kortare, mätbart företräde. GK-B — ett löfte som sträcker
-sig längre än partiet är inte en mekanik, det är en slutscen. Se beslutspunkt 6.
+**Ändring mot designdokumentet, avgjord vid antagandet (avsnitt 10, punkt 6):** §13:s
+"förköpsrätt i **fem år**" (tjugo turer) skrivs om till ett kortare, mätbart företräde. GK-B —
+ett löfte som sträcker sig längre än partiet är inte en mekanik, det är en slutscen. `DESIGN.md`
+§13 uppdateras i samma commit som P61, med loggrad.
 
 Med 5A byggt är en kupp naturligt "installera din egen tjänsteman": den nya regimen kommer med
 tjänstemän vars `relationToPlayer` ärver en del av vad du byggt upp. Det är kopplingen som gör de
@@ -400,9 +400,8 @@ etapp 1. Beslutspunkt 8 erbjuder en nedskärning till tio.
 till sju verb. Filen måste delas (samma mönster som P23 bröt ut `crisis.ts` och `upkeep.ts`),
 och det ska ske i den prompt som spränger den, inte som en efterhandsstädning.
 
-**Pipelinen får sannolikt ett nytt steg.** Tjänstemäns agendor, ställning, omsättning och beslut
-måste köras någonstans. Hård regel 7 säger att stegordningen aldrig ändras utan att ägaren ber om
-det — se beslutspunkt 3.
+**Pipelinen får ett nytt steg, `politics`, mellan `factions` och `heat`** (avsnitt 10, punkt 3).
+Hård regel 7 tillåter det eftersom ägaren själv beslutat det, uttryckligen, vid antagandet.
 
 **Golden fryses om i varje prompt som ändrar `GameState`s form.** Med den här etappens omfång blir
 det sex till åtta gånger. Samma uttryckliga budget som etapp 4 satte, av samma skäl: etapp 3
@@ -416,8 +415,8 @@ budgeterade två och behövde fyra, och den tystnaden var värre än kostnaden.
 
 Fem regler. De ska stå som kommentar i koden.
 
-**1. Pipelinens stegordning ändras bara enligt beslutspunkt 3.** Faller den på "nej" ska varje
-politisk mekanik rymmas i befintliga steg. Hård regel 7.
+**1. Pipelinens stegordning ändras bara enligt det beslutade nya `politics`-steget** (avsnitt 10,
+punkt 3) — aldrig ytterligare, aldrig av bekvämlighet. Hård regel 7.
 
 **2. Anbudsformeln räknas inte om.** `computeScore` får sina tal från nya källor (personens
 integritet i stället för orderns, agendans vikter i stället för bara frontlägets) men formeln
@@ -441,9 +440,9 @@ varken förband eller råvaror — testerna flyttas inte, de ska bara fortsätta
 ## 7. Måltabell
 
 Hypoteser, inte acceptanskriterier. Mäts med härnessen, 200 partier `balanced`, om inget annat
-anges. **Samtliga rader förutsätter att beslutspunkt 1 avgjorts** — med en oförändrad
-`boardTarget` är partiet elva turer långt och ungefär hälften av raderna nedan är onåbara av
-samma skäl som i P47 och P52.
+anges. **Samtliga rader förutsätter att P53 (`boardTarget`-omkalibreringen, avsnitt 10 punkt 1)
+är körd** — med en oförändrad `boardTarget` är partiet elva turer långt och ungefär hälften av
+raderna nedan är onåbara av samma skäl som i P47 och P52.
 
 | Kriterium | Målvärde | Halva |
 |---|---|---|
@@ -572,20 +571,39 @@ stället för att lägga till ett nytt.
 
 ---
 
-## 10. Beslutspunkter (ägaren)
+## 10. Beslut vid antagandet (2026-09-16)
 
-Åtta punkter. **Ingen kod skrivs förrän samtliga är avgjorda.**
+Åtta punkter var öppna i förslaget. **Samtliga avgjorda av ägaren samma dag, enligt förslagets
+egna rekommendationer, ordagrant.**
 
-| # | Fråga | Förslagets rekommendation |
-|---|---|---|
-| 1 | **`boardTarget` och `BUYOUT`-kaskaden — femte gången.** Ska den omkalibreras som P53? | **Ja, som etappens första prompt.** Se avsnitt 2.1: för etapp 3 och 4 var kaskaden ett mätproblem, här är den ett byggproblem. Alternativ: (b) lämna orörd och skär varje mekanik så den betalar sig inom fem turer (GK-B skärps till tre); (c) kör etapp 5 mot ett nytt, längre scenario i stället för att röra `indochina-slice` |
-| 2 | **Ersätter `Official` verkligen `Order.inspectorIntegrity`?** | **Ja.** Det är etappens billigaste ingång (fynd 1.1) och undviker att spelet får två parallella sanningar om vem som bedömer ett anbud. Alternativet — behåll båda — ger en person som inte styr det hon uppenbart borde styra |
-| 3 | **Får pipelinen ett nytt steg (`politics`)?** Hård regel 7. | **Ja, mellan `factions` och `heat`.** Politiken ska läsa en färdig ekonomi och hinna påverka `heat` och ordrarna samma tur. Alternativet — bygg in i `factions.ts` — håller regeln orörd men gör en redan blandad fil till spelets största |
-| 4 | **Ska `Front.status` byggas (4.2), eller räcker 5A?** | **Ja, bygg den.** Utan den är 5B en samling verb utan effekt på världen, och pelare 1 saknar fortfarande sin landnivå. Det är samtidigt etappens dyraste post — den kan skjutas till en etapp 6 utan att 5A blir meningslöst |
-| 5 | **Ska `LEAK`/`SABOTAGE`/`TURN` byggas nu (P60)?** | **Ja.** Tre op har varit deklarerade och avvisade sedan etapp 1 (fynd 1.8); `counterIntelligence` är det som saknades för att de ska betyda något. Alternativet är att lämna dem deklarerade en fjärde etapp |
-| 6 | **`DESIGN.md` §13:s "förköpsrätt i fem år" efter lyckad kupp — skrivs om?** | **Ja, till något som betalar sig inom partiet** (GK-B), och `DESIGN.md` §13 uppdateras i samma commit som P61, med loggrad — samma mönster som P45 följde för §16 |
-| 7 | **Etappens namn.** | **"NÄST MÄKTIGAST I RUMMET"**, ur designdokumentets tredje pelare — den pelare etappen finns för att ge mekanik. Alternativ: "DE SOM SKRIVER UNDER", "RUMMET" |
-| 8 | **Tolv prompter eller tio?** | **Tolv.** Nedskärning till tio görs genom att stryka P62 (`ASSASSINATE`) och P63 (politikpanelen) — men då blir 5A byggt och osynligt, vilket är exakt det fel P46 fanns till för att undvika i etapp 4 |
+1. **`boardTarget` och `BUYOUT`-kaskaden — femte gången frågan ställs.** **Avgjort: omkalibreras
+   som etappens första prompt, P53.** Se avsnitt 2.1 — för etapp 3 och 4 var kaskaden ett
+   mätproblem, för etapp 5 är den ett byggproblem: elva turer räcker inte för mekanik som
+   handlar om relationer som mognar.
+
+2. **Ersätter `Official` `Order.inspectorIntegrity`?** **Avgjort: ja.** Ingen parallell sanning
+   om vem som bedömer ett anbud — `computeScore` läser samma tal från en ny källa, formeln rörs
+   inte.
+
+3. **Ett nytt pipeline-steg (`politics`)?** **Avgjort: ja, mellan `factions` och `heat`.** Hård
+   regel 7 tillåter ändringen eftersom ägaren själv beslutar den här, uttryckligen, i samma
+   commit som P53 antar hela specen.
+
+4. **Byggs `Front.status` (4.2)?** **Avgjort: ja.** Utan den är 5B verb utan effekt på världen.
+
+5. **Byggs `LEAK`/`SABOTAGE`/`TURN` (P60)?** **Avgjort: ja.** Tre op som varit deklarerade och
+   avvisade sedan etapp 1 får äntligen en mekanik (`counterIntelligence`) att betyda något mot.
+
+6. **`DESIGN.md` §13:s "förköpsrätt i fem år" efter lyckad kupp.** **Avgjort: skrivs om till
+   något som betalar sig inom partiet** (GK-B), i samma commit som P61, med loggrad — samma
+   mönster som P45 följde för §16 vid etapp 4:s antagande.
+
+7. **Etappens namn.** **Avgjort: "NÄST MÄKTIGAST I RUMMET"** — ur designdokumentets tredje
+   pelare, den pelare etappen finns för att ge mekanik. Namnet är genomfört i hela specen redan
+   från förslaget.
+
+8. **Tolv prompter eller tio?** **Avgjort: tolv.** En nedskärning till tio (stryk P62/P63) hade
+   gjort 5A byggt men osynligt — exakt det fel P46 fanns till för att undvika i etapp 4.
 
 ---
 
@@ -594,3 +612,4 @@ stället för att lägga till ett nytt.
 | Version | Datum | Ändring |
 |---|---|---|
 | 1.0 | 2026-09-16 | Första förslaget. Premisskontroll (avsnitt 1) mot commit `701c56a` gav tio fynd, varav fem formade förslaget: den anonyma tjänstemannen i `Order.inspectorIntegrity` (blev 5A:s ingång), att `alignment` aldrig skrivs (blev kuppens uppgift), att `Station.coverage` är död data (blev informationsgrinden), att krig varken kan börja eller sluta (blev 5B:s dyraste post) och att `Faction.embargoed` har effekter men ingen utlösare (blev det politiska beslutets kvitto). Åtta beslutspunkter öppna |
+| 1.0.1 | 2026-09-16 | **ANTAGEN.** Ägaren godkände samtliga åtta beslutspunkter enligt förslagets egna rekommendationer, ordagrant (se `docs/ANDRINGSLOGG.md` samma datum). Avsnitt 10 omskrivet från öppna frågor till ett beslutsprotokoll. Inga sakändringar mot 1.0 — namnet, prompträckvidden (P53–P64), `politics`-steget, `Official`-ersättningen, `Front.status`, `LEAK`/`SABOTAGE`/`TURN` och den omskrivna femårsklausulen stod redan som rekommendationer och blev nu beslut. `P53` är nästa steg |
