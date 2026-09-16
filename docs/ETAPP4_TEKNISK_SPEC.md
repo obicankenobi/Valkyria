@@ -411,6 +411,11 @@ Mätt läge i högerkolumnen (4A-raderna) är P47, n=200 `balanced`, mot `indoch
 > GEMENSAMMA heat-baslinje, inte bara 4B:s nya drivare) och riskerat sidoeffekter på hela
 > prisbilden — inte gjort här, samma avvägning som `boardTarget` ovan.
 >
+> **Avgjort, ägaren (2026-09-16): lämnas orört.** Tre alternativ presenterade (orört + revidera
+> raden; en ny, egen spridningsparameter separat från den delade heat-baslinjen; höj
+> `supplyIndexMaxStep` självt). Ägaren valde det första, samma linje som `boardTarget`-besluten.
+> Raden ovan i måltabellen är den slutgiltiga, inte en tillfällig markering.
+>
 > **Andel partier där `BUY_FORWARD` hade varit lönsam i efterhand — en genuin, upptäckt
 > designfråga, inte bara en kort-parti-effekt.** Ingen botpolicy (`passive`/`aggressive`/
 > `balanced`/`capacity`) anropar någonsin `MARKET` — P51 byggde bara SPELARENS handling, inget
@@ -427,7 +432,13 @@ Mätt läge i högerkolumnen (4A-raderna) är P47, n=200 `balanced`, mot `indoch
 > ska `BUY_FORWARD` göras kvantitets-/prislåst (en riktig terminsaffär, där tidpunkten för köpet
 > avgör hur mycket framtida rabatt pengarna räcker till) i en framtida prompt, eller är den platta
 > poolen den avsedda, enklare tolkningen av "sänker din effektiva materialkostnad så länge det
-> räcker"? Flaggat här, inte avgjort — se `docs/ANDRINGSLOGG.md`.
+> räcker"?
+>
+> **Avgjort, ägaren (2026-09-16): lämnas som den är, frågan stängd.** Tre alternativ
+> presenterade (lämna som är; bygg om till en kvantitets-/prislåst termin; låt en botpolicy
+> anropa `MARKET` så härnessen åtminstone kör mekaniken). Ägaren valde det första — den platta
+> poolen är den avsedda tolkningen, inte ett provisorium som väntar på en omskrivning. Måltabellens
+> rad förblir dokumenterat omätbar av det skälet, permanent, inte tillfälligt. Se `docs/ANDRINGSLOGG.md`.
 >
 > **Övriga fyra 4A-rader INTE ominstrumenterade** — P48–P51 rör ingen kod i `orders.ts`/
 > `board.ts`/leveransfördröjningen, så ingen regression väntades eller söktes där utöver
@@ -444,9 +455,9 @@ Mätt läge i högerkolumnen (4A-raderna) är P47, n=200 `balanced`, mot `indoch
 | Partier där båda fronterna byter riktning minst en gång | > 20 % | 4A | **0 % — ej uppfyllt, se blockquote** | Ej ominstrumenterad — se blockquote |
 | `nlf`s `materielNeed` fylls på från båda fronterna | alltid, när båda strider | 4A | **Premiss aldrig uppfylld i mätningen — håller strukturellt, se blockquote och P45-test** | Oförändrat — strukturell garanti, inte en härnessmätning |
 | **Löser andra fronten `BUYOUT`-kaskaden?** (avsnitt 2) | **`SCENARIO_COMPLETE` > 25 %** | 4A | **Nej — 0 %, se blockquote** | **Fortfarande nej — 200/200 `BUYOUT`, nu tur 11 (var 10), se blockquote** |
-| **Spridning mellan dyraste och billigaste råvaran vid partiets slut** | **kvot > 1,3 i > 60 % av partier** | 4B | — | **0 % (snittkvot 1,065) — ej uppfyllt, strukturellt (`supplyIndexMaxStep`), se blockquote** |
+| **Spridning mellan dyraste och billigaste råvaran vid partiets slut** | **kvot > 1,3 i > 60 % av partier** | 4B | — | **0 % (snittkvot 1,065) — ej uppfyllt, strukturellt (`supplyIndexMaxStep`). Ägaren beslutade 2026-09-16: lämnas orört, se blockquote** |
 | Partier där minst två råvaror rör sig åt olika håll samma tur | > 50 % | 4B | — | **90 % — uppfyllt** |
-| Andel partier där `BUY_FORWARD` hade varit lönsam i efterhand | 30–70 % | 4B | — | **Ej mätbar som avsedd — öppen designfråga, se blockquote** |
+| Andel partier där `BUY_FORWARD` hade varit lönsam i efterhand | 30–70 % | 4B | — | **Permanent omätbar som skriven (mekanikens egen design). Ägaren beslutade 2026-09-16: lämnas som är, se blockquote** |
 | `supplyCostIndex` stannar i `[supplyIndexMin, supplyIndexMax]` | alltid | 4B | — | **200/200 — uppfyllt** |
 | Invarianten i skyddsräcke 3 håller över 20 turer, båda fronterna | alltid | båda | **Ja — se `fronts.test.ts`/`engagement.test.ts` och P45:s eget test** | Oförändrat — samma tester, P48–P51 rör ingen av dem |
 
@@ -582,12 +593,13 @@ Tre punkter var öppna i förslaget. Alla tre avgjorda av ägaren samma dag spec
    > nya `rng.pick`-dragning, inte en ny orsak). `boardTarget` fortsatt orört, ingen ny fråga
    > ställd till ägaren om just den här kaskaden (samma svar som P37/P42/P47 hade gett igen).
    > Två NYA, separata frågor upptäckta under P52:s mätning i stället, båda utanför den här
-   > kaskaden: (a) `supplyIndexMaxStep` (ett delat, etapp 1,5-tal, inte en P50/P51-parameter) är
-   > den strukturella spärren mot flera av 4B:s egna måltabellrader, oavsett partilängd — en
-   > riktig fix, om ägaren vill ha en, är en egen kalibrering av det talet, inte gjord här; (b)
-   > `BUY_FORWARD`s platta, icke prisindexerade £-för-£-design gör måltabellens egen
-   > "lönsam i efterhand"-rad strukturellt omätbar, oavsett partilängd — en designfråga om
-   > mekaniken själv, se avsnitt 7:s P52-blockquote för båda.
+   > kaskaden, och BÅDA nu avgjorda av ägaren (2026-09-16, se avsnitt 7:s P52-blockquote för hela
+   > resonemanget bakom vartdera): (a) `supplyIndexMaxStep` (ett delat, etapp 1,5-tal, inte en
+   > P50/P51-parameter) är den strukturella spärren mot flera av 4B:s egna måltabellrader,
+   > oavsett partilängd — **lämnas orört**, samma linje som `boardTarget`; (b) `BUY_FORWARD`s
+   > platta, icke prisindexerade £-för-£-design gör måltabellens egen "lönsam i efterhand"-rad
+   > strukturellt omätbar, oavsett partilängd — **lämnas som är, frågan stängd**: den platta
+   > poolen är den avsedda tolkningen, inte ett provisorium.
 
 3. **Namnet.** `TVÅ KRIG, EN VERKSTAD` var förslagets arbetsnamn. **Avgjort: "Två krig, en
    kassabok"** — samma bild som avsnitt 0 redan bygger på (en verkstad som betjänar två fronter

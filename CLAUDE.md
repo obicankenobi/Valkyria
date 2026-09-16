@@ -25,14 +25,15 @@ ordrar, etapp 3) är **fortfarande inte löst** — P47 (4A) och P52 (4B) svarad
 kaskad från P50:s nya `rng.pick`-dragning i `rivals.ts`, inte en ny orsak). Fjärde gången
 frågan ställts sammantaget (P37, P42, P47, P52); ägaren har fyra gånger valt att lämna
 `boardTarget` orört och revidera måltabellrader i stället, se specens avsnitt 7. P52 hittade
-också en strukturell spärr som är EGEN för 4B (oavsett partilängd): `supplyIndexMaxStep`
-(ett delat, etapp 1,5-tal — inte ett P50/P51-tillägg) begränsar hur mycket en enskild råvara
-kan röra sig per tur, vilket gör måltabellens "spridning mellan dyraste/billigaste råvara"-rad
-onåbar oavsett hur mycket P50s drivare skruvas (diagnostiskt verifierat: en 250× högre
-`warDemandCommodityCoupling` flyttade snittkvoten bara 1,065 → 1,079). Och en ÖPPEN
-DESIGNFRÅGA: `BUY_FORWARD` (P51) är en platt, icke prisindexerad £-för-£-pool — mekaniken kan
-strukturellt aldrig vara "olönsam" i den mening måltabellens egen rad förutsätter, en fråga om
-mekanikens form, inte en balanspassfråga. Se
+också två egna, separata frågor utanför kaskaden — **båda avgjorda av ägaren 2026-09-16**, se
+avsnitt 7:s P52-blockquote: `supplyIndexMaxStep` (ett delat, etapp 1,5-tal — inte ett
+P50/P51-tillägg) begränsar hur mycket en enskild råvara kan röra sig per tur, vilket gör
+måltabellens "spridning mellan dyraste/billigaste råvara"-rad onåbar oavsett hur mycket P50s
+drivare skruvas (diagnostiskt verifierat: en 250× högre `warDemandCommodityCoupling` flyttade
+snittkvoten bara 1,065 → 1,079) — **lämnas orört**, samma linje som `boardTarget`. `BUY_FORWARD`
+(P51) är en platt, icke prisindexerad £-för-£-pool — mekaniken kan strukturellt aldrig vara
+"olönsam" i den mening måltabellens egen rad förutsätter — **lämnas som är, frågan stängd**: den
+platta poolen är den avsedda tolkningen, inte ett provisorium som väntar på en omskrivning. Se
 specens avsnitt 1 för de fem premisskontrollerade fynd den bygger på (bl.a. att
 `computePressureForFront` har samma "tar första matchande front"-brist som `deliveries.ts`s
 `findFrontForBuyer` redan hade, och att `supplyCostIndex` kan bli ett härlett aggregat av de
