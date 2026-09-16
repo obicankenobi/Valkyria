@@ -217,5 +217,13 @@
   "refittingReadinessRecoveryPerTurn": 15,
   "_p41_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7 (skyddsräcke 3) kräver 'ett styrkeband' för ett förband utan station, men ger ingen formel för bandets gränser -- samma sorts lucka som refittingReadinessRecoveryPerTurn ovan. Nödvändigt tillägg, PROVISORISKT: formationStrengthBandLowPct/HighPct delar strength/strengthAtFull-kvoten (0-100%) i tre ungefär jämnstora band (svag/medel/stark), läst av queries.ts:s formationDisplay(). Läses ALDRIG av resolveTurn-pipelinen (bara av queries.ts, ett rent UI-lager utanför den hashade sluttillståndet) -- påverkar alltså inte golden.test.ts:s tre uppmätta hash-värden, bara fixtures/balance.frozen.json:s bitvisa kopia. Se docs/ANDRINGSLOGG.md.",
   "formationStrengthBandLowPct": 33,
-  "formationStrengthBandHighPct": 66
+  "formationStrengthBandHighPct": 66,
+  "_p48_note": "ETAPP4_TEKNISK_SPEC.md avsnitt 4.2 ger formeln (supplyCostIndex = Σ commodities[c] × commodityIndexWeight[c]) ordagrant, men ingen fördelning mellan de fem råvarorna -- specens eget avsnitt 4.4 lämnar det öppet tills prisdrivarna (P50) faktiskt ger dem olika rörelse. Nödvändigt tillägg, PROVISORISKT: fem lika vikter (0,2 vardera, summerar till 1). Så länge alla fem rör sig identiskt (dagens enda drivare, heat, applicerad likadant på var och en -- P48:s eget mandat: 'inga nya prisdrivare än') blir supplyCostIndex bit-för-bit identisk med vad den ensamma formeln gav innan P48, vilket är precis vad klart-när-testet 'computeReferencePrice ger identiskt resultat som före' kräver. Revideras naturligt när P50 ger råvarorna skilda drivare. Se docs/ANDRINGSLOGG.md.",
+  "commodityIndexWeight": {
+    "oil": 0.2,
+    "steel": 0.2,
+    "uranium": 0.2,
+    "titanium": 0.2,
+    "rare_earths": 0.2
+  }
 }

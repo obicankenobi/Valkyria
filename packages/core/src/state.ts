@@ -8,6 +8,7 @@ import rivalsCatalog from './data/rivals.json' with { type: 'json' }
 import indochinaSlice from './data/scenarios/indochina-slice.json' with { type: 'json' }
 import type {
   BoardTarget,
+  Commodity,
   Doctrine,
   Faction,
   FactionId,
@@ -35,6 +36,15 @@ const TECH_CATEGORIES: readonly TechCategory[] = [
 function uniformCategoryRecord(value: number): Record<TechCategory, number> {
   const record = {} as Record<TechCategory, number>
   for (const category of TECH_CATEGORIES) record[category] = value
+  return record
+}
+
+// P48 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.1), samma mönster som TECH_CATEGORIES ovan.
+const COMMODITIES: readonly Commodity[] = ['oil', 'steel', 'uranium', 'titanium', 'rare_earths']
+
+function uniformCommodityRecord(value: number): Record<Commodity, number> {
+  const record = {} as Record<Commodity, number>
+  for (const commodity of COMMODITIES) record[commodity] = value
   return record
 }
 
@@ -362,6 +372,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
       openOrders: [],
       contracts: [],
       shipments: [],
+      commodities: uniformCommodityRecord(100),
       supplyCostIndex: 100,
       restrictedRevenueThisTurn: 0,
     },

@@ -25,6 +25,10 @@ export type Grade = 'A' | 'B' | 'C'
 // P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.
 export type Doctrine = 'infantry' | 'mechanised' | 'armoured' | 'artillery' | 'irregular'
 
+// P48 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.1). DESIGN.md avsnitt 14, ordagrant: "olja,
+// stål, uran, titan, sällsynta jordartsmetaller."
+export type Commodity = 'oil' | 'steel' | 'uranium' | 'titanium' | 'rare_earths'
+
 // ── 2.2 GameState ────────────────────────────────────────────────────────────
 //
 // GameState är den enda sanningen. Allt som behövs för att fortsätta ett parti
@@ -54,6 +58,12 @@ export interface GameState {
     // någon egen datamodell i specen. Producerade-men-inte-levererade enheter,
     // borttagna ur listan när de anländer (deliveries.ts).
     shipments: Shipment[]
+    // P48 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.1/4.2): fem prisindex, 100 = utgångsläge
+    // per råvara — samma skala som supplyCostIndex hade ensam. Skrivs bara av
+    // supply.ts. supplyCostIndex nedan blir DERIVERAD ur det här fältet
+    // (Σ commodities[c] × commodityIndexWeight[c]), inte längre en egen, fritt
+    // skriven storhet.
+    commodities: Record<Commodity, number>
     supplyCostIndex: number // 100 = baseline. Multiplicerar KOSTNAD, inte pris.
     // Inte i avsnitt 2 — se ANDRINGSLOGG.md (P20). Transient, självnollställande
     // räknare, samma mönster som Theatre.deliveriesIntoActiveWarThisTurn: deliveries.ts

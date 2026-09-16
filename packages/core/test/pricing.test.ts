@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeScore, rivalBlocTerm } from '../src/pricing.js'
+import { computeReferencePrice, computeScore, getProduct, rivalBlocTerm } from '../src/pricing.js'
+import balance from '../src/data/balance.json' with { type: 'json' }
 import type { RivalHouse } from '../src/types.js'
 
 function makeRival(overrides: Partial<RivalHouse> = {}): RivalHouse {
@@ -81,5 +82,42 @@ describe('computeScore — rivaler med olika relations[buyerId] (P24, avsnitt 2.
     const highRelationScore = computeScore({ ...baseInput, relationToPlayer: 90 })
 
     expect(highRelationScore).toBeGreaterThan(lowRelationScore)
+  })
+})
+
+// (P48 klart-når, ETAPP4_TEKNISK_SPEC.md avsnitt 4.2/8) "computeReferencePrice
+// ger identiskt resultat som före för ett givet aggregat." Funktionens signatur
+// och formel är HELT OFÖRÄNDRADE av P48 — den tar fortfarande ett rått
+// supplyCostIndex-tal, ovetande om att talet numera härleds ur fem råvaror i
+// stället för att vara en egen storhet (avsnitt 4.2: "sömmen är smal", bara
+// TVÅ funktioner läser supplyCostIndex, och det här är den ena). Testet
+// pinnar formeln direkt, utan att gå via supply.ts/commodities alls.
+describe('computeReferencePrice (P48 klart-når: opåverkad av att supplyCostIndex nu är härledd)', () => {
+  it('samma (product, quantity, heat, supplyCostIndex) ger bitvis identiskt resultat som scarcityFactor-formeln ordagrant', () => {
+    const product = getProduct('105mm_field_gun')
+    const quantity = 100
+    const heat = 25
+    const supplyCostIndex = 112 // ett godtyckligt, givet aggregat — varifrån det kom är irrelevant här
+
+    const price = computeReferencePrice(product, quantity, heat, supplyCostIndex)
+
+    // Formeln ur pricing.ts, ordagrant — om P48 rört signaturen eller formeln
+    // skulle den här handräknade jämförelsen divergera. Talen läses ur
+    // balance.json, upprepas aldrig som egna magiska tal (CLAUDE.md hård regel 5).
+    const heatFactor = 1 + (heat / 100) * balance.heatPriceElasticity
+    const scarcityFactor = 1 + (supplyCostIndex - 100) / balance.scarcityPriceDivisor
+    const expected = Math.round(product.baseCost * quantity * heatFactor * scarcityFactor)
+
+    expect(price).toBe(expected)
+  })
+
+  it('samma supplyCostIndex-tal ger samma pris oavsett vilka commodities-värden som råkar ligga bakom det', () => {
+    // "Identiskt resultat som före" — computeReferencePrice bryr sig bara om
+    // TALET, aldrig om historiken (commodities-fördelningen) bakom det.
+    const product = getProduct('m1_rifle')
+    const priceA = computeReferencePrice(product, 250, 10, 105)
+    const priceB = computeReferencePrice(product, 250, 10, 105)
+
+    expect(priceA).toBe(priceB)
   })
 })

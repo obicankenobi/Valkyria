@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { supply } from '../../src/resolve/steps/supply.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
+import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
-import type { GameState, Theatre, TurnSubmission, WireEvent } from '../../src/types.js'
+import type { Commodity, GameState, Theatre, TurnSubmission, WireEvent } from '../../src/types.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
@@ -27,11 +28,25 @@ function setHeat(state: GameState, heat: number): void {
   for (const theatre of Object.values(state.theatres)) theatre.heat = heat
 }
 
+// P48 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.2): supplyCostIndex är sedan P48
+// DERIVERAD ur commodities, inte längre en egen, fritt skrivbar storhet — ett
+// test som vill injicera "föregående tur"-läge måste sätta commodities (alla
+// fem, likadant, eftersom de idag saknar egna drivare — P48:s eget mandat)
+// för att supply.ts faktiskt ska utgå från det injicerade värdet. Sätter även
+// supplyCostIndex till samma tal, bara för att hålla state internt konsistent
+// mellan turer i testerna — supply.ts självt läser bara commodities.
+function setCommodities(state: GameState, value: number): void {
+  for (const commodity of Object.keys(state.market.commodities) as (keyof typeof state.market.commodities)[]) {
+    state.market.commodities[commodity] = value
+  }
+  state.market.supplyCostIndex = value
+}
+
 describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('rör sig mot targetIndex (100 + globalHeat × supplyHeatCoupling) men klampas till max supplyIndexMaxStep per tur', () => {
     const state = createInitialState('indochina-slice', 'seed')
     setHeat(state, 100) // targetIndex = 100 + 100×0.45 = 145, långt över ett steg från 100
-    state.market.supplyCostIndex = 100
+    setCommodities(state, 100)
 
     supply(makeCtx(state, 'supply-seed').ctx)
 
@@ -42,7 +57,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('följer targetIndex utan klampning när skillnaden är mindre än supplyIndexMaxStep', () => {
     const state = createInitialState('indochina-slice', 'seed')
     setHeat(state, 10) // targetIndex = 100 + 10×0.45 = 104.5
-    state.market.supplyCostIndex = 103
+    setCommodities(state, 103)
 
     supply(makeCtx(state, 'supply-seed').ctx)
 
@@ -63,7 +78,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('klampar next till supplyIndexMax (160) om ett injicerat startvärde annars skulle hamna över det', () => {
     const state = createInitialState('indochina-slice', 'seed')
     setHeat(state, 100) // targetIndex = 145
-    state.market.supplyCostIndex = 200 // orealistiskt högt startvärde, avsiktligt injicerat
+    setCommodities(state, 200) // orealistiskt högt startvärde, avsiktligt injicerat
 
     supply(makeCtx(state, 'supply-seed').ctx)
 
@@ -74,7 +89,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('klampar next till supplyIndexMin (85) om ett injicerat startvärde annars skulle hamna under det', () => {
     const state = createInitialState('indochina-slice', 'seed')
     setHeat(state, 0) // targetIndex = 100
-    state.market.supplyCostIndex = 50 // orealistiskt lågt startvärde, avsiktligt injicerat
+    setCommodities(state, 50) // orealistiskt lågt startvärde, avsiktligt injicerat
 
     supply(makeCtx(state, 'supply-seed').ctx)
 
@@ -85,7 +100,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('rör sig nedåt (mot ett lägre, men aldrig under 100, kostnadsläge) när heat är noll och indexet startar över 100', () => {
     const state = createInitialState('indochina-slice', 'seed')
     setHeat(state, 0) // targetIndex = 100
-    state.market.supplyCostIndex = 120
+    setCommodities(state, 120)
 
     supply(makeCtx(state, 'supply-seed').ctx)
 
@@ -105,7 +120,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
       deliveriesIntoActiveWarThisTurn: 0,
     }
     state.theatres['second-theatre'] = secondTheatre
-    state.market.supplyCostIndex = 100
+    setCommodities(state, 100)
 
     supply(makeCtx(state, 'supply-seed').ctx)
 
@@ -116,7 +131,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('emittar en ticker med korrekt delta när indexet rör sig, ingenting när det inte gör det', () => {
     const moving = createInitialState('indochina-slice', 'seed')
     setHeat(moving, 100)
-    moving.market.supplyCostIndex = 100
+    setCommodities(moving, 100)
     const { ctx: movingCtx, emitted: movingEmitted } = makeCtx(moving, 'supply-seed')
     supply(movingCtx)
 
@@ -127,7 +142,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
 
     const still = createInitialState('indochina-slice', 'seed')
     setHeat(still, 0) // targetIndex = 100, redan där
-    still.market.supplyCostIndex = 100
+    setCommodities(still, 100)
     const { ctx: stillCtx, emitted: stillEmitted } = makeCtx(still, 'supply-seed')
     supply(stillCtx)
 
@@ -137,7 +152,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('emittar en report när indexet korsar 120 uppåt, och en annan när det korsar 120 nedåt', () => {
     const rising = createInitialState('indochina-slice', 'seed')
     setHeat(rising, 100)
-    rising.market.supplyCostIndex = 115 // + 6 ⇒ 121, korsar 120 uppåt
+    setCommodities(rising, 115) // + 6 ⇒ 121, korsar 120 uppåt
     const { ctx: risingCtx, emitted: risingEmitted } = makeCtx(rising, 'supply-seed')
     supply(risingCtx)
 
@@ -148,7 +163,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
 
     const falling = createInitialState('indochina-slice', 'seed')
     setHeat(falling, 0) // targetIndex = 100
-    falling.market.supplyCostIndex = 124 // − 6 ⇒ 118, korsar 120 nedåt
+    setCommodities(falling, 124) // − 6 ⇒ 118, korsar 120 nedåt
     const { ctx: fallingCtx, emitted: fallingEmitted } = makeCtx(falling, 'supply-seed')
     supply(fallingCtx)
 
@@ -161,7 +176,7 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
   it('emittar en report när indexet korsar 140, med samma tröskellogik', () => {
     const state = createInitialState('indochina-slice', 'seed')
     setHeat(state, 100)
-    state.market.supplyCostIndex = 136 // + 6 ⇒ 142, korsar både 140 (men inte 120, redan passerad)
+    setCommodities(state, 136) // + 6 ⇒ 142, korsar både 140 (men inte 120, redan passerad)
 
     const { ctx, emitted } = makeCtx(state, 'supply-seed')
     supply(ctx)
@@ -170,5 +185,61 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
     const reports = emitted.filter((e) => e.severity === 'report')
     expect(reports).toHaveLength(1)
     expect(reports[0]!.headline).toContain('142')
+  })
+
+  // P48 klart-när (ETAPP4_TEKNISK_SPEC.md avsnitt 4.2/8), de tre återstående:
+  // "supplyCostIndex är det viktade aggregatet av commodities", "den stannar i
+  // [supplyIndexMin, supplyIndexMax]" — den tredje ("computeReferencePrice ger
+  // identiskt resultat") hör hemma i pricing.test.ts, inte här, eftersom den
+  // pinnar en helt annan funktion som inte ens vet att commodities finns.
+  describe('commodities → supplyCostIndex (P48 klart-när)', () => {
+    it('supplyCostIndex är EXAKT det viktade aggregatet av commodities, inte bara en kopia av en av dem', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      setHeat(state, 0) // targetIndex = 100 — isolerar testet till startvärdena, ingen heat-drift
+      // Fem olika startvärden — om koden bara kopierade EN råvara skulle den här
+      // asymmetrin avslöja det (aggregatet blir något annat än varje enskilt tal).
+      state.market.commodities.oil = 200
+      state.market.commodities.steel = 50
+      state.market.commodities.uranium = 100
+      state.market.commodities.titanium = 100
+      state.market.commodities.rare_earths = 100
+
+      supply(makeCtx(state, 'supply-seed').ctx)
+
+      const weights = balance.commodityIndexWeight as Record<Commodity, number>
+      const expectedAggregate = (Object.keys(state.market.commodities) as Commodity[]).reduce(
+        (sum, c) => sum + state.market.commodities[c] * weights[c],
+        0,
+      )
+      expect(state.market.supplyCostIndex).toBeCloseTo(expectedAggregate, 6)
+      // Bevisar att det FAKTISKT är ett aggregat — talet skiljer sig från vart
+      // och ett av de fem, eftersom de startade olika och klampades olika.
+      for (const commodity of Object.keys(state.market.commodities) as Commodity[]) {
+        if (state.market.commodities[commodity] !== expectedAggregate) continue
+        throw new Error(`aggregatet råkade bli identiskt med ${commodity} — testet bevisar inget, byt startvärden`)
+      }
+    })
+
+    it('supplyCostIndex stannar i [supplyIndexMin, supplyIndexMax] även när enskilda commodities injiceras långt utanför', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      setHeat(state, 0) // targetIndex = 100
+      // Orealistiskt extrema, avsiktligt injicerade värden — samma motivering
+      // som filens äldre klamptester ovan (headroom för framtida balanstal).
+      state.market.commodities.oil = 1000
+      state.market.commodities.steel = -500
+      state.market.commodities.uranium = 100
+      state.market.commodities.titanium = 100
+      state.market.commodities.rare_earths = 100
+
+      supply(makeCtx(state, 'supply-seed').ctx)
+
+      expect(state.market.supplyCostIndex).toBeLessThanOrEqual(balance.supplyIndexMax)
+      expect(state.market.supplyCostIndex).toBeGreaterThanOrEqual(balance.supplyIndexMin)
+      // Varje enskild råvara ska också respektera samma tak/golv — inte bara aggregatet.
+      for (const commodity of Object.keys(state.market.commodities) as Commodity[]) {
+        expect(state.market.commodities[commodity]).toBeLessThanOrEqual(balance.supplyIndexMax)
+        expect(state.market.commodities[commodity]).toBeGreaterThanOrEqual(balance.supplyIndexMin)
+      }
+    })
   })
 })

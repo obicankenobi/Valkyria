@@ -85,10 +85,16 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // gången: rvn/nlf-partiet på front-1 borde vara oberört, men laos deltar nu i
   // ordergenerering/leveranser på ett sätt scenariot aldrig gjorde förut.
   // headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P48 (avsnitt 4.2, samma klart-när-krav) — state.market.
+  // commodities är ett nytt fält (fem tal, en del av det hashade slut-
+  // tillståndet) även om VÄRDET på supplyCostIndex är bit-för-bit detsamma som
+  // innan (fem lika vikter, identisk rörelse — se balance.json:s _p48_note).
+  // headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '11227ef8b09335' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'c56e36298a181' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'c0e98bcc88bdd' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1bf96baf00e852' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2c83f8a387b9' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '4d80654c6acf7' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
