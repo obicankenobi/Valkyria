@@ -335,6 +335,23 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
       expect(state.fronts['front-1']).toEqual(frontBefore)
     })
 
+    it('(P50 klart-när) en leverans in på en aktiv front ackumulerar market.commodityDemandThisTurn för de råvaror produktens bom bär, viktat med levererade enheter', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      // 105mm_field_gun (artillery) — bomDefaultByCategory.artillery = { steel: 0.45 } (balance.json).
+      const contract = activeContract({ buyerId: 'rvn', productId: '105mm_field_gun' })
+      state.market.contracts = [contract]
+      state.market.shipments = [shipment({ units: 20, arrivalTurn: 1 })]
+      state.meta.turn = 1
+
+      deliveries(makeCtx(state, 'del-seed').ctx)
+
+      expect(state.market.commodityDemandThisTurn.steel).toBeCloseTo(20 * 0.45, 6)
+      expect(state.market.commodityDemandThisTurn.oil).toBe(0)
+      expect(state.market.commodityDemandThisTurn.uranium).toBe(0)
+      expect(state.market.commodityDemandThisTurn.titanium).toBe(0)
+      expect(state.market.commodityDemandThisTurn.rare_earths).toBe(0)
+    })
+
     it('olika produktkategorier hamnar i rätt fack i equipment', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!

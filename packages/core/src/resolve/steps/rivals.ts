@@ -18,7 +18,9 @@
 //
 // (2) Leverantörskapacitet (avsnitt 2.4): en opportunist-rival med kapital över
 // rivalSupplyPlayCapitalFloor kan en gång per rivalSupplyPlayCooldownTurns höja
-// market.supplyCostIndex och tappa rivalSupplyPlayCost i capital. TILL SKILLNAD
+// market.commodities[c] för EN slumpad råvara (P50, ETAPP4_TEKNISK_SPEC.md
+// avsnitt 4.4 — generaliserat från att bumpa hela market.supplyCostIndex-
+// aggregatet direkt) och tappa rivalSupplyPlayCost i capital. TILL SKILLNAD
 // FRÅN passiv tillväxt är detta INTE villkorat av spelarens passivitet — en rival
 // som binder kapacitet gör det oavsett vad spelaren gör den turen, annars vore
 // det ingen "motståndare i kostnadsledet" (avsnitt 2.4:s egen motivering), bara
@@ -46,8 +48,9 @@
 // docs/ANDRINGSLOGG.md för den fulla motiveringen till den här tolkningen.
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { addDoomsday } from '../doomsdayGate.js'
+import { deriveSupplyCostIndex } from './supply.js'
 import type { ResolveStep } from '../index.js'
-import type { FactionId, GameState, RivalHouse } from '../../types.js'
+import type { Commodity, FactionId, GameState, RivalHouse } from '../../types.js'
 
 interface Balance {
   rivalPassiveGrowthCapital: number
@@ -58,6 +61,7 @@ interface Balance {
   rivalSupplyPlayCost: number
   supplyIndexMin: number
   supplyIndexMax: number
+  commodityIndexWeight: Record<Commodity, number>
   rivalIncidentAttemptChancePct: number
   rivalIncidentMisattributionPct: number
   rivalSabotageCooldownTurns: number
@@ -69,6 +73,8 @@ interface Balance {
   misattributionExposurePenalty: number
 }
 const BALANCE = balanceData as unknown as Balance
+
+const COMMODITIES: readonly Commodity[] = ['oil', 'steel', 'uranium', 'titanium', 'rare_earths']
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
@@ -124,17 +130,34 @@ export const rivals: ResolveStep = (ctx) => {
       rival.capital > BALANCE.rivalSupplyPlayCapitalFloor &&
       (rival.supplyPlayCooldownUntilTurn === null || draft.meta.turn >= rival.supplyPlayCooldownUntilTurn)
     ) {
-      const before = draft.market.supplyCostIndex
-      draft.market.supplyCostIndex = clamp(before + BALANCE.rivalSupplyPlayIndexPenalty, BALANCE.supplyIndexMin, BALANCE.supplyIndexMax)
+      // P50 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.4): generaliserad från att bumpa
+      // aggregatet direkt till att slå mot EN slumpad råvara — en riktig
+      // sabotageattack träffar ett specifikt lager, inte hela marknaden lika.
+      // supplyCostIndex omräknas OMEDELBART via samma formel supply.ts:s eget
+      // steg använder (deriveSupplyCostIndex, exporterad därifrån) — annars
+      // vore aggregatet osynkroniserat mot commodities fram till nästa gång
+      // supply-steget kör (skyddsräcke 2).
+      const targetCommodity = rng.pick(COMMODITIES)
+      const before = draft.market.commodities[targetCommodity]
+      const bumped = clamp(before + BALANCE.rivalSupplyPlayIndexPenalty, BALANCE.supplyIndexMin, BALANCE.supplyIndexMax)
+      draft.market.commodities[targetCommodity] = bumped
+
+      const indexBefore = draft.market.supplyCostIndex
+      draft.market.supplyCostIndex = deriveSupplyCostIndex(draft.market.commodities, BALANCE.commodityIndexWeight)
+
       rival.capital -= BALANCE.rivalSupplyPlayCost
       rival.supplyPlayCooldownUntilTurn = draft.meta.turn + BALANCE.rivalSupplyPlayCooldownTurns
 
       emit({
         severity: 'headline',
         scope: 'market',
-        headline: `${rival.name.toUpperCase()} PLAYS THE SUPPLY MARKET — COST INDEX ${before.toFixed(0)} → ${draft.market.supplyCostIndex.toFixed(0)}`,
+        headline: `${rival.name.toUpperCase()} PLAYS THE SUPPLY MARKET — ${targetCommodity.toUpperCase()} ${before.toFixed(0)} → ${bumped.toFixed(0)} (COST INDEX ${indexBefore.toFixed(0)} → ${draft.market.supplyCostIndex.toFixed(0)})`,
         causeId: null,
-        delta: { supplyCostIndex: draft.market.supplyCostIndex - before, capital: -BALANCE.rivalSupplyPlayCost },
+        delta: {
+          [`commodities.${targetCommodity}`]: bumped - before,
+          supplyCostIndex: draft.market.supplyCostIndex - indexBefore,
+          capital: -BALANCE.rivalSupplyPlayCost,
+        },
         actorIsPlayer: false,
         subjectId: rival.id,
       })

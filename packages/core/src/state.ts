@@ -373,6 +373,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
       contracts: [],
       shipments: [],
       commodities: uniformCommodityRecord(100),
+      commodityDemandThisTurn: uniformCommodityRecord(0),
       supplyCostIndex: 100,
       restrictedRevenueThisTurn: 0,
     },

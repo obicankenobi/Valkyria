@@ -64,6 +64,12 @@ export interface GameState {
     // (Σ commodities[c] × commodityIndexWeight[c]), inte längre en egen, fritt
     // skriven storhet.
     commodities: Record<Commodity, number>
+    // P50 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.4): "krigsefterfrågan"-drivarens
+    // denna-tur-transient — samma självnollställande mönster som
+    // Theatre.deliveriesIntoActiveWarThisTurn (deliveries.ts fyller på, supply.ts
+    // läser OCH nollställer i samma steg). Global, inte per teater, eftersom
+    // commodities är globalt, till skillnad från heat.
+    commodityDemandThisTurn: Record<Commodity, number>
     supplyCostIndex: number // 100 = baseline. Multiplicerar KOSTNAD, inte pris.
     // Inte i avsnitt 2 — se ANDRINGSLOGG.md (P20). Transient, självnollställande
     // räknare, samma mönster som Theatre.deliveriesIntoActiveWarThisTurn: deliveries.ts
@@ -333,6 +339,14 @@ export interface Faction {
   // (−= utlyst kvantitet, P35) och factions.ts (+= peacetimeReplacement,
   // klampat till needCeiling) — av ingen annan.
   materielNeed: Record<TechCategory, number>
+  // P50 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.4): vilka råvaror embargot mot den
+  // här faktionen (om embargoed) trycker upp priset på. PROVISORISKT och
+  // OBESATT i indochina-slice.json — samma "byggd och testad, strukturellt
+  // vilande i dagens scenario"-status som embargoed:s ekonomiska effekt redan
+  // har (se factions.ts:s egen kommentar: ingen PlayerAction kan sätta
+  // embargoed i den här etappen ändå). Frånvarande = embargot ger inget
+  // råvarutryck, bara sin befintliga ekonomiska smäll.
+  commoditySources?: Commodity[]
 }
 
 export interface Theatre {

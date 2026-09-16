@@ -81,16 +81,23 @@ export function computeReferencePrice(product: Product, quantity: number, heat: 
 
 const COMMODITIES: readonly Commodity[] = ['oil', 'steel', 'uranium', 'titanium', 'rare_earths']
 
+// P49 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.3): produktens egen bom, annars
+// kategorins standard (avsnitt 4.3: "per-produkt-överskrivning bara där
+// kategorin inte räcker"). Utbruten i P50 (avsnitt 4.4) — "krigsefterfrågan"-
+// drivaren (deliveries.ts) och materialkostnadens uppdelning per råvara
+// (production.ts, P51/avsnitt 4.5) behöver exakt samma fallback-regel som
+// computeUnitCostNow redan använder, i stället för att duplicera den.
+export function resolveBom(product: Product): Partial<Record<Commodity, number>> {
+  return product.bom ?? BALANCE.bomDefaultByCategory[product.category]
+}
+
 // P49 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.3), ordagrant:
 // unitCost × (1 − bomShare) + unitCost × Σ(bom[c] × commodities[c]/100).
-// product.bom saknas för de flesta produkter — faller tillbaka på
-// balance.json:s bomDefaultByCategory[product.category] (avsnitt 4.3: "per-
-// produkt-överskrivning bara där kategorin inte räcker"). Vid baseline
-// (alla commodities = 100) blir costFactor exakt 1, oavsett bom — samma
-// resultat som formeln gav innan P49 (supplyFactor = supplyCostIndex/100 = 1).
+// Vid baseline (alla commodities = 100) blir costFactor exakt 1, oavsett bom —
+// samma resultat som formeln gav innan P49 (supplyFactor = supplyCostIndex/100 = 1).
 export function computeUnitCostNow(product: Product, grade: Grade, commodities: Record<Commodity, number>): Money {
   const gradeCostFactor = BALANCE.gradeCostFactor[grade]
-  const bom = product.bom ?? BALANCE.bomDefaultByCategory[product.category]
+  const bom = resolveBom(product)
 
   let bomShare = 0
   let materialFactor = 0
@@ -102,6 +109,25 @@ export function computeUnitCostNow(product: Product, grade: Grade, commodities: 
   const costFactor = 1 - bomShare + materialFactor
 
   return round(product.unitCost * gradeCostFactor * costFactor)
+}
+
+// P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5): computeUnitCostNows termer,
+// uppdelade PER RÅVARA i stället för summerade till ett tal. production.ts
+// behöver uppdelningen för att veta hur mycket av en enhets materialkostnad
+// ett BUY_FORWARD-innehav i EN SPECIFIK råvara faktiskt kan täcka — en enda
+// summerad kostnad hade låtit ett stålinnehav subventionera en oljetung
+// produkts kostnad, fel enligt avsnitt 4.5 ("ett för stort innehav binder
+// kassa" förutsätter att innehavet bara täcker SIN EGEN råvaras andel).
+// Osummerad, oavrundad med avsikt — bara den slutliga, faktiskt bokförda
+// kostnaden ska avrundas (money.ts, hård regel 8), inte varje mellanled.
+export function materialCostPerUnit(product: Product, grade: Grade, commodities: Record<Commodity, number>): Partial<Record<Commodity, Money>> {
+  const gradeCostFactor = BALANCE.gradeCostFactor[grade]
+  const bom = resolveBom(product)
+  const result: Partial<Record<Commodity, Money>> = {}
+  for (const [commodity, share] of Object.entries(bom) as [Commodity, number][]) {
+    result[commodity] = product.unitCost * gradeCostFactor * share * (commodities[commodity] / 100)
+  }
+  return result
 }
 
 // heat hör till en teater, inte en köpare — men referencePrice behöver "en fronts

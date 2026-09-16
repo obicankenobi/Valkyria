@@ -99,10 +99,20 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // sin bom (hela poängen med P49) — unitCostAtSigning/produktionskostnad
   // påverkas så fort commodities glider från baseline (100) under partiets
   // 20 turer. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P50 (avsnitt 4.4). Formens ändring (market.commodityDemandThisTurn,
+  // Faction.commoditySources? — se avsnitt 5s generella regel: golden fryses om i
+  // VARJE prompt som ändrar GameState:s form, inte bara de fyra som var kända vid
+  // specens skrivande) är den mindre orsaken. Den STÖRRE: rivals.ts:s supply play
+  // drar nu ett rng.pick(COMMODITIES) den aldrig gjorde förut, för att välja VILKEN
+  // råvara sabotaget träffar — en ny RNG-dragning som skiftar hela partiets
+  // nedströms-kaskad (ordrar, bud, strid) från den tur en opportunist-rival
+  // sabbar första gången, inte bara ett nytt tomt fält. headlines > 8 höll
+  // oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1f0bf8569fb1c8' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9a6bf1f27e505' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '127023b25382d4' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '14c2e940089641' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2cb5942bab418' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '189fe94a181154' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

@@ -4,7 +4,7 @@ import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
-import type { GameState, TurnSubmission, WireEvent } from '../../src/types.js'
+import type { Commodity, GameState, TurnSubmission, WireEvent } from '../../src/types.js'
 
 function makeCtx(
   state: GameState,
@@ -122,22 +122,37 @@ const NON_PASSIVE: TurnSubmission = {
 }
 
 describe('rivals — P26: leverantörskapacitet (opportunist, avsnitt 2.4)', () => {
-  it('(P26 klart-når) en opportunist-rival med kapital över floor höjer market.supplyCostIndex, tappar capital, och kedjan går att läsa i wire', () => {
+  it('(P50 klart-når) en opportunist-rival med kapital över floor höjer EN råvara — inte aggregatet direkt — tappar capital, och kedjan går att läsa i wire', () => {
     const state = createInitialState('indochina-slice', 'seed')
     for (const id of Object.keys(state.rivals)) if (id !== 'brandt') state.rivals[id]!.sabotagedUntilTurn = 999
     const rival = state.rivals['brandt']! // opportunist, kapital 5 000 000 > floor
+    const commoditiesBefore = { ...state.market.commodities }
     const indexBefore = state.market.supplyCostIndex
     const capitalBefore = rival.capital
 
     const { ctx, emitted } = makeCtx(state, NON_PASSIVE)
     rivals(ctx)
 
-    expect(state.market.supplyCostIndex).toBe(indexBefore + balance.rivalSupplyPlayIndexPenalty)
+    // P50 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.4): generaliserad från att bumpa
+    // hela aggregatet till att slå mot EN slumpad råvara — exakt en av de fem
+    // ska ha rört sig, de andra fyra orörda.
+    const changed = (Object.keys(state.market.commodities) as Commodity[]).filter(
+      (c) => state.market.commodities[c] !== commoditiesBefore[c],
+    )
+    expect(changed).toHaveLength(1)
+    const targetCommodity = changed[0]!
+    expect(state.market.commodities[targetCommodity]).toBe(commoditiesBefore[targetCommodity] + balance.rivalSupplyPlayIndexPenalty)
+
+    // supplyCostIndex förblir en FUNKTION av commodities (skyddsräcke 2) —
+    // aggregatet rör sig bara med den träffade råvarans vikt, inte hela stöten.
+    const weights = balance.commodityIndexWeight as Record<Commodity, number>
+    expect(state.market.supplyCostIndex).toBeCloseTo(indexBefore + balance.rivalSupplyPlayIndexPenalty * weights[targetCommodity], 6)
+
     expect(rival.capital).toBe(capitalBefore - balance.rivalSupplyPlayCost)
     expect(rival.supplyPlayCooldownUntilTurn).toBe(state.meta.turn + balance.rivalSupplyPlayCooldownTurns)
     const playEvent = emitted.find((e) => e.subjectId === 'brandt' && e.headline.includes('SUPPLY MARKET'))
     expect(playEvent).toBeDefined()
-    expect(playEvent!.delta.supplyCostIndex).toBe(balance.rivalSupplyPlayIndexPenalty)
+    expect(playEvent!.delta[`commodities.${targetCommodity}`]).toBe(balance.rivalSupplyPlayIndexPenalty)
   })
 
   it('en opportunist-rival med kapital UNDER floor spelar inte alls', () => {
@@ -177,20 +192,26 @@ describe('rivals — P26: leverantörskapacitet (opportunist, avsnitt 2.4)', () 
     expect(state.market.supplyCostIndex).toBe(indexBefore)
     expect(rival.capital).toBe(5000000) // orört
 
-    // Turen efter att cooldownen passerat: spelar igen.
+    // Turen efter att cooldownen passerat: spelar igen — EN råvara rör sig
+    // (P50), aggregatet därmed bara med den träffade råvarans vikt.
     state.meta.turn = 5
     rivals(makeCtx(state, NON_PASSIVE, 'rivals-test-2').ctx)
-    expect(state.market.supplyCostIndex).toBe(indexBefore + balance.rivalSupplyPlayIndexPenalty)
+    expect(state.market.supplyCostIndex).toBeGreaterThan(indexBefore)
   })
 
-  it('market.supplyCostIndex klamras aldrig över supplyIndexMax', () => {
+  it('en enskild råvara klamras aldrig över supplyIndexMax vid en rivals supply play', () => {
     const state = createInitialState('indochina-slice', 'seed')
     for (const id of Object.keys(state.rivals)) if (id !== 'brandt') state.rivals[id]!.sabotagedUntilTurn = 999
-    state.market.supplyCostIndex = balance.supplyIndexMax // redan vid taket
+    // Alla fem redan vid taket — oavsett vilken rng.pick väljer klampas den.
+    for (const c of Object.keys(state.market.commodities) as Commodity[]) state.market.commodities[c] = balance.supplyIndexMax
+    state.market.supplyCostIndex = balance.supplyIndexMax
 
     rivals(makeCtx(state, NON_PASSIVE).ctx)
 
-    expect(state.market.supplyCostIndex).toBe(balance.supplyIndexMax)
+    for (const c of Object.keys(state.market.commodities) as Commodity[]) {
+      expect(state.market.commodities[c]).toBeLessThanOrEqual(balance.supplyIndexMax)
+    }
+    expect(state.market.supplyCostIndex).toBeLessThanOrEqual(balance.supplyIndexMax)
   })
 })
 

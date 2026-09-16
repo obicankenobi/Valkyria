@@ -234,5 +234,8 @@
     "aviation": { "titanium": 0.25, "rare_earths": 0.1 },
     "naval": { "steel": 0.35 },
     "electronics": { "rare_earths": 0.3, "steel": 0.05 }
-  }
+  },
+  "_p50_note": "ETAPP4_TEKNISK_SPEC.md avsnitt 4.4 namnger fyra drivare men ger ingen formel eller styrka för någon av dem -- bara att de 'redan finns som signaler i motorn'. Två nya, PROVISORISKA balanstal, båda kalibrerade mot befintliga tal i samma formel (supply.ts:s mål-/stegformel, oförändrad sedan P48) snarare än gissade fristående: warDemandCommodityCoupling (krigsefterfrågan) skalar en leverans viktade bom-andel (t.ex. 500x m1_rifle x steel 0.3 = 150) till en måttlig, synlig målförskjutning (150 x 0.02 = 3 punkter) -- samma storleksordning som en enda stor leverans redan ger HEAT (heatPerUnit x 500 kan mätta hela skalan), fast bara för DEN råvaran, inte alla fem. embargoCommodityTargetBoost (embargo) är skalat mot heat-termens eget max (globalHeat 100 x supplyHeatCoupling 0.45 = 45) -- 15 punkter är ett tydligt, sammanhängande tryck utan att ensamt kunna slå i taket. Faction.commoditySources (källan embargot pekar mot) är obesatt i indochina-slice.json, se types.ts:s egen kommentar. rivalSupplyPlayIndexPenalty (sabotage, rivals.ts) återanvänds OFÖRÄNDRAD -- bara VILKEN råvara den träffar generaliserades, inte hur hårt. Se docs/ANDRINGSLOGG.md.",
+  "warDemandCommodityCoupling": 0.02,
+  "embargoCommodityTargetBoost": 15
 }

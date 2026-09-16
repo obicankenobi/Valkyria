@@ -24,11 +24,11 @@
 // ThisTurn i samma passage, innan rivals.ts någonsin körs).
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
-import { getProduct } from '../../pricing.js'
+import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
 import type { ResolveStep } from '../index.js'
-import type { Doctrine, Front, GameState, Grade, TechCategory } from '../../types.js'
+import type { Commodity, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
 
 interface Balance {
   reliabilityLatePenalty: number
@@ -81,6 +81,19 @@ function distributeUnitsToFormations(front: Front, side: 'a' | 'b', category: Te
 // behöver ändå en stabil nyckel för det huset. Reserverad konstant, inte husets
 // (spelarredigerbara) namn.
 export const PLAYER_ATTRIBUTION_KEY = 'player'
+
+// P50 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.4): "krigsefterfrågan" — en leverans in
+// på en aktiv front höjer priset på de råvaror MATERIELEN BÄR, inte alla fem
+// lika (till skillnad från heat). resolveBom (pricing.ts) ger samma fallback-
+// regel computeUnitCostNow redan använder — units × varje råvaras andel av
+// bom:en ackumuleras i market.commodityDemandThisTurn, läst och nollställd av
+// supply.ts (samma "denna-tur-transient"-mönster som Theatre.deliveriesIntoActiveWarThisTurn).
+function accumulateWarDemand(market: GameState['market'], product: Product, units: number): void {
+  const bom = resolveBom(product)
+  for (const [commodity, share] of Object.entries(bom) as [Commodity, number][]) {
+    market.commodityDemandThisTurn[commodity] += units * share
+  }
+}
 
 function findFrontForBuyer(fronts: GameState['fronts'], buyerId: string): { front: Front; side: 'a' | 'b' } | null {
   for (const front of Object.values(fronts)) {
@@ -184,6 +197,7 @@ export const deliveries: ResolveStep = (ctx) => {
       // heat.ts läser och nollställer i samma steg. Se types.ts och ANDRINGSLOGG.md.
       const theatre = draft.theatres[front.theatreId]
       if (theatre) theatre.deliveriesIntoActiveWarThisTurn += shipment.units
+      accumulateWarDemand(draft.market, product, shipment.units)
 
       emit({
         severity: 'ticker',
@@ -343,6 +357,7 @@ export const deliveries: ResolveStep = (ctx) => {
 
           const theatre = draft.theatres[front.theatreId]
           if (theatre) theatre.deliveriesIntoActiveWarThisTurn += delivered
+          accumulateWarDemand(draft.market, product, delivered)
 
           emit({
             severity: 'ticker',

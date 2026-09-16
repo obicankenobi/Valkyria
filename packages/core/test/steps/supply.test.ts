@@ -242,4 +242,70 @@ describe('supply (isolerat steg, spec avsnitt 3 "supplyCostIndex")', () => {
       }
     })
   })
+
+  // P50 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.4) — de tre drivarna det här steget
+  // faktiskt äger (krigsefterfrågan, embargo; rivalers sabotage är rivals.ts:s
+  // eget test, se rivals.test.ts, eftersom den bumpar commodities direkt i
+  // stället för att gå via den här formeln).
+  describe('prisdrivarna (P50 klart-når)', () => {
+    it('krigsefterfrågan höjer just den råvara en leverans bär, inte de andra fyra', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      setHeat(state, 0) // targetIndex = 100 — isolerar testet från heat-termen
+      setCommodities(state, 100)
+      // Motsvarar en leverans som deliveries.ts skulle ha ackumulerat: enbart
+      // steel och titanium bär den här (syntetiska) produktens materiel.
+      state.market.commodityDemandThisTurn.steel = 200
+      state.market.commodityDemandThisTurn.titanium = 50
+
+      supply(makeCtx(state, 'supply-seed').ctx)
+
+      expect(state.market.commodities.steel).toBeGreaterThan(100)
+      expect(state.market.commodities.titanium).toBeGreaterThan(100)
+      expect(state.market.commodities.steel).toBeGreaterThan(state.market.commodities.titanium) // mer efterfrågan ⇒ mer tryck
+      expect(state.market.commodities.oil).toBe(100)
+      expect(state.market.commodities.uranium).toBe(100)
+      expect(state.market.commodities.rare_earths).toBe(100)
+    })
+
+    it('krigsefterfrågan är denna-tur-transient — nollställs efter att ha lästs, precis som Theatre.deliveriesIntoActiveWarThisTurn', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      setHeat(state, 0)
+      setCommodities(state, 100)
+      state.market.commodityDemandThisTurn.steel = 200
+
+      supply(makeCtx(state, 'supply-seed').ctx)
+
+      expect(state.market.commodityDemandThisTurn.steel).toBe(0)
+    })
+
+    it('ett embargo höjer den råvara den embargerade faktionen är källa till, och bara den', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      setHeat(state, 0) // targetIndex = 100 utan embargo
+      setCommodities(state, 100)
+      const faction = state.factions['rvn']!
+      faction.embargoed = true
+      faction.commoditySources = ['oil']
+
+      supply(makeCtx(state, 'supply-seed').ctx)
+
+      expect(state.market.commodities.oil).toBeGreaterThan(100)
+      expect(state.market.commodities.steel).toBe(100)
+      expect(state.market.commodities.uranium).toBe(100)
+      expect(state.market.commodities.titanium).toBe(100)
+      expect(state.market.commodities.rare_earths).toBe(100)
+    })
+
+    it('embargoed utan commoditySources ger inget råvarutryck — bara den ekonomiska effekten (factions.ts) gäller', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      setHeat(state, 0)
+      setCommodities(state, 100)
+      state.factions['rvn']!.embargoed = true // ingen commoditySources satt
+
+      supply(makeCtx(state, 'supply-seed').ctx)
+
+      for (const commodity of Object.keys(state.market.commodities) as Commodity[]) {
+        expect(state.market.commodities[commodity]).toBe(100)
+      }
+    })
+  })
 })
