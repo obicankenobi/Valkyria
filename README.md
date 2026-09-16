@@ -29,3 +29,28 @@ byggs — inte med det som byggs i etapp 2.
 
 All prosa i dokumenten är på svenska. **All kod, alla identifierare, alla UI-strängar och all
 speldata är på engelska** och ska användas ordagrant som de står i specen.
+
+## Deploy
+
+`packages/app` (Vite + React) deployas till Vercel, kopplat direkt mot GitHub-repot — varje push
+till produktionsgrenen bygger och publicerar automatiskt, ingen manuell `npm run dev` krävs för
+att öppna spelet i en webbläsare (dator eller mobil).
+
+**`vercel.json`** (repo-roten) styr build-processen, nödvändigt eftersom det här är ett npm
+workspaces-monorepo där `packages/app` beror på `packages/core` (`@seventh-front/core`, löst via
+workspace-symlink) — Vercels Root Directory måste därför vara **repo-roten**, inte
+`packages/app`, annars hittar `npm install` aldrig workspace-beroendet:
+
+| Fält | Värde | Varför |
+|---|---|---|
+| `installCommand` | `npm ci` | Samma kommando som `.github/workflows/ci.yml`, installerar alla workspaces från `package-lock.json` |
+| `buildCommand` | `npm run build` | Root-scriptet som redan bygger i rätt ordning: `core` → `harness` → `app` (se root `package.json`) — samma kommando CI redan kör och verifierar varje push |
+| `outputDirectory` | `packages/app/dist` | `vite build`s utdata, relativt repo-roten |
+| `framework` | `null` | Inaktiverar auto-detektion — build-processen är redan explicit ovan |
+
+Ingen server-sida, ingen databas, inget klientsidesrouting (`react-router` eller motsvarande
+finns inte i `packages/app`) — statiska filer, inga `rewrites` behövs.
+
+Verifierat lokalt innan kopplingen sattes upp: `npm ci && npm run build` (exakt
+`vercel.json`s kommandon) går igenom felfritt, och `packages/app/dist` serverad och öppnad i en
+riktig webbläsare (Chromium) renderar utan konsolfel.
