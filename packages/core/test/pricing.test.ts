@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { computeReferencePrice, computeScore, getProduct, rivalBlocTerm } from '../src/pricing.js'
+import { allProducts, computeReferencePrice, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../src/pricing.js'
 import balance from '../src/data/balance.json' with { type: 'json' }
-import type { RivalHouse } from '../src/types.js'
+import type { Commodity, Product, RivalHouse } from '../src/types.js'
 
 function makeRival(overrides: Partial<RivalHouse> = {}): RivalHouse {
   return {
@@ -119,5 +119,71 @@ describe('computeReferencePrice (P48 klart-når: opåverkad av att supplyCostInd
     const priceB = computeReferencePrice(product, 250, 10, 105)
 
     expect(priceA).toBe(priceB)
+  })
+})
+
+// ── computeUnitCostNow (P49, ETAPP4_TEKNISK_SPEC.md avsnitt 4.3) ────────────
+
+const BASELINE_COMMODITIES: Record<Commodity, number> = {
+  oil: 100,
+  steel: 100,
+  uranium: 100,
+  titanium: 100,
+  rare_earths: 100,
+}
+
+describe('computeUnitCostNow (P49 klart-når)', () => {
+  it('en oljechock ändrar styckkostnaden för en oljetung produkt mer än för en ståltung', () => {
+    // Ingen produkt i products.json har olja i sin bom idag (avsnitt 4.3:s
+    // illustrativa exempel nämner aldrig en oljetung PRODUKTKATEGORI) — testet
+    // bygger därför två syntetiska produkter direkt, med en handkontrollerad bom
+    // var, för att isolera formelns beteende från vilken bom-fördelning som
+    // råkar finnas i dagens katalog.
+    const base = getProduct('105mm_field_gun')
+    const oilHeavy: Product = { ...base, id: 'test-oil-heavy', bom: { oil: 0.5 } }
+    const steelHeavy: Product = { ...base, id: 'test-steel-heavy', bom: { steel: 0.5 } }
+
+    const shocked: Record<Commodity, number> = { ...BASELINE_COMMODITIES, oil: 150 }
+
+    const oilHeavyDelta = computeUnitCostNow(oilHeavy, 'A', shocked) - computeUnitCostNow(oilHeavy, 'A', BASELINE_COMMODITIES)
+    const steelHeavyDelta =
+      computeUnitCostNow(steelHeavy, 'A', shocked) - computeUnitCostNow(steelHeavy, 'A', BASELINE_COMMODITIES)
+
+    expect(oilHeavyDelta).toBeGreaterThan(0)
+    expect(steelHeavyDelta).toBe(0) // en oljechock rör inte en produkt utan olja i sin bom
+    expect(oilHeavyDelta).toBeGreaterThan(steelHeavyDelta)
+  })
+
+  it('en produkt utan bom faller tillbaka på sin kategoris standardandelar i balance.json:s bomDefaultByCategory', () => {
+    const product = getProduct('m1_rifle') // infantry, ingen egen bom
+    expect(product.bom).toBeUndefined()
+
+    const commodities: Record<Commodity, number> = { ...BASELINE_COMMODITIES, steel: 150 }
+    const actual = computeUnitCostNow(product, 'A', commodities)
+
+    const bom = balance.bomDefaultByCategory[product.category] as Partial<Record<Commodity, number>>
+    let bomShare = 0
+    let materialFactor = 0
+    for (const [commodity, share] of Object.entries(bom) as [Commodity, number][]) {
+      bomShare += share
+      materialFactor += share * (commodities[commodity] / 100)
+    }
+    const costFactor = 1 - bomShare + materialFactor
+    const expected = Math.round(product.unitCost * balance.gradeCostFactor.A * costFactor)
+
+    expect(actual).toBe(expected)
+  })
+
+  it('summan av bom-andelarna aldrig överstiger 1, varken för en kategoris standard eller en produkts egen override', () => {
+    for (const [category, bom] of Object.entries(balance.bomDefaultByCategory)) {
+      const share = Object.values(bom as Record<string, number>).reduce((sum, v) => sum + v, 0)
+      expect(share, `bomDefaultByCategory.${category}`).toBeLessThanOrEqual(1)
+    }
+
+    for (const product of allProducts()) {
+      if (!product.bom) continue
+      const share = Object.values(product.bom).reduce((sum: number, v) => sum + (v ?? 0), 0)
+      expect(share, `${product.id}.bom`).toBeLessThanOrEqual(1)
+    }
   })
 })

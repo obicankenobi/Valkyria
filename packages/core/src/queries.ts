@@ -155,7 +155,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
   // "plus vilket hus som ligger lägst" — bara vid depth >= 4 (spec 4.3-tabellen).
   const lowestRivalHouse = depth >= 4 && lowest ? lowest.rivalId : null
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.supplyCostIndex)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities)
 
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0

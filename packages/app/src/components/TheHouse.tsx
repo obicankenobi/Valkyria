@@ -15,7 +15,7 @@
 // för bud.
 import { useState } from 'react'
 import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct } from '@seventh-front/core'
-import type { Contract, GameState, PlayerAction, TechCategory, TurnSubmission } from '@seventh-front/core'
+import type { Commodity, Contract, GameState, PlayerAction, TechCategory, TurnSubmission } from '@seventh-front/core'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
 
 const TECH_CATEGORIES: TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
@@ -25,8 +25,8 @@ const HIRABLE_ROLES: { role: 'chiefEngineer' | 'chiefSalesman' | 'chiefOfStaff';
   { role: 'chiefOfStaff', label: 'Chief of Staff' },
 ]
 
-function contractMargin(contract: Contract, supplyCostIndex: number): { marginPct: number | null; unitCostNow: number } {
-  const unitCostNow = computeUnitCostNow(getProduct(contract.productId), contract.grade, supplyCostIndex)
+function contractMargin(contract: Contract, commodities: Record<Commodity, number>): { marginPct: number | null; unitCostNow: number } {
+  const unitCostNow = computeUnitCostNow(getProduct(contract.productId), contract.grade, commodities)
   if (contract.price <= 0) return { marginPct: null, unitCostNow }
   const cost = unitCostNow * contract.quantity
   return { marginPct: ((contract.price - cost) / contract.price) * 100, unitCostNow }
@@ -326,7 +326,7 @@ export function TheHouse({
             </thead>
             <tbody>
               {activeContracts.map((contract) => {
-                const { marginPct, unitCostNow } = contractMargin(contract, supplyIndex)
+                const { marginPct, unitCostNow } = contractMargin(contract, state.market.commodities)
                 return (
                   <tr key={contract.id}>
                     <td className="is-key">{contract.id}</td>

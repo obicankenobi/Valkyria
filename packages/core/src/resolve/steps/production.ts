@@ -126,7 +126,7 @@ export const production: ResolveStep = (ctx) => {
     const plannedUnits = Math.min(remaining, Math.floor(lineThroughput))
     if (plannedUnits <= 0) continue
 
-    const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.supplyCostIndex)
+    const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.commodities)
     const affordableUnits = unitCostNow > 0 ? Math.floor(house.treasury / unitCostNow) : plannedUnits
     const actualUnits = Math.max(0, Math.min(plannedUnits, affordableUnits))
     const cost = unitCostNow * actualUnits

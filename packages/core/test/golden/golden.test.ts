@@ -91,10 +91,18 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // tillståndet) även om VÄRDET på supplyCostIndex är bit-för-bit detsamma som
   // innan (fem lika vikter, identisk rörelse — se balance.json:s _p48_note).
   // headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P49 (avsnitt 4.3, samma klart-när-krav) — computeUnitCostNow
+  // räknar nu per råvara i stället för mot ett enda supplyCostIndex-tal. Till
+  // skillnad från P48 är detta INTE bit-för-bit samma resultat i allmänhet:
+  // olika produkter reagerar nu olika på samma commodities-drift beroende på
+  // sin bom (hela poängen med P49) — unitCostAtSigning/produktionskostnad
+  // påverkas så fort commodities glider från baseline (100) under partiets
+  // 20 turer. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1bf96baf00e852' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2c83f8a387b9' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '4d80654c6acf7' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1f0bf8569fb1c8' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9a6bf1f27e505' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '127023b25382d4' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

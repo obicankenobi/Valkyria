@@ -12,13 +12,14 @@ import productsData from './data/products.json' with { type: 'json' }
 import balanceData from './data/balance.json' with { type: 'json' }
 import { round } from './money.js'
 import type { Rng } from './rng.js'
-import type { FrontId, GameState, Grade, House, Money, Pct, Product, ProductId, RivalHouse } from './types.js'
+import type { Commodity, FrontId, GameState, Grade, House, Money, Pct, Product, ProductId, RivalHouse } from './types.js'
 
 interface Balance {
   heatPriceElasticity: number
   scarcityPriceDivisor: number
   gradePriceFactor: Record<Grade, number>
   gradeCostFactor: Record<Grade, number>
+  bomDefaultByCategory: Record<Product['category'], Partial<Record<Commodity, number>>>
   rivalCashFloor: number
   rivalMarginBase: number
   rivalMarginAggressionScale: number
@@ -78,10 +79,29 @@ export function computeReferencePrice(product: Product, quantity: number, heat: 
   return round(product.baseCost * quantity * heatFactor * scarcityFactor)
 }
 
-export function computeUnitCostNow(product: Product, grade: Grade, supplyCostIndex: number): Money {
+const COMMODITIES: readonly Commodity[] = ['oil', 'steel', 'uranium', 'titanium', 'rare_earths']
+
+// P49 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.3), ordagrant:
+// unitCost × (1 − bomShare) + unitCost × Σ(bom[c] × commodities[c]/100).
+// product.bom saknas för de flesta produkter — faller tillbaka på
+// balance.json:s bomDefaultByCategory[product.category] (avsnitt 4.3: "per-
+// produkt-överskrivning bara där kategorin inte räcker"). Vid baseline
+// (alla commodities = 100) blir costFactor exakt 1, oavsett bom — samma
+// resultat som formeln gav innan P49 (supplyFactor = supplyCostIndex/100 = 1).
+export function computeUnitCostNow(product: Product, grade: Grade, commodities: Record<Commodity, number>): Money {
   const gradeCostFactor = BALANCE.gradeCostFactor[grade]
-  const supplyFactor = supplyCostIndex / 100
-  return round(product.unitCost * gradeCostFactor * supplyFactor)
+  const bom = product.bom ?? BALANCE.bomDefaultByCategory[product.category]
+
+  let bomShare = 0
+  let materialFactor = 0
+  for (const commodity of COMMODITIES) {
+    const share = bom[commodity] ?? 0
+    bomShare += share
+    materialFactor += share * (commodities[commodity] / 100)
+  }
+  const costFactor = 1 - bomShare + materialFactor
+
+  return round(product.unitCost * gradeCostFactor * costFactor)
 }
 
 // heat hör till en teater, inte en köpare — men referencePrice behöver "en fronts

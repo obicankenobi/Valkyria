@@ -95,6 +95,7 @@
     "restricted": true,
     "doomsdayOnDelivery": [14, 25],
     "orderQuantityMin": 2,
-    "orderQuantityMax": 15
+    "orderQuantityMax": 15,
+    "bom": { "uranium": 0.4, "steel": 0.15 }
   }
 ]

@@ -100,7 +100,7 @@ function resolvePush(ctx: ResolveContext, pending: PendingCrisis): void {
     quantity,
     unitsDelivered: 0,
     price,
-    unitCostAtSigning: computeUnitCostNow(product, 'A', draft.market.supplyCostIndex),
+    unitCostAtSigning: computeUnitCostNow(product, 'A', draft.market.commodities),
     grade: 'A',
     dueTurn: draft.meta.turn + 20, // "femårskontrakt" — 20 turer, ett kvartal per tur
     status: 'active',

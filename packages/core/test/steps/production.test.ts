@@ -83,7 +83,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     const product = getProduct(contract.productId)
     const line = state.house.lines[0]!
     const expectedUnits = Math.floor(line.unitsPerTurnAtFull * (line.capacityPct / 100))
-    const unitCost = computeUnitCostNow(product, contract.grade, state.market.supplyCostIndex)
+    const unitCost = computeUnitCostNow(product, contract.grade, state.market.commodities)
     expect(before - state.house.treasury).toBe(unitCost * expectedUnits)
   })
 
@@ -98,7 +98,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     line.status = 'running'
 
     const product = getProduct(contract.productId)
-    const unitCost = computeUnitCostNow(product, contract.grade, state.market.supplyCostIndex)
+    const unitCost = computeUnitCostNow(product, contract.grade, state.market.commodities)
     const affordableUnits = 5
     state.house.treasury = unitCost * affordableUnits // räcker till exakt 5 enheter, inte en fullständig omgång
 
@@ -176,7 +176,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     const marginByGrade: Record<'A' | 'B' | 'C', { absolute: number; percent: number }> = {} as never
     for (const grade of ['A', 'B', 'C'] as const) {
       const pricePerUnit = referencePricePerUnit * gradePriceFactor[grade]
-      const unitCost = computeUnitCostNow(product, grade, state.market.supplyCostIndex)
+      const unitCost = computeUnitCostNow(product, grade, state.market.commodities)
       const absolute = pricePerUnit - unitCost
       marginByGrade[grade] = { absolute, percent: absolute / pricePerUnit }
     }

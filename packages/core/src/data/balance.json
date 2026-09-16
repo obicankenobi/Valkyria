@@ -225,5 +225,14 @@
     "uranium": 0.2,
     "titanium": 0.2,
     "rare_earths": 0.2
+  },
+  "_p49_note": "ETAPP4_TEKNISK_SPEC.md avsnitt 4.3 ger bom-formen (Partial<Record<Commodity, number>>) och kravet att den ligger i balance.json som bomDefaultByCategory ordagrant, men ingen faktisk fördelning -- specen ger bara illustrativa EXEMPEL i prosa ('ett gevär är stål och arbete, en stridsvagn är stål och titan, ett artillerigranatskal med kärnladdning bär uran, elektronik bär sällsynta jordartsmetaller'). Nödvändigt tillägg, PROVISORISKT: sex kategorivärden byggda direkt ur de exemplen (infantry/naval fick ingen egen mening i prosan -- kalibrerade proportionellt mot artillery/armour). mk9_longhand_shell (products.json, kategori artillery) får en egen per-produkt-override med uranium -- exakt det exempel avsnitt 4.3 gav ordagrant för att motivera 'per-produkt-överskrivning bara där kategorin inte räcker'. Ingen kategori eller produkt summerar över 1. Se docs/ANDRINGSLOGG.md.",
+  "bomDefaultByCategory": {
+    "infantry": { "steel": 0.3 },
+    "artillery": { "steel": 0.45 },
+    "armour": { "steel": 0.3, "titanium": 0.15 },
+    "aviation": { "titanium": 0.25, "rare_earths": 0.1 },
+    "naval": { "steel": 0.35 },
+    "electronics": { "rare_earths": 0.3, "steel": 0.05 }
   }
 }

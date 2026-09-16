@@ -197,7 +197,7 @@ export const bidding: ResolveStep = (ctx) => {
     }
 
     if (winner.source === 'player') {
-      const unitCostAtSigning = computeUnitCostNow(product, winner.grade, draft.market.supplyCostIndex)
+      const unitCostAtSigning = computeUnitCostNow(product, winner.grade, draft.market.commodities)
       const contract: Contract = {
         id: `contract-${order.id}`,
         buyerId: order.buyerId,

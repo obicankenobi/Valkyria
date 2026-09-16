@@ -535,7 +535,7 @@ describe('resolveTurn — P16: supply och produktionstakt', () => {
 
       for (const contract of state.market.contracts) {
         const product = getProduct(contract.productId)
-        const unitCostNow = computeUnitCostNow(product, contract.grade, state.market.supplyCostIndex)
+        const unitCostNow = computeUnitCostNow(product, contract.grade, state.market.commodities)
         if (unitCostNow !== contract.unitCostAtSigning) {
           anyDivergence = true
           break

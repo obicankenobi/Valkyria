@@ -225,6 +225,13 @@ export interface Product {
   // Frånvarande = fall tillbaka på balance.json:s globala tal (orders.ts).
   orderQuantityMin?: number
   orderQuantityMax?: number
+  // P49 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.3): andel av unitCost som är råvara c.
+  // Frånvarande = fall tillbaka på balance.json:s bomDefaultByCategory[category]
+  // (avsnitt 4.3: "per-produkt-överskrivning bara där kategorin inte räcker") —
+  // en per-produkt override finns bara där en produkt genuint avviker från sin
+  // kategoris typiska materialprofil (mk9_longhand_shell — ett kärnladdat
+  // granatskal bär uran, till skillnad från en vanlig artilleripjäs).
+  bom?: Partial<Record<Commodity, number>>
 }
 
 // baseCost och unitCost är två skilda tal och ska hållas isär överallt. baseCost är
