@@ -1,11 +1,11 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.5 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c), P54 och P55 klara
-(2026-09-17).**
+**Version 1.0.6 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c), P54, P55 och P56
+klara (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. **P53 (P53a+P53b+P53c), P54 och P55 klara (2026-09-17, se avsnitt 8). `P56` är nästa steg.**
+11. **P53 (P53a+P53b+P53c), P54, P55 och P56 klara (2026-09-17, se avsnitt 8). `P57` är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -631,13 +631,23 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > `fixtures/balance.frozen.json` synkad. Fullt testsvep grönt (403 tester, lint, typecheck,
 > build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
-**P56 — att påverka en människa**
+**P56 — att påverka en människa — BYGGD 2026-09-17**
 > `BRIBE` riktas om mot `officialId`. `FUND_CAMPAIGN` och `FAVOUR` byggs. Minst en bot lär sig
 > använda var och en (GK-A).
 >
 > *Klart när:* ett test visar att `FUND_CAMPAIGN` håller kvar en tjänsteman som annars fallit;
 > ett test visar att `FAVOUR` kostar marginal och inte kassa; ett test visar att ogiltiga
 > handlingar hamnar i `rejected`; golden omfryst.
+>
+> **Klart:** samtliga fyra villkor uppfyllda, plus skyddsräcke 3 (`types.skyddsracke3.test.ts`)
+> och skyddsräcke 4 (`policies.test.ts`) i samma commit. `Official.scandalRisk`/`House.
+> favourMarginSpent` nya fält. `PlayerAction`s `POLITICAL` delad i tre varianter (`type`
+> oförändrad). `applyActions.ts` (568 rader) sprängdes — POLITICAL utbruten till ny
+> `resolve/political.ts` (427 rader kvar i `applyActions.ts`), samma mönster som P23:s
+> `crisis.ts`/`upkeep.ts`. BRIBE: relationsvinst skalad mot låg integritet, höjer `scandalRisk`,
+> taket per tjänsteman. FUND_CAMPAIGN (`aggressive`) och FAVOUR (`balanced`) — vardera en bot.
+> Golden omfryst. Fullt testsvep grönt (415 tester, lint, typecheck, build, e2e). Se
+> `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
 **P57 — politiken slår tillbaka**
 > `PolicyDecision` enligt 3.4, inklusive `EMBARGO` som första skrivare till `Faction.embargoed`.
@@ -770,3 +780,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.3 | 2026-09-17 | **P53 (P53a+P53b+P53c) helt klar.** P53a byggd: `Faction.materielNeed` seedas till `orderTriggerThreshold` (`state.ts`), härnessmätning bekräftar mätbart tidigare första bokförda intäkt för alla fyra botpolicyer. P53b byggd: `board.ts`s `progressSnapshot` inkluderar nu orderbokens obetalda andel, `expectedProgress` bytt från linjär till kvadratisk bana (`computeExpectedProgress`), härnessmätning visar `BUYOUT`-frekvens 0 %/0 %/67 %/70 % (var identisk 100 % för alla fyra). P53c verifierad, ingen kod/data ändrad: känslighetsanalys mot 1,5×/2×/2,5× bekräftar att `boardTarget.threshold` (2×) ger den tydligaste diskrimineringen. Golden omfryst i både P53a och P53b (separata commits). Avsnitt 8:s tre prompter fick var sin "BYGGD/VERIFIERAD"-rubrik och klart-blockquote. `P54` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för samtliga mätningar och exakta hash-värden |
 | 1.0.4 | 2026-09-17 | **P54 byggd — 5A:s ingång, `Official` ersätter `Order.inspectorIntegrity`.** `Official`/`Post`/`Agenda`-typerna (avsnitt 3.1/3.2 — typen nu, viktseffekten i P55), `GameState.officials`, ny `officials.json` (fyra fiktiva tjänstemän per faktion) läst av `state.ts`s nya `buildOfficials`, ny ren modul `officials.ts` (`officialId`/`findOfficial`/`replaceOfficial`). `Order.officialId` ersätter `inspectorIntegrity` — `orders.ts` slår upp köparens `procurement`-tjänsteman i stället för att rulla ett nytt tal per order. `computeScore` (`pricing.ts`) HELT ORÖRD, skyddsräcke 2 pinnat med ett test. `applyActions.ts` medvetet inte rörd (ingen ny `PlayerAction` i P54). Golden omfryst — genuin trajektorieändring, inte bara ny form. Avsnitt 8:s P54-block fick en "BYGGD"-rubrik och klart-blockquote. `P55` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
 | 1.0.5 | 2026-09-17 | **P55 byggd — agendan viktar affären.** `weightsForOrder` (`orders.ts`) ersätter `weightsForPressure` — REARM/AUSTERITY skiftar `order.weights`, en andra viktskiftare vid sidan av `weightPressureShift` (P36). `bestEligibleProduct` fick ett MODERNISE-filter (`techRequired > agendaModerniseTechFloor`). NON_ALIGNMENT fördubblar `blocTerm` i `bidding.ts`/`queries.ts`. SELF_ENRICHMENT krävde ingen ny kod (redan i `officials.json`, P54). Tre nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P55-block fick en "BYGGD"-rubrik och klart-blockquote. `P56` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
+| 1.0.6 | 2026-09-17 | **P56 byggd — att påverka en människa.** `Official.scandalRisk`/`House.favourMarginSpent` nya fält. `PlayerAction`s `POLITICAL`-variant delad i tre (skyddsräcke 3: BRIBE/FUND_CAMPAIGN tar officialId, FAVOUR tar officialId+marginCost, STAGE_INCIDENT/BACK_CHANNEL behåller targetFactionId — `type` oförändrad, skyddsräcke 4 intakt). `applyActions.ts` (568 rader) sprängdes — POLITICAL utbruten till ny `resolve/political.ts` (427 rader kvar), samma mönster som P23. BRIBE riktades om (relationsvinst skalad mot låg integritet, höjer scandalRisk, taket per tjänsteman). FUND_CAMPAIGN/FAVOUR nya, vardera en bot (aggressive/balanced). Golden omfryst. Avsnitt 8:s P56-block fick en "BYGGD"-rubrik och klart-blockquote. `P57` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |

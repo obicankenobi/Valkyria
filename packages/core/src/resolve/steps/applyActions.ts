@@ -26,17 +26,16 @@
 // är den ENDA tillåtna ändringen av PlayerAction-unionen i etappen, så INTEL kan
 // inte få ett eget payload-fält — se ANDRINGSLOGG.md.
 import balanceData from '../../data/balance.json' with { type: 'json' }
-import { addDoomsday } from '../doomsdayGate.js'
 import { advanceRndQueue, advanceStations } from '../upkeep.js'
 import { resolvePendingCrisis } from '../crisis.js'
+import { applyPolitical } from '../political.js'
 import { round } from '../../money.js'
 import { deriveSupplyCostIndex } from './supply.js'
 import type { ResolveStep } from '../index.js'
 import type {
   Commodity,
-  FactionId,
-  GameState,
   Money,
+  OfficialId,
   ProductionLine,
   RndProject,
   Station,
@@ -49,21 +48,11 @@ interface Balance {
   hireCost: number
   hireGain: number
   rndProjectTurns: number
-  bribeRelationCostPerPoint: number
-  bribeRelationMaxPerTurn: number
-  stageIncidentSuccessPct: number
-  stageIncidentHeatMin: number
-  stageIncidentHeatMax: number
-  stageIncidentDoomsdayMin: number
-  stageIncidentDoomsdayMax: number
-  backChannelDoomsdayMin: number
-  backChannelDoomsdayMax: number
   intelExpandCost: number
   intelRecruitCost: number
   intelExposureMin: number
   intelExposureMax: number
   maxStations: number
-  misattributionExposurePenalty: number
   commodityIndexWeight: Record<Commodity, number>
   marketReleaseCommodityImpactPerMoney: number
   supplyIndexMin: number
@@ -97,28 +86,6 @@ function isRndPayload(payload: Record<string, unknown>): payload is { category: 
   return typeof payload.category === 'string' && (TECH_CATEGORIES as readonly string[]).includes(payload.category)
 }
 
-// buyerId (en Faction) hör till en teater genom den front den står på — samma
-// idé som pricing.ts:s computeHeatForFront, men den funktionen tar en KÄND
-// frontId (P44) och returnerar bara heat-talet, inte teatern själv (som
-// STAGE_INCIDENT behöver för att kunna HÖJA den). Ingen delad helper fanns för
-// "hitta EN front/teater för en faktion som kan stå på flera", så en liten egen
-// håller sig här i stället för att bredda pricing.ts:s publika yta för en enda
-// konsument.
-//
-// KÄND, FLAGGAD LUCKA sedan P44 (ETAPP4_TEKNISK_SPEC.md, se ANDRINGSLOGG.md):
-// tar fortfarande FÖRSTA matchande fronten, samma mönster som orders.ts:s
-// dåvarande computePressureForBuyer hade innan P44 fixade den. Med Laos egen
-// front (P45) kan en faktion stå på två fronter — STAGE_INCIDENT väljer då
-// alltid den först funna teatern, inte nödvändigtvis den "rätta". Medvetet
-// lämnad: vilken av två teatrar en DIFFUS händelse ska träffa är ett eget litet
-// designval, inte del av P44:s mandat (Order/Contract.frontId, pris och vikter).
-// Åtgärda om P47:s mätning visar att det snedvrider något.
-function findTheatreForFaction(draft: GameState, factionId: FactionId): GameState['theatres'][string] | null {
-  const front = Object.values(draft.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
-  if (!front) return null
-  return draft.theatres[front.theatreId] ?? null
-}
-
 export const applyActions: ResolveStep = (ctx) => {
   const { draft, submission, rng, emit, rejected } = ctx
   const house = draft.house
@@ -133,10 +100,11 @@ export const applyActions: ResolveStep = (ctx) => {
   // gränsen genom att bara skicka in många handlingar samma tur.
   let remainingCredit = house.creditLimit
   let rndSeq = 0
-  // BRIBE:s tak (bribeRelationMaxPerTurn) är PER MÅLFAKTION per tur, inte totalt —
-  // flera BRIBE mot samma faktion samma tur ska inte kringgå taket genom att delas
-  // upp, men två BRIBE mot OLIKA faktioner ska inte dela ett gemensamt tak.
-  const bribeGainThisTurn = new Map<FactionId, number>()
+  // BRIBE:s tak (bribeRelationMaxPerTurn) är PER TJÄNSTEMAN per tur, inte totalt
+  // (P56, ETAPP5_TEKNISK_SPEC.md avsnitt 3.3 — ändrat från per faktion) — flera
+  // BRIBE mot samma person samma tur ska inte kringgå taket genom att delas upp,
+  // men två BRIBE mot OLIKA personer ska inte dela ett gemensamt tak.
+  const bribeGainThisTurn = new Map<OfficialId, number>()
 
   let actionsUsed = 0
   for (const action of submission.actions) {
@@ -280,120 +248,11 @@ export const applyActions: ResolveStep = (ctx) => {
       continue
     }
 
+    // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 5): filen sprängdes av BRIBE:s
+    // omriktning + FUND_CAMPAIGN/FAVOUR — POLITICAL-logiken bröts ut till
+    // political.ts (samma mönster som P23 bröt ut crisis.ts/upkeep.ts).
     if (action.type === 'POLITICAL') {
-      const target = draft.factions[action.targetFactionId]
-      if (!target) {
-        rejected.push({ action, reason: 'unknown target faction' })
-        continue
-      }
-      if (!Number.isFinite(action.spend) || action.spend < 0) {
-        rejected.push({ action, reason: 'invalid spend amount' })
-        continue
-      }
-
-      switch (action.op) {
-        case 'BRIBE': {
-          house.treasury -= action.spend
-          const alreadyGained = bribeGainThisTurn.get(target.id) ?? 0
-          const roomLeftThisTurn = Math.max(0, BALANCE.bribeRelationMaxPerTurn - alreadyGained)
-          const rawGain = action.spend / BALANCE.bribeRelationCostPerPoint
-          const gain = Math.min(rawGain, roomLeftThisTurn, 100 - target.relationToPlayer)
-          target.relationToPlayer += gain
-          bribeGainThisTurn.set(target.id, alreadyGained + gain)
-          emit({
-            severity: 'ticker',
-            scope: 'faction',
-            headline: `${house.name.toUpperCase()} CULTIVATES ${target.name.toUpperCase()} (−£${action.spend.toLocaleString('en-GB')})`,
-            causeId: null,
-            delta: { treasury: -action.spend, relationToPlayer: gain },
-            actorIsPlayer: true,
-            subjectId: target.id,
-          })
-          break
-        }
-
-        case 'STAGE_INCIDENT': {
-          house.treasury -= action.spend
-          const succeeded = rng.chance(BALANCE.stageIncidentSuccessPct)
-
-          if (succeeded) {
-            const theatre = findTheatreForFaction(draft, target.id)
-            let headline = `INCIDENT STAGED AGAINST ${target.name.toUpperCase()}`
-            if (theatre) {
-              const before = theatre.heat
-              theatre.heat = Math.min(100, theatre.heat + rng.int(BALANCE.stageIncidentHeatMin, BALANCE.stageIncidentHeatMax))
-              headline = `INCIDENT STAGED AGAINST ${target.name.toUpperCase()} — ${theatre.name.toUpperCase()} HEAT ${before.toFixed(0)} → ${theatre.heat.toFixed(0)}`
-            }
-            const incidentId = emit({
-              severity: 'headline',
-              scope: 'faction',
-              headline,
-              causeId: null,
-              delta: { treasury: -action.spend },
-              actorIsPlayer: true,
-              subjectId: target.id,
-            })
-
-            if (Math.abs(target.alignment) > 60) {
-              const amount = rng.int(BALANCE.stageIncidentDoomsdayMin, BALANCE.stageIncidentDoomsdayMax)
-              addDoomsday(ctx, amount, incidentId)
-            }
-          } else {
-            // P29 (avsnitt 4.1): misslyckad attribution höjer en stations
-            // exposure — den bränner INTE en station direkt och pushar INTE
-            // house.exposureEvents (det är vad en FAKTISKT bränd station gör,
-            // se advanceStations/resolveBackDown). EXPOSURE ska kräva tre
-            // brända stationer, inte tre misslyckade attributioner.
-            const attributionId = emit({
-              severity: 'headline',
-              scope: 'house',
-              headline: `${house.name.toUpperCase()} LINKED TO INCIDENT AGAINST ${target.name.toUpperCase()} — ATTRIBUTION FAILED`,
-              causeId: null,
-              delta: { treasury: -action.spend },
-              actorIsPlayer: true,
-              subjectId: target.id,
-            })
-
-            const activeStations = house.stations.filter((s) => s.status === 'active')
-            if (activeStations.length > 0) {
-              const station = rng.pick(activeStations)
-              const before = station.exposure
-              station.exposure = Math.min(100, before + BALANCE.misattributionExposurePenalty)
-              emit({
-                severity: 'ticker',
-                scope: 'house',
-                headline: `STATION ${station.city.toUpperCase()} EXPOSURE RISES — ${before.toFixed(0)} → ${station.exposure.toFixed(0)}`,
-                causeId: attributionId,
-                delta: { exposure: station.exposure - before },
-                actorIsPlayer: false,
-                subjectId: station.nation,
-              })
-            }
-          }
-          break
-        }
-
-        case 'BACK_CHANNEL': {
-          house.treasury -= action.spend
-          const channelId = emit({
-            severity: 'ticker',
-            scope: 'faction',
-            headline: `${house.name.toUpperCase()} OPENS A BACK CHANNEL WITH ${target.name.toUpperCase()} (−£${action.spend.toLocaleString('en-GB')})`,
-            causeId: null,
-            delta: { treasury: -action.spend },
-            actorIsPlayer: true,
-            subjectId: target.id,
-          })
-          const amount = rng.int(BALANCE.backChannelDoomsdayMin, BALANCE.backChannelDoomsdayMax)
-          addDoomsday(ctx, -amount, channelId)
-          break
-        }
-
-        default:
-          // BRIBE är byggd, STAGE_INCIDENT/BACK_CHANNEL är byggda — FUND_COUP finns
-          // inte i PoliticalOp (förblir etapp 2, DESIGN.md §13). Inget att göra här.
-          break
-      }
+      applyPolitical(ctx, action, bribeGainThisTurn)
       continue
     }
 

@@ -309,51 +309,112 @@ function orderFor(state: GameState): Order {
   }
 }
 
-describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3)', () => {
-  it('BRIBE höjer relationToPlayer med spend / bribeRelationCostPerPoint, kostar spend', () => {
+describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIBE reviderad P56 avsnitt 3.3)', () => {
+  it('BRIBE höjer officialens relationToPlayer, skalat mot integrity (låg integritet ger mer), och höjer scandalRisk — kostar spend', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    const faction = state.factions['rvn']!
-    faction.relationToPlayer = 40
+    const official = state.officials['official-rvn-procurement']!
+    official.relationToPlayer = 40
+    official.integrity = 55 // officials.json:s standardvärde, gjort explicit för testets skull
     const treasuryBefore = state.house.treasury
 
-    const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 10000 }])
+    const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', officialId: official.id, spend: 10000 }])
     applyActions(ctx)
 
-    // bribeRelationCostPerPoint = 5000 → 10 000 / 5000 = 2 poäng
-    expect(faction.relationToPlayer).toBe(42)
+    // integrityMultiplier = 1 + (1 - 55/100) * bribeLowIntegrityGainBonus(1,0) = 1,45
+    // rawGain = (10 000 / 5000) * 1,45 = 2,9
+    expect(official.relationToPlayer).toBeCloseTo(42.9, 6)
     expect(state.house.treasury).toBe(treasuryBefore - 10000)
+    // scandalGain = 10 000 / bribeScandalRiskCostPerPoint(7500) = 1,333...
+    expect(official.scandalRisk).toBeCloseTo(10000 / 7500, 6)
     expect(emitted.some((e) => e.headline.includes('CULTIVATES'))).toBe(true)
   })
 
-  it('BRIBE klampas av bribeRelationMaxPerTurn per målfaktion, även över flera BRIBE samma tur', () => {
+  it('BRIBE klampas av bribeRelationMaxPerTurn per TJÄNSTEMAN, även över flera BRIBE samma tur', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    const faction = state.factions['rvn']!
-    faction.relationToPlayer = 40
+    const official = state.officials['official-rvn-procurement']!
+    official.relationToPlayer = 40
 
-    // Ett enda enormt bud skulle ge 100 poäng (500 000 / 5000) — långt över taket 15.
-    const { ctx: ctx1 } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 500000 }])
+    // Ett enda enormt bud skulle ge långt över taket 15 (multiplikatorn gör det ännu mer).
+    const { ctx: ctx1 } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', officialId: official.id, spend: 500000 }])
     applyActions(ctx1)
-    expect(faction.relationToPlayer).toBe(55) // 40 + 15 (taket), inte 100+
+    expect(official.relationToPlayer).toBe(55) // 40 + 15 (taket), inte mer
 
-    // En andra BRIBE samma faktion, NY tur (nollställt tak) — samma resonemang.
-    faction.relationToPlayer = 40
+    // En andra BRIBE samma tjänsteman, NY tur (nollställt tak) — samma resonemang.
+    official.relationToPlayer = 40
     const { ctx: ctx2a } = makeCtx(state, [
-      { type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 250000 },
-      { type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 250000 },
+      { type: 'POLITICAL', op: 'BRIBE', officialId: official.id, spend: 250000 },
+      { type: 'POLITICAL', op: 'BRIBE', officialId: official.id, spend: 250000 },
     ])
     applyActions(ctx2a)
-    expect(faction.relationToPlayer).toBe(55) // fortfarande klampat till +15, trots två separata bud
+    expect(official.relationToPlayer).toBe(55) // fortfarande klampat till +15, trots två separata bud
   })
 
-  it('BRIBE går aldrig över 100 relationToPlayer', () => {
+  it('BRIBE går aldrig över 100 relationToPlayer (eller 100 scandalRisk)', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    const faction = state.factions['rvn']!
-    faction.relationToPlayer = 92
+    const official = state.officials['official-rvn-procurement']!
+    official.relationToPlayer = 92
+    official.scandalRisk = 99
 
-    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', targetFactionId: 'rvn', spend: 100000 }])
+    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', officialId: official.id, spend: 100000 }])
     applyActions(ctx)
 
-    expect(faction.relationToPlayer).toBe(100)
+    expect(official.relationToPlayer).toBe(100)
+    expect(official.scandalRisk).toBe(100)
+  })
+
+  it('BRIBE mot ett okänt officialId hamnar i rejected (hård regel 6)', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'BRIBE', officialId: 'no-such-official', spend: 1000 }])
+    applyActions(ctx)
+    expect(ctx.rejected.length).toBe(1)
+  })
+
+  it('(P56 klart-når) FUND_CAMPAIGN höjer standing och håller kvar en tjänsteman som annars fallit', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const official = state.officials['official-rvn-procurement']!
+    official.standing = 5 // nära noll — "skulle annars fallit" (P57 bygger den faktiska utlösaren)
+    const treasuryBefore = state.house.treasury
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'FUND_CAMPAIGN', officialId: official.id, spend: 20000 }])
+    applyActions(ctx)
+
+    // fundCampaignStandingCostPerPoint = 2000 → 20 000 / 2000 = 10 poäng
+    expect(official.standing).toBe(15)
+    expect(official.standing).toBeGreaterThan(5) // håller henne kvar över den låga standingen
+    expect(state.house.treasury).toBe(treasuryBefore - 20000)
+    expect(emitted.some((e) => e.headline.includes('FUNDS') && e.headline.includes('CAMPAIGN'))).toBe(true)
+  })
+
+  it('FUND_CAMPAIGN mot ett okänt officialId hamnar i rejected', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'FUND_CAMPAIGN', officialId: 'no-such-official', spend: 1000 }])
+    applyActions(ctx)
+    expect(ctx.rejected.length).toBe(1)
+  })
+
+  it('(P56 klart-når) FAVOUR kostar marginal (house.favourMarginSpent), INTE kassa — höjer relationToPlayer', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const official = state.officials['official-rvn-procurement']!
+    official.relationToPlayer = 40
+    const treasuryBefore = state.house.treasury
+    const marginSpentBefore = state.house.favourMarginSpent
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'FAVOUR', officialId: official.id, marginCost: 15000 }])
+    applyActions(ctx)
+
+    expect(state.house.treasury).toBe(treasuryBefore) // orört — det är hela poängen
+    expect(state.house.favourMarginSpent).toBe(marginSpentBefore + 15000)
+    // favourRelationCostPerPoint = 5000 → 15 000 / 5000 = 3 poäng
+    expect(official.relationToPlayer).toBe(43)
+    expect(emitted.some((e) => e.headline.includes('FAVOUR'))).toBe(true)
+  })
+
+  it('FAVOUR med ett ogiltigt marginCost (negativt) hamnar i rejected', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const official = state.officials['official-rvn-procurement']!
+    const { ctx } = makeCtx(state, [{ type: 'POLITICAL', op: 'FAVOUR', officialId: official.id, marginCost: -1 }])
+    applyActions(ctx)
+    expect(ctx.rejected.length).toBe(1)
   })
 
   it('(P18 klart-när) STAGE_INCIDENT mot en blockgränsande faktion: doomsdayGate anropas inom rätt intervall, kausalkedjan pekar tillbaka till handlingen', () => {

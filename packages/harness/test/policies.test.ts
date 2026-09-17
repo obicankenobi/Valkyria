@@ -247,3 +247,26 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     expect(Object.keys(POLICIES).sort()).toEqual(['aggressive', 'balanced', 'capacity', 'passive'])
   })
 })
+
+// P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 6, skyddsräcke 4/GK-A): "Varje nytt verb
+// har en bot. Ett test räknar att samtliga nya PlayerAction-op förekommer i
+// minst en policies.ts-strategi." FUND_CAMPAIGN (aggressive) och FAVOUR
+// (balanced) är de två NYA op:en denna prompt bygger — BRIBE fanns redan
+// (P18), bara omriktad.
+describe('skyddsräcke 4 (avsnitt 6, GK-A): FUND_CAMPAIGN och FAVOUR förekommer i minst en botpolicy', () => {
+  it('minst en policy skickar en FUND_CAMPAIGN-handling på ett fräscht parti', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const usesFundCampaign = Object.values(POLICIES).some((policy) =>
+      policy(state).actions.some((a) => a.type === 'POLITICAL' && a.op === 'FUND_CAMPAIGN'),
+    )
+    expect(usesFundCampaign).toBe(true)
+  })
+
+  it('minst en policy skickar en FAVOUR-handling på ett fräscht parti', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const usesFavour = Object.values(POLICIES).some((policy) =>
+      policy(state).actions.some((a) => a.type === 'POLITICAL' && a.op === 'FAVOUR'),
+    )
+    expect(usesFavour).toBe(true)
+  })
+})

@@ -263,6 +263,7 @@ function buildHouse(scenario: ScenarioFile): House {
     actionPoints: 3,
     scandalUntilTurn: null,
     commodityHoldings: uniformCommodityRecord(0),
+    favourMarginSpent: 0,
   }
 }
 
@@ -330,6 +331,9 @@ function buildOfficials(scenario: ScenarioFile): Record<OfficialId, Official> {
         relationToPlayer: 0,
         agenda: seed.agenda,
         status: 'active',
+        // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): en spelregel (byggs upp av
+        // BRIBE), inte scenariodata — se types.ts:s egen kommentar.
+        scandalRisk: 0,
       }
     }
   }

@@ -37,5 +37,8 @@ export function replaceOfficial(
     agenda: replacement.agenda,
     relationToPlayer: 0,
     status: 'active',
+    // P56 (avsnitt 3.3): scandalRisk hör till PERSONEN (byggs upp av BRIBE mot
+    // just henne) — en ny person har ingen skandalhistorik att ärva.
+    scandalRisk: 0,
   }
 }

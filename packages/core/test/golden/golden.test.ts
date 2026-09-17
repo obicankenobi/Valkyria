@@ -143,10 +143,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // som redan fanns sedan P54) — men order.weights (REARM/AUSTERITY) förskjuts
   // nu av köparens agenda utöver frontlägets pressure, vilket ändrar vilka bud
   // som vinner. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P56 (avsnitt 3.3/8, samma klart-når-krav). GameState.officials
+  // fick två nya fält per tjänsteman (scandalRisk) och House fick
+  // favourMarginSpent -- ny form. BRIBE riktades om mot officialId (relationsvinst
+  // nu skalad mot integrity, höjer scandalRisk); FUND_CAMPAIGN/FAVOUR är nya op
+  // policies.ts:s aggressive/balanced nu skickar in (GK-A) -- genuin
+  // trajektorieändring, inte bara formen. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'ef07209ef6095' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'ced4c134ff390' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1162b87e1e2a76' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1d34b363345790' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2c083d751c256' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1b6498a94af0fe' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

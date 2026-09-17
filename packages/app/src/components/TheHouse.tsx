@@ -14,7 +14,7 @@
 // giltighet) sker i applyActions.ts vid endTurn, precis som BidForm redan gör
 // för bud.
 import { useState } from 'react'
-import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct, officialId } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, TechCategory, TurnSubmission } from '@seventh-front/core'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
 
@@ -49,7 +49,17 @@ function describeAction(action: PlayerAction): string {
       }
       break
     case 'POLITICAL':
-      return `${action.op.replace('_', ' ')} — ${action.targetFactionId} (${formatMoney(action.spend)})`
+      switch (action.op) {
+        case 'STAGE_INCIDENT':
+        case 'BACK_CHANNEL':
+          return `${action.op.replace('_', ' ')} — ${action.targetFactionId} (${formatMoney(action.spend)})`
+        case 'BRIBE':
+        case 'FUND_CAMPAIGN':
+          return `${action.op.replace('_', ' ')} — ${action.officialId} (${formatMoney(action.spend)})`
+        case 'FAVOUR':
+          return `Favour — ${action.officialId} (margin ${formatMoney(action.marginCost)})`
+      }
+      break
     case 'CRISIS':
       return `Crisis choice — ${action.choice}`
     default:
@@ -176,7 +186,11 @@ function ExecutiveActions({
           type="button"
           className="btn"
           disabled={!targetFactionId}
-          onClick={() => onAddAction({ type: 'POLITICAL', op: 'BRIBE', targetFactionId, spend })}
+          // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): BRIBE tar nu officialId,
+          // inte targetFactionId. Riktar sig mot faktionens procurement-
+          // tjänsteman tills P63 bygger en riktig tjänsteman-väljare
+          // (Politikpanelen, gated av Station.coverage).
+          onClick={() => onAddAction({ type: 'POLITICAL', op: 'BRIBE', officialId: officialId(targetFactionId, 'procurement'), spend })}
         >
           Bribe
         </button>

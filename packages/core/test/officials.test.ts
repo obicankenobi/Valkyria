@@ -53,6 +53,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
       relationToPlayer: 80, // hög relation byggd upp med den GAMLA personen
       agenda: 'REARM',
       status: 'fallen',
+      scandalRisk: 60, // P56: skandalen som fällde henne
     }
 
     const replaced = replaceOfficial(fallen, { name: 'Ly Thi Xuan', integrity: 20, standing: 50, agenda: 'AUSTERITY' })
@@ -63,6 +64,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
     expect(replaced.integrity).toBe(20)
     expect(replaced.standing).toBe(50)
     expect(replaced.agenda).toBe('AUSTERITY')
+    expect(replaced.scandalRisk).toBe(0) // ny person, ingen ärvd skandalhistorik
     // Identitet (id/factionId/post) hör till POSTEN, inte personen — oförändrad.
     expect(replaced.id).toBe(fallen.id)
     expect(replaced.factionId).toBe(fallen.factionId)
@@ -80,6 +82,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
       relationToPlayer: 60,
       agenda: 'MODERNISE',
       status: 'dead',
+      scandalRisk: 0,
     }
 
     const replaced = replaceOfficial(dead, { name: 'Vu Thi Hang', integrity: 65, standing: 45, agenda: 'NON_ALIGNMENT' })

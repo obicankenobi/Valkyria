@@ -67,6 +67,40 @@ function backChannelIfHot(state: GameState, actions: PlayerAction[]): void {
   }
 }
 
+// P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3/6, GK-A/skyddsräcke 4: "varje nytt
+// verb ska användas av minst en botpolicy i samma prompt som bygger det").
+// Ingen rng tillgänglig i en Policy (hård regel 2) — valet av tjänsteman är
+// alltså deterministiskt: den med lägst standing (den som mest "behöver"
+// stöd), tie-broken av Object.values:s fasta iterationsordning.
+const FUND_CAMPAIGN_SPEND = 20000
+
+function fundCampaignForWeakestOfficial(state: GameState, actions: PlayerAction[]): void {
+  if (state.house.treasury < FUND_CAMPAIGN_SPEND) return
+  const officials = Object.values(state.officials).filter((o) => o.status === 'active')
+  if (officials.length === 0) return
+  let weakest = officials[0]!
+  for (const official of officials.slice(1)) {
+    if (official.standing < weakest.standing) weakest = official
+  }
+  actions.push({ type: 'POLITICAL', op: 'FUND_CAMPAIGN', officialId: weakest.id, spend: FUND_CAMPAIGN_SPEND })
+}
+
+// FAVOUR kostar aldrig kassa (avsnitt 3.3) — ingen treasury-spärr behövs.
+// Väljer den tjänsteman med HÖGST relationToPlayer under 100 (den boten redan
+// investerat mest i, samma "bygg vidare på det som redan fungerar"-princip
+// som balanced:s övriga val).
+const FAVOUR_MARGIN_COST = 10000
+
+function favourBestRelationOfficial(state: GameState, actions: PlayerAction[]): void {
+  const officials = Object.values(state.officials).filter((o) => o.status === 'active' && o.relationToPlayer < 100)
+  if (officials.length === 0) return
+  let best = officials[0]!
+  for (const official of officials.slice(1)) {
+    if (official.relationToPlayer > best.relationToPlayer) best = official
+  }
+  actions.push({ type: 'POLITICAL', op: 'FAVOUR', officialId: best.id, marginCost: FAVOUR_MARGIN_COST })
+}
+
 function takeLoan(amount: number, actions: PlayerAction[]): void {
   const rounded = Math.round(amount)
   if (rounded <= 0) return
@@ -174,6 +208,7 @@ export const aggressive: Policy = (state) => {
   // Investerar INTE i R&D (P28) — se reprioritiseArtilleryIfNeeded:s motivering.
   const actions: PlayerAction[] = []
   stageIncidentIfCool(state, actions)
+  fundCampaignForWeakestOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit, actions)
 
   return { standingOrders: [], bids, actions }
@@ -201,6 +236,7 @@ export const balanced: Policy = (state) => {
   const actions: PlayerAction[] = []
   reprioritiseArtilleryIfNeeded(state, actions)
   backChannelIfHot(state, actions)
+  favourBestRelationOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit * BALANCED_LOAN_SHARE, actions)
 
   return { standingOrders: [], bids, actions }

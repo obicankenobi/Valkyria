@@ -170,6 +170,12 @@ export interface House {
   // krona för krona i takt med att den täcker produktion. RELEASE säljer
   // tillbaka det, samma kurs.
   commodityHoldings: Record<Commodity, Money>
+  // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): FAVOUR "kostar marginal, inte
+  // kassa" — en löpande summa, bara för att bevisa (testbart, synligt) att
+  // treasury verkligen förblir orört. Skriver INGEN annan del av ekonomin
+  // (grossMarginPct, board.ts:s progressSnapshot m.fl.) — se applyPolitical.ts:s
+  // egen kommentar om varför.
+  favourMarginSpent: Money
 }
 
 export interface BoardTarget {
@@ -387,6 +393,10 @@ export interface Official {
   relationToPlayer: Pct
   agenda: Agenda
   status: 'active' | 'fallen' | 'dead'
+  // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): "BRIBE ... höjer hennes scandalRisk."
+  // Startar på 0 för alla — en spelregel (byggs upp av spelarens BRIBE, inte
+  // scenariodata), inte något officials.json sätter per tjänsteman.
+  scandalRisk: Pct
 }
 
 export interface Theatre {
@@ -558,7 +568,17 @@ export interface WireEvent {
 export type PlayerAction =
   | { type: 'BROKER'; buyerId: FactionId; productId: ProductId; quantity: number; price: Money }
   | { type: 'INTEL'; op: IntelOp; stationId: string; targetId?: string }
-  | { type: 'POLITICAL'; op: PoliticalOp; targetFactionId: FactionId; spend: Money }
+  // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3/6, skyddsräcke 3): POLITICAL delad i
+  // TRE varianter (samma `type`, diskriminerad vidare på `op` — PlayerAction['type']
+  // förblir oförändrad, se types.skyddsracke4.test.ts) i stället för en. STAGE_
+  // INCIDENT/BACK_CHANNEL behåller targetFactionId (rör ett LAND, ingen person).
+  // BRIBE/FUND_CAMPAIGN och FAVOUR tar `officialId` — ALDRIG ett FactionId ensamt,
+  // ALDRIG ett fritextnamn (skyddsräcke 3, se types.skyddsracke3.test.ts).
+  // FAVOUR kostar `marginCost`, inte `spend` — "det enda verbet i spelet som inte
+  // kostar pengar" (avsnitt 3.3) ska inte kunna bokföras mot treasury av misstag.
+  | { type: 'POLITICAL'; op: 'STAGE_INCIDENT' | 'BACK_CHANNEL'; targetFactionId: FactionId; spend: Money }
+  | { type: 'POLITICAL'; op: 'BRIBE' | 'FUND_CAMPAIGN'; officialId: OfficialId; spend: Money }
+  | { type: 'POLITICAL'; op: 'FAVOUR'; officialId: OfficialId; marginCost: Money }
   // P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5): commodity tillagt — den ENDA
   // ändringen av unionen i hela etapp 4 (skyddsräcke 4). Varianten fanns redan
   // (fynd 1.5) men var obyggd fram till P51; utan commodity vet BUY_FORWARD/
@@ -571,7 +591,8 @@ export type PlayerAction =
   | { type: 'CRISIS'; choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE' }
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
-export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL'
+// P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda — nya, byggda ops.
+export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_CAMPAIGN' | 'FAVOUR'
 export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY'
 
 // QUOTE är inte en PlayerAction. Bud ligger i TurnSubmission.bids och kostar inga
