@@ -261,5 +261,15 @@
   "brokerIntegrityThreshold": 40,
   "brokerStandingCost": 10,
   "brokerScandalRiskGain": 15,
-  "brokerDeliveryTurns": 20
+  "brokerDeliveryTurns": 20,
+  "_p59_note": "ETAPP5_TEKNISK_SPEC.md avsnitt 4.1/4.2 ger Faction.relations/Front.status i prosa men inga tal eller övergångsformler -- nio nya, PROVISORISKA balanstal. relationsAtWarStart (20) och relationsNeutralStart (50) -- startlägen: ett par som redan delar en front (aktiv krigsrelation) börjar lågt, alla andra par neutralt (ingen front, ingen anledning att anta fientlighet). relationsDeliveryDecay (1, litet -- en enskild leverans är en droppe, inte en flodvåg) och relationsIncidentPenalty (15, en engångshändelse, jämförbar med backChannelDoomsdayMin/Max:s storleksordning) -- 'faller av leveranser till motståndaren, av iscensatta incidenter' (avsnitt 4.1, ordagrant). relationsBackChannelGain (10) -- 'stiger av BACK_CHANNEL', symmetrisk motsvarighet till incidentstraffet men något lägre (svårare att bygga förtroende än att förstöra det). relationsPassiveRecoveryPerTurn (1) -- 'stiger av ... tid', ett litet, ENKELRIKTAT uppåtdrag (aldrig nedåt) varje tur, så att en front kan nå fred utan spelarhandling men aldrig försämras av tidens gång ensam. ceasefireRelationThreshold (70) -- kräver att BÅDA sidors relationer till varandra når den, ett högt men nåbart tak (relationsPassiveRecoveryPerTurn allena tar ~20 turer från relationsAtWarStart, för långsamt för att ensamt hinna under ett 20-turersparti -- kräver alltså BACK_CHANNEL för att vara nåbart i praktiken, vilket är avsiktligt: spelaren ska kunna välja fred, inte se den komma av sig själv). warReescalationRelationThreshold (30) -- symmetrisk mot relationsAtWarStart (20), en ceasefire som glider tillbaka nästan till krigsnivå bryts. ceasefireDoomsdayReescalationThreshold (60) -- satt till EXAKT doomsdayCrisisWatchThreshold (samma tal, inte en ny gissning): global spänning som redan räcker för att sätta hela spelet i 'bevakningsläge' (doomsday.ts) räcker rimligen också för att tända om en regional ceasefire. Se docs/ANDRINGSLOGG.md.",
+  "relationsAtWarStart": 20,
+  "relationsNeutralStart": 50,
+  "relationsDeliveryDecay": 1,
+  "relationsIncidentPenalty": 15,
+  "relationsBackChannelGain": 10,
+  "relationsPassiveRecoveryPerTurn": 1,
+  "ceasefireRelationThreshold": 70,
+  "warReescalationRelationThreshold": 30,
+  "ceasefireDoomsdayReescalationThreshold": 60
 }

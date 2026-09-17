@@ -255,4 +255,119 @@ describe('factions — materielNeed peacetidspåfyllnad (P34 klart-når, ETAPP3_
 
     expect(emitted.some((e) => e.headline.includes('MATERIEL NEED GROWS'))).toBe(true)
   })
+
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1/4.2 klart-när): "övergångarna är
+  // deterministiska funktioner av relations/publicSupport/doomsday" — varje
+  // test nedan isolerar EN av de fyra utlösarna (publicSupport, relations×2,
+  // doomsday), ingen rng inblandad i utfallet.
+  describe('P59: Faction.relations och Front.status', () => {
+    it('ett obehandlat parti startar med front-1 i war och rvn/nlf lågt (relationsAtWarStart) mot varandra', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      expect(state.fronts['front-1']!.status).toBe('war')
+      expect(state.factions['rvn']!.relations['nlf']).toBe(balance.relationsAtWarStart)
+      expect(state.factions['nlf']!.relations['rvn']).toBe(balance.relationsAtWarStart)
+    })
+
+    it('ingen av de fyra utlösarna aktiv → fronten stannar i war (kontrollfall)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+
+      factions(makeCtx(state, 'no-trigger-seed').ctx)
+
+      expect(front.status).toBe('war')
+    })
+
+    it('en faktion tvingad söka fred (publicSupport-drivet) sätter dess front i ceasefire', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const faction = state.factions['rvn']!
+      faction.publicSupport = balance.factionLowSupportThreshold - 1
+      faction.lowSupportTurns = balance.factionLowSupportTurns - 1 // en tur från korsningen
+      const front = state.fronts['front-1']!
+
+      const { ctx, emitted } = makeCtx(state, 'forced-peace-seed')
+      factions(ctx)
+
+      expect(faction.lowSupportTurns).toBe(balance.factionLowSupportTurns)
+      expect(front.status).toBe('ceasefire')
+      expect(emitted.some((e) => e.headline.includes('CEASEFIRE ON THE FRONT-1 FRONT') && e.headline.includes('PUBLIC SUPPORT'))).toBe(
+        true,
+      )
+    })
+
+    it('ömsesidigt höga relationer (relations-drivet) sätter fronten i ceasefire, utan att publicSupport kollapsat', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.factions['rvn']!.relations['nlf'] = balance.ceasefireRelationThreshold
+      state.factions['nlf']!.relations['rvn'] = balance.ceasefireRelationThreshold
+      const front = state.fronts['front-1']!
+
+      const { ctx, emitted } = makeCtx(state, 'goodwill-seed')
+      factions(ctx)
+
+      expect(front.status).toBe('ceasefire')
+      expect(emitted.some((e) => e.headline.includes('CEASEFIRE ON THE FRONT-1 FRONT') && e.headline.includes('NEGOTIATED PEACE'))).toBe(
+        true,
+      )
+    })
+
+    it('ceasefire kräver BÅDA sidors relation över tröskeln — bara den ena räcker inte', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.factions['rvn']!.relations['nlf'] = balance.ceasefireRelationThreshold
+      // nlf.relations['rvn'] lämnas vid relationsAtWarStart, under tröskeln.
+      const front = state.fronts['front-1']!
+
+      factions(makeCtx(state, 'one-sided-seed').ctx)
+
+      expect(front.status).toBe('war')
+    })
+
+    it('hög doomsday (doomsday-drivet) tänder om en ceasefire till krig', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      front.status = 'ceasefire'
+      state.doomsday = balance.ceasefireDoomsdayReescalationThreshold
+
+      const { ctx, emitted } = makeCtx(state, 'reescalate-doomsday-seed')
+      factions(ctx)
+
+      expect(front.status).toBe('war')
+      expect(emitted.some((e) => e.headline.includes('WAR RESUMES ON THE FRONT-1 FRONT') && e.headline.includes('GLOBAL TENSION'))).toBe(
+        true,
+      )
+    })
+
+    it('kollapsade relationer (relations-drivet) tänder om en ceasefire till krig', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      front.status = 'ceasefire'
+      state.factions['rvn']!.relations['nlf'] = balance.warReescalationRelationThreshold - 1
+
+      const { ctx, emitted } = makeCtx(state, 'reescalate-relations-seed')
+      factions(ctx)
+
+      expect(front.status).toBe('war')
+      expect(
+        emitted.some((e) => e.headline.includes('WAR RESUMES ON THE FRONT-1 FRONT') && e.headline.includes('RELATIONS COLLAPSE')),
+      ).toBe(true)
+    })
+
+    it('relationerna stiger med relationsPassiveRecoveryPerTurn varje tur ("tid"), aldrig över 100', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const before = rvn.relations['nlf']!
+
+      const { ctx, emitted } = makeCtx(state, 'recovery-seed')
+      factions(ctx)
+
+      expect(rvn.relations['nlf']).toBe(before + balance.relationsPassiveRecoveryPerTurn)
+      expect(emitted.some((e) => e.headline.includes('RELATIONS EASE WITH TIME'))).toBe(true)
+
+      for (const faction of Object.values(state.factions)) {
+        for (const otherId of Object.keys(faction.relations)) faction.relations[otherId] = 100
+      }
+      const { ctx: ctx2, emitted: emitted2 } = makeCtx(state, 'recovery-seed-2')
+      factions(ctx2)
+      expect(rvn.relations['nlf']).toBe(100) // klampat, inte 101
+      expect(emitted2.some((e) => e.headline.includes('RELATIONS EASE WITH TIME'))).toBe(false)
+    })
+  })
 })

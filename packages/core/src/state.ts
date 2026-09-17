@@ -39,6 +39,10 @@ import type {
 // medan husets fasta kostnader redan löper från tur 1.
 interface Balance {
   orderTriggerThreshold: Record<TechCategory, number>
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1): startvärden för Faction.relations,
+  // se buildFactions nedan.
+  relationsAtWarStart: number
+  relationsNeutralStart: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -267,7 +271,24 @@ function buildHouse(scenario: ScenarioFile): House {
   }
 }
 
-function buildFactions(scenario: ScenarioFile): Record<FactionId, Faction> {
+// P59 (avsnitt 4.1): "relationer mellan länder", inte mellan en faktion och
+// spelaren (Faction.relationToPlayer, oberoende fält). Två startlägen,
+// PROVISORISKA (specen ger ingen siffra, bara "ny data, känt mönster") —
+// se balance.json:s _p59_note: par som redan delar en front (fynd: aktiv
+// krigförande relation) startar lågt, alla andra par neutralt.
+function buildFactionRelations(seed: ScenarioFile['factions'][number], scenario: ScenarioFile, fronts: Front[]): Record<FactionId, number> {
+  const relations: Record<FactionId, number> = {}
+  for (const other of scenario.factions) {
+    if (other.id === seed.id) continue
+    const atWar = fronts.some(
+      (f) => (f.sideA === seed.id && f.sideB === other.id) || (f.sideB === seed.id && f.sideA === other.id),
+    )
+    relations[other.id] = atWar ? BALANCE.relationsAtWarStart : BALANCE.relationsNeutralStart
+  }
+  return relations
+}
+
+function buildFactions(scenario: ScenarioFile, fronts: Front[]): Record<FactionId, Faction> {
   const factions: Record<FactionId, Faction> = {}
   for (const seed of scenario.factions) {
     factions[seed.id] = {
@@ -291,6 +312,7 @@ function buildFactions(scenario: ScenarioFile): Record<FactionId, Faction> {
       // annars skulle orders.ts:s mutation av EN faktions behov läcka in i
       // alla andras.
       materielNeed: { ...BALANCE.orderTriggerThreshold },
+      relations: buildFactionRelations(seed, scenario, fronts),
     }
   }
   return factions
@@ -394,6 +416,10 @@ export function buildWorld(scenario: ScenarioFile): { theatres: Theatre[]; front
     theatreId: f.theatreId,
     sideA: f.sideA,
     sideB: f.sideB,
+    // P59 (avsnitt 4.2, fynd 1.5): varje front i indochina-slice.json har
+    // redan formationer med (ännu odistribuerad) styrka vid partistart — 'war'
+    // är alltså den enda korrekta initiala statusen, aldrig 'dormant'.
+    status: 'war',
     position: f.position,
     attacker: f.attacker,
     morale: { a: f.moraleA, b: f.moraleB },
@@ -436,7 +462,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
       rngCursor: 0,
     },
     house: buildHouse(scenario),
-    factions: buildFactions(scenario),
+    factions: buildFactions(scenario, fronts),
     officials: buildOfficials(scenario),
     fronts: Object.fromEntries(fronts.map((front) => [front.id, front])),
     rivals: buildRivals(scenario),

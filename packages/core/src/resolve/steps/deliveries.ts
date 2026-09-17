@@ -27,7 +27,7 @@ import { round } from '../../money.js'
 import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
-import type { ResolveStep } from '../index.js'
+import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
 
 interface Balance {
@@ -41,8 +41,40 @@ interface Balance {
   contractGracePeriodTurns: number
   voidedContractRelationPenalty: number
   doctrineProfile: Record<Doctrine, Partial<Record<TechCategory, number>>>
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1).
+  relationsDeliveryDecay: number
+  relationsNeutralStart: number
 }
 const BALANCE = balanceData as unknown as Balance
+
+// P59 (avsnitt 4.1): "relationen faller av leveranser till motståndaren" — en
+// liten, symmetrisk sänkning varje gång materiel når en front, oavsett vem
+// som levererade den (spelaren eller en rival, se filens huvudkommentar om
+// den parallella rivalkedjan) eller frontens nuvarande status (redan
+// levererat materiel skärper misstron oavsett stridsläge just den turen).
+function applyDeliveryRelationsDecay(factions: GameState['factions'], front: Front, emit: ResolveContext['emit']): void {
+  const factionA = factions[front.sideA]
+  const factionB = factions[front.sideB]
+  if (!factionA || !factionB) return
+
+  const beforeA = factionA.relations[front.sideB] ?? BALANCE.relationsNeutralStart
+  const beforeB = factionB.relations[front.sideA] ?? BALANCE.relationsNeutralStart
+  const afterA = Math.max(0, beforeA - BALANCE.relationsDeliveryDecay)
+  const afterB = Math.max(0, beforeB - BALANCE.relationsDeliveryDecay)
+  factionA.relations[front.sideB] = afterA
+  factionB.relations[front.sideA] = afterB
+  if (afterA === beforeA) return // redan botten, ingen ändring att rapportera
+
+  emit({
+    severity: 'ticker',
+    scope: 'front',
+    headline: `${factionA.name.toUpperCase()}–${factionB.name.toUpperCase()} RELATIONS STRAIN AS ARMS FLOW TO THE ${front.id.toUpperCase()} FRONT`,
+    causeId: null,
+    delta: { [`relations.${front.sideB}`]: afterA - beforeA },
+    actorIsPlayer: false,
+    subjectId: front.id,
+  })
+}
 
 // P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.1/5.2): en ankommen
 // leverans delas ut över SIDANS förband enligt doktrinernas vikter — front.equipment
@@ -198,6 +230,7 @@ export const deliveries: ResolveStep = (ctx) => {
       const theatre = draft.theatres[front.theatreId]
       if (theatre) theatre.deliveriesIntoActiveWarThisTurn += shipment.units
       accumulateWarDemand(draft.market, product, shipment.units)
+      applyDeliveryRelationsDecay(draft.factions, front, emit)
 
       emit({
         severity: 'ticker',
@@ -358,6 +391,7 @@ export const deliveries: ResolveStep = (ctx) => {
           const theatre = draft.theatres[front.theatreId]
           if (theatre) theatre.deliveriesIntoActiveWarThisTurn += delivered
           accumulateWarDemand(draft.market, product, delivered)
+          applyDeliveryRelationsDecay(draft.factions, front, emit)
 
           emit({
             severity: 'ticker',

@@ -26,6 +26,10 @@ interface Balance {
   backChannelDoomsdayMin: number
   backChannelDoomsdayMax: number
   misattributionExposurePenalty: number
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1): "faller ... av iscensatta
+  // incidenter ... stiger av BACK_CHANNEL".
+  relationsIncidentPenalty: number
+  relationsBackChannelGain: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -35,6 +39,47 @@ function findTheatreForFaction(draft: GameState, factionId: string): GameState['
   const front = Object.values(draft.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
   if (!front) return null
   return draft.theatres[front.theatreId] ?? null
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+// P59 (avsnitt 4.1): STAGE_INCIDENT/BACK_CHANNEL riktas mot ETT land
+// (targetFactionId) men landar nu SYMMETRISKT på relationen mellan det landet
+// och dess FRONTMOTSTÅNDARE, inte mellan landet och spelaren (Faction.
+// relationToPlayer, ett separat fält, oförändrat av de här två verben). Ett
+// land utan front (ingen motståndare) har ingen relation att röra.
+function adjustFrontOpponentRelations(
+  draft: GameState,
+  factionId: string,
+  delta: number,
+  causeId: string | null,
+  emit: ResolveContext['emit'],
+  verb: string,
+): void {
+  const front = Object.values(draft.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
+  if (!front) return
+  const opponentId = front.sideA === factionId ? front.sideB : front.sideA
+  const faction = draft.factions[factionId]
+  const opponent = draft.factions[opponentId]
+  if (!faction || !opponent) return
+
+  const beforeFaction = faction.relations[opponentId] ?? 0
+  const beforeOpponent = opponent.relations[factionId] ?? 0
+  faction.relations[opponentId] = clamp(beforeFaction + delta, 0, 100)
+  opponent.relations[factionId] = clamp(beforeOpponent + delta, 0, 100)
+  if (faction.relations[opponentId] === beforeFaction) return
+
+  emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${faction.name.toUpperCase()}–${opponent.name.toUpperCase()} RELATIONS ${verb}`,
+    causeId,
+    delta: { [`relations.${opponentId}`]: faction.relations[opponentId] - beforeFaction },
+    actorIsPlayer: true,
+    subjectId: front.id,
+  })
 }
 
 type PoliticalAction = Extract<PlayerAction, { type: 'POLITICAL' }>
@@ -103,6 +148,7 @@ function applyFactionTargetedPolitical(
         const amount = rng.int(BALANCE.stageIncidentDoomsdayMin, BALANCE.stageIncidentDoomsdayMax)
         addDoomsday(ctx, amount, incidentId)
       }
+      adjustFrontOpponentRelations(draft, target.id, -BALANCE.relationsIncidentPenalty, incidentId, emit, 'WORSEN')
     } else {
       // P29 (avsnitt 4.1): misslyckad attribution höjer en stations exposure —
       // den bränner INTE en station direkt och pushar INTE house.exposureEvents
@@ -151,6 +197,7 @@ function applyFactionTargetedPolitical(
   })
   const amount = rng.int(BALANCE.backChannelDoomsdayMin, BALANCE.backChannelDoomsdayMax)
   addDoomsday(ctx, -amount, channelId)
+  adjustFrontOpponentRelations(draft, target.id, BALANCE.relationsBackChannelGain, channelId, emit, 'IMPROVE')
 }
 
 // BRIBE/FUND_CAMPAIGN/FAVOUR — samtliga tre tar officialId (skyddsräcke 3, se

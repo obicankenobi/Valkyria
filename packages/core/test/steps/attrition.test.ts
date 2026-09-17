@@ -58,6 +58,26 @@ describe('attrition (isolerat steg, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md av
     }
   })
 
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.2 klart-när): "alltså inget
+  // materielbehov" — attrition.ts:s egen gate, oberoende av fronts.ts:s (filens
+  // huvudkommentar: stagnationskontrollen upprepas medvetet).
+  it('(P59 klart-när) en front i ceasefire genererar inget materielbehov — equipment och materielNeed orörda trots gott om materiel', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.status = 'ceasefire'
+    seedEquipment(front, 'a', { infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    seedEquipment(front, 'b', { infantry: 500, artillery: 10, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    const needBefore = { ...state.factions['rvn']!.materielNeed }
+
+    const { ctx, emitted } = makeCtx(state, 'attrition-seed')
+    fronts(ctx)
+    attrition(ctx)
+
+    expect(front.equipment.a).toEqual({ infantry: 500, artillery: 300, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+    expect(state.factions['rvn']!.materielNeed).toEqual(needBefore)
+    expect(emitted).toEqual([])
+  })
+
   it('(P33 klart-när) förlorande sida förbrukar mer än vinnande, mätt på en kategori båda sidor startar lika i', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!

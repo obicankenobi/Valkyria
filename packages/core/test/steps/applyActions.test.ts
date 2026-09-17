@@ -497,6 +497,26 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
     expect(delta).toBeLessThanOrEqual(20) // stageIncidentDoomsdayMax
   })
 
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1): "relationen faller ... av
+  // iscensatta incidenter" — symmetriskt mellan målet (rvn) och dess
+  // FRONTMOTSTÅNDARE (nlf, front-1), inte mot spelaren (relationToPlayer,
+  // rört av HELT andra verb).
+  it('(P59) ett lyckat STAGE_INCIDENT sänker relationen mellan målet och dess frontmotståndare, symmetriskt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rvn = state.factions['rvn']!
+    const nlf = state.factions['nlf']!
+    const beforeRvn = rvn.relations['nlf']!
+    const beforeNlf = nlf.relations['rvn']!
+
+    const action: PlayerAction = { type: 'POLITICAL', op: 'STAGE_INCIDENT', targetFactionId: 'rvn', spend: 50000 }
+    const { ctx, emitted } = makeCtx(state, [action], 'stage-incident-seed-2') // success=true på första draget
+    applyActions(ctx)
+
+    expect(rvn.relations['nlf']).toBe(beforeRvn - balance.relationsIncidentPenalty)
+    expect(nlf.relations['rvn']).toBe(beforeNlf - balance.relationsIncidentPenalty)
+    expect(emitted.some((e) => e.headline.includes('RELATIONS WORSEN') && e.headline.includes('NATIONAL LIBERATION FRONT'))).toBe(true)
+  })
+
   it('(P29) STAGE_INCIDENT vid misslyckad attribution: en aktiv stations exposure stiger, INTE exposureEvents, ingen doomsday-effekt', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const station = state.house.stations[0]!
@@ -556,6 +576,21 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
     expect(delta).toBeGreaterThanOrEqual(10) // backChannelDoomsdayMin
     expect(delta).toBeLessThanOrEqual(20) // backChannelDoomsdayMax
     expect(state.house.treasury).toBe(treasuryBefore - 30000)
+  })
+
+  it('(P59) BACK_CHANNEL höjer relationen mellan målet och dess frontmotståndare, symmetriskt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const rvn = state.factions['rvn']!
+    const nlf = state.factions['nlf']!
+    const beforeRvn = rvn.relations['nlf']!
+    const beforeNlf = nlf.relations['rvn']!
+
+    const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 30000 }])
+    applyActions(ctx)
+
+    expect(rvn.relations['nlf']).toBe(beforeRvn + balance.relationsBackChannelGain)
+    expect(nlf.relations['rvn']).toBe(beforeNlf + balance.relationsBackChannelGain)
+    expect(emitted.some((e) => e.headline.includes('RELATIONS IMPROVE') && e.headline.includes('NATIONAL LIBERATION FRONT'))).toBe(true)
   })
 
   it('POLITICAL avvisas med "unknown target faction" mot en okänd faktion', () => {

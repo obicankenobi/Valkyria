@@ -53,6 +53,40 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     expect(emitted).toEqual([]) // inget att emitta — fronten rördes aldrig
   })
 
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.2 klart-när): "en ceasefire stoppar
+  // stridsförluster" — samma rigg som genombrottstestet nedan (gott om
+  // materiel, garanterad strid om fronten INTE var i ceasefire), men
+  // front.status satt till 'ceasefire' i förväg.
+  it('(P59 klart-när) en front i ceasefire genererar inga stridsförluster — position, styrka och moral orörda trots gott om materiel', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.status = 'ceasefire'
+    giveEquipment(front, 'a', 'artillery', 200)
+    const before = JSON.parse(JSON.stringify(front))
+
+    const { ctx, emitted } = makeCtx(state, 'front-seed')
+    fronts(ctx)
+
+    expect(front.position).toBe(before.position)
+    expect(front.strength).toEqual(before.strength)
+    expect(front.morale).toEqual(before.morale)
+    expect(front.casualtiesTotal).toEqual(before.casualtiesTotal)
+    expect(emitted).toEqual([])
+  })
+
+  it('en front i dormant genererar inga stridsförluster, samma som ceasefire', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    const front = state.fronts['front-1']!
+    front.status = 'dormant'
+    giveEquipment(front, 'a', 'artillery', 200)
+    const before = JSON.parse(JSON.stringify(front))
+
+    fronts(makeCtx(state, 'front-seed').ctx)
+
+    expect(front.position).toBe(before.position)
+    expect(front.strength).toEqual(before.strength)
+  })
+
   it('(P6 klart-när) materiel levererat till sida A flyttar position mot -100 (A vunnit)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const front = state.fronts['front-1']!

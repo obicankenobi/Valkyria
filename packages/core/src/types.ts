@@ -385,6 +385,14 @@ export interface Faction {
   // (avsnitt 3.4: "politiken ska vara en arena där spelaren kan förlora mot
   // någon annan"). `undefined` = ingen bonus.
   preferredSupplier?: 'player' | RivalId
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1), ordagrant: "samma form som
+  // RivalHouse.relations" — land-till-land, inte land-till-spelare
+  // (relationToPlayer, ovan, är ett helt separat fält). Nyckel: en annan
+  // FactionId. Faller av leveranser till en front denna faktionen är part i
+  // (deliveries.ts) och av ett lyckat STAGE_INCIDENT (political.ts); stiger av
+  // BACK_CHANNEL (political.ts) och tid (factions.ts, ett litet, begränsat
+  // drag varje tur). Läst av factions.ts:s frontstatus-övergångar (avsnitt 4.2).
+  relations: Record<FactionId, Pct>
 }
 
 // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1), ordagrant. Ersätter
@@ -445,6 +453,15 @@ export interface Front {
   theatreId: TheatreId
   sideA: FactionId
   sideB: FactionId
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.2). 'war' är den enda status en
+  // scenariofront startar i (fynd 1.5 — inget scenario har en front som INTE
+  // redan är i strid vid partistart). 'ceasefire': ingen strid, inget
+  // materielbehov (fronts.ts/attrition.ts gate:ar på exakt det här fältet,
+  // inte bara "0 artilleri" som innan). 'dormant': samma noll-effekt som
+  // 'ceasefire' på stridsresolvet, men reserverad för en front som ALDRIG
+  // haft strid (ingen nuvarande övergångsregel sätter den — se factions.ts:s
+  // egen kommentar) i stället för en som en gång var i krig.
+  status: 'war' | 'ceasefire' | 'dormant'
   position: number // -100 (A vunnit) … +100 (B vunnit)
   attacker: 'a' | 'b'
   morale: { a: Pct; b: Pct }

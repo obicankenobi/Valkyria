@@ -260,7 +260,29 @@ describe('deliveries (isolerat steg, spec avsnitt 5 "Leverans")', () => {
       expect(front.equipment.b.artillery).toBe(0) // andra sidan orörd
     })
 
-    it('(P6 klart-när) attribution summerar till levererade enheter, under en reserverad nyckel för spelarens hus', () => {
+    // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1): "relationen faller av
+    // leveranser till motståndaren" — symmetriskt mellan frontens BÅDA sidor,
+    // oavsett vilken sida som köpte.
+    it('(P59) en leverans till en front sänker relationen mellan frontens båda sidor, symmetriskt', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const nlf = state.factions['nlf']!
+      const beforeRvn = rvn.relations['nlf']!
+      const beforeNlf = nlf.relations['rvn']!
+      const contract = activeContract({ buyerId: 'rvn', productId: '105mm_field_gun' })
+      state.market.contracts = [contract]
+      state.market.shipments = [shipment({ units: 20, arrivalTurn: 2 })]
+      state.meta.turn = 2
+
+      const { ctx, emitted: wire } = makeCtx(state, 'del-seed')
+      deliveries(ctx)
+
+      expect(rvn.relations['nlf']).toBe(beforeRvn - balanceData.relationsDeliveryDecay)
+      expect(nlf.relations['rvn']).toBe(beforeNlf - balanceData.relationsDeliveryDecay)
+      expect(wire.some((e) => e.headline.includes('RELATIONS STRAIN'))).toBe(true)
+    })
+
+    it('(P6 klart-når) attribution summerar till levererade enheter, under en reserverad nyckel för spelarens hus', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const front = state.fronts['front-1']!
       const contract = activeContract({ buyerId: 'nlf', productId: '105mm_field_gun' })

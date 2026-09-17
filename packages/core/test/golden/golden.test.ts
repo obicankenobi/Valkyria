@@ -160,10 +160,20 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // alla nedströms genom ordergenerering och/eller anbud. aggressive skickar nu
   // också BROKER (GK-A) när en tjänsteman är gynnsam. Genuin trajektorieändring,
   // inte bara formen. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P59 (avsnitt 4.1/4.2/8, samma klart-når-krav). Faction fick
+  // ett nytt fält (relations) och Front fick ett nytt fält (status) -- ny form.
+  // Front.status kan nu övergå war<->ceasefire (factions.ts:s nya
+  // updateFrontStatuses), vilket stänger av HELA etapp 3:s stridskedja
+  // (fronts.ts/attrition.ts) för den fronten så länge den varar -- den
+  // STÖRSTA enskilda trajektorieändringen sedan P53b. relations rörs dessutom
+  // varje leverans (deliveries.ts), varje STAGE_INCIDENT/BACK_CHANNEL
+  // (political.ts) och varje tur (factions.ts:s passiva återhämtning) --
+  // samtliga tre botpartiernas seeds påverkas. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1cecfaf15ad5ed' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1d23ec42ebc1fc' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'a31560ca7c2b7' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '182b5a99525d80' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '12b4c34f61f443' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'c8d866e6e6d88' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

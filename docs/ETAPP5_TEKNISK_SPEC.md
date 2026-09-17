@@ -1,12 +1,13 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.8 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar (2026-09-17).**
+**Version 1.0.9 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59 klar (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
 11. **5A (P53–P58) klar (2026-09-17, se avsnitt 8) — med två dokumenterade, kvarstående luckor
 (P58:s blockquote: ingen live-utlösare för fallna tjänstemän, `EMBARGO` strukturellt onåbart mot
-måltabellens 10–30 %-rad). `P59` (5B, "länderna ser varandra") är nästa steg.**
+måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Front.status`) klar
+samma dag. `P60` ("kampanjen och tjänsten") är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -727,12 +728,31 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 
 ### 5B — Världen
 
-**P59 — länderna ser varandra**
+**P59 — länderna ser varandra — BYGGD 2026-09-17**
 > `Faction.relations` och `Front.status` enligt 4.1–4.2.
 >
 > *Klart när:* ett test visar att en `ceasefire` stoppar stridsförluster och därmed
 > behovsgenereringen; ett test visar att övergångarna är deterministiska funktioner av
 > `relations`/`publicSupport`/`doomsday`; golden omfryst.
+>
+> **Klart:** samtliga tre villkor uppfyllda. `Faction.relations: Record<FactionId, Pct>`
+> (land-till-land, helt separat från `relationToPlayer`) och `Front.status: 'war' | 'ceasefire' |
+> 'dormant'` (alla scenariofronter startar `'war'`, fynd 1.5 — `'dormant'` har ingen övergångsregel
+> än). `fronts.ts`/`attrition.ts` gate:ar nu på `front.status !== 'war'` (INNAN den redan
+> existerande artilleri-stagnationskontrollen, inte i stället för den) — en `ceasefire`-front
+> genererar varken stridsförluster eller materielbehov, verifierat med gott om materiel på båda
+> sidor. `relations` faller symmetriskt av leveranser till en front (`deliveries.ts`, både
+> spelarens och rivalers) och av ett lyckat `STAGE_INCIDENT` (`political.ts`, mot målets
+> frontmotståndare — inte målet självt), stiger av `BACK_CHANNEL` (symmetriskt, samma
+> frontmotståndare) och av en liten, enkelriktad passiv återhämtning varje tur (`factions.ts`,
+> "tid"). `Front.status`-övergångarna (`factions.ts`s nya `updateFrontStatuses`, körd sist i
+> steget) är rena tröskeljämförelser, ingen rng: war→ceasefire vid antingen "FORCED TO SUE FOR
+> PEACE" (den befintliga, tidigare rent kosmetiska notisen, fynd 1.5 — nu dess FÖRSTA mekaniska
+> konsekvens) eller ömsesidigt höga relationer; ceasefire→war vid hög `doomsday` eller kollapsade
+> relationer. Nio nya PROVISORISKA balanstal. Golden omfryst — den STÖRSTA enskilda
+> trajektorieändringen sedan P53b (en front kan nu stanna av helt mitt i ett parti). Fullt
+> testsvep grönt (443 tester rotnivå — `npx vitest run` — plus lint, typecheck, build för alla
+> tre paket, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
 **P60 — kampanjen och tjänsten**
 > `INFLUENCE` och `Faction.counterIntelligence`. `LEAK`, `SABOTAGE` och `TURN` byggs mot den.
@@ -848,3 +868,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.6 | 2026-09-17 | **P56 byggd — att påverka en människa.** `Official.scandalRisk`/`House.favourMarginSpent` nya fält. `PlayerAction`s `POLITICAL`-variant delad i tre (skyddsräcke 3: BRIBE/FUND_CAMPAIGN tar officialId, FAVOUR tar officialId+marginCost, STAGE_INCIDENT/BACK_CHANNEL behåller targetFactionId — `type` oförändrad, skyddsräcke 4 intakt). `applyActions.ts` (568 rader) sprängdes — POLITICAL utbruten till ny `resolve/political.ts` (427 rader kvar), samma mönster som P23. BRIBE riktades om (relationsvinst skalad mot låg integritet, höjer scandalRisk, taket per tjänsteman). FUND_CAMPAIGN/FAVOUR nya, vardera en bot (aggressive/balanced). Golden omfryst. Avsnitt 8:s P56-block fick en "BYGGD"-rubrik och klart-blockquote. `P57` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
 | 1.0.7 | 2026-09-17 | **P57 byggd — politiken slår tillbaka, 5A klar.** Nytt steg `politics.ts` (mellan `factions`/`heat`, ägarbeslutet). Ett fast, PROVISORISKT agenda→`PolicyDecision`-schema; `EMBARGO` är `Faction.embargoed`s FÖRSTA skrivare (fynd 1.7); `PREFERRED_SUPPLIER` går i den här triggern alltid till en rival. `BROKER` byggd (avsnitt 3.5, den sista helt tysta grenen) — direktkontrakt förbi `computeScore`, avgjort av köparens procurement-tjänstemans relation/integrity. `bidding.ts` fick en poängbonus adderad EFTER `computeScore` (skyddsräcke 2 intakt). **Genuint fynd under bygget:** `Official.relationToPlayer` startar på 0 för alla, så en obehandlad grind gjorde "ohörsammad" sant redan tur 1 och bröt två av etapp 3/4:s gröna invarianttester (skyddsräcke 5) — fixat med ett nytt PROVISORISKT balanstal `policyDecisionMinTurn` (4). `aggressive` (harness) fick `brokerFavourableDeal` (GK-A/skyddsräcke 4). Elva nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P57-block fick en "BYGGD"-rubrik och klart-blockquote. **5A:s kodbygge (P54–P57) är därmed klart** — `P58` (balanspass, ingen kod) är sista steget i 5A. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och kalibreringsfyndet |
 | 1.0.8 | 2026-09-17 | **P58 mätt — 5A klar med två dokumenterade luckor.** Härnessmätning n=200/`balanced` mot avsnitt 7:s fem 5A-rader: tre träffar (agendan ändrar vinnaren 34,5 % av 15–35 %; minst ett `PolicyDecision` 100 % av >70 %; `FAVOUR` trots bättre alternativ 50,8 % av >40 %) utan att röra `balance.json`/scenariodata. Två strukturella missar, ingen fixad med kalibrering: (1) "tjänsteman byts ut" 0 % — `replaceOfficial` (P54) har aldrig fått en live-utlösare; varken P56 eller P57 byggde den `officials.ts`s egen kommentar förutsatte. (2) `EMBARGO` 100 % (mål 10–30 %) — `Policy` saknar rng (hård regel 2), så `balanced`s `favourBestRelationOfficial` skyddar alltid EXAKT samma tjänsteman oavsett seed, vilket gör den enda `NON_ALIGNMENT`-kvalificerade tjänstemannens EMBARGO strukturellt bimodal (0 eller 100 %, aldrig ett mellanläge) — verifierat, inte gissat. Båda kräver kod, inte data, och byggs INTE i ett "ingen kod"-pass — lämnas dokumenterade, samma linje som P52:s `supplyIndexMaxStep`-fynd | Avsnitt 7:s måltabell fick en "Mätt (P58)"-kolumn och avsnitt 8:s P58-block ett fullt blockquote, per P58:s eget syfte: mäta, kalibrera det som går, dokumentera ärligt det som inte gör det |
+| 1.0.9 | 2026-09-17 | **P59 byggd — länderna ser varandra, 5B påbörjad.** `Faction.relations: Record<FactionId, Pct>` (land-till-land) och `Front.status: 'war' | 'ceasefire' | 'dormant'` (alla scenariofronter startar 'war'). `fronts.ts`/`attrition.ts` gate:ar på `status !== 'war'` -- en ceasefire-front genererar varken stridsförluster eller materielbehov. `relations` faller av leveranser (`deliveries.ts`, symmetriskt) och lyckade `STAGE_INCIDENT` (`political.ts`, mot frontmotståndaren), stiger av `BACK_CHANNEL` och en liten passiv återhämtning varje tur (`factions.ts`). `Front.status`-övergångarna är rena tröskeljämförelser (ingen rng): war->ceasefire vid "FORCED TO SUE FOR PEACE" (tidigare bara en notis, fynd 1.5 -- nu dess FÖRSTA mekaniska konsekvens) eller ömsesidigt höga relationer; ceasefire->war vid hög doomsday eller kollapsade relationer. Nio nya PROVISORISKA balanstal. Golden omfryst -- den största enskilda trajektorieändringen sedan P53b. Fullt testsvep grönt (443 tester rotnivå, lint, typecheck, build, e2e) | Avsnitt 4.1/4.2, avsnitt 8:s P59-block fick en "BYGGD"-rubrik och klart-blockquote, per P59:s eget klart-når |

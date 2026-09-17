@@ -5,8 +5,10 @@
 // den filens huvudkommentar (samma skäl som attribution: datan finns bara där
 // förlusterna beräknas). Det den här filen faktiskt gör: embargots ekonomiska
 // effekt (PROVISORISK, se nedan), bankruttdetektion + kontraktsannullering med
-// causeId-kedja, och lowSupport-detektion (notifiering — ingen ytterligare mekanisk
-// konsekvens av "forced peace" är specificerad någonstans, se ANDRINGSLOGG.md).
+// causeId-kedja, lowSupport-detektion och (P59, ETAPP5_TEKNISK_SPEC.md avsnitt
+// 4.1/4.2) Faction.relations passiv återhämtning + Front.status-övergångar.
+// "Forced to sue for peace" VAR bara en notis (fynd 1.5) — sedan P59 är den
+// den ena av två utlösare in i 'ceasefire', se updateFrontStatuses nedan.
 //
 // Embargo har ingen egen mekanik i avsnitt 5:s Faktion-stycke — bara fältet
 // Faction.embargoed finns (avsnitt 2.5), och ingen PlayerAction kan sätta det
@@ -18,7 +20,7 @@
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type { Faction, GameState, TechCategory } from '../../types.js'
+import type { Faction, FactionId, GameState, TechCategory } from '../../types.js'
 
 interface Balance {
   factionBankruptcyTurns: number
@@ -28,6 +30,11 @@ interface Balance {
   militaryBudgetQuarterlyShare: number
   peacetimeReplacement: Record<TechCategory, number>
   needCeiling: number
+  // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1/4.2).
+  relationsPassiveRecoveryPerTurn: number
+  ceasefireRelationThreshold: number
+  warReescalationRelationThreshold: number
+  ceasefireDoomsdayReescalationThreshold: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -35,6 +42,11 @@ const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armo
 
 export const factions: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
+  // P59 (avsnitt 4.2): "FORCED TO SUE FOR PEACE" var tidigare bara en notis
+  // (fynd 1.5, "ingen mekanisk konsekvens är specificerad eller byggd") — nu
+  // den FÖRSTA av två vägar in i 'ceasefire' för varje front den faktionen
+  // slåss på (se updateFrontStatuses nedan).
+  const suedForPeace = new Set<FactionId>()
 
   for (const faction of Object.values(draft.factions)) {
     if (faction.bankrupt) continue // redan avgjort för den här faktionen
@@ -44,7 +56,86 @@ export const factions: ResolveStep = (ctx) => {
       replenishMilitaryBudget(faction, emit)
       replenishMaterielNeed(faction, emit)
     }
-    processLowSupport(faction, emit)
+    if (processLowSupport(faction, emit)) suedForPeace.add(faction.id)
+    applyRelationsPassiveRecovery(faction, draft.factions, emit)
+  }
+
+  updateFrontStatuses(draft, suedForPeace, emit)
+}
+
+// P59 (avsnitt 4.1): "stiger av ... tid" — den ENDA av de fyra drivarna
+// (leveranser/incidenter/BACK_CHANNEL/tid) som ALDRIG sänker, bara höjer,
+// litet och begränsat. Ensam räcker den inte till ceasefireRelationThreshold
+// inom ett 20-turersparti (se balance.json:s _p59_note) — den ger fred en
+// riktning över tid, inte en gratis genväg dit.
+function applyRelationsPassiveRecovery(faction: Faction, factions: GameState['factions'], emit: ResolveContext['emit']): void {
+  for (const [otherId, value] of Object.entries(faction.relations)) {
+    if (value >= 100) continue
+    const next = Math.min(100, value + BALANCE.relationsPassiveRecoveryPerTurn)
+    faction.relations[otherId] = next
+
+    const other = factions[otherId]
+    const otherName = other ? other.name.toUpperCase() : otherId.toUpperCase()
+    emit({
+      severity: 'ticker',
+      scope: 'faction',
+      headline: `${faction.name.toUpperCase()}–${otherName} RELATIONS EASE WITH TIME`,
+      causeId: null,
+      delta: { [`relations.${otherId}`]: next - value },
+      actorIsPlayer: false,
+      subjectId: faction.id,
+    })
+  }
+}
+
+// P59 (avsnitt 4.2): "övergångarna drivs av relations, publicSupport och
+// doomsday — inte av ett tärningskast." War→ceasefire: antingen den faktion
+// som just tvingades söka fred (publicSupport-drivet, se suedForPeace ovan)
+// eller BÅDA sidors ömsesidiga goda relationer (relations-drivet).
+// Ceasefire→war: global eskalering (doomsday) eller att relationen kollapsat
+// tillbaka mot krigsnivå (relations). 'dormant' har ingen övergångsregel än
+// (types.ts:s egen kommentar) — bara 'war'/'ceasefire' hanteras här.
+function updateFrontStatuses(draft: GameState, suedForPeace: ReadonlySet<FactionId>, emit: ResolveContext['emit']): void {
+  for (const front of Object.values(draft.fronts)) {
+    const factionA = draft.factions[front.sideA]
+    const factionB = draft.factions[front.sideB]
+    if (!factionA || !factionB) continue
+
+    if (front.status === 'war') {
+      const forcedPeace = suedForPeace.has(front.sideA) || suedForPeace.has(front.sideB)
+      const mutualGoodwill =
+        (factionA.relations[front.sideB] ?? 0) >= BALANCE.ceasefireRelationThreshold &&
+        (factionB.relations[front.sideA] ?? 0) >= BALANCE.ceasefireRelationThreshold
+      if (!forcedPeace && !mutualGoodwill) continue
+
+      front.status = 'ceasefire'
+      emit({
+        severity: 'headline',
+        scope: 'front',
+        headline: `CEASEFIRE ON THE ${front.id.toUpperCase()} FRONT${forcedPeace ? ' — PUBLIC SUPPORT COLLAPSED' : ' — NEGOTIATED PEACE'}`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: front.id,
+      })
+    } else if (front.status === 'ceasefire') {
+      const doomsdayReescalates = draft.doomsday >= BALANCE.ceasefireDoomsdayReescalationThreshold
+      const relationsCollapsed =
+        (factionA.relations[front.sideB] ?? 100) < BALANCE.warReescalationRelationThreshold ||
+        (factionB.relations[front.sideA] ?? 100) < BALANCE.warReescalationRelationThreshold
+      if (!doomsdayReescalates && !relationsCollapsed) continue
+
+      front.status = 'war'
+      emit({
+        severity: 'headline',
+        scope: 'front',
+        headline: `WAR RESUMES ON THE ${front.id.toUpperCase()} FRONT${doomsdayReescalates ? ' — GLOBAL TENSION' : ' — RELATIONS COLLAPSE'}`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: front.id,
+      })
+    }
   }
 }
 
@@ -155,7 +246,10 @@ function processEconomicDistress(faction: Faction, draft: GameState, emit: Resol
   }
 }
 
-function processLowSupport(faction: Faction, emit: ResolveContext['emit']): void {
+// P59 (avsnitt 4.2): returnerar true exakt på korsningsturen — den enda tur
+// updateFrontStatuses (ovan) ska läsa "just nu tvingad att söka fred" som en
+// war→ceasefire-utlösare, inte varje tur stödet FÖRBLIR lågt.
+function processLowSupport(faction: Faction, emit: ResolveContext['emit']): boolean {
   faction.lowSupportTurns = faction.publicSupport < BALANCE.factionLowSupportThreshold ? faction.lowSupportTurns + 1 : 0
 
   // === (inte >=): en engångshändelse på korsningsturen, inte en repeterande
@@ -170,5 +264,7 @@ function processLowSupport(faction: Faction, emit: ResolveContext['emit']): void
       actorIsPlayer: false,
       subjectId: faction.id,
     })
+    return true
   }
+  return false
 }

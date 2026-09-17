@@ -98,6 +98,13 @@ export const fronts: ResolveStep = (ctx) => {
     front.trace.push(front.position)
     if (front.trace.length > FRONT_TRACE_LENGTH) front.trace.shift()
 
+    // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.2): "en front i ceasefire genererar
+    // inga stridsförluster" — 'dormant' delar samma noll-effekt (types.ts:s
+    // egen kommentar). Kontrollerat FÖRE artilleri-stagnationen, inte i stället
+    // för den: en 'war'-front med 0 artilleri stagnerar fortfarande av samma
+    // skäl som innan.
+    if (front.status !== 'war') continue
+
     const attacker = front.attacker
     const defender = otherSide(attacker)
 

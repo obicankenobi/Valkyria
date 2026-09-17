@@ -58,6 +58,12 @@ export const attrition: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
 
   for (const front of Object.values(draft.fronts)) {
+    // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.2): samma grind som fronts.ts —
+    // "ceasefire ... alltså inget materielbehov". Kontrollerad FÖRE den
+    // upprepade artilleri-stagnationskontrollen (filens egen huvudkommentar
+    // förklarar varför den upprepas), inte i stället för den.
+    if (front.status !== 'war') continue
+
     const attacker = front.attacker
     const defender = otherSide(attacker)
 
