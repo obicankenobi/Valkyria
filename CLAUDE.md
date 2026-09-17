@@ -44,7 +44,8 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **P53a och P53b klara (2026-09-17), P53c är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **P53 (P53a+P53b+P53c) helt klar (2026-09-17), P54 är nästa
+steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58) och 5B (länder som aktörer — `Faction.
@@ -64,9 +65,12 @@ intäkten mätbart tidigare för alla fyra policyer, se `docs/ANDRINGSLOGG.md`),
 linjär bokförd intäkt — **BYGGD 2026-09-17**: `progressSnapshot`/`computeExpectedProgress`, golden
 omfryst, härnessmätning n=30/botpolicy visar `BUYOUT`-frekvens 0 %/0 %/67 %/70 % (`passive`/
 `aggressive`/`balanced`/`capacity`) i stället för identisk 100 % för alla fyra, se
-`docs/ANDRINGSLOGG.md`) och **P53c** (balanspass — `boardTarget.threshold`, 2×, mättes vara rätt
-siffra och rörs inte — nästa steg). Se specens avsnitt 2.1 och 10 punkt 1 för de fullständiga
-mätningarna, och
+`docs/ANDRINGSLOGG.md`) och **P53c** (balanspass — `boardTarget.threshold`, 2× — **VERIFIERAD
+2026-09-17, ingen kod eller data ändrad**: en känslighetsanalys mot 1,5×/2×/2,5× bekräftade att 2×
+ger den tydligaste diskrimineringen mellan starka och svaga botar; 1,5× är för löst, 2,5× mättar
+mot nästan enhetligt `BUYOUT` för alla fyra). **P53 är därmed helt klar** — se
+`docs/ANDRINGSLOGG.md`, 2026-09-17, för samtliga tre mätningar. Se specens avsnitt 2.1 och 10
+punkt 1 för de fullständiga ursprungsmätningarna, och
 avsnitt 1 för de tio premisskontrollerade fynden specen bygger på (bl.a. att `Faction.alignment`
 aldrig skrivs av någon kod, att `Station.coverage` är helt död data sedan etapp 1, och att
 `Faction.embargoed` har tre färdiga effektkedjor men ingen utlösare). Avsnitt 10 protokollför de

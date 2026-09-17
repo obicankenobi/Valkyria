@@ -1,10 +1,10 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.2 — antagen (ägarbeslut 2026-09-16), P53 reviderad efter mätning (2026-09-17).**
+**Version 1.0.3 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c) helt klar (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. `P53a` och `P53b` klara (2026-09-17, se avsnitt 8). `P53c` är nästa steg.
+11. **P53 (P53a+P53b+P53c) helt klar (2026-09-17, se avsnitt 8). `P54` är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -569,7 +569,7 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > grönt (393 tester, lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela
 > mätningen.
 
-**P53c — balanspass: håller 2×?**
+**P53c — balanspass: håller 2×? — VERIFIERAD 2026-09-17, INGEN KOD ELLER DATA ÄNDRAD**
 > Ingen kod. Härnessen mot `boardTarget.threshold` (2×) med P53a+P53b på plats. Skruva bara
 > `balance.json`/scenariodata om måltalet inte håller, med motivering och loggrad — annars
 > lämnas det orört.
@@ -577,6 +577,18 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > *Klart när:* `threshold` verifierad eller reviderad med motivering och loggrad; `BUYOUT`-
 > frekvensen följer strategiernas mätta ekonomiska styrka (bättre bot → lägre frekvens), inte
 > identisk för alla fyra; hela CI-kedjan grön.
+>
+> **Klart:** samtliga tre villkor uppfyllda. Känslighetsanalys (n=30/botpolicy, threshold
+> injicerat direkt i `state.house.boardTarget.threshold` efter uppresning — ingen kod eller
+> `balance.json`/scenariodata rörd) mot 1,5×/2×/2,5×: **1,5× är för löst** (svag diskriminering,
+> även de svagaste botarna klarar sig ofta); **2× (nuvarande) ger tydligast diskriminering**
+> (`passive`/`aggressive` i praktiken alltid godkända, `balanced`/`capacity` mestadels
+> underkända, ordningen följer exakt den mätta ekonomiska styrkan); **2,5× är för strängt**
+> (mättar mot nästan enhetligt `BUYOUT` 70–87 % för alla fyra, inklusive den starkaste boten).
+> **Avgjort: `threshold` (2×) lämnas orört** — bekräftar prototypens tidigare punktmätning (se
+> avsnitt 2.1) med en faktisk känslighetsanalys. Fullt testsvep grönt (393 tester, lint,
+> typecheck, build, e2e) utan någon kodändring. **P53 (P53a+P53b+P53c) därmed HELT KLAR** — se
+> `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela mätningen.
 
 ### 5A — Rummet
 
@@ -730,3 +742,4 @@ egna rekommendationer, ordagrant.**
 | 1.0 | 2026-09-16 | Första förslaget. Premisskontroll (avsnitt 1) mot commit `701c56a` gav tio fynd, varav fem formade förslaget: den anonyma tjänstemannen i `Order.inspectorIntegrity` (blev 5A:s ingång), att `alignment` aldrig skrivs (blev kuppens uppgift), att `Station.coverage` är död data (blev informationsgrinden), att krig varken kan börja eller sluta (blev 5B:s dyraste post) och att `Faction.embargoed` har effekter men ingen utlösare (blev det politiska beslutets kvitto). Åtta beslutspunkter öppna |
 | 1.0.1 | 2026-09-16 | **ANTAGEN.** Ägaren godkände samtliga åtta beslutspunkter enligt förslagets egna rekommendationer, ordagrant (se `docs/ANDRINGSLOGG.md` samma datum). Avsnitt 10 omskrivet från öppna frågor till ett beslutsprotokoll. Inga sakändringar mot 1.0 — namnet, prompträckvidden (P53–P64), `politics`-steget, `Official`-ersättningen, `Front.status`, `LEAK`/`SABOTAGE`/`TURN` och den omskrivna femårsklausulen stod redan som rekommendationer och blev nu beslut. `P53` är nästa steg |
 | 1.0.2 | 2026-09-17 | **P53 reviderad innan den kördes, efter mätning.** Ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden i stället för P53:s ursprungliga "omkalibrera `boardTarget`". Mätning (härnessen, n=30–60/botpolicy, med och utan styrelsegranskning) visade att en ren kalibrering inte hade räckt: alla fyra botpolicyer har 0 kr bokförd intäkt vid tur 6 (kravet: 2,16 Mkr), och utan granskningen dör tre av fyra ändå i `INSOLVENCY` vid tur 15–17 — grundorsaken är att `Faction.materielNeed` startar på 0, vilket ger noll ordrar turerna 1–4 medan fasta kostnader löper. `aggressive` (45 % marknadsandel) överlever, vilket avslöjar att alla fyra kaskadmätningarna (P37/P42/P47/P52) kördes mot `balanced` (9,7 % marknadsandel) — en svag botstrategi, inte bara en svag ekonomi. P53 delad i P53a (seeda `materielNeed` vid start), P53b (`board.ts` mäter orderbok + rampad kurva) och P53c (balanspass, verifierar `threshold`). Avsnitt 2.1 och avsnitt 10 punkt 1 fick varsin reviderad-blockquote, ingen gammal rad redigerad. Se `docs/ANDRINGSLOGG.md` samma datum för mätskripten och fullständiga tabeller |
+| 1.0.3 | 2026-09-17 | **P53 (P53a+P53b+P53c) helt klar.** P53a byggd: `Faction.materielNeed` seedas till `orderTriggerThreshold` (`state.ts`), härnessmätning bekräftar mätbart tidigare första bokförda intäkt för alla fyra botpolicyer. P53b byggd: `board.ts`s `progressSnapshot` inkluderar nu orderbokens obetalda andel, `expectedProgress` bytt från linjär till kvadratisk bana (`computeExpectedProgress`), härnessmätning visar `BUYOUT`-frekvens 0 %/0 %/67 %/70 % (var identisk 100 % för alla fyra). P53c verifierad, ingen kod/data ändrad: känslighetsanalys mot 1,5×/2×/2,5× bekräftar att `boardTarget.threshold` (2×) ger den tydligaste diskrimineringen. Golden omfryst i både P53a och P53b (separata commits). Avsnitt 8:s tre prompter fick var sin "BYGGD/VERIFIERAD"-rubrik och klart-blockquote. `P54` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för samtliga mätningar och exakta hash-värden |
