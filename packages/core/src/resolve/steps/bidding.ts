@@ -50,6 +50,11 @@ export const bidding: ResolveStep = (ctx) => {
     // (skyddsräcke 2).
     const official = draft.officials[order.officialId]
     const officialIntegrity = official ? official.integrity : 0
+    // P55 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.2): NON_ALIGNMENT "fördubblar
+    // alignmentPenalty:s utslag" — ordagrant, applicerat på blocTerm oavsett
+    // om det kom från spelarens alignmentPenalty eller en rivals rivalBlocTerm
+    // (samma term, bara två källor, se P24).
+    const blocMultiplier = official && official.agenda === 'NON_ALIGNMENT' ? BALANCE.agendaNonAlignmentBlocMultiplier : 1
 
     const playerBids = submission.bids.filter((b) => b.orderId === order.id)
     for (const extra of playerBids.slice(1)) {
@@ -113,7 +118,7 @@ export const bidding: ResolveStep = (ctx) => {
           inspectorIntegrity: officialIntegrity,
           relationToPlayer: faction ? faction.relationToPlayer : 0,
           reputation: draft.house.reputation,
-          blocTerm: faction ? alignmentPenalty(faction.alignment, draft.house) : 0,
+          blocTerm: faction ? alignmentPenalty(faction.alignment, draft.house) * blocMultiplier : 0,
         })
         candidates.push({
           source: 'player',
@@ -163,7 +168,7 @@ export const bidding: ResolveStep = (ctx) => {
         inspectorIntegrity: officialIntegrity,
         relationToPlayer: rival.relations[order.buyerId] ?? 0,
         reputation: rival.reputation,
-        blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) : 0,
+        blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) * blocMultiplier : 0,
       })
       candidates.push({ source: rivalId, price: rivalBid.price, deliveryTurns: rivalBid.deliveryTurns, grade: 'A', bribe: 0, score })
     }

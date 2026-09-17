@@ -137,10 +137,16 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // förändras genuint, inte bara formen: en faktions procurement-integritet är
   // nu FAST över hela partiet (officials.json) i stället för nyrullad per
   // order, vilket ändrar vilka bud som vinner. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P55 (avsnitt 3.2/8, samma klart-når-krav). Ingen ny
+  // GameState-form (agendan skriver inga nya fält, bara läser Official.agenda
+  // som redan fanns sedan P54) — men order.weights (REARM/AUSTERITY) förskjuts
+  // nu av köparens agenda utöver frontlägets pressure, vilket ändrar vilka bud
+  // som vinner. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1120b18bc71c05' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4cfb7d59084a4' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '161aea2285a982' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'ef07209ef6095' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'ced4c134ff390' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1162b87e1e2a76' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

@@ -239,5 +239,9 @@
   "warDemandCommodityCoupling": 0.02,
   "embargoCommodityTargetBoost": 15,
   "_p51_note": "ETAPP4_TEKNISK_SPEC.md avsnitt 4.5 ger BUY_FORWARD/RELEASE i prosa men ingen formel eller kurs. Bygget (se ANDRINGSLOGG.md) läser innehavet som en pengadenominerad, förköpt subvention -- spend kronor idag ger exakt spend kronor rabatt mot FRAMTIDA materialkostnad, ingen separat lager-/prisstruktur. Det gör att BUY_FORWARD inte behöver ett eget balanstal (1:1-kursen ÄR mekaniken). RELEASE 'trycker ner priset' (avsnitt 4.4, radens fjärde drivare) kräver ett: marketReleaseCommodityImpactPerMoney, PROVISORISKT, kalibrerat så en typisk RELEASE (i storleksordningen hundratusentals kronor, jämförbart med rivalSupplyPlayCost 300 000/buildLineCost 1 200 000) ger en målförskjutning i samma storleksordning som de andra tre drivarna i P50 (3-15 punkter) snarare än att antingen vara verkningslös eller ensam kunna slå i taket.",
-  "marketReleaseCommodityImpactPerMoney": 0.000015
+  "marketReleaseCommodityImpactPerMoney": 0.000015,
+  "_p55_note": "ETAPP5_TEKNISK_SPEC.md avsnitt 3.2 ger fem agendor i prosa men inga tal. Tre nya, PROVISORISKA balanstal: agendaWeightShift (REARM/AUSTERITY) satt lägre (0,15) än weightPressureShift (0,25, P36) eftersom agendan är en SEKUNDÄR skiftare ovanpå frontlägets -- vid full pressure OCH en förstärkande agenda (t.ex. REARM) blir minsta vikten 0,55-0,25-0,15=0,15, aldrig negativ (bidWeightsDefault.price 0,55 är den snävaste marginalen av de tre). agendaModerniseTechFloor (3) satt strax under den enda produkt (ch3_transport_helicopter, techRequired 4) vars kategori (aviation) då blir MODERNISE-köpbar -- resten av produktkatalogen (techRequired 1-3) diskvalificeras, ett medvetet strängt golv som gör avsnitt 3.2:s 'annars diskvalificerad' en verklig, ofta träffande spärr snarare än en teoretisk. agendaNonAlignmentBlocMultiplier (2) är specens egen 'fördubblas', ordagrant -- det enda av de tre som inte är en gissning.",
+  "agendaWeightShift": 0.15,
+  "agendaModerniseTechFloor": 3,
+  "agendaNonAlignmentBlocMultiplier": 2
 }

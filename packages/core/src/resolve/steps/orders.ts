@@ -18,13 +18,16 @@ import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForFront, computeReferencePrice, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
-import type { Faction, FactionId, FrontId, GameState, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
+import type { Agenda, Faction, FactionId, FrontId, GameState, Official, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
 
 interface NeedBalance {
   orderTriggerThreshold: Record<TechCategory, number>
   maxOrdersPerFactionPerTurn: number
   weightPressureShift: number
   pressurePositionSpan: number
+  // P55 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.2).
+  agendaWeightShift: number
+  agendaModerniseTechFloor: number
 }
 const NEED_BALANCE = balanceData as unknown as NeedBalance
 
@@ -175,13 +178,35 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
-function weightsForPressure(pressure: number): { price: number; delivery: number; relationship: number } {
-  const shift = pressure * NEED_BALANCE.weightPressureShift
-  return {
-    price: BALANCE.bidWeightsDefault.price - shift,
-    delivery: BALANCE.bidWeightsDefault.delivery + shift,
+// P55 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.2): "Agendan blir en ANDRA viktskiftare
+// på samma ställe — samma mönster, ingen ny struktur" som weightPressureShift
+// (P36) redan är. REARM skiftar mot delivery (samma riktning som hög pressure —
+// de kan förstärka varandra); AUSTERITY skiftar mot price, "allt annat ner"
+// tolkat som en jämn delning av minskningen mellan delivery och relationship
+// (den enda läsning som håller summan vid 1 utan att gissa en egen fördelning
+// mellan de två). MODERNISE/NON_ALIGNMENT/SELF_ENRICHMENT skiftar inga vikter —
+// deras mekaniska effekt ligger i produktvalet (bestEligibleProduct), blocTerm
+// (bidding.ts/queries.ts) respektive redan i officials.json:s startdata (låg
+// integrity by construction, se filens P54-kommentar).
+function weightsForOrder(pressure: number, agenda: Agenda): { price: number; delivery: number; relationship: number } {
+  const pressureShift = pressure * NEED_BALANCE.weightPressureShift
+  const weights = {
+    price: BALANCE.bidWeightsDefault.price - pressureShift,
+    delivery: BALANCE.bidWeightsDefault.delivery + pressureShift,
     relationship: BALANCE.bidWeightsDefault.relationship,
   }
+
+  const shift = NEED_BALANCE.agendaWeightShift
+  if (agenda === 'REARM') {
+    weights.delivery += shift
+    weights.price -= shift
+  } else if (agenda === 'AUSTERITY') {
+    weights.price += shift
+    weights.delivery -= shift / 2
+    weights.relationship -= shift / 2
+  }
+
+  return weights
 }
 
 export const orders: ResolveStep = (ctx) => {
@@ -220,7 +245,7 @@ export const orders: ResolveStep = (ctx) => {
         competingRivals: allRivalIds,
         heat,
         supplyCostIndex: draft.market.supplyCostIndex,
-        weights: weightsForPressure(pressure),
+        weights: weightsForOrder(pressure, official.agenda),
         rng,
         officialId: official.id,
         reason: { kind: 'SCRIPTED' },
@@ -267,11 +292,15 @@ export const orders: ResolveStep = (ctx) => {
     // — ingen sökning, och heat/pressure räknas mot EXAKT den fronten striden
     // faktiskt stod på, inte köparens eventuella andra front.
     const heat = computeHeatForFront(draft, request.frontId)
-    const weights = weightsForPressure(computePressureForFront(draft, request.factionId, request.frontId))
+    // P54 (avsnitt 3.1): samma "faktionens ordrar hör till dess procurement-
+    // tjänsteman"-motivering som scriptade ordrar ovan.
+    const official = findOfficial(draft, request.factionId, 'procurement')!
+    const weights = weightsForOrder(computePressureForFront(draft, request.factionId, request.frontId), official.agenda)
     const issuedOrder = tryIssueOrder(
       ctx,
       request.factionId,
       faction,
+      official,
       request.category,
       request.quantity,
       heat,
@@ -320,6 +349,7 @@ function tryIssueOrder(
   ctx: ResolveContext,
   factionId: FactionId,
   faction: Faction,
+  official: Official,
   category: TechCategory,
   rawQuantity: number,
   heat: number,
@@ -330,7 +360,10 @@ function tryIssueOrder(
 ): { order: Order; product: Product; quantity: number } | null {
   const { draft, rng, emit } = ctx
 
-  const product = bestEligibleProduct(category, faction)
+  // P55 (avsnitt 3.2): MODERNISE kräver techRequired över golvet — se
+  // bestEligibleProduct nedan. Ingen produkt som klarar golvet: samma UNMET
+  // NEED-väg som redan finns för "ingen produkt köpbar alls" (avsnitt 4.2).
+  const product = bestEligibleProduct(category, faction, official.agenda)
   if (!product) {
     emit({
       severity: 'ticker',
@@ -366,8 +399,8 @@ function tryIssueOrder(
     return null
   }
 
-  // P54 (avsnitt 3.1): se motiveringen vid steg 1:s (scriptade) anropsställe ovan.
-  const official = findOfficial(draft, factionId, 'procurement')!
+  // P54 (avsnitt 3.1): official skickas nu in av anroparen (behövs redan för
+  // MODERNISE-filtret ovan, innan produkten ens är vald).
   const order = buildOrder({
     id: nextId(),
     buyerId: factionId,
@@ -394,9 +427,19 @@ function tryIssueOrder(
 // formeln ska hålla om det ändras) väljs den med högst techRequired, som en
 // rimlig läsning av "bästa" (den mest avancerade produkten faktionen faktiskt
 // klarar av).
-function bestEligibleProduct(category: TechCategory, faction: Faction): Product | null {
+//
+// P55 (avsnitt 3.2): MODERNISE lägger till ETT ytterligare filter —
+// techRequired > agendaModerniseTechFloor — ovanpå de två redan existerande
+// (icke-restricted, techLevel räcker). En MODERNISE-tjänsteman som inte har
+// någon tillräckligt avancerad produkt i kategorin får ingen order alls
+// (UNMET NEED, se tryIssueOrder), exakt "annars diskvalificerad" ur specen.
+function bestEligibleProduct(category: TechCategory, faction: Faction, agenda: Agenda): Product | null {
   const eligible = allProducts().filter(
-    (p) => p.category === category && !p.restricted && p.techRequired <= faction.techLevel[category],
+    (p) =>
+      p.category === category &&
+      !p.restricted &&
+      p.techRequired <= faction.techLevel[category] &&
+      (agenda !== 'MODERNISE' || p.techRequired > NEED_BALANCE.agendaModerniseTechFloor),
   )
   if (eligible.length === 0) return null
   return eligible.reduce((best, p) => (p.techRequired > best.techRequired ? p : best))
@@ -420,7 +463,10 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
   // som Order.frontId — de är samma val, inte två separata beräkningar.
   const frontId = highestPressureFront(draft, factionId)
   const heat = frontId !== null ? computeHeatForFront(draft, frontId) : 0
-  const weights = weightsForPressure(frontId !== null ? computePressureForFront(draft, factionId, frontId) : 0)
+  // P54 (avsnitt 3.1): samma "faktionens ordrar hör till dess procurement-
+  // tjänsteman"-motivering som scriptade/namngivna ordrar ovan.
+  const official = findOfficial(draft, factionId, 'procurement')!
+  const weights = weightsForOrder(frontId !== null ? computePressureForFront(draft, factionId, frontId) : 0, official.agenda)
 
   // Egen budget (maxOrdersPerFactionPerTurn), separat från steg 2:s namngivna
   // ersättningsordrar — se steg 2:s motivering (P40, avsnitt 5.4).
@@ -433,6 +479,7 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
       ctx,
       factionId,
       faction,
+      official,
       category,
       faction.materielNeed[category],
       heat,

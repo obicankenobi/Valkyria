@@ -44,7 +44,7 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **P53 (P53a+P53b+P53c) och P54 klara (2026-09-17), P55 är
+`701c56a`) är den **aktiva** specen — **P53 (P53a+P53b+P53c), P54 och P55 klara (2026-09-17), P56 är
 nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
@@ -52,7 +52,11 @@ den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-
 `Post`/`Agenda`-typerna, `GameState.officials`, `officials.json` (fyra tjänstemän per faktion),
 `Order.officialId` ersätter `inspectorIntegrity`, `computeScore` i `pricing.ts` HELT ORÖRD
 [skyddsräcke 2] — bara källan för integritetstalet flyttad. Golden omfryst, se
-`docs/ANDRINGSLOGG.md`) och 5B (länder som aktörer — `Faction.
+`docs/ANDRINGSLOGG.md`. **P55 BYGGD 2026-09-17**: `Agenda` viktar affären — REARM/AUSTERITY
+skiftar `order.weights` (andra viktskiftare vid sidan av `weightPressureShift`), MODERNISE
+diskvalificerar produkter under ett techgolv, NON_ALIGNMENT fördubblar `blocTerm`
+(`bidding.ts`/`queries.ts`), SELF_ENRICHMENT kräver ingen ny kod (redan i `officials.json`s
+startdata). Golden omfryst, se `docs/ANDRINGSLOGG.md`) och 5B (länder som aktörer — `Faction.
 relations`, `Front.status`, `FUND_COUP`, `ASSASSINATE`, P59–P63). **P53 reviderad 2026-09-17,
 innan den kördes** (ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden, inte en tillfällig
 fix) — mätning visade att en ren `boardTarget`-omkalibrering, specens ursprungliga plan, inte

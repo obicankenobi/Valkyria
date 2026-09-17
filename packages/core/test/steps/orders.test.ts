@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { orders } from '../../src/resolve/steps/orders.js'
-import { getProduct } from '../../src/pricing.js'
+import { computeScore, getProduct } from '../../src/pricing.js'
 import { createRng } from '../../src/rng.js'
 import { createInitialState } from '../../src/state.js'
 import balance from '../../src/data/balance.json' with { type: 'json' }
@@ -289,6 +289,12 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       // — sätt dem uttryckligen lika för att isolera testet till positionstermen).
       front.morale.a = 50
       front.morale.b = 50
+      // P55 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.2): rvns procurement-tjänsteman
+      // har REARM som standard (officials.json) — REARM skiftar vikterna
+      // OBEROENDE av pressure. Neutraliserad till SELF_ENRICHMENT (varken
+      // vikt- eller produktval-effekt i P55) för att isolera testet till
+      // pressure-termen, samma sak testet redan hette (P36, inte P55).
+      state.officials['official-rvn-procurement']!.agenda = 'SELF_ENRICHMENT'
       state.factions['rvn']!.materielNeed.artillery = 100
       state.meta.turn = 0
 
@@ -305,6 +311,8 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       front.trace = [20, 10, 0, -20] // rör sig mot rvns egen pol (-100) — rvn vinner
       front.morale.a = 70
       front.morale.b = 30
+      // P55: neutraliserad agenda, samma motivering som testet ovan.
+      state.officials['official-rvn-procurement']!.agenda = 'SELF_ENRICHMENT'
       state.factions['rvn']!.materielNeed.artillery = 100
       state.meta.turn = 0
 
@@ -324,6 +332,9 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       const state = createInitialState('indochina-slice', 'seed')
       delete state.fronts['front-laos']
       state.fronts['front-1']!.trace = [-50, -40, -20, 0]
+      // P55: laos procurement-tjänsteman har AUSTERITY som standard
+      // (officials.json) — neutraliserad, samma motivering som ovan.
+      state.officials['official-laos-procurement']!.agenda = 'SELF_ENRICHMENT'
       state.factions['laos']!.materielNeed.infantry = 100
       state.meta.turn = 0
 
@@ -395,5 +406,84 @@ describe('orders — P54: officialId pekar på en persistent tjänsteman', () =>
     expect(secondOrder).toBeDefined()
     expect(secondOrder.officialId).toBe(firstOrder.officialId)
     expect(state.officials['official-rvn-procurement']!.integrity).toBe(integrityAfterFirst)
+  })
+})
+
+// P55 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.2/8, klart-når). Agendan är "en ANDRA
+// viktskiftare på samma ställe" som weightPressureShift (P36) — dessa tester
+// bevisar effekten på en riktigt genererad order (order.weights), inte en
+// isolerad formel.
+describe('orders — P55: agendan viktar affären', () => {
+  it('två köpare med identiskt behov men olika agenda (REARM vs AUSTERITY) ger olika vinnare mellan samma två konkurrerande bud', () => {
+    function weightsFor(agenda: 'REARM' | 'AUSTERITY') {
+      const state = createInitialState('indochina-slice', 'agenda-seed')
+      state.officials['official-rvn-procurement']!.agenda = agenda
+      state.factions['rvn']!.materielNeed.artillery = 100
+      state.meta.turn = 0
+      orders(makeCtx(state, 'orders-seed').ctx)
+      const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+      expect(order).toBeDefined()
+      return order.weights
+    }
+
+    const rearmWeights = weightsFor('REARM')
+    const austerityWeights = weightsFor('AUSTERITY')
+    expect(rearmWeights).not.toEqual(austerityWeights)
+
+    // Två fasta konkurrerande bud på SAMMA order: ett dyrt men snabbt, ett
+    // billigt men långsamt. Poängen räknas med varje agendas EGNA order.
+    // vikter (allt annat — pris, referencePrice, leveranskrav, integritet,
+    // relation, reputation, blocTerm — identiskt).
+    const shared = {
+      referencePrice: 2000000,
+      requiredDeliveryTurns: 3,
+      inspectorIntegrity: 50,
+      relationToPlayer: 40,
+      reputation: { reliability: 50, quality: 50 },
+      blocTerm: 0,
+    }
+    const expensiveFast = { bidPrice: 2000000, bidDeliveryTurns: 3, bidGrade: 'A' as const, bidBribe: 0 } // = referencePrice, exakt i tid
+    const cheapSlow = { bidPrice: 1400000, bidDeliveryTurns: 5, bidGrade: 'A' as const, bidBribe: 0 } // 30 % billigare, 2 turer sent
+
+    const rearmPrefersFast =
+      computeScore({ ...shared, ...expensiveFast, weights: rearmWeights }) >
+      computeScore({ ...shared, ...cheapSlow, weights: rearmWeights })
+    const austerityPrefersFast =
+      computeScore({ ...shared, ...expensiveFast, weights: austerityWeights }) >
+      computeScore({ ...shared, ...cheapSlow, weights: austerityWeights })
+
+    expect(rearmPrefersFast).toBe(true) // REARM: volym/snabbhet väger tyngre
+    expect(austerityPrefersFast).toBe(false) // AUSTERITY: lägsta pris vinner i stället
+  })
+
+  it('MODERNISE diskvalificerar en kategori vars enda köpbara produkt ligger under teknikgolvet — UNMET NEED, ingen order', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    // 105mm_field_gun (artillery, rvns enda icke-restricted produkt i kategorin)
+    // har techRequired 2 — under agendaModerniseTechFloor (3, balance.json).
+    state.officials['official-rvn-procurement']!.agenda = 'MODERNISE'
+    state.factions['rvn']!.materielNeed.artillery = 100
+    state.meta.turn = 0
+
+    const { ctx, emitted } = makeCtx(state, 'orders-seed')
+    orders(ctx)
+
+    expect(state.market.openOrders.some((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')).toBe(false)
+    expect(emitted.some((e) => e.headline.includes('UNMET NEED') && e.subjectId === 'rvn')).toBe(true)
+  })
+
+  it('MODERNISE tillåter en kategori vars produkt klarar teknikgolvet — ordern utlyses som vanligt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    // ch3_transport_helicopter (aviation) har techRequired 4 — över golvet (3).
+    // rvns eget techLevel.aviation (default 2, indochina-slice.json) räcker
+    // inte till 4 ändå — höjs explicit så det bara är MODERNISE-golvet som
+    // testas här, inte den redan befintliga techLevel-spärren.
+    state.factions['rvn']!.techLevel.aviation = 4
+    state.officials['official-rvn-procurement']!.agenda = 'MODERNISE'
+    state.factions['rvn']!.materielNeed.aviation = 100
+    state.meta.turn = 0
+
+    orders(makeCtx(state, 'orders-seed').ctx)
+
+    expect(state.market.openOrders.some((o) => o.buyerId === 'rvn' && o.productId === 'ch3_transport_helicopter')).toBe(true)
   })
 })

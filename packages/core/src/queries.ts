@@ -8,7 +8,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
-import { alignmentPenalty, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
+import { alignmentPenalty, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import type { BidEstimate, Formation, FormationDisplay, GameState, Grade, Money, Order, Pct, RivalId } from './types.js'
 
 const WIN_BAND_POINTS = 5
@@ -159,12 +159,16 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
 
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0
-  const blocTerm = faction ? alignmentPenalty(faction.alignment, state.house) : 0
   // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): integriteten läses nu ur den
   // persistenta Official ordern pekar på, inte ur ordern själv (skyddsräcke 2 —
   // computeScore/formeln oförändrad).
   const official = state.officials[order.officialId]
   const integrity = official ? official.integrity : 0
+  // P55 (avsnitt 3.2): NON_ALIGNMENT fördubblar blocTerm — samma multiplikator
+  // som bidding.ts, för att hålla P24:s invariant ("bidEstimate och bidding.ts
+  // använder identiska termer") även för den nya effekten.
+  const blocMultiplier = official && official.agenda === 'NON_ALIGNMENT' ? BALANCE.agendaNonAlignmentBlocMultiplier : 1
+  const blocTerm = faction ? alignmentPenalty(faction.alignment, state.house) * blocMultiplier : 0
 
   const winBand = computeWinBand(hashRng, {
     order,
@@ -178,6 +182,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
     rivals: state.rivals,
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
+    blocMultiplier,
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -198,6 +203,10 @@ interface WinBandInputs {
   // slås upp av anroparen (bidEstimate) eftersom den, till skillnad från denna
   // inre funktion, har hela state och alltså state.officials.
   integrity: Pct
+  // P55 (avsnitt 3.2): NON_ALIGNMENT-multiplikatorn (1 annars), räknad en gång av
+  // bidEstimate — samma tal används för både spelarens blocTerm (ovan) och varje
+  // samplad rivals, se rivalScore nedan.
+  blocMultiplier: number
 }
 
 // Monte Carlo-skattning: för varje prispunkt, kör MONTE_CARLO_SAMPLES simulerade
@@ -255,7 +264,7 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
           inspectorIntegrity: p.integrity,
           relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
           reputation: rival.reputation,
-          blocTerm: rivalBlocTerm(rival, p.factionAlignment),
+          blocTerm: rivalBlocTerm(rival, p.factionAlignment) * p.blocMultiplier,
         })
         if (rivalScore >= playerScore) beatsAllRivals = false
       }

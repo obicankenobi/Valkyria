@@ -1,11 +1,11 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.4 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c) och P54 klara
+**Version 1.0.5 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c), P54 och P55 klara
 (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. **P53 (P53a+P53b+P53c) och P54 klara (2026-09-17, se avsnitt 8). `P55` är nästa steg.**
+11. **P53 (P53a+P53b+P53c), P54 och P55 klara (2026-09-17, se avsnitt 8). `P56` är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -613,11 +613,23 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > FAST i stället för nyrullad per order), inte bara formen. Fullt testsvep grönt (400 tester,
 > lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
-**P55 — agendan viktar affären**
+**P55 — agendan viktar affären — BYGGD 2026-09-17**
 > `Agenda` enligt 3.2, som andra viktskiftare vid sidan av `weightPressureShift`.
 >
 > *Klart när:* ett test visar att två köpare med identiskt behov men olika agenda ger olika
 > vinnare; ett test visar att `MODERNISE` diskvalificerar under teknikgolvet; golden omfryst.
+>
+> **Klart:** samtliga tre villkor uppfyllda. `weightsForOrder(pressure, agenda)` (`orders.ts`)
+> — REARM/AUSTERITY skiftar `order.weights` (verifierat: två riktigt genererade ordrar, samma
+> köpare, bara agendan olika, ger olika vinnare mellan samma två konkurrerande bud).
+> `bestEligibleProduct` fick ett tredje filter (`techRequired > agendaModerniseTechFloor`) för
+> MODERNISE. NON_ALIGNMENT fördubblar `blocTerm` i både `bidding.ts` och `queries.ts` (håller
+> P24:s invariant). SELF_ENRICHMENT krävde ingen ny kod (redan i `officials.json`s startdata,
+> P54). Tre nya, PROVISORISKA balanstal. Tre pre-existerande tester i `orders.test.ts`
+> fixade (byggde på standardvikter vid pressure 0, som inte längre håller för en köpare med
+> icke-neutral standardagenda). `golden.test.ts`s tre `expectedHash` omfrysta,
+> `fixtures/balance.frozen.json` synkad. Fullt testsvep grönt (403 tester, lint, typecheck,
+> build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
 **P56 — att påverka en människa**
 > `BRIBE` riktas om mot `officialId`. `FUND_CAMPAIGN` och `FAVOUR` byggs. Minst en bot lär sig
@@ -757,3 +769,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.2 | 2026-09-17 | **P53 reviderad innan den kördes, efter mätning.** Ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden i stället för P53:s ursprungliga "omkalibrera `boardTarget`". Mätning (härnessen, n=30–60/botpolicy, med och utan styrelsegranskning) visade att en ren kalibrering inte hade räckt: alla fyra botpolicyer har 0 kr bokförd intäkt vid tur 6 (kravet: 2,16 Mkr), och utan granskningen dör tre av fyra ändå i `INSOLVENCY` vid tur 15–17 — grundorsaken är att `Faction.materielNeed` startar på 0, vilket ger noll ordrar turerna 1–4 medan fasta kostnader löper. `aggressive` (45 % marknadsandel) överlever, vilket avslöjar att alla fyra kaskadmätningarna (P37/P42/P47/P52) kördes mot `balanced` (9,7 % marknadsandel) — en svag botstrategi, inte bara en svag ekonomi. P53 delad i P53a (seeda `materielNeed` vid start), P53b (`board.ts` mäter orderbok + rampad kurva) och P53c (balanspass, verifierar `threshold`). Avsnitt 2.1 och avsnitt 10 punkt 1 fick varsin reviderad-blockquote, ingen gammal rad redigerad. Se `docs/ANDRINGSLOGG.md` samma datum för mätskripten och fullständiga tabeller |
 | 1.0.3 | 2026-09-17 | **P53 (P53a+P53b+P53c) helt klar.** P53a byggd: `Faction.materielNeed` seedas till `orderTriggerThreshold` (`state.ts`), härnessmätning bekräftar mätbart tidigare första bokförda intäkt för alla fyra botpolicyer. P53b byggd: `board.ts`s `progressSnapshot` inkluderar nu orderbokens obetalda andel, `expectedProgress` bytt från linjär till kvadratisk bana (`computeExpectedProgress`), härnessmätning visar `BUYOUT`-frekvens 0 %/0 %/67 %/70 % (var identisk 100 % för alla fyra). P53c verifierad, ingen kod/data ändrad: känslighetsanalys mot 1,5×/2×/2,5× bekräftar att `boardTarget.threshold` (2×) ger den tydligaste diskrimineringen. Golden omfryst i både P53a och P53b (separata commits). Avsnitt 8:s tre prompter fick var sin "BYGGD/VERIFIERAD"-rubrik och klart-blockquote. `P54` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för samtliga mätningar och exakta hash-värden |
 | 1.0.4 | 2026-09-17 | **P54 byggd — 5A:s ingång, `Official` ersätter `Order.inspectorIntegrity`.** `Official`/`Post`/`Agenda`-typerna (avsnitt 3.1/3.2 — typen nu, viktseffekten i P55), `GameState.officials`, ny `officials.json` (fyra fiktiva tjänstemän per faktion) läst av `state.ts`s nya `buildOfficials`, ny ren modul `officials.ts` (`officialId`/`findOfficial`/`replaceOfficial`). `Order.officialId` ersätter `inspectorIntegrity` — `orders.ts` slår upp köparens `procurement`-tjänsteman i stället för att rulla ett nytt tal per order. `computeScore` (`pricing.ts`) HELT ORÖRD, skyddsräcke 2 pinnat med ett test. `applyActions.ts` medvetet inte rörd (ingen ny `PlayerAction` i P54). Golden omfryst — genuin trajektorieändring, inte bara ny form. Avsnitt 8:s P54-block fick en "BYGGD"-rubrik och klart-blockquote. `P55` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
+| 1.0.5 | 2026-09-17 | **P55 byggd — agendan viktar affären.** `weightsForOrder` (`orders.ts`) ersätter `weightsForPressure` — REARM/AUSTERITY skiftar `order.weights`, en andra viktskiftare vid sidan av `weightPressureShift` (P36). `bestEligibleProduct` fick ett MODERNISE-filter (`techRequired > agendaModerniseTechFloor`). NON_ALIGNMENT fördubblar `blocTerm` i `bidding.ts`/`queries.ts`. SELF_ENRICHMENT krävde ingen ny kod (redan i `officials.json`, P54). Tre nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P55-block fick en "BYGGD"-rubrik och klart-blockquote. `P56` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |

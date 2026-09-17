@@ -48,6 +48,10 @@ interface Balance {
   trueBudgetMaxFactor: number
   reliabilityBidFloor: number
   bidWeightsDefault: { price: number; delivery: number; relationship: number }
+  // P55 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.2): NON_ALIGNMENT fördubblar
+  // alignmentPenalty/rivalBlocTerm:s utslag — läst här (delad av bidding.ts och
+  // queries.ts, samma skäl som resten av den här filens BALANCE).
+  agendaNonAlignmentBlocMultiplier: number
 }
 
 export const BALANCE = balanceData as unknown as Balance
