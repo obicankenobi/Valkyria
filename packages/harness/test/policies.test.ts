@@ -287,3 +287,36 @@ describe('skyddsräcke 4 (avsnitt 6, GK-A): BROKER förekommer i minst en botpol
     expect(usesBroker).toBe(true)
   })
 })
+
+// P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 6, skyddsräcke 4/GK-A): INFLUENCE är
+// helt nytt; LEAK/SABOTAGE/TURN gick från "deklarerad, avvisad" till
+// faktiskt byggda — samma GK-A-krav som en ny handling.
+describe('skyddsräcke 4 (avsnitt 6, GK-A): INFLUENCE/LEAK/SABOTAGE/TURN förekommer i minst en botpolicy', () => {
+  it('minst en policy skickar en INFLUENCE-handling på ett fräscht parti', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const usesInfluence = Object.values(POLICIES).some((policy) =>
+      policy(state).actions.some((a) => a.type === 'POLITICAL' && a.op === 'INFLUENCE'),
+    )
+    expect(usesInfluence).toBe(true)
+  })
+
+  it('minst en policy skickar en LEAK-handling på ett fräscht parti', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const usesLeak = Object.values(POLICIES).some((policy) => policy(state).actions.some((a) => a.type === 'INTEL' && a.op === 'LEAK'))
+    expect(usesLeak).toBe(true)
+  })
+
+  it('minst en policy skickar en SABOTAGE-handling på ett fräscht parti', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const usesSabotage = Object.values(POLICIES).some((policy) =>
+      policy(state).actions.some((a) => a.type === 'INTEL' && a.op === 'SABOTAGE'),
+    )
+    expect(usesSabotage).toBe(true)
+  })
+
+  it('minst en policy skickar en TURN-handling på ett fräscht parti', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const usesTurn = Object.values(POLICIES).some((policy) => policy(state).actions.some((a) => a.type === 'INTEL' && a.op === 'TURN'))
+    expect(usesTurn).toBe(true)
+  })
+})

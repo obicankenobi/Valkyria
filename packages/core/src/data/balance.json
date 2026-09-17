@@ -271,5 +271,16 @@
   "relationsPassiveRecoveryPerTurn": 1,
   "ceasefireRelationThreshold": 70,
   "warReescalationRelationThreshold": 30,
-  "ceasefireDoomsdayReescalationThreshold": 60
+  "ceasefireDoomsdayReescalationThreshold": 60,
+  "_p60_note": "ETAPP5_TEKNISK_SPEC.md avsnitt 4.3 ger INFLUENCE/counterIntelligence/LEAK/SABOTAGE/TURN i prosa men inga tal -- tio nya, PROVISORISKA balanstal. counterIntelligenceDefault (40) -- BÅDE startvärdet för alla faktioner OCH nämnaren i exposure-skalningsformeln (multiplier = counterIntelligence/counterIntelligenceDefault), så ett obehandlat parti startar vid multiplier 1,0 (ingen förändring mot P18:s ordinarie EXPAND-exponering) -- avsnitt 4.3 ger ingen egen formel, bara 'skalar hur mycket exposure ... genererar'. intelOpBaseSuccessPct (90) och intelOpMinSuccessPct (5) -- LEAK/SABOTAGE/TURN:s lyckandechans är EXAKT 'base - counterIntelligence' (en direkt procentenhet-för-procentenhet avräkning, den enklaste bokstavliga läsningen av 'billiga mot ett land med svag tjänst och livsfarliga mot ett med stark'), klampad så en extremt stark tjänst aldrig gör en operation strikt omöjlig (5%). intelCovertOpCost (200000) -- mellan intelExpandCost (150000) och intelRecruitCost (300000), en riskablare men inte den dyraste INTEL-handlingen. leakRelationPenalty (20) -- en rivals relations[köpare] faller, jämförbar med voidedContractRelationPenalty (15) men något hårdare eftersom LEAK är en AVSIKTLIG attack. turnRelationGain (25) -- högre än bribeRelationMaxPerTurn (15, ett TAK per tur) eftersom TURN är en engångshandling med mycket högre insats/risk, inte en upprepningsbar liten muta. turnFailureStandingPenalty (20) -- jämförbar med brokerStandingCost (10) men dubbelt så hög: ett misslyckat försök att vända en tjänsteman är allvarligare än ett ogenomfört mäklat avtal. intelCaughtCounterIntelligenceGain (10) -- 'stiger när spelaren åker fast', en måttlig men märkbar höjning per avslöjad operation. influencePublicSupportCostPerPoint (3000) och influenceRelationsCostPerPoint (1500) -- 'långsamt, förnekbart, BILLIGT' (ordagrant): influenceRelationsCostPerPoint satt lägre, i linje med fundCampaignStandingCostPerPoint (2000) som redan etablerat 'billigt per punkt'; publicSupport är en större, trögare nationell storhet och kostar därför något mer per punkt. Se docs/ANDRINGSLOGG.md.",
+  "counterIntelligenceDefault": 40,
+  "intelOpBaseSuccessPct": 90,
+  "intelOpMinSuccessPct": 5,
+  "intelCovertOpCost": 200000,
+  "leakRelationPenalty": 20,
+  "turnRelationGain": 25,
+  "turnFailureStandingPenalty": 20,
+  "intelCaughtCounterIntelligenceGain": 10,
+  "influencePublicSupportCostPerPoint": 3000,
+  "influenceRelationsCostPerPoint": 1500
 }

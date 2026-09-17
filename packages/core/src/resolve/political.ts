@@ -30,6 +30,9 @@ interface Balance {
   // incidenter ... stiger av BACK_CHANNEL".
   relationsIncidentPenalty: number
   relationsBackChannelGain: number
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): INFLUENCE.
+  influencePublicSupportCostPerPoint: number
+  influenceRelationsCostPerPoint: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -98,6 +101,9 @@ export function applyPolitical(
     case 'FUND_CAMPAIGN':
     case 'FAVOUR':
       applyOfficialTargetedPolitical(ctx, action, bribeGainThisTurn)
+      return
+    case 'INFLUENCE':
+      applyInfluence(ctx, action)
       return
   }
 }
@@ -288,5 +294,70 @@ function applyOfficialTargetedPolitical(
     delta: { treasury: -action.spend, relationToPlayer: gain, scandalRisk: scandalGain },
     actorIsPlayer: true,
     subjectId: official.factionId,
+  })
+}
+
+// P60 (avsnitt 4.3): "betala för att flytta en faktions publicSupport eller
+// dess relations mot ett annat land ... långsamt, förnekbart, billigt" —
+// till skillnad från STAGE_INCIDENT (rng-avgjort, kan misslyckas och
+// exponera en station) lyckas INFLUENCE alltid: "förnekbart" betyder här att
+// det inte finns något att bli avslöjad FÖR. `direction` gör den
+// dubbelriktad — specen säger "flytta", aldrig bara "sänka"/"höja".
+function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'INFLUENCE' }>): void {
+  const { draft, emit, rejected } = ctx
+  const house = draft.house
+
+  const target = draft.factions[action.targetFactionId]
+  if (!target) {
+    rejected.push({ action, reason: 'unknown target faction' })
+    return
+  }
+  if (!Number.isFinite(action.spend) || action.spend < 0) {
+    rejected.push({ action, reason: 'invalid spend amount' })
+    return
+  }
+
+  const sign = action.direction === 'up' ? 1 : -1
+
+  if (action.effect.kind === 'publicSupport') {
+    const before = target.publicSupport
+    const after = clamp(before + (action.spend / BALANCE.influencePublicSupportCostPerPoint) * sign, 0, 100)
+    house.treasury -= action.spend
+    target.publicSupport = after
+    if (after === before) return
+
+    emit({
+      severity: 'ticker',
+      scope: 'faction',
+      headline: `${house.name.toUpperCase()} RUNS AN INFLUENCE CAMPAIGN IN ${target.name.toUpperCase()} — PUBLIC SUPPORT ${action.direction === 'up' ? 'RISES' : 'FALLS'} (−£${action.spend.toLocaleString('en-GB')})`,
+      causeId: null,
+      delta: { treasury: -action.spend, publicSupport: after - before },
+      actorIsPlayer: true,
+      subjectId: target.id,
+    })
+    return
+  }
+
+  const towardId = action.effect.towardFactionId
+  const toward = draft.factions[towardId]
+  if (!toward || towardId === target.id) {
+    rejected.push({ action, reason: 'invalid influence target' })
+    return
+  }
+
+  const before = target.relations[towardId] ?? 0
+  const after = clamp(before + (action.spend / BALANCE.influenceRelationsCostPerPoint) * sign, 0, 100)
+  house.treasury -= action.spend
+  target.relations[towardId] = after
+  if (after === before) return
+
+  emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${house.name.toUpperCase()} RUNS AN INFLUENCE CAMPAIGN IN ${target.name.toUpperCase()} — RELATIONS WITH ${toward.name.toUpperCase()} ${action.direction === 'up' ? 'IMPROVE' : 'WORSEN'} (−£${action.spend.toLocaleString('en-GB')})`,
+    causeId: null,
+    delta: { treasury: -action.spend, [`relations.${towardId}`]: after - before },
+    actorIsPlayer: true,
+    subjectId: target.id,
   })
 }

@@ -44,8 +44,8 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59 (5B) klar (2026-09-17), P60
-är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59 och P60 (5B) klara
+(2026-09-17), P61 är nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-09-17**: `Official`/
@@ -107,6 +107,17 @@ war→ceasefire vid "FORCED TO SUE FOR PEACE" (tidigare bara en notis, fynd 1.5 
 mekaniska konsekvens) eller ömsesidigt höga relationer; ceasefire→war vid hög doomsday eller
 kollapsade relationer. Nio nya PROVISORISKA balanstal. Golden omfryst — den största enskilda
 trajektorieändringen sedan P53b. Se `docs/ANDRINGSLOGG.md`.
+**P60 BYGGD 2026-09-17**: `Faction.counterIntelligence: Pct` (nytt) skalar exposure för ALLA
+INTEL-operationer med en exponeringseffekt, inklusive det redan byggda `EXPAND` (P18), inte
+bara de tre nya. `LEAK`/`SABOTAGE`/`TURN` delar en gemensam lyckandechans
+(`intelOpBaseSuccessPct − counterIntelligence`) och en gemensam "åker fast"-bestraffning.
+`LEAK` sänker en rivals `relations[nation]`. `SABOTAGE` sätter `rival.sabotagedUntilTurn` —
+fältets FÖRSTA spelarstyrda skrivare (`bidding.ts` hoppade redan över en saboterad rivals bud
+sedan P25). `TURN` riktas mot ett `Official`: lyckad höjer `relationToPlayer`, misslyckad
+sänker `standing`. `INFLUENCE` (nytt `POLITICAL`-op, alltid lyckad) flyttar en faktions
+`publicSupport` eller dess enkelriktade `relations` mot ett annat land, `direction`-styrt.
+`aggressive` fick LEAK/SABOTAGE, `balanced` fick INFLUENCE/TURN (skyddsräcke 4/GK-A). Golden
+omfryst. Se `docs/ANDRINGSLOGG.md`.
 P53 är därför delad i **P53a**
 (scenariodata: `materielNeed` seedas till `orderTriggerThreshold` vid start, inte 0 — **BYGGD
 2026-09-17**: `state.ts`, golden omfryst, härnessmätning n=30/botpolicy bekräftar första bokförda

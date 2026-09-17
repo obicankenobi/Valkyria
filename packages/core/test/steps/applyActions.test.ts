@@ -601,6 +601,113 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
 
     expect(ctx.rejected).toEqual([{ action, reason: 'unknown target faction' }])
   })
+
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): INFLUENCE — alltid lyckad
+  // ("förnekbart"), ingen rng inblandad. `direction` gör den dubbelriktad.
+  describe('P60: INFLUENCE', () => {
+    it('publicSupport-läget flyttar target.publicSupport enligt direction, kostar spend', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const before = rvn.publicSupport
+      const treasuryBefore = state.house.treasury
+
+      const action: PlayerAction = {
+        type: 'POLITICAL',
+        op: 'INFLUENCE',
+        targetFactionId: 'rvn',
+        spend: 30000,
+        direction: 'up',
+        effect: { kind: 'publicSupport' },
+      }
+      const { ctx, emitted } = makeCtx(state, [action])
+      applyActions(ctx)
+
+      expect(rvn.publicSupport).toBe(
+        Math.min(100, before + 30000 / balance.influencePublicSupportCostPerPoint),
+      )
+      expect(state.house.treasury).toBe(treasuryBefore - 30000)
+      expect(emitted.some((e) => e.headline.includes('PUBLIC SUPPORT RISES'))).toBe(true)
+    })
+
+    it('publicSupport-läget med direction "down" sänker i stället', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const before = rvn.publicSupport
+
+      const action: PlayerAction = {
+        type: 'POLITICAL',
+        op: 'INFLUENCE',
+        targetFactionId: 'rvn',
+        spend: 30000,
+        direction: 'down',
+        effect: { kind: 'publicSupport' },
+      }
+      applyActions(makeCtx(state, [action]).ctx)
+
+      expect(rvn.publicSupport).toBeLessThan(before)
+    })
+
+    it('relations-läget flyttar target.relations[towardFactionId], INTE towardFactionId:s egen relation tillbaka (enkelriktat)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const nlf = state.factions['nlf']!
+      const beforeRvn = rvn.relations['nlf']!
+      const beforeNlf = nlf.relations['rvn']!
+
+      const action: PlayerAction = {
+        type: 'POLITICAL',
+        op: 'INFLUENCE',
+        targetFactionId: 'rvn',
+        spend: 15000,
+        direction: 'up',
+        effect: { kind: 'relations', towardFactionId: 'nlf' },
+      }
+      const { ctx, emitted } = makeCtx(state, [action])
+      applyActions(ctx)
+
+      expect(rvn.relations['nlf']).toBe(
+        Math.min(100, beforeRvn + 15000 / balance.influenceRelationsCostPerPoint),
+      )
+      expect(nlf.relations['rvn']).toBe(beforeNlf) // enkelriktat — motsatt sida orörd
+      expect(emitted.some((e) => e.headline.includes('RELATIONS WITH NATIONAL LIBERATION FRONT IMPROVE'))).toBe(true)
+    })
+
+    it('avvisas för okänd targetFactionId, ogiltig spend, eller relations mot sig själv/okänt land', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const badTarget: PlayerAction = {
+        type: 'POLITICAL',
+        op: 'INFLUENCE',
+        targetFactionId: 'atlantis',
+        spend: 1000,
+        direction: 'up',
+        effect: { kind: 'publicSupport' },
+      }
+      const badSpend: PlayerAction = {
+        type: 'POLITICAL',
+        op: 'INFLUENCE',
+        targetFactionId: 'rvn',
+        spend: -1,
+        direction: 'up',
+        effect: { kind: 'publicSupport' },
+      }
+      const selfTarget: PlayerAction = {
+        type: 'POLITICAL',
+        op: 'INFLUENCE',
+        targetFactionId: 'rvn',
+        spend: 1000,
+        direction: 'up',
+        effect: { kind: 'relations', towardFactionId: 'rvn' },
+      }
+      const { ctx } = makeCtx(state, [badTarget, badSpend, selfTarget])
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([
+        { action: badTarget, reason: 'unknown target faction' },
+        { action: badSpend, reason: 'invalid spend amount' },
+        { action: selfTarget, reason: 'invalid influence target' },
+      ])
+    })
+  })
 })
 
 describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => {
@@ -618,6 +725,23 @@ describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => 
     expect(station.exposure).toBeLessThanOrEqual(25) // intelExposureMax
     expect(state.house.treasury).toBeLessThan(treasuryBefore)
     expect(emitted.some((e) => e.headline.includes('EXPANDED'))).toBe(true)
+  })
+
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3 klart-når): "samma operation ger
+  // mer exposure i ett land med hög counterIntelligence" — samma seed, samma
+  // roll, bara counterIntelligence olika mellan de två körningarna.
+  it('(P60 klart-når) EXPAND ger mer exposure i ett land med hög counterIntelligence, samma seed', () => {
+    const low = createInitialState('indochina-slice', 'expand-ci-seed')
+    low.factions['rvn']!.counterIntelligence = 10
+    const stationLow = low.house.stations[0]!
+    applyActions(makeCtx(low, [{ type: 'INTEL', op: 'EXPAND', stationId: stationLow.id }], 'expand-ci-seed').ctx)
+
+    const high = createInitialState('indochina-slice', 'expand-ci-seed')
+    high.factions['rvn']!.counterIntelligence = 90
+    const stationHigh = high.house.stations[0]!
+    applyActions(makeCtx(high, [{ type: 'INTEL', op: 'EXPAND', stationId: stationHigh.id }], 'expand-ci-seed').ctx)
+
+    expect(stationHigh.exposure).toBeGreaterThan(stationLow.exposure)
   })
 
   it('EXPAND klampar depth till 5, går aldrig över', () => {
@@ -728,19 +852,128 @@ describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => 
     expect(station.exposure).toBe(0)
   })
 
-  it('LEAK/SABOTAGE/TURN avvisas med "not implemented in this stage"', () => {
-    const state = createInitialState('indochina-slice', 'seed')
-    const leak: PlayerAction = { type: 'INTEL', op: 'LEAK', stationId: 'station-1' }
-    const sabotage: PlayerAction = { type: 'INTEL', op: 'SABOTAGE', stationId: 'station-1' }
-    const turnOp: PlayerAction = { type: 'INTEL', op: 'TURN', stationId: 'station-1' }
-    const { ctx } = makeCtx(state, [leak, sabotage, turnOp])
-    applyActions(ctx)
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): LEAK/SABOTAGE/TURN byggda —
+  // gemensam lyckandechans (intelOpBaseSuccessPct − counterIntelligence),
+  // gemensam kostnad (intelCovertOpCost), gemensam "åker fast"-bestraffning.
+  // station-1 ligger i rvn (counterIntelligence 40 vid start, ordagrant
+  // intelOpBaseSuccessPct(90) − 40 = 50 % lyckandechans) — seeds funna genom
+  // sökning (samma metod som stage-incident-seed-0/2).
+  describe('P60: LEAK/SABOTAGE/TURN', () => {
+    it('LEAK (lyckad): sänker rivalens relations[nation], kostar intelCovertOpCost, ingen rejected', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rival = state.rivals['brandt']!
+      const before = rival.relations['rvn'] ?? 0
+      const treasuryBefore = state.house.treasury
 
-    expect(ctx.rejected).toEqual([
-      { action: leak, reason: 'not implemented in this stage' },
-      { action: sabotage, reason: 'not implemented in this stage' },
-      { action: turnOp, reason: 'not implemented in this stage' },
-    ])
+      const action: PlayerAction = { type: 'INTEL', op: 'LEAK', stationId: 'station-1', targetId: 'brandt' }
+      const { ctx, emitted } = makeCtx(state, [action], 'intel-leak-seed-2')
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([])
+      expect(rival.relations['rvn']).toBe(Math.max(0, before - balance.leakRelationPenalty))
+      expect(state.house.treasury).toBe(treasuryBefore - balance.intelCovertOpCost)
+      expect(emitted.some((e) => e.headline.includes('LEAKS DAMAGING INFORMATION'))).toBe(true)
+    })
+
+    it('LEAK (misslyckad): rivalens relations orörda, landets counterIntelligence och stationens exposure stiger', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rival = state.rivals['brandt']!
+      const relationsBefore = rival.relations['rvn'] ?? 0
+      const rvn = state.factions['rvn']!
+      const ciBefore = rvn.counterIntelligence
+      const station = state.house.stations[0]!
+      const exposureBefore = station.exposure
+
+      const action: PlayerAction = { type: 'INTEL', op: 'LEAK', stationId: 'station-1', targetId: 'brandt' }
+      const { ctx } = makeCtx(state, [action], 'intel-leak-seed-0')
+      applyActions(ctx)
+
+      expect(rival.relations['rvn']).toBe(relationsBefore) // orört — misslyckandet drabbar INTE rivalen
+      expect(rvn.counterIntelligence).toBe(ciBefore + balance.intelCaughtCounterIntelligenceGain)
+      expect(station.exposure).toBeGreaterThan(exposureBefore)
+    })
+
+    it('LEAK avvisas för okänd station eller okänt rivalmål', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const badStation: PlayerAction = { type: 'INTEL', op: 'LEAK', stationId: 'nope', targetId: 'brandt' }
+      const badRival: PlayerAction = { type: 'INTEL', op: 'LEAK', stationId: 'station-1', targetId: 'nope' }
+      const { ctx } = makeCtx(state, [badStation, badRival])
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([
+        { action: badStation, reason: 'unknown station' },
+        { action: badRival, reason: 'unknown rival target' },
+      ])
+    })
+
+    it('SABOTAGE (lyckad): sätter rival.sabotagedUntilTurn — samma fält bidding.ts redan läser (avsnitt 2.5)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rival = state.rivals['brandt']!
+      expect(rival.sabotagedUntilTurn).toBeNull()
+
+      const action: PlayerAction = { type: 'INTEL', op: 'SABOTAGE', stationId: 'station-1', targetId: 'brandt' }
+      const { ctx, emitted } = makeCtx(state, [action], 'intel-sabotage-seed-0')
+      applyActions(ctx)
+
+      expect(rival.sabotagedUntilTurn).toBe(state.meta.turn + balance.rivalSabotageCooldownTurns)
+      expect(emitted.some((e) => e.headline.includes('SABOTAGES'))).toBe(true)
+    })
+
+    it('SABOTAGE (misslyckad): sabotagedUntilTurn orört, landet åker fast', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rival = state.rivals['brandt']!
+      const rvn = state.factions['rvn']!
+      const ciBefore = rvn.counterIntelligence
+
+      const action: PlayerAction = { type: 'INTEL', op: 'SABOTAGE', stationId: 'station-1', targetId: 'brandt' }
+      const { ctx } = makeCtx(state, [action], 'intel-sabotage-seed-1')
+      applyActions(ctx)
+
+      expect(rival.sabotagedUntilTurn).toBeNull()
+      expect(rvn.counterIntelligence).toBe(ciBefore + balance.intelCaughtCounterIntelligenceGain)
+    })
+
+    it('TURN (lyckad): höjer official.relationToPlayer med turnRelationGain', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const official = state.officials['official-rvn-procurement']!
+      const before = official.relationToPlayer
+
+      const action: PlayerAction = { type: 'INTEL', op: 'TURN', stationId: 'station-1', targetId: official.id }
+      const { ctx, emitted } = makeCtx(state, [action], 'intel-turn-seed-4')
+      applyActions(ctx)
+
+      expect(official.relationToPlayer).toBe(Math.min(100, before + balance.turnRelationGain))
+      expect(emitted.some((e) => e.headline.includes('TURNS'))).toBe(true)
+    })
+
+    it('TURN (misslyckad): sänker official.standing med turnFailureStandingPenalty, landet åker fast', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const official = state.officials['official-rvn-procurement']!
+      const standingBefore = official.standing
+      const rvn = state.factions['rvn']!
+      const ciBefore = rvn.counterIntelligence
+
+      const action: PlayerAction = { type: 'INTEL', op: 'TURN', stationId: 'station-1', targetId: official.id }
+      const { ctx } = makeCtx(state, [action], 'intel-turn-seed-0')
+      applyActions(ctx)
+
+      expect(official.standing).toBe(Math.max(0, standingBefore - balance.turnFailureStandingPenalty))
+      expect(rvn.counterIntelligence).toBe(ciBefore + balance.intelCaughtCounterIntelligenceGain)
+    })
+
+    it('TURN avvisas för okänd station eller en tjänsteman i FEL land', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const badStation: PlayerAction = { type: 'INTEL', op: 'TURN', stationId: 'nope', targetId: 'official-rvn-procurement' }
+      // official-nlf-procurement hör till nlf, station-1 ligger i rvn.
+      const wrongNation: PlayerAction = { type: 'INTEL', op: 'TURN', stationId: 'station-1', targetId: 'official-nlf-procurement' }
+      const { ctx } = makeCtx(state, [badStation, wrongNation])
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([
+        { action: badStation, reason: 'unknown station' },
+        { action: wrongNation, reason: 'unknown official target' },
+      ])
+    })
   })
 
   it('(P18 klart-när) en station kan brännas: status blir "burned", exposureEvents växer', () => {

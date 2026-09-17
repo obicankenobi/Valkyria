@@ -170,10 +170,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // varje leverans (deliveries.ts), varje STAGE_INCIDENT/BACK_CHANNEL
   // (political.ts) och varje tur (factions.ts:s passiva återhämtning) --
   // samtliga tre botpartiernas seeds påverkas. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P60 (avsnitt 4.3/8, samma klart-når-krav). Faction fick
+  // ett nytt fält (counterIntelligence) -- ny form. LEAK/SABOTAGE/TURN gick
+  // från avvisade no-ops till byggda (rör rival.relations/rival.
+  // sabotagedUntilTurn/official.relationToPlayer/official.standing), och
+  // INFLUENCE (helt nytt POLITICAL-op) rör publicSupport/relations -- alla
+  // fyra nu faktiskt skickade av aggressive/balanced (GK-A). EXPAND:s
+  // exposure-roll skalas dessutom om av counterIntelligence. headlines > 8
+  // höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '182b5a99525d80' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '12b4c34f61f443' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'c8d866e6e6d88' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'acfa7566a66b5' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '93e21c8983ccd' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1e068c56fdd46a' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

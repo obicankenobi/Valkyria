@@ -43,6 +43,8 @@ interface Balance {
   // se buildFactions nedan.
   relationsAtWarStart: number
   relationsNeutralStart: number
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): startvärde för Faction.counterIntelligence.
+  counterIntelligenceDefault: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -313,6 +315,7 @@ function buildFactions(scenario: ScenarioFile, fronts: Front[]): Record<FactionI
       // alla andras.
       materielNeed: { ...BALANCE.orderTriggerThreshold },
       relations: buildFactionRelations(seed, scenario, fronts),
+      counterIntelligence: BALANCE.counterIntelligenceDefault,
     }
   }
   return factions

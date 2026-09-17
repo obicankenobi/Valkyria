@@ -7,7 +7,7 @@
 // och alla fyra INTERNAL/INTEL/POLITICAL-operationer avsnitt 10.2 nämner utöver det
 // är no-ops fram till P17/P18 — samma mönster som P3:s SUBMISSION_WITH_LOAN_ATTEMPT:
 // spec-ordagrant nu, och sant den dag en framtida prompt kopplar in dem.
-import { BOT_BALANCE, bidEstimate, computeUnitCostNow, getProduct } from '@seventh-front/core'
+import { BOT_BALANCE, bidEstimate, computeUnitCostNow, getProduct, officialId } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerAction, TurnSubmission } from '@seventh-front/core'
 
 export type Policy = (state: GameState) => TurnSubmission
@@ -133,6 +133,68 @@ function brokerFavourableDeal(state: GameState, actions: PlayerAction[]): void {
   actions.push({ type: 'BROKER', buyerId: chosen.factionId, productId: product.id, quantity: BROKER_QUANTITY, price })
 }
 
+// P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3/6, GK-A/skyddsräcke 4): INFLUENCE
+// var deklarerad OCH byggd i samma prompt — precis den kombination GK-A
+// varnar för om ingen bot lär sig den. Väljer deterministiskt (ingen rng i
+// Policy) den icke-bankrutta faktion med LÄGST publicSupport (den som mest
+// "behöver" kampanjen, samma "hjälp den svagaste"-princip som
+// fundCampaignForWeakestOfficial).
+const INFLUENCE_SPEND = 15000
+
+function influenceWeakestPublicSupport(state: GameState, actions: PlayerAction[]): void {
+  if (state.house.treasury < INFLUENCE_SPEND) return
+  const candidates = Object.values(state.factions).filter((f) => !f.bankrupt)
+  if (candidates.length === 0) return
+  let weakest = candidates[0]!
+  for (const faction of candidates.slice(1)) {
+    if (faction.publicSupport < weakest.publicSupport) weakest = faction
+  }
+  actions.push({
+    type: 'POLITICAL',
+    op: 'INFLUENCE',
+    targetFactionId: weakest.id,
+    spend: INFLUENCE_SPEND,
+    direction: 'up',
+    effect: { kind: 'publicSupport' },
+  })
+}
+
+// P60 (GK-A): LEAK/SABOTAGE gick från "deklarerad, avvisad" (etapp 1,5) till
+// faktiskt byggda i P60 — samma GK-A-krav som en helt ny handling. Kräver en
+// egen aktiv station (annars ingen "i landet"-bas för operationen) och en
+// känd rival — väljer deterministiskt den FÖRSTA av vardera i
+// Object.values:s fasta iterationsordning.
+function firstActiveStationAndRival(state: GameState): { stationId: string; rivalId: string } | null {
+  const station = state.house.stations.find((s) => s.status === 'active')
+  const rival = Object.values(state.rivals)[0]
+  if (!station || !rival) return null
+  return { stationId: station.id, rivalId: rival.id }
+}
+
+function leakAgainstFirstRival(state: GameState, actions: PlayerAction[]): void {
+  const target = firstActiveStationAndRival(state)
+  if (!target) return
+  actions.push({ type: 'INTEL', op: 'LEAK', stationId: target.stationId, targetId: target.rivalId })
+}
+
+function sabotageFirstRival(state: GameState, actions: PlayerAction[]): void {
+  const target = firstActiveStationAndRival(state)
+  if (!target) return
+  actions.push({ type: 'INTEL', op: 'SABOTAGE', stationId: target.stationId, targetId: target.rivalId })
+}
+
+// P60 (GK-A): TURN, samma "deklarerad, avvisad -> faktiskt byggd"-status som
+// LEAK/SABOTAGE. Riktas mot den FÖRSTA aktiva stationens NATIONS
+// procurement-tjänsteman — samma post BRIBE (etapp 1,5) alltid riktat mot,
+// så TURN blir en dyrare, mer dramatisk variant av samma mål, inte ett nytt.
+function turnFirstStationsProcurementOfficial(state: GameState, actions: PlayerAction[]): void {
+  const station = state.house.stations.find((s) => s.status === 'active')
+  if (!station) return
+  const official = state.officials[officialId(station.nation, 'procurement')]
+  if (!official || official.status !== 'active') return
+  actions.push({ type: 'INTEL', op: 'TURN', stationId: station.id, targetId: official.id })
+}
+
 function takeLoan(amount: number, actions: PlayerAction[]): void {
   const rounded = Math.round(amount)
   if (rounded <= 0) return
@@ -242,6 +304,8 @@ export const aggressive: Policy = (state) => {
   stageIncidentIfCool(state, actions)
   fundCampaignForWeakestOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
   brokerFavourableDeal(state, actions) // P57, GK-A: nytt verb, minst en bot
+  leakAgainstFirstRival(state, actions) // P60, GK-A: nytt verb, minst en bot
+  sabotageFirstRival(state, actions) // P60, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit, actions)
 
   return { standingOrders: [], bids, actions }
@@ -270,6 +334,8 @@ export const balanced: Policy = (state) => {
   reprioritiseArtilleryIfNeeded(state, actions)
   backChannelIfHot(state, actions)
   favourBestRelationOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
+  influenceWeakestPublicSupport(state, actions) // P60, GK-A: nytt verb, minst en bot
+  turnFirstStationsProcurementOfficial(state, actions) // P60, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit * BALANCED_LOAN_SHARE, actions)
 
   return { standingOrders: [], bids, actions }

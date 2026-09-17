@@ -393,6 +393,13 @@ export interface Faction {
   // BACK_CHANNEL (political.ts) och tid (factions.ts, ett litet, begränsat
   // drag varje tur). Läst av factions.ts:s frontstatus-övergångar (avsnitt 4.2).
   relations: Record<FactionId, Pct>
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "landets egen tjänst" — skalar
+  // hur mycket exposure spelarens INTEL-operationer i landet genererar
+  // (applyActions.ts, EXPAND och de tre nya ops), och stiger när en sådan
+  // operation misslyckas ("spelaren åker fast"). counterIntelligenceDefault
+  // (balance.json) är BÅDE startvärdet och nämnaren i skalningsformeln — se
+  // _p60_note.
+  counterIntelligence: Pct
 }
 
 // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1), ordagrant. Ersätter
@@ -624,6 +631,21 @@ export type PlayerAction =
   | { type: 'POLITICAL'; op: 'STAGE_INCIDENT' | 'BACK_CHANNEL'; targetFactionId: FactionId; spend: Money }
   | { type: 'POLITICAL'; op: 'BRIBE' | 'FUND_CAMPAIGN'; officialId: OfficialId; spend: Money }
   | { type: 'POLITICAL'; op: 'FAVOUR'; officialId: OfficialId; marginCost: Money }
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "betala för att flytta en
+  // faktions publicSupport ELLER dess relations mot ett annat land" — två
+  // olika mål, en gemensam diskriminant (`effect.kind`) i stället för två
+  // separata op:er, samma "en handling, flera former"-mönster som BROKER
+  // inte behövde men INTERNAL/CRISIS redan har (payload/choice). `direction`
+  // gör INFLUENCE dubbelriktad (driva isär ELLER dra samman) — specen säger
+  // "flytta", inte "sänka"/"höja".
+  | {
+      type: 'POLITICAL'
+      op: 'INFLUENCE'
+      targetFactionId: FactionId
+      spend: Money
+      direction: 'up' | 'down'
+      effect: { kind: 'publicSupport' } | { kind: 'relations'; towardFactionId: FactionId }
+    }
   // P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5): commodity tillagt — den ENDA
   // ändringen av unionen i hela etapp 4 (skyddsräcke 4). Varianten fanns redan
   // (fynd 1.5) men var obyggd fram till P51; utan commodity vet BUY_FORWARD/
@@ -636,8 +658,8 @@ export type PlayerAction =
   | { type: 'CRISIS'; choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE' }
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
-// P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda — nya, byggda ops.
-export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_CAMPAIGN' | 'FAVOUR'
+// P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda. P60 (avsnitt 4.3): INFLUENCE.
+export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_CAMPAIGN' | 'FAVOUR' | 'INFLUENCE'
 export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY'
 
 // QUOTE är inte en PlayerAction. Bud ligger i TurnSubmission.bids och kostar inga

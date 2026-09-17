@@ -33,10 +33,11 @@ import { round } from '../../money.js'
 import { deriveSupplyCostIndex } from './supply.js'
 import { allProducts, computeUnitCostNow, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
-import type { ResolveStep } from '../index.js'
+import type { ResolveContext, ResolveStep } from '../index.js'
 import type {
   Commodity,
   Contract,
+  GameState,
   Money,
   OfficialId,
   ProductionLine,
@@ -66,6 +67,16 @@ interface Balance {
   brokerStandingCost: number
   brokerScandalRiskGain: number
   brokerDeliveryTurns: number
+  // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): counterIntelligence/LEAK/SABOTAGE/TURN.
+  counterIntelligenceDefault: number
+  intelOpBaseSuccessPct: number
+  intelOpMinSuccessPct: number
+  intelCovertOpCost: number
+  leakRelationPenalty: number
+  turnRelationGain: number
+  turnFailureStandingPenalty: number
+  intelCaughtCounterIntelligenceGain: number
+  rivalSabotageCooldownTurns: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -78,6 +89,66 @@ function clamp(value: number, min: number, max: number): number {
 const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
 const HIRABLE_ROLES = ['chiefEngineer', 'chiefSalesman', 'chiefOfStaff'] as const
 type HirableRole = (typeof HIRABLE_ROLES)[number]
+
+// P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "landets egen tjänst ... skalar
+// hur mycket exposure spelarens operationer i landet genererar" — gäller ALLA
+// INTEL-operationer med en exposure-effekt (EXPAND sedan P18, LEAK/SABOTAGE/
+// TURN nya), inte bara de tre nya. counterIntelligenceDefault är BÅDA
+// startvärdet OCH nämnaren, så ett obehandlat land ger multiplier 1,0 —
+// ingen förändring mot den ordinarie EXPAND-exponeringen innan P60.
+function nationDisplayName(draft: GameState, nation: string): string {
+  return draft.factions[nation]?.name.toUpperCase() ?? nation.toUpperCase()
+}
+
+function counterIntelligenceExposureMultiplier(draft: GameState, nation: string): number {
+  const faction = draft.factions[nation]
+  const ci = faction ? faction.counterIntelligence : BALANCE.counterIntelligenceDefault
+  return ci / BALANCE.counterIntelligenceDefault
+}
+
+// P60: LEAK/SABOTAGE/TURN:s gemensamma lyckandechans — "billiga mot ett land
+// med svag tjänst och livsfarliga mot ett med stark" (avsnitt 4.3, ordagrant)
+// läst som en direkt procentenhet-för-procentenhet avräkning mot en hög
+// basnivå, klampad så en extremt stark tjänst aldrig gör operationen strikt
+// omöjlig. Se balance.json:s _p60_note.
+function intelOpSuccessPct(draft: GameState, nation: string): number {
+  const faction = draft.factions[nation]
+  const ci = faction ? faction.counterIntelligence : BALANCE.counterIntelligenceDefault
+  return clamp(BALANCE.intelOpBaseSuccessPct - ci, BALANCE.intelOpMinSuccessPct, 100)
+}
+
+// P60: en misslyckad LEAK/SABOTAGE/TURN "åker fast" — landets tjänst stiger,
+// och stationen som utförde operationen blir mer exponerad (samma roll som
+// EXPAND:s befintliga exposure-roll, skalad av SAMMA multiplier).
+function markIntelOpCaught(draft: GameState, station: Station, emit: ResolveContext['emit']): void {
+  const faction = draft.factions[station.nation]
+  if (faction) {
+    const before = faction.counterIntelligence
+    faction.counterIntelligence = Math.min(100, before + BALANCE.intelCaughtCounterIntelligenceGain)
+    emit({
+      severity: 'ticker',
+      scope: 'faction',
+      headline: `${faction.name.toUpperCase()}'S COUNTER-INTELLIGENCE SERVICE SHARPENS — ${before.toFixed(0)} → ${faction.counterIntelligence.toFixed(0)}`,
+      causeId: null,
+      delta: { counterIntelligence: faction.counterIntelligence - before },
+      actorIsPlayer: false,
+      subjectId: station.nation,
+    })
+  }
+
+  const before = station.exposure
+  const multiplier = counterIntelligenceExposureMultiplier(draft, station.nation)
+  station.exposure = Math.min(100, before + BALANCE.intelExposureMin * multiplier)
+  emit({
+    severity: 'ticker',
+    scope: 'house',
+    headline: `STATION ${station.city.toUpperCase()} EXPOSURE RISES — CAUGHT — ${before.toFixed(0)} → ${station.exposure.toFixed(0)}`,
+    causeId: null,
+    delta: { exposure: station.exposure - before },
+    actorIsPlayer: false,
+    subjectId: station.nation,
+  })
+}
 
 function isTakeLoanPayload(payload: Record<string, unknown>): payload is { amount: number } {
   return typeof payload.amount === 'number' && Number.isFinite(payload.amount) && payload.amount > 0
@@ -276,7 +347,13 @@ export const applyActions: ResolveStep = (ctx) => {
           house.treasury -= BALANCE.intelExpandCost
           const depthBefore = station.depth
           station.depth = Math.min(5, station.depth + 1) as Station['depth']
-          station.exposure = Math.min(100, station.exposure + rng.int(BALANCE.intelExposureMin, BALANCE.intelExposureMax))
+          // P60 (avsnitt 4.3): exposure-rullningen skalas nu av landets
+          // counterIntelligence, se counterIntelligenceExposureMultiplier.
+          const expandExposureMultiplier = counterIntelligenceExposureMultiplier(draft, station.nation)
+          station.exposure = Math.min(
+            100,
+            station.exposure + rng.int(BALANCE.intelExposureMin, BALANCE.intelExposureMax) * expandExposureMultiplier,
+          )
           emit({
             severity: 'ticker',
             scope: 'house',
@@ -343,11 +420,138 @@ export const applyActions: ResolveStep = (ctx) => {
           break
         }
 
-        case 'LEAK':
-        case 'SABOTAGE':
-        case 'TURN':
-          rejected.push({ action, reason: 'not implemented in this stage' })
+        // P60 (avsnitt 4.3): "billiga mot ett land med svag tjänst och
+        // livsfarliga mot ett med stark" — gemensam lyckandechans
+        // (intelOpSuccessPct), gemensam kostnad (intelCovertOpCost) och
+        // gemensam bestraffning vid misslyckande (markIntelOpCaught). Bara
+        // SUCCESS-effekten skiljer de tre åt.
+        case 'LEAK': {
+          const station = house.stations.find((s) => s.id === action.stationId)
+          if (!station) {
+            rejected.push({ action, reason: 'unknown station' })
+            continue
+          }
+          const rivalId = action.targetId
+          const rival = rivalId ? draft.rivals[rivalId] : undefined
+          if (!rival) {
+            rejected.push({ action, reason: 'unknown rival target' })
+            continue
+          }
+          house.treasury -= BALANCE.intelCovertOpCost
+          if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
+            // "billiga mot ett land med svag tjänst" — leaker en rivals
+            // relations[nation] (den rivalens ställning hos DEN köparen), inte
+            // rivalens relations[player] (ett fält som inte finns).
+            const before = rival.relations[station.nation] ?? 0
+            const after = Math.max(0, before - BALANCE.leakRelationPenalty)
+            rival.relations[station.nation] = after
+            emit({
+              severity: 'headline',
+              scope: 'market',
+              headline: `${house.name.toUpperCase()} LEAKS DAMAGING INFORMATION ABOUT ${rival.name.toUpperCase()} IN ${nationDisplayName(draft, station.nation)} (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+              causeId: null,
+              delta: { treasury: -BALANCE.intelCovertOpCost, [`relations.${station.nation}`]: after - before },
+              actorIsPlayer: true,
+              subjectId: rivalId!,
+            })
+          } else {
+            emit({
+              severity: 'ticker',
+              scope: 'house',
+              headline: `${house.name.toUpperCase()}'S LEAK IN ${nationDisplayName(draft, station.nation)} IS TRACED BACK (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+              causeId: null,
+              delta: { treasury: -BALANCE.intelCovertOpCost },
+              actorIsPlayer: true,
+              subjectId: station.nation,
+            })
+            markIntelOpCaught(draft, station, emit)
+          }
           break
+        }
+
+        case 'SABOTAGE': {
+          const station = house.stations.find((s) => s.id === action.stationId)
+          if (!station) {
+            rejected.push({ action, reason: 'unknown station' })
+            continue
+          }
+          const rivalId = action.targetId
+          const rival = rivalId ? draft.rivals[rivalId] : undefined
+          if (!rival) {
+            rejected.push({ action, reason: 'unknown rival target' })
+            continue
+          }
+          house.treasury -= BALANCE.intelCovertOpCost
+          if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
+            // Samma fält rivals.ts:s egen "misslyckad incident sabbar rivalen
+            // SJÄLV" redan skriver (avsnitt 2.5) — bidding.ts hoppar redan
+            // över en saboterad rivals bud helt. Den här grenen är fältets
+            // FÖRSTA spelarstyrda skrivare.
+            rival.sabotagedUntilTurn = draft.meta.turn + BALANCE.rivalSabotageCooldownTurns
+            emit({
+              severity: 'headline',
+              scope: 'market',
+              headline: `${house.name.toUpperCase()} SABOTAGES ${rival.name.toUpperCase()}'S OPERATIONS IN ${nationDisplayName(draft, station.nation)} (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+              causeId: null,
+              delta: { treasury: -BALANCE.intelCovertOpCost },
+              actorIsPlayer: true,
+              subjectId: rivalId!,
+            })
+          } else {
+            emit({
+              severity: 'ticker',
+              scope: 'house',
+              headline: `${house.name.toUpperCase()}'S SABOTAGE ATTEMPT IN ${nationDisplayName(draft, station.nation)} IS TRACED BACK (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+              causeId: null,
+              delta: { treasury: -BALANCE.intelCovertOpCost },
+              actorIsPlayer: true,
+              subjectId: station.nation,
+            })
+            markIntelOpCaught(draft, station, emit)
+          }
+          break
+        }
+
+        case 'TURN': {
+          const station = house.stations.find((s) => s.id === action.stationId)
+          if (!station) {
+            rejected.push({ action, reason: 'unknown station' })
+            continue
+          }
+          const official = action.targetId ? draft.officials[action.targetId] : undefined
+          if (!official || official.status !== 'active' || official.factionId !== station.nation) {
+            rejected.push({ action, reason: 'unknown official target' })
+            continue
+          }
+          house.treasury -= BALANCE.intelCovertOpCost
+          if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
+            const before = official.relationToPlayer
+            official.relationToPlayer = Math.min(100, before + BALANCE.turnRelationGain)
+            emit({
+              severity: 'headline',
+              scope: 'faction',
+              headline: `${house.name.toUpperCase()} TURNS ${official.name.toUpperCase()} (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+              causeId: null,
+              delta: { treasury: -BALANCE.intelCovertOpCost, relationToPlayer: official.relationToPlayer - before },
+              actorIsPlayer: true,
+              subjectId: official.factionId,
+            })
+          } else {
+            const before = official.standing
+            official.standing = Math.max(0, before - BALANCE.turnFailureStandingPenalty)
+            emit({
+              severity: 'ticker',
+              scope: 'faction',
+              headline: `${house.name.toUpperCase()}'S ATTEMPT TO TURN ${official.name.toUpperCase()} FAILS (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+              causeId: null,
+              delta: { treasury: -BALANCE.intelCovertOpCost, standing: official.standing - before },
+              actorIsPlayer: true,
+              subjectId: official.factionId,
+            })
+            markIntelOpCaught(draft, station, emit)
+          }
+          break
+        }
       }
       continue
     }

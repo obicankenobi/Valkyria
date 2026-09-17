@@ -1,13 +1,15 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.9 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59 klar (2026-09-17).**
+**Version 1.0.10 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60 klara
+(2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
 11. **5A (P53–P58) klar (2026-09-17, se avsnitt 8) — med två dokumenterade, kvarstående luckor
 (P58:s blockquote: ingen live-utlösare för fallna tjänstemän, `EMBARGO` strukturellt onåbart mot
-måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Front.status`) klar
-samma dag. `P60` ("kampanjen och tjänsten") är nästa steg.**
+måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Front.status`) och P60
+(`INFLUENCE`/`Faction.counterIntelligence`/`LEAK`/`SABOTAGE`/`TURN`) klara samma dag. `P61`
+("kuppen") är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -754,12 +756,34 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > testsvep grönt (443 tester rotnivå — `npx vitest run` — plus lint, typecheck, build för alla
 > tre paket, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
-**P60 — kampanjen och tjänsten**
+**P60 — kampanjen och tjänsten — BYGGD 2026-09-17**
 > `INFLUENCE` och `Faction.counterIntelligence`. `LEAK`, `SABOTAGE` och `TURN` byggs mot den.
 >
 > *Klart när:* ett test visar att samma operation ger mer `exposure` i ett land med hög
 > `counterIntelligence`; ett test visar att tjänsten stiger när spelaren åker fast; ett test
 > visar att de tre tidigare avvisade op:en inte längre avvisas; golden omfryst.
+>
+> **Klart:** samtliga tre villkor uppfyllda. `Faction.counterIntelligence: Pct` (nytt,
+> `counterIntelligenceDefault` är BÅDE startvärdet och nämnaren i exposure-skalningsformeln, så
+> ett obehandlat parti ger multiplier 1,0). Skalningen gäller ALLA INTEL-operationer med en
+> exposure-effekt, inte bara de tre nya — `EXPAND`s befintliga exponeringsroll (P18) skalas nu
+> också. `LEAK`/`SABOTAGE`/`TURN` delar en gemensam lyckandechans
+> (`intelOpBaseSuccessPct − counterIntelligence`, ordagrant "billiga mot ett land med svag
+> tjänst och livsfarliga mot ett med stark") och en gemensam "åker fast"-bestraffning
+> (`markIntelOpCaught`: tjänsten stiger, utförande stationens exposure stiger) — bara
+> framgångseffekten skiljer dem åt. `LEAK` sänker en rivals `relations[nation]` (rivalens
+> ställning hos DEN köparen). `SABOTAGE` sätter `rival.sabotagedUntilTurn` — fältets FÖRSTA
+> spelarstyrda skrivare (`bidding.ts` hoppade redan över en saboterad rivals bud sedan P25).
+> `TURN` riktas mot ett `Official` (targetId, i samma lands nation som stationen): lyckad höjer
+> `relationToPlayer` kraftigt, misslyckad sänker `standing`. `INFLUENCE` (nytt `POLITICAL`-op,
+> alltid lyckad — "förnekbart" betyder att det inte finns något att bli avslöjad för) flyttar
+> antingen en faktions `publicSupport` eller dess ENKELRIKTADE `relations` mot ett annat land,
+> `direction`-styrt (upp eller ner). `aggressive` fick `LEAK`/`SABOTAGE`, `balanced` fick
+> `INFLUENCE`/`TURN` (skyddsräcke 4/GK-A — alla fyra verb var antingen helt nya eller gick från
+> "deklarerad, avvisad" till faktiskt byggda i den här prompten). Tio nya PROVISORISKA
+> balanstal. Golden omfryst (ny form: `counterIntelligence`; ny trajektoria: fyra nya op
+> faktiskt skickade). Fullt testsvep grönt (459 tester rotnivå, lint, typecheck, build, e2e). Se
+> `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
 **P61 — kuppen**
 > `FUND_COUP` enligt 4.4, inklusive den första skrivningen till `Faction.alignment`.
@@ -869,3 +893,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.7 | 2026-09-17 | **P57 byggd — politiken slår tillbaka, 5A klar.** Nytt steg `politics.ts` (mellan `factions`/`heat`, ägarbeslutet). Ett fast, PROVISORISKT agenda→`PolicyDecision`-schema; `EMBARGO` är `Faction.embargoed`s FÖRSTA skrivare (fynd 1.7); `PREFERRED_SUPPLIER` går i den här triggern alltid till en rival. `BROKER` byggd (avsnitt 3.5, den sista helt tysta grenen) — direktkontrakt förbi `computeScore`, avgjort av köparens procurement-tjänstemans relation/integrity. `bidding.ts` fick en poängbonus adderad EFTER `computeScore` (skyddsräcke 2 intakt). **Genuint fynd under bygget:** `Official.relationToPlayer` startar på 0 för alla, så en obehandlad grind gjorde "ohörsammad" sant redan tur 1 och bröt två av etapp 3/4:s gröna invarianttester (skyddsräcke 5) — fixat med ett nytt PROVISORISKT balanstal `policyDecisionMinTurn` (4). `aggressive` (harness) fick `brokerFavourableDeal` (GK-A/skyddsräcke 4). Elva nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P57-block fick en "BYGGD"-rubrik och klart-blockquote. **5A:s kodbygge (P54–P57) är därmed klart** — `P58` (balanspass, ingen kod) är sista steget i 5A. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och kalibreringsfyndet |
 | 1.0.8 | 2026-09-17 | **P58 mätt — 5A klar med två dokumenterade luckor.** Härnessmätning n=200/`balanced` mot avsnitt 7:s fem 5A-rader: tre träffar (agendan ändrar vinnaren 34,5 % av 15–35 %; minst ett `PolicyDecision` 100 % av >70 %; `FAVOUR` trots bättre alternativ 50,8 % av >40 %) utan att röra `balance.json`/scenariodata. Två strukturella missar, ingen fixad med kalibrering: (1) "tjänsteman byts ut" 0 % — `replaceOfficial` (P54) har aldrig fått en live-utlösare; varken P56 eller P57 byggde den `officials.ts`s egen kommentar förutsatte. (2) `EMBARGO` 100 % (mål 10–30 %) — `Policy` saknar rng (hård regel 2), så `balanced`s `favourBestRelationOfficial` skyddar alltid EXAKT samma tjänsteman oavsett seed, vilket gör den enda `NON_ALIGNMENT`-kvalificerade tjänstemannens EMBARGO strukturellt bimodal (0 eller 100 %, aldrig ett mellanläge) — verifierat, inte gissat. Båda kräver kod, inte data, och byggs INTE i ett "ingen kod"-pass — lämnas dokumenterade, samma linje som P52:s `supplyIndexMaxStep`-fynd | Avsnitt 7:s måltabell fick en "Mätt (P58)"-kolumn och avsnitt 8:s P58-block ett fullt blockquote, per P58:s eget syfte: mäta, kalibrera det som går, dokumentera ärligt det som inte gör det |
 | 1.0.9 | 2026-09-17 | **P59 byggd — länderna ser varandra, 5B påbörjad.** `Faction.relations: Record<FactionId, Pct>` (land-till-land) och `Front.status: 'war' | 'ceasefire' | 'dormant'` (alla scenariofronter startar 'war'). `fronts.ts`/`attrition.ts` gate:ar på `status !== 'war'` -- en ceasefire-front genererar varken stridsförluster eller materielbehov. `relations` faller av leveranser (`deliveries.ts`, symmetriskt) och lyckade `STAGE_INCIDENT` (`political.ts`, mot frontmotståndaren), stiger av `BACK_CHANNEL` och en liten passiv återhämtning varje tur (`factions.ts`). `Front.status`-övergångarna är rena tröskeljämförelser (ingen rng): war->ceasefire vid "FORCED TO SUE FOR PEACE" (tidigare bara en notis, fynd 1.5 -- nu dess FÖRSTA mekaniska konsekvens) eller ömsesidigt höga relationer; ceasefire->war vid hög doomsday eller kollapsade relationer. Nio nya PROVISORISKA balanstal. Golden omfryst -- den största enskilda trajektorieändringen sedan P53b. Fullt testsvep grönt (443 tester rotnivå, lint, typecheck, build, e2e) | Avsnitt 4.1/4.2, avsnitt 8:s P59-block fick en "BYGGD"-rubrik och klart-blockquote, per P59:s eget klart-når |
+| 1.0.10 | 2026-09-17 | **P60 byggd — kampanjen och tjänsten.** `Faction.counterIntelligence: Pct` (nytt; `counterIntelligenceDefault` är både startvärdet och nämnaren i exposure-skalningsformeln). Skalar exposure för ALLA INTEL-operationer med en exponeringseffekt, inklusive det redan byggda `EXPAND` (P18), inte bara de tre nya. `LEAK`/`SABOTAGE`/ `TURN` delar en gemensam lyckandechans (`intelOpBaseSuccessPct - counterIntelligence`) och en gemensam "åker fast"-bestraffning (`markIntelOpCaught`). `LEAK` sänker en rivals `relations[nation]`. `SABOTAGE` sätter `rival.sabotagedUntilTurn` -- fältets FÖRSTA spelarstyrda skrivare, `bidding.ts` hoppade redan över en saboterad rivals bud sedan P25. `TURN` riktas mot ett `Official`: lyckad höjer `relationToPlayer`, misslyckad sänker `standing`. `INFLUENCE` (nytt `POLITICAL`-op, alltid lyckad) flyttar en faktions `publicSupport` eller dess enkelriktade `relations` mot ett annat land, `direction`-styrt. `aggressive` fick LEAK/SABOTAGE, `balanced` fick INFLUENCE/TURN (skyddsräcke 4/GK-A). Tio nya PROVISORISKA balanstal. Golden omfryst. Fullt testsvep grönt (459 tester rotnivå, lint, typecheck, build, e2e) | Avsnitt 4.3, avsnitt 8:s P60-block fick en "BYGGD"-rubrik och klart-blockquote, per P60:s eget klart-når |
