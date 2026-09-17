@@ -44,18 +44,28 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **inget kört än, P53 är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **inget kört än, P53a är nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58) och 5B (länder som aktörer — `Faction.
-relations`, `Front.status`, `FUND_COUP`, `ASSASSINATE`, P59–P63). P53 omkalibrerar `boardTarget`
-FÖRST — för etapp 5, till skillnad från etapp 3/4, är `BUYOUT`-kaskaden inte längre bara ett
-mätproblem utan ett byggproblem: elva turer räcker inte för mekanik som handlar om relationer
-som mognar. Se specens avsnitt 1 för de tio premisskontrollerade fynden den bygger på (bl.a. att
-`Faction.alignment` aldrig skrivs av någon kod, att `Station.coverage` är helt död data sedan
-etapp 1, och att `Faction.embargoed` har tre färdiga effektkedjor men ingen utlösare). Avsnitt 10
-protokollför de åtta besluten som togs vid antagandet, samtliga enligt förslagets egna
-rekommendationer. **Känd lucka, upptäckt
+relations`, `Front.status`, `FUND_COUP`, `ASSASSINATE`, P59–P63). **P53 reviderad 2026-09-17,
+innan den kördes** (ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden, inte en tillfällig
+fix) — mätning visade att en ren `boardTarget`-omkalibrering, specens ursprungliga plan, inte
+hade räckt: alla fyra botpolicyer har 0 kr bokförd intäkt vid FÖRSTA granskningsturen (tur 6, mot
+ett krav på 2,16 Mkr), och utan granskningen dör tre av fyra ändå i `INSOLVENCY` (tur 15–17) —
+grundorsaken är att `Faction.materielNeed` startar på 0, vilket ger noll ordrar turerna 1–4 medan
+husets fasta kostnader (429 000 kr/tur) redan löper. Mätningen visade också att alla fyra
+kaskadmätningarna hittills (P37/P42/P47/P52) kördes mot botpolicyn `balanced`, som bara tar 9,7 %
+av marknaden — `aggressive` (45 %) överlever hela scenariot. P53 är därför delad i **P53a**
+(scenariodata: `materielNeed` seedas till `orderTriggerThreshold` vid start, inte 0), **P53b**
+(`board.ts`: styrelsen mäter orderbok + en rampad, kvadratisk förväntanskurva i stället för bara
+linjär bokförd intäkt) och **P53c** (balanspass — `boardTarget.threshold`, 2×, mättes vara rätt
+siffra och rörs inte). Se specens avsnitt 2.1 och 10 punkt 1 för de fullständiga mätningarna, och
+avsnitt 1 för de tio premisskontrollerade fynden specen bygger på (bl.a. att `Faction.alignment`
+aldrig skrivs av någon kod, att `Station.coverage` är helt död data sedan etapp 1, och att
+`Faction.embargoed` har tre färdiga effektkedjor men ingen utlösare). Avsnitt 10 protokollför de
+åtta besluten som togs vid antagandet, samtliga enligt förslagets egna rekommendationer. **Känd
+lucka, upptäckt
 vid antagandet (se `docs/ANDRINGSLOGG.md`, 2026-09-15): specens avsnitt 5.5 och skyddsräcke 1/3
 (etapp 3B) refererade upprepade gånger till en "THE_WORLD-spec" med `deriveDeployment`,
 `MovementArrow`, `sectorId` och ett INTEL-lager som om de redan fanns — sökt igenom hela repot,

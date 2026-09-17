@@ -1,9 +1,10 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.1 — antagen (ägarbeslut 2026-09-16).** Validerad mot `obicankenobi/Valkyria`
-commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda, båda P52-fynden avgjorda). Samtliga åtta
-öppna beslutspunkter avgjorda enligt förslagets egna rekommendationer, se avsnitt 10. `P53` är
-nästa steg.
+**Version 1.0.2 — antagen (ägarbeslut 2026-09-16), P53 reviderad efter mätning (2026-09-17).**
+Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
+båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
+rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
+11. `P53a` är nästa steg.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -172,16 +173,70 @@ se två gånger. En tjänsteman vars ställning ska kunna stiga och falla hinner
 Att bygga ett politiskt system ovanpå ett elva turer långt parti är att bygga en mekanik som
 aldrig får visa vad den är.
 
-Grundorsaken är känd och entydig, och den ligger i två system som etapp 5 inte rör:
-`board.ts`s linjära intäktsmål (P30) förutsätter jämn intäkt från tur 1, medan `orders.ts`s
-behovsdrivna utlysning (P35) inte kan producera en enda full kontraktscykel — utlysning, bud,
-produktion, leveransfördröjning, bokförd intäkt — före den första granskningsturen (tur 6). Båda
-granskningarna (tur 6 och 10) underkänns därför nästan med automatik, och två underkända i rad
-är `BUYOUT` (`endings.ts:54`).
+> **Reviderat 2026-09-17, efter mätning — se ANDRINGSLOGG.md.** Avsnitt 10 punkt 1:s ursprungliga
+> beslut ("`boardTarget` omkalibreras som P53, ingen ny mekanik") mättes innan koden skrevs och
+> höll INTE. Kvarstående i det här avsnittet av samma skäl som en felaktig rad i något annat
+> dokument aldrig bara stryks: så att den korrigerade slutsatsen går att jämföra mot vad som
+> faktiskt föreslogs och varför det inte räckte, inte bara vad som till sist byggdes.
 
-**Avgjort vid antagandet (avsnitt 10, punkt 1): `boardTarget` omkalibreras som etappens FÖRSTA
-prompt (P53), före allt annat.** Det är en ändring i `indochina-slice.json` — scenariodata, inte
-kod — och den går att mäta direkt med härnessen.
+**Grundorsaken är djupare än en kalibreringssiffra, och den ligger i två system etapp 5 inte
+äger** (`board.ts`, P30, etapp 2; `orders.ts`, P35, etapp 3) — men mätningen visar att en ändring
+BEGRÄNSAD till `boardTarget`-siffran, som avsnitt 10 punkt 1 ursprungligen beslutade, inte löser
+den.
+
+**Mätt (n=30–60 per botpolicy, `passive`/`aggressive`/`balanced`/`capacity`, härnessen körd med
+och utan styrelsegranskningen):**
+
+1. **Alla fyra botpolicyer har exakt 0 kr i bokförd intäkt vid den FÖRSTA granskningsturen (tur
+   6)**, oavsett spelstil — mot ett krav på 2,16 Mkr. Ingen kalibrering av `threshold` löser en
+   granskning som infaller innan intäkten fysiskt kan existera; det enda värdet som alltid
+   klarar den är 0, vilket gör kontrollen informationslös (samma svar oavsett spelarens
+   beslut).
+
+2. **Med styrelsegranskningen helt avstängd dör `passive`, `balanced` och `capacity` ändå — i
+   INSOLVENCY, vid tur 15–17, med 0,3–0,4 Mkr kumulativ intäkt mot ett mål på 8 Mkr.** Husets
+   fasta kostnader (429 000 kr/tur, `economy.ts`) äter grundkapitalet (4 Mkr, 9,3 turers
+   uthållighet utan intäkt) snabbare än ekonomin hinner generera någon. `BUYOUT` var alltså
+   aldrig den egentliga dödsorsaken för tre av fyra strategier — bara den som råkade komma
+   först. En omkalibrering av `boardTarget` byter dödsorsak, inte överlevnadschans.
+
+3. **`aggressive` är undantaget — och avslöjar den verkliga snedheten.** Den botpolicyn
+   överlever till `SCENARIO_COMPLETE` (29/30 utan granskning) med 45 % av det totala
+   kontraktsvärdet mätt i kronor, mot `balanced`s 9,7 %. Samtliga fyra kaskadmätningar (P37,
+   P42, P47, P52) kördes uteslutande mot `balanced` — en botstrategi som tar en tiondel av sin
+   marknad. Det förklarar varför kaskaden mätts som total och genomgående: den mätande botens
+   egen svaghet, inte bara scenariots ekonomi, drev siffran.
+
+**Grundorsaken till 1–2, spårad till specifik kod:** varje faktions `materielNeed`
+(`orders.ts`/`factions.ts`) initieras till **0** vid scenariostart (`state.ts`), trots att
+scenariot beskriver arméer mitt i ett pågående krig 1964. Utlysning kräver att behovet
+passerar `orderTriggerThreshold`, och fredstidspåfyllningen (`peacetimeReplacement`) tar 5–10
+turer att nå dit från noll. **Resultat: inga ordrar alls, av någon faktion, turerna 1–4** —
+medan husets fasta kostnader löper och styrelsen redan granskar vid tur 6.
+
+**Reviderat beslut (avsnitt 10, punkt 1 — se den korrigerade texten där för hela
+resonemanget): P53 delas i tre.**
+
+- **P53a** (scenariodata, `indochina-slice.json`): seeda varje faktions `materielNeed` till
+  `orderTriggerThreshold` vid partistart — krigförande arméer har redan ett stående
+  upphandlingsbehov, de startar inte med tomma order men fulla förråd. Mätt effekt: första
+  bokförda intäkten flyttar från tur 8,2 till tur 4,2; `passive` går från 30/30 `INSOLVENCY`
+  till 30/30 `SCENARIO_COMPLETE` (utan granskning).
+- **P53b** (`board.ts`): `progressSnapshot` byter mätvärde från enbart bokförd intäkt till
+  bokförd intäkt **+ kontrakterat, ej levererat** (`contract.price × obetald andel`, summerat
+  över aktiva/sena kontrakt) — ett försvarsbolags styrelse ser orderboken, inte bara kassan.
+  Den linjära förväntanskurvan byts mot en kvadratisk ramp (låga krav tidigt, fullt
+  `threshold` vid `dueTurn`), som matchar hur en behovsdriven ekonomi faktiskt växer. Mätt
+  effekt (med P53a): `BUYOUT`-frekvens `passive` 100 %→13 %, `aggressive` 93 %→0 %, `balanced`
+  100 %→80 %, `capacity` oförändrat 100 % — ordningen följer nu strategiernas faktiska
+  ekonomiska styrka i stället för att vara identisk för alla fyra.
+- **P53c** (balanspass, ingen kod): verifiera att `boardTarget.threshold` (2×) fortfarande är
+  rätt siffra med P53a+P53b på plats — mätningen visar att den bästa boten når 7,4 Mkr mot
+  målet 8 Mkr utan att röras, så den nuvarande siffran lämnas orörd om inget annat visar sig
+  vid balanspasset.
+
+Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för mätskripten och de fullständiga tabellerna bakom
+punkterna ovan.
 
 ### 2.2 Genomgående krav för hela etappen
 
@@ -468,12 +523,42 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 
 ### Förberedelse
 
-**P53 — partiet blir spelbart**
-> Omkalibrera `boardTarget` i `indochina-slice.json` enligt beslutspunkt 1. Ingen ny mekanik.
+> **Reviderad 2026-09-17** (se avsnitt 2.1 och avsnitt 10 punkt 1 för hela mätningen bakom
+> revideringen): den ursprungliga P53 ("omkalibrera `boardTarget`, ingen ny mekanik") ersätts
+> av tre prompter. Ingen av dem rör `boardTarget.threshold` — måltalet (2×) mättes vara rätt,
+> det var vad som mättes mot det som saknade grund.
+
+**P53a — arméerna startar mitt i kriget, inte i fred**
+> `Faction.materielNeed[cat]` seedas till `balance.json`s `orderTriggerThreshold[cat]` för varje
+> faktion vid scenariostart (`state.ts`), inte 0. Ingen kod i `orders.ts`/`factions.ts` rörs —
+> bara startvärdet. Scenariodata, inte en ny mekanik.
 >
-> *Klart när:* `SCENARIO_COMPLETE` nås i minst 25 % av 200 `balanced`-partier; `BUYOUT` slutar
-> inträffa på exakt samma tur i alla partier; golden omfryst i denna commit och ingen annan,
-> med loggrad.
+> *Klart när:* ett test visar att `createInitialState` ger varje faktion `materielNeed` lika med
+> `orderTriggerThreshold` för samtliga kategorier vid tur 0; en härnessmätning (n≥30, samtliga
+> fyra botpolicyer) visar att första bokförda intäkten sker mätbart tidigare än före ändringen;
+> golden omfryst i denna commit och ingen annan, med loggrad.
+
+**P53b — styrelsen mäter orderboken, inte bara kassan**
+> `board.ts`s `updateProgressSnapshot`: `progressSnapshot` = (bokförd intäkt + kontrakterat,
+> ej levererat värde) / `foundingCapital`, i stället för bara bokförd intäkt. `runReview`s
+> `expectedProgress`-formel byts från linjär (`threshold × turn/dueTurn`) till kvadratisk
+> (`threshold × (turn/dueTurn)²`) — samma `threshold` vid `dueTurn`, lägre krav tidigt.
+>
+> *Klart när:* ett test visar att `progressSnapshot` inkluderar aktiva/sena kontrakts obetalda
+> andel (`contract.price × (1 − unitsDelivered/quantity)`), summerat, inte bara
+> `revenueByTurn`; ett test visar att `expectedProgress` vid `turn = dueTurn/2` är en fjärdedel
+> av `threshold`, inte hälften; en härnessmätning (n≥30) visar att `BUYOUT`-frekvensen skiljer
+> sig mellan botpolicyer i stället för att vara identisk för alla fyra; golden omfryst i denna
+> commit och ingen annan, med loggrad.
+
+**P53c — balanspass: håller 2×?**
+> Ingen kod. Härnessen mot `boardTarget.threshold` (2×) med P53a+P53b på plats. Skruva bara
+> `balance.json`/scenariodata om måltalet inte håller, med motivering och loggrad — annars
+> lämnas det orört.
+>
+> *Klart när:* `threshold` verifierad eller reviderad med motivering och loggrad; `BUYOUT`-
+> frekvensen följer strategiernas mätta ekonomiska styrka (bättre bot → lägre frekvens), inte
+> identisk för alla fyra; hela CI-kedjan grön.
 
 ### 5A — Rummet
 
@@ -581,6 +666,19 @@ egna rekommendationer, ordagrant.**
    mätproblem, för etapp 5 är den ett byggproblem: elva turer räcker inte för mekanik som
    handlar om relationer som mognar.
 
+   > **Reviderat 2026-09-17, efter mätning, innan P53 kördes.** Beslutet ovan ("omkalibreras,
+   > ingen ny mekanik") visade sig otillräckligt så fort det mättes mot faktisk kod: en ren
+   > `boardTarget`-kalibrering byter bara dödsorsak (`BUYOUT` → `INSOLVENCY`, tre av fyra
+   > botpolicyer dör ändå, vid tur 15–17) eftersom grundorsaken är att `Faction.materielNeed`
+   > startar på 0 — inga ordrar alls genereras turerna 1–4, medan husets fasta kostnader löper
+   > från tur 1. **Reviderat beslut: P53 delas i tre** — P53a (scenariodata: krigförande arméer
+   > startar med ett stående upphandlingsbehov, inte tomt), P53b (`board.ts`: styrelsen mäter
+   > orderbok + en rampad förväntanskurva i stället för bara bokförd intäkt linjärt) och P53c
+   > (balanspass, verifierar att `threshold` 2× fortsatt är rätt siffra). `boardTarget.threshold`
+   > självt rörs INTE — det höll sig till mätningen visade sig vara rätt siffra hela tiden, det
+   > var VAD som mättes mot den som var fel. Se avsnitt 2.1 för de fullständiga mätningarna och
+   > `docs/ANDRINGSLOGG.md`, 2026-09-17, för mätskripten.
+
 2. **Ersätter `Official` `Order.inspectorIntegrity`?** **Avgjort: ja.** Ingen parallell sanning
    om vem som bedömer ett anbud — `computeScore` läser samma tal från en ny källa, formeln rörs
    inte.
@@ -613,3 +711,4 @@ egna rekommendationer, ordagrant.**
 |---|---|---|
 | 1.0 | 2026-09-16 | Första förslaget. Premisskontroll (avsnitt 1) mot commit `701c56a` gav tio fynd, varav fem formade förslaget: den anonyma tjänstemannen i `Order.inspectorIntegrity` (blev 5A:s ingång), att `alignment` aldrig skrivs (blev kuppens uppgift), att `Station.coverage` är död data (blev informationsgrinden), att krig varken kan börja eller sluta (blev 5B:s dyraste post) och att `Faction.embargoed` har effekter men ingen utlösare (blev det politiska beslutets kvitto). Åtta beslutspunkter öppna |
 | 1.0.1 | 2026-09-16 | **ANTAGEN.** Ägaren godkände samtliga åtta beslutspunkter enligt förslagets egna rekommendationer, ordagrant (se `docs/ANDRINGSLOGG.md` samma datum). Avsnitt 10 omskrivet från öppna frågor till ett beslutsprotokoll. Inga sakändringar mot 1.0 — namnet, prompträckvidden (P53–P64), `politics`-steget, `Official`-ersättningen, `Front.status`, `LEAK`/`SABOTAGE`/`TURN` och den omskrivna femårsklausulen stod redan som rekommendationer och blev nu beslut. `P53` är nästa steg |
+| 1.0.2 | 2026-09-17 | **P53 reviderad innan den kördes, efter mätning.** Ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden i stället för P53:s ursprungliga "omkalibrera `boardTarget`". Mätning (härnessen, n=30–60/botpolicy, med och utan styrelsegranskning) visade att en ren kalibrering inte hade räckt: alla fyra botpolicyer har 0 kr bokförd intäkt vid tur 6 (kravet: 2,16 Mkr), och utan granskningen dör tre av fyra ändå i `INSOLVENCY` vid tur 15–17 — grundorsaken är att `Faction.materielNeed` startar på 0, vilket ger noll ordrar turerna 1–4 medan fasta kostnader löper. `aggressive` (45 % marknadsandel) överlever, vilket avslöjar att alla fyra kaskadmätningarna (P37/P42/P47/P52) kördes mot `balanced` (9,7 % marknadsandel) — en svag botstrategi, inte bara en svag ekonomi. P53 delad i P53a (seeda `materielNeed` vid start), P53b (`board.ts` mäter orderbok + rampad kurva) och P53c (balanspass, verifierar `threshold`). Avsnitt 2.1 och avsnitt 10 punkt 1 fick varsin reviderad-blockquote, ingen gammal rad redigerad. Se `docs/ANDRINGSLOGG.md` samma datum för mätskripten och fullständiga tabeller |
