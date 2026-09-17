@@ -290,5 +290,11 @@
   "fundCoupCaughtCounterIntelligenceGain": 25,
   "fundCoupFailureRelationPenalty": 40,
   "fundCoupNeutralAlignmentShift": 50,
-  "fundCoupPreferredSupplierTurns": 5
+  "fundCoupPreferredSupplierTurns": 5,
+  "_p62_note": "ETAPP5_TEKNISK_SPEC.md avsnitt 4.5 och DESIGN.md avsnitt 9/15 avgör FORMEN (bara fiktiva tjänstemän, ingen ny slumpkälla) men ingen formel eller siffra -- fem nya, PROVISORISKA balanstal. Textens 'sätter Official.status = dead' har INGEN vid-framgång/vid-misslyckande-uppdelning (till skillnad från STAGE_INCIDENT/FUND_COUP, som båda uttryckligen har det) -- läst ordagrant som att ASSASSINATE alltid lyckas DÖDA målet; kostnaden ligger i konsekvenserna (pengar, en counterIntelligence-höjning som ALLTID inträffar, en DOOMSDAY-risk), inte i en chans att misslyckas. assassinateCounterIntelligenceGain (50) -- 'en MYCKET högre counterIntelligence-kostnad' (ordagrant), satt till dubbelt fundCoupCaughtCounterIntelligenceGain (25), som i sin tur redan är dubbelt INTEL-familjens (10) -- en tydlig stigande skala över etappens tre 'åker fast'-nivåer. DOOMSDAY-effekten ('om målets land är blockbundet') återanvänder EXAKT stageIncidentDoomsdayMin/Max och tröskeln |alignment| > 60 -- samma mönster STAGE_INCIDENT redan använder för samma fråga, inget nytt tal att gissa. successorIntegrityMin/Max (30/80) och successorStandingMin/Max (40/70) -- en ny tjänsteman efter en lönnmord är en okänd kvantitet, en bred men inte extrem spridning (jämförbar med officials.json:s befintliga spridning, 35-75 integrity, 45-75 standing). Se docs/ANDRINGSLOGG.md, som även loggar SPÄNNINGEN mot avsnitt 3.1/P54:s 'relationToPlayer nollställd' (den ärvda-relation-formuleringen i avsnitt 4.4:s sista stycke gäller inte här, se loggraden).",
+  "assassinateCounterIntelligenceGain": 50,
+  "successorIntegrityMin": 30,
+  "successorIntegrityMax": 80,
+  "successorStandingMin": 40,
+  "successorStandingMax": 70
 }

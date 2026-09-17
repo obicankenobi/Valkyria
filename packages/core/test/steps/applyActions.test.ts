@@ -812,6 +812,82 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
       ])
     })
   })
+
+  // P62 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.5, DESIGN.md §9/§15): ASSASSINATE
+  // — "riktas bara mot fiktiva tjänstemän." Ingen framgång/misslyckande-
+  // uppdelning i texten (till skillnad från STAGE_INCIDENT/FUND_COUP) —
+  // handlingen dödar alltid målet, se political.ts:s egen motivering.
+  describe('P62: ASSASSINATE', () => {
+    it('(P62 klart-når) dödar tjänstemannen och utlöser ersättningskedjan: ny aktiv Official, samma post/faktion, relationToPlayer nollställd', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const official = state.officials['official-rvn-procurement']!
+      official.relationToPlayer = 60 // ska nollställas
+      const nameBefore = official.name
+      const treasuryBefore = state.house.treasury
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: official.id, spend: 500000 }
+      const { ctx, emitted } = makeCtx(state, [action], 'assassinate-seed')
+      applyActions(ctx)
+
+      const replacement = state.officials['official-rvn-procurement']!
+      expect(replacement.status).toBe('active')
+      expect(replacement.id).toBe(official.id)
+      expect(replacement.factionId).toBe('rvn')
+      expect(replacement.post).toBe('procurement')
+      expect(replacement.name).not.toBe(nameBefore)
+      expect(replacement.relationToPlayer).toBe(0)
+      expect(replacement.integrity).toBeGreaterThanOrEqual(balance.successorIntegrityMin)
+      expect(replacement.integrity).toBeLessThanOrEqual(balance.successorIntegrityMax)
+      expect(replacement.standing).toBeGreaterThanOrEqual(balance.successorStandingMin)
+      expect(replacement.standing).toBeLessThanOrEqual(balance.successorStandingMax)
+      expect(state.house.treasury).toBe(treasuryBefore - 500000)
+      expect(emitted.some((e) => e.headline.includes('ASSASSINATED'))).toBe(true)
+    })
+
+    it('(P62 klart-når) counterIntelligence stiger permanent med assassinateCounterIntelligenceGain', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const official = state.officials['official-rvn-procurement']!
+      const rvn = state.factions['rvn']!
+      const ciBefore = rvn.counterIntelligence
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: official.id, spend: 500000 }
+      applyActions(makeCtx(state, [action], 'assassinate-seed').ctx)
+
+      expect(rvn.counterIntelligence).toBe(ciBefore + balance.assassinateCounterIntelligenceGain)
+    })
+
+    it('en blockbunden faktions lönnmord (|alignment| > 60) höjer doomsday inom stageIncidentDoomsdayMin/Max', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const official = state.officials['official-rvn-procurement']!
+      const rvn = state.factions['rvn']!
+      expect(Math.abs(rvn.alignment)).toBeGreaterThan(60) // premissen: rvn är blockgränsande
+      const doomsdayBefore = state.doomsday
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: official.id, spend: 500000 }
+      applyActions(makeCtx(state, [action], 'assassinate-seed').ctx)
+
+      const delta = state.doomsday - doomsdayBefore
+      expect(delta).toBeGreaterThanOrEqual(balance.stageIncidentDoomsdayMin)
+      expect(delta).toBeLessThanOrEqual(balance.stageIncidentDoomsdayMax)
+    })
+
+    it('avvisas för okänt/redan dött officialId eller ogiltig spend', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const deadOfficial = state.officials['official-rvn-procurement']!
+      deadOfficial.status = 'dead'
+      const badOfficial: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: 'official-does-not-exist', spend: 500000 }
+      const alreadyDead: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: deadOfficial.id, spend: 500000 }
+      const badSpend: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: 'official-rvn-defence', spend: -1 }
+      const { ctx } = makeCtx(state, [badOfficial, alreadyDead, badSpend])
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([
+        { action: badOfficial, reason: 'unknown official target' },
+        { action: alreadyDead, reason: 'unknown official target' },
+        { action: badSpend, reason: 'invalid spend amount' },
+      ])
+    })
+  })
 })
 
 describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => {

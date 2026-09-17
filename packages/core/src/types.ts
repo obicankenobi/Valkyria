@@ -649,6 +649,11 @@ export type PlayerAction =
   // switch kan dispatcha FUND_COUP till sin egen funktion utan att bredda
   // `applyFactionTargetedPolitical`s Extract-signatur.
   | { type: 'POLITICAL'; op: 'FUND_COUP'; targetFactionId: FactionId; spend: Money }
+  // P62 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.5, skyddsräcke 3): "handlingen kan
+  // STRUKTURELLT inte peka på något annat än ett Official-id" — `officialId`,
+  // ALDRIG ett FactionId eller fritextnamn (samma garanti som BRIBE/
+  // FUND_CAMPAIGN/FAVOUR, se types.skyddsracke3.test.ts).
+  | { type: 'POLITICAL'; op: 'ASSASSINATE'; officialId: OfficialId; spend: Money }
   | { type: 'POLITICAL'; op: 'BRIBE' | 'FUND_CAMPAIGN'; officialId: OfficialId; spend: Money }
   | { type: 'POLITICAL'; op: 'FAVOUR'; officialId: OfficialId; marginCost: Money }
   // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "betala för att flytta en
@@ -679,7 +684,15 @@ export type PlayerAction =
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
 // P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda. P60 (avsnitt 4.3): INFLUENCE.
-export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_CAMPAIGN' | 'FAVOUR' | 'INFLUENCE' | 'FUND_COUP'
+export type PoliticalOp =
+  | 'BRIBE'
+  | 'STAGE_INCIDENT'
+  | 'BACK_CHANNEL'
+  | 'FUND_CAMPAIGN'
+  | 'FAVOUR'
+  | 'INFLUENCE'
+  | 'FUND_COUP'
+  | 'ASSASSINATE'
 export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY'
 
 // QUOTE är inte en PlayerAction. Bud ligger i TurnSubmission.bids och kostar inga

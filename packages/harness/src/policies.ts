@@ -203,6 +203,25 @@ function fundCoupWeakestCounterIntelligence(state: GameState, actions: PlayerAct
   actions.push({ type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: weakest.id, spend: BOT_BALANCE.fundCoupCost })
 }
 
+// P62 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.5/6, GK-A/skyddsräcke 4): ASSASSINATE
+// är helt nytt. Kräver samma stora kassabuffert-princip som FUND_COUP innan
+// den ens övervägs, riktad deterministiskt mot den aktiva tjänsteman med
+// LÄGST relationToPlayer (den boten har minst investerat i — inget att
+// förlora genom att eliminera henne).
+const ASSASSINATE_SPEND = 500000
+const ASSASSINATE_TREASURY_MULTIPLE = 4
+
+function assassinateWeakestRelationOfficial(state: GameState, actions: PlayerAction[]): void {
+  if (state.house.treasury < ASSASSINATE_SPEND * ASSASSINATE_TREASURY_MULTIPLE) return
+  const candidates = Object.values(state.officials).filter((o) => o.status === 'active')
+  if (candidates.length === 0) return
+  let weakest = candidates[0]!
+  for (const official of candidates.slice(1)) {
+    if (official.relationToPlayer < weakest.relationToPlayer) weakest = official
+  }
+  actions.push({ type: 'POLITICAL', op: 'ASSASSINATE', officialId: weakest.id, spend: ASSASSINATE_SPEND })
+}
+
 // P60 (GK-A): TURN, samma "deklarerad, avvisad -> faktiskt byggd"-status som
 // LEAK/SABOTAGE. Riktas mot den FÖRSTA aktiva stationens NATIONS
 // procurement-tjänsteman — samma post BRIBE (etapp 1,5) alltid riktat mot,
@@ -327,6 +346,7 @@ export const aggressive: Policy = (state) => {
   leakAgainstFirstRival(state, actions) // P60, GK-A: nytt verb, minst en bot
   sabotageFirstRival(state, actions) // P60, GK-A: nytt verb, minst en bot
   fundCoupWeakestCounterIntelligence(state, actions) // P61, GK-A: nytt verb, minst en bot
+  assassinateWeakestRelationOfficial(state, actions) // P62, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit, actions)
 
   return { standingOrders: [], bids, actions }

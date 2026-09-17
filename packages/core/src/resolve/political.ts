@@ -7,9 +7,14 @@
 // (från applyActions.ts), samma "en export, ett anropsställe"-princip som
 // resolvePendingCrisis.
 import balanceData from '../data/balance.json' with { type: 'json' }
+import successorsData from '../data/successors.json' with { type: 'json' }
 import { addDoomsday } from './doomsdayGate.js'
+import { replaceOfficial } from '../officials.js'
 import type { ResolveContext } from './index.js'
-import type { GameState, OfficialId, PlayerAction } from '../types.js'
+import type { Agenda, FactionId, GameState, OfficialId, PlayerAction } from '../types.js'
+
+const SUCCESSOR_NAMES = successorsData as unknown as Record<FactionId, string[]>
+const AGENDAS: readonly Agenda[] = ['REARM', 'AUSTERITY', 'MODERNISE', 'NON_ALIGNMENT', 'SELF_ENRICHMENT']
 
 interface Balance {
   bribeRelationCostPerPoint: number
@@ -41,6 +46,12 @@ interface Balance {
   fundCoupFailureRelationPenalty: number
   fundCoupNeutralAlignmentShift: number
   fundCoupPreferredSupplierTurns: number
+  // P62 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.5): ASSASSINATE.
+  assassinateCounterIntelligenceGain: number
+  successorIntegrityMin: number
+  successorIntegrityMax: number
+  successorStandingMin: number
+  successorStandingMax: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -115,6 +126,9 @@ export function applyPolitical(
       return
     case 'FUND_COUP':
       applyFundCoup(ctx, action)
+      return
+    case 'ASSASSINATE':
+      applyAssassinate(ctx, action)
       return
   }
 }
@@ -476,5 +490,96 @@ function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { o
       actorIsPlayer: true,
       subjectId: target.id,
     })
+  }
+}
+
+// P62 (avsnitt 4.5, DESIGN.md §9/§15): "riktas bara mot fiktiva tjänstemän
+// (Official), aldrig mot verkliga namngivna statschefer" — en TYPGARANTI
+// (skyddsräcke 3), inte bara en spelregel: `action.officialId` kan
+// strukturellt inte peka på något annat.
+//
+// Till skillnad från STAGE_INCIDENT/FUND_COUP har texten INGEN vid-framgång/
+// vid-misslyckande-uppdelning för ASSASSINATE — "sätter Official.status =
+// 'dead'" står ovillkorat. Läst ordagrant: ASSASSINATE lyckas ALLTID döda
+// målet, kostnaden ligger i konsekvenserna (pengar, en counterIntelligence-
+// höjning som ALLTID inträffar, en DOOMSDAY-risk om landet är blockbundet),
+// inte i en chans att misslyckas. Se balance.json:s _p62_note.
+//
+// "Utlöser samma ersättningskedja som fallen" (avsnitt 4.5) — den här
+// funktionen är P62:s FÖRSTA live-utlösare för replaceOfficial (P54 byggde
+// funktionen isolerat, ingen anropare fanns än, se officials.ts:s egen
+// kommentar och P58:s balanspass-fynd). En egen 'fallen'-utlösare
+// (standing/scandalRisk-driven, naturlig nedgång) är INTE byggd här — P62
+// äger bara ASSASSINATE/'dead', ingen annan prompt i avsnitt 8 äger
+// 'fallen'-vägen. Namnregistret för ERSÄTTARE (successors.json, scenariodata
+// i samma form som officials.json, DESIGN.md §15) fanns inte innan denna
+// prompt heller.
+//
+// SPÄNNING mot avsnitt 3.1 (P54), dokumenterad, inte tyst löst: avsnitt
+// 4.4:s sista stycke ("den nya regimen kommer med tjänstemän vars
+// relationToPlayer ärver en del av vad du byggt upp") beskriver FUND_COUP:s
+// installerade tjänstemän, inte ASSASSINATE:s ersättare — men avsnitt 3.1
+// säger ordagrant att en ersatt tjänsteman ALLTID får relationToPlayer
+// nollställd ("relationskapital är färskvara"), utan undantag för kupp-
+// installerade tjänstemän. `replaceOfficial` (officials.ts, P54, redan
+// testad sedan dess) nollställer ALLTID relationToPlayer — den regeln
+// prioriteras här som den mer EXPLICITA, mer TESTADE, mer GRUNDLÄGGANDE av
+// de två (en enda aspirerande mening i 4.4:s sammanfattande stycke ändrar
+// inte en redan byggd, redan testad invariant). Se docs/ANDRINGSLOGG.md.
+function applyAssassinate(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'ASSASSINATE' }>): void {
+  const { draft, rng, emit, rejected } = ctx
+  const house = draft.house
+
+  const official = draft.officials[action.officialId]
+  if (!official || official.status !== 'active') {
+    rejected.push({ action, reason: 'unknown official target' })
+    return
+  }
+  if (!Number.isFinite(action.spend) || action.spend < 0) {
+    rejected.push({ action, reason: 'invalid spend amount' })
+    return
+  }
+
+  const target = draft.factions[official.factionId]
+  house.treasury -= action.spend
+  official.status = 'dead'
+
+  const names = SUCCESSOR_NAMES[official.factionId] ?? []
+  const name = names.length > 0 ? rng.pick(names) : official.name
+  const replacement = replaceOfficial(official, {
+    name,
+    integrity: rng.int(BALANCE.successorIntegrityMin, BALANCE.successorIntegrityMax),
+    standing: rng.int(BALANCE.successorStandingMin, BALANCE.successorStandingMax),
+    agenda: rng.pick(AGENDAS),
+  })
+  draft.officials[official.id] = replacement
+
+  const assassinationId = emit({
+    severity: 'headline',
+    scope: 'faction',
+    headline: `${house.name.toUpperCase()} HAS ${official.name.toUpperCase()} ASSASSINATED — SUCCEEDED BY ${replacement.name.toUpperCase()} (−£${action.spend.toLocaleString('en-GB')})`,
+    causeId: null,
+    delta: { treasury: -action.spend },
+    actorIsPlayer: true,
+    subjectId: official.factionId,
+  })
+
+  if (target) {
+    const before = target.counterIntelligence
+    target.counterIntelligence = Math.min(100, before + BALANCE.assassinateCounterIntelligenceGain)
+    emit({
+      severity: 'ticker',
+      scope: 'faction',
+      headline: `${target.name.toUpperCase()}'S COUNTER-INTELLIGENCE SERVICE SHARPENS — ${before.toFixed(0)} → ${target.counterIntelligence.toFixed(0)}`,
+      causeId: assassinationId,
+      delta: { counterIntelligence: target.counterIntelligence - before },
+      actorIsPlayer: false,
+      subjectId: official.factionId,
+    })
+
+    if (Math.abs(target.alignment) > 60) {
+      const amount = rng.int(BALANCE.stageIncidentDoomsdayMin, BALANCE.stageIncidentDoomsdayMax)
+      addDoomsday(ctx, amount, assassinationId)
+    }
   }
 }

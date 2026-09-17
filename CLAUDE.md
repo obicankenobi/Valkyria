@@ -44,8 +44,8 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61 (5B) klara
-(2026-09-17), P62 är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61/P62 (5B) klara
+(2026-09-17), P63 är nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-09-17**: `Official`/
@@ -129,6 +129,18 @@ i samma commit (GK-B, avsnitt 10 punkt 6, med loggrad). Vid misslyckande: `count
 och `relationToPlayer` skadas permanent. `aggressive` fick `fundCoupWeakestCounterIntelligence`
 (skyddsräcke 4/GK-A). Golden VERIFIERAD (ingen omfrysning krävdes — kontrollerat, inte
 antaget). Se `docs/ANDRINGSLOGG.md`.
+**P62 BYGGD 2026-09-17**: `ASSASSINATE` (nytt `POLITICAL`-op, `officialId`+`spend`, skyddsräcke
+3:s typgaranti pinnad). Ingen framgång/misslyckande-uppdelning i texten — dödar alltid målet;
+kostnaden ligger i konsekvenserna (pengar, en ALLTID inträffande `counterIntelligence`-höjning,
+en `DOOMSDAY`-risk om landet är blockbundet, samma tröskel som `STAGE_INCIDENT`). **P62:s
+FÖRSTA live-utlösare för `replaceOfficial`** (P54 byggde funktionen isolerat, se P58:s
+balanspass-fynd). Nytt register `successors.json` ger ersättarens namn. Ingen egen
+`'fallen'`-utlösare byggd — den luckan kvarstår, dokumenterad. **Spänning upptäckt och
+dokumenterad, inte tyst löst:** avsnitt 4.4:s sista stycke antydde att kupp-installerade
+tjänstemän ärver `relationToPlayer`, men avsnitt 3.1 (P54, redan testad) säger att en
+ersättning ALLTID nollställer den — den mer explicita, testade regeln vann; `replaceOfficial`
+nollställer oförändrat. `aggressive` fick `assassinateWeakestRelationOfficial` (skyddsräcke
+4/GK-A). Golden VERIFIERAD (ingen omfrysning krävdes). Se `docs/ANDRINGSLOGG.md`.
 P53 är därför delad i **P53a**
 (scenariodata: `materielNeed` seedas till `orderTriggerThreshold` vid start, inte 0 — **BYGGD
 2026-09-17**: `state.ts`, golden omfryst, härnessmätning n=30/botpolicy bekräftar första bokförda

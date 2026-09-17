@@ -44,6 +44,15 @@ describe('skyddsräcke 3 (avsnitt 6): BRIBE/FUND_CAMPAIGN/FAVOUR tar officialId,
     }>()
   })
 
+  it('(P62) ASSASSINATE har exakt { officialId, spend } — inget targetFactionId, samma garanti som BRIBE/FUND_CAMPAIGN', () => {
+    expectTypeOf<Extract<PoliticalAction, { op: 'ASSASSINATE' }>>().toEqualTypeOf<{
+      type: 'POLITICAL'
+      op: 'ASSASSINATE'
+      officialId: OfficialId
+      spend: Money
+    }>()
+  })
+
   it('OfficialId och FactionId är strukturellt samma primitiv (string) men typnamnen skiljer avsikten — ett FactionId kan inte tilldelas där officialId förväntas utan en explicit konvertering, exakt vad state.ts:s officialId()-helper är till för', () => {
     // Detta är dokumentation, inte en körbar typkontroll (OfficialId/FactionId är
     // båda `string` under huven, TypeScript kan inte skilja dem strukturellt) —
