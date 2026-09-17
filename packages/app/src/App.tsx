@@ -5,12 +5,13 @@ import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState } from '@seventh-front/core'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
+import { ThePolitics } from './components/ThePolitics.js'
 import { TheWire } from './components/TheWire.js'
 import { TheWorld } from './components/TheWorld.js'
 import { formatMoney } from './components/ui.js'
 import { useGame } from './useGame.js'
 
-type View = 'wire' | 'floor' | 'house' | 'world'
+type View = 'wire' | 'floor' | 'house' | 'world' | 'politics'
 
 const ENDING_LABEL: Record<string, string> = {
   INSOLVENCY: 'Insolvent — the house is liquidated',
@@ -111,6 +112,9 @@ export function App() {
         <button type="button" className="tab" onClick={() => setView('world')} disabled={view === 'world'}>
           THE WORLD
         </button>
+        <button type="button" className="tab" onClick={() => setView('politics')} disabled={view === 'politics'}>
+          THE POLITICS
+        </button>
         <span className="tabs-spacer" />
         <button type="button" className="btn btn-primary" onClick={handleEndTurn} disabled={ended}>
           End Turn
@@ -153,6 +157,7 @@ export function App() {
           <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />
         )}
         {view === 'world' && <TheWorld state={state} />}
+        {view === 'politics' && <ThePolitics state={state} />}
       </main>
     </div>
   )

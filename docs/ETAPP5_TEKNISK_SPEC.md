@@ -1,6 +1,6 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.12 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60/P61/P62 klara
+**Version 1.0.13 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60/P61/P62/P63 klara
 (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
@@ -10,7 +10,8 @@ rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se a
 måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Front.status`), P60
 (`INFLUENCE`/`Faction.counterIntelligence`/`LEAK`/`SABOTAGE`/`TURN`), P61 (`FUND_COUP`,
 `DESIGN.md` §13 omskriven i samma commit) och P62 (`ASSASSINATE`, `replaceOfficial`:s FÖRSTA
-live-utlösare) klara samma dag. `P63` ("rummet blir synligt", UI) är nästa steg.**
+live-utlösare) klara samma dag. P63 ("rummet blir synligt", UI — ny femte flik "THE POLITICS",
+`officialDisplay()`) klar samma dag. `P64` (balanspass 5B och etappgranskning) är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -847,12 +848,36 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och
 > spänningsfyndet.
 
-**P63 — rummet blir synligt**
+**P63 — rummet blir synligt — BYGGD 2026-09-17**
 > Politikpanelen i UI:t: tjänstemän, agendor, ställning och relation — gated av
 > `Station.coverage` som inkluderar `'cabinet'` (fynd 1.4). Ingen ny mekanik.
 >
 > *Klart när:* ett komponenttest visar att en tjänsteman utan `'cabinet'`-täckning visas utan
 > integritet och agenda; ett test visar att vyn inte kraschar utan station; **golden orörd**.
+>
+> **Klart:** samtliga tre villkor uppfyllda. Ny femte flik "THE POLITICS" i `App.tsx`, en ren
+> läsvy (`ThePolitics.tsx`) i samma stil som `TheWorld.tsx` — grupperar `state.officials` per
+> faktion och renderar varje tjänsteman genom `queries.ts`s nya `officialDisplay()` (exporterad
+> från paketet, samma mönster som `formationDisplay`/`effectiveDepth`). Gatingen läser
+> `Station.coverage.includes('cabinet')` för en aktiv station i tjänstemannens land — `'cabinet'`
+> är, precis som fynd 1.4 konstaterade, coverage-typens FÖRSTA faktiska läsare i hela kodbasen
+> (funnits sedan etapp 1, aldrig kontrollerad förrän nu). Namn/post/standing/relationToPlayer
+> nämns aldrig som dolda i avsnitt 8:s egen mening och visas därför alltid; bara `integrity` och
+> `agenda` gates till `null`, precis ordagrant. Tre nya jsdom-komponenttester
+> (`ThePolitics.gating.test.tsx`, samma renderingsmönster som `TheWorld.formations.test.tsx`):
+> utan station → `UNKNOWN` överallt, ingen agenda-sträng läcker, ingen krasch; med en station vars
+> coverage innehåller `'cabinet'` → det landets tjänstemäns integritet/agenda syns; med en aktiv
+> station som SAKNAR `'cabinet'` i sin coverage-lista (men har andra värden) → fortfarande
+> `UNKNOWN` — testar explicit att gatingen är på `'cabinet'` specifikt, inte bara "någon
+> station finns". **Ingen ny mekanik** byggd, som specen kräver — `TheHouse.tsx`s hårdkodade
+> `officialId(targetFactionId, 'procurement')`-genväg för BRIBE/FUND_CAMPAIGN/FAVOUR rördes
+> medvetet INTE: P63:s klart-när gäller en läsvy, inte en handlingsformulärsväljare, och att bygga
+> om den hade varit scope creep utanför vad prompten faktiskt efterfrågar. Ett pre-existerande,
+> orelaterat typfel hittades och fixades i samma svep: `officials.test.ts`s två handskrivna
+> `Official`-literaler saknade `hasIssuedPolicyDecision` (tillkom i P57, testfilen missades då) —
+> triviell komplettering, ingen beteendeändring. Golden ORÖRD (ingen state/logik rörd alls, ren
+> presentation) — verifierat genom att köra hela testsviten, inte antaget. Fullt testsvep grönt
+> (477 tester rotnivå, lint, typecheck, build×3, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17.
 
 **P64 — balanspass 5B och etappgranskning**
 > Ingen kod. Härnessen mot hela avsnitt 7. Sedan den sista raden: ägaren spelar och svarar på

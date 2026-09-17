@@ -9,7 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
-import type { BidEstimate, Formation, FormationDisplay, GameState, Grade, Money, Order, Pct, RivalId } from './types.js'
+import type { BidEstimate, Formation, FormationDisplay, GameState, Grade, Money, Official, OfficialDisplay, Order, Pct, RivalId } from './types.js'
 
 const WIN_BAND_POINTS = 5
 const MONTE_CARLO_SAMPLES = 100
@@ -139,6 +139,30 @@ export function formationDisplay(state: GameState, formation: Formation): Format
     readiness: known ? formation.readiness : null,
     equipment: known ? { ...formation.equipment } : null,
     known,
+  }
+}
+
+// P63 (ETAPP5_TEKNISK_SPEC.md avsnitt 8), ordagrant: "tjänstemän, agendor,
+// ställning och relation ... en tjänsteman utan 'cabinet'-täckning visas UTAN
+// integritet OCH agenda" — bara de två fälten gated, resten visas alltid.
+// Samma gate-mönster som effectiveDepth/formationDisplay: en aktiv station i
+// landet, men här kontrolleras 'cabinet' i Station.coverage (fynd 1.4) i
+// stället för depth.
+export function officialDisplay(state: GameState, official: Official): OfficialDisplay {
+  const cabinetCoverage = state.house.stations.some(
+    (s) => s.nation === official.factionId && s.status === 'active' && s.coverage.includes('cabinet'),
+  )
+
+  return {
+    id: official.id,
+    name: official.name,
+    factionId: official.factionId,
+    post: official.post,
+    standing: official.standing,
+    relationToPlayer: official.relationToPlayer,
+    integrity: cabinetCoverage ? official.integrity : null,
+    agenda: cabinetCoverage ? official.agenda : null,
+    cabinetCoverage,
   }
 }
 

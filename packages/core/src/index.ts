@@ -13,7 +13,7 @@ export { createWireEmitter, pruneWire, WIRE_WINDOW_TURNS, WIRE_CHAIN_DEPTH } fro
 // samma "läs källan, upprepa den aldrig" som DISPLAY_THRESHOLDS/BOT_BALANCE.
 export { PLAYER_ATTRIBUTION_KEY } from './resolve/steps/deliveries.js'
 export type { WireEmitter } from './wire.js'
-export { bidEstimate, DISPLAY_THRESHOLDS, BOT_BALANCE, effectiveDepth, formationDisplay } from './queries.js'
+export { bidEstimate, DISPLAY_THRESHOLDS, BOT_BALANCE, effectiveDepth, formationDisplay, officialDisplay } from './queries.js'
 // getProduct: paketets ENDA väg till produktkatalogen (avsnitt 6) för extern kod —
 // packages/harness (P9) behöver den för att avgöra om en order gäller en
 // restricted-produkt (Order har bara productId, inte en kopia av restricted-flaggan).

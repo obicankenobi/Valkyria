@@ -44,8 +44,9 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61/P62 (5B) klara
-(2026-09-17), P63 är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61/P62/P63 (5B) klara
+(2026-09-17) — 5B och därmed hela etapp 5 är helt klar. P64 (balanspass 5B och etappgranskning)
+är nästa och sista steget.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-09-17**: `Official`/
@@ -141,6 +142,17 @@ tjänstemän ärver `relationToPlayer`, men avsnitt 3.1 (P54, redan testad) säg
 ersättning ALLTID nollställer den — den mer explicita, testade regeln vann; `replaceOfficial`
 nollställer oförändrat. `aggressive` fick `assassinateWeakestRelationOfficial` (skyddsräcke
 4/GK-A). Golden VERIFIERAD (ingen omfrysning krävdes). Se `docs/ANDRINGSLOGG.md`.
+**P63 BYGGD 2026-09-17**: Politikpanelen (ny femte flik "THE POLITICS" i `App.tsx`, ren läsvy
+`ThePolitics.tsx`, samma stil som `TheWorld.tsx`). Ny exporterad `officialDisplay()`
+(`queries.ts`) gated av om huset har en aktiv station i tjänstemannens land vars `coverage`
+inkluderar `'cabinet'` — `Station.coverage`s FÖRSTA faktiska läsare av `'cabinet'` i hela
+kodbasen (fynd 1.4: fältvärdet funnits sedan etapp 1, aldrig kontrollerat förrän nu). Bara
+`integrity`/`agenda` gates till `null`; namn/post/standing/relationToPlayer visas alltid,
+ordagrant efter avsnitt 8. Ingen ny mekanik — `TheHouse.tsx`s hårdkodade
+tjänsteman-genväg för BRIBE/FUND_CAMPAIGN/FAVOUR rördes medvetet inte (utanför scope). Golden
+ORÖRD (verifierat, inte antaget — ren presentation). Se `docs/ANDRINGSLOGG.md`. **5A och 5B
+(P53–P63) är därmed BÅDA helt klara — P64 (balanspass 5B och etappgranskning, ingen kod, sista
+steget i etapp 5) är nästa steg.**
 P53 är därför delad i **P53a**
 (scenariodata: `materielNeed` seedas till `orderTriggerThreshold` vid start, inte 0 — **BYGGD
 2026-09-17**: `state.ts`, golden omfryst, härnessmätning n=30/botpolicy bekräftar första bokförda

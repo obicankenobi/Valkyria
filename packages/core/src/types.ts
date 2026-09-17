@@ -758,3 +758,24 @@ export interface FormationDisplay {
   equipment: Record<TechCategory, number> | null // null om known === false
   known: boolean // true om huset har en aktiv station i förbandets faktions land
 }
+
+// P63 (ETAPP5_TEKNISK_SPEC.md avsnitt 8, "rummet blir synligt"), byggd av
+// queries.ts:s officialDisplay(). Gated av Station.coverage som inkluderar
+// 'cabinet' (fynd 1.4 — coverage-typens FÖRSTA faktiska läsare; 'cabinet' har
+// funnits sedan etapp 1 utan att någon kod någonsin kontrollerat den).
+// Ordagrant gated, samma "direkt konsekvens av avsnitt 8:s egen mening"-
+// princip som FormationDisplay: "tjänstemän, agendor, ställning och
+// relation ... en tjänsteman utan 'cabinet'-täckning visas UTAN integritet
+// OCH agenda" — bara de två, name/post/standing/relationToPlayer nämns
+// aldrig som dolda och visas därför alltid.
+export interface OfficialDisplay {
+  id: OfficialId
+  name: string
+  factionId: FactionId
+  post: Post
+  standing: Pct
+  relationToPlayer: Pct
+  integrity: Pct | null // null om cabinetCoverage === false
+  agenda: Agenda | null // null om cabinetCoverage === false
+  cabinetCoverage: boolean // true om huset har en aktiv station med 'cabinet' i landet
+}
