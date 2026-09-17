@@ -21,3 +21,6 @@ export { bidEstimate, DISPLAY_THRESHOLDS, BOT_BALANCE, effectiveDepth, formation
 // aktivt kontrakt mot DAGENS kostnad (supplyCostIndex rör sig efter kontraktet
 // tecknades), inte bara mot Contract.unitCostAtSigning.
 export { getProduct, computeUnitCostNow } from './pricing.js'
+// officialId: appen och testerna behöver kunna slå upp en faktions
+// procurement-tjänsteman utan att duplicera id-schemat (P54, se officials.ts).
+export { officialId, findOfficial } from './officials.js'

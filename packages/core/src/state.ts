@@ -6,8 +6,11 @@
 // spelregel (ingen ekonomi-, anbuds- eller frontlogik hör hemma här, det är P3–P8).
 import balanceData from './data/balance.json' with { type: 'json' }
 import rivalsCatalog from './data/rivals.json' with { type: 'json' }
+import officialsRegister from './data/officials.json' with { type: 'json' }
 import indochinaSlice from './data/scenarios/indochina-slice.json' with { type: 'json' }
+import { officialId } from './officials.js'
 import type {
+  Agenda,
   BoardTarget,
   Commodity,
   Doctrine,
@@ -17,6 +20,9 @@ import type {
   Front,
   GameState,
   House,
+  Official,
+  OfficialId,
+  Post,
   ProductionLine,
   RivalHouse,
   RivalId,
@@ -289,6 +295,47 @@ function buildFactions(scenario: ScenarioFile): Record<FactionId, Faction> {
   return factions
 }
 
+// P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): en tjänsteman per (faktion, post),
+// fyra poster (Post) per faktion, fullt specificerade i officials.json — samma
+// "createInitialState uppfinner inget eget" som resten av filen (huvudkommentaren
+// ovan): ingen rng finns här, så startintegritet/standing/agenda är fast
+// scenariodata, inte rullade tal. relationToPlayer startar på 0 (samma "du
+// känner ingen än"-premiss som Faction.relationToPlayer INTE delar, eftersom en
+// tjänsteman är en person, inte ett land — spelaren har inget existerande
+// förhållande till en namngiven individ vid partistart).
+interface OfficialSeed {
+  post: Post
+  name: string
+  integrity: number
+  standing: number
+  agenda: Agenda
+}
+function buildOfficials(scenario: ScenarioFile): Record<OfficialId, Official> {
+  const register = castJson<Record<FactionId, OfficialSeed[]>>(officialsRegister)
+  const officials: Record<OfficialId, Official> = {}
+  for (const factionSeed of scenario.factions) {
+    const seeds = register[factionSeed.id]
+    if (!seeds) {
+      throw new Error(`createInitialState: inget officials-register för faktion "${factionSeed.id}"`)
+    }
+    for (const seed of seeds) {
+      const id = officialId(factionSeed.id, seed.post)
+      officials[id] = {
+        id,
+        name: seed.name,
+        factionId: factionSeed.id,
+        post: seed.post,
+        integrity: seed.integrity,
+        standing: seed.standing,
+        relationToPlayer: 0,
+        agenda: seed.agenda,
+        status: 'active',
+      }
+    }
+  }
+  return officials
+}
+
 function buildRivals(scenario: ScenarioFile): Record<RivalId, RivalHouse> {
   const catalog = castJson<Record<string, RivalHouse>>(rivalsCatalog)
   const rivals: Record<RivalId, RivalHouse> = {}
@@ -384,6 +431,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
     },
     house: buildHouse(scenario),
     factions: buildFactions(scenario),
+    officials: buildOfficials(scenario),
     fronts: Object.fromEntries(fronts.map((front) => [front.id, front])),
     rivals: buildRivals(scenario),
     theatres: Object.fromEntries(theatres.map((theatre) => [theatre.id, theatre])),

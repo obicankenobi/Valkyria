@@ -160,6 +160,11 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0
   const blocTerm = faction ? alignmentPenalty(faction.alignment, state.house) : 0
+  // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): integriteten läses nu ur den
+  // persistenta Official ordern pekar på, inte ur ordern själv (skyddsräcke 2 —
+  // computeScore/formeln oförändrad).
+  const official = state.officials[order.officialId]
+  const integrity = official ? official.integrity : 0
 
   const winBand = computeWinBand(hashRng, {
     order,
@@ -172,6 +177,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
     blocTerm,
     rivals: state.rivals,
     factionAlignment: faction ? faction.alignment : 0,
+    integrity,
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -188,6 +194,10 @@ interface WinBandInputs {
   blocTerm: number
   rivals: GameState['rivals']
   factionAlignment: number
+  // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): ersätter order.inspectorIntegrity —
+  // slås upp av anroparen (bidEstimate) eftersom den, till skillnad från denna
+  // inre funktion, har hela state och alltså state.officials.
+  integrity: Pct
 }
 
 // Monte Carlo-skattning: för varje prispunkt, kör MONTE_CARLO_SAMPLES simulerade
@@ -215,7 +225,7 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
       referencePrice: p.order.referencePrice,
       requiredDeliveryTurns: p.order.requiredDeliveryTurns,
       weights: p.order.weights,
-      inspectorIntegrity: p.order.inspectorIntegrity,
+      inspectorIntegrity: p.integrity,
       relationToPlayer: p.relationToPlayer,
       reputation: p.reputation,
       blocTerm: p.blocTerm,
@@ -242,7 +252,7 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
           referencePrice: p.order.referencePrice,
           requiredDeliveryTurns: p.order.requiredDeliveryTurns,
           weights: p.order.weights,
-          inspectorIntegrity: p.order.inspectorIntegrity,
+          inspectorIntegrity: p.integrity,
           relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
           reputation: rival.reputation,
           blocTerm: rivalBlocTerm(rival, p.factionAlignment),

@@ -1,0 +1,20 @@
+{
+  "rvn": [
+    { "post": "procurement", "name": "Do Van Khanh", "integrity": 55, "standing": 65, "agenda": "REARM" },
+    { "post": "defence", "name": "Bui Quang Minh", "integrity": 40, "standing": 60, "agenda": "MODERNISE" },
+    { "post": "finance", "name": "Tran Thi Lan", "integrity": 70, "standing": 55, "agenda": "AUSTERITY" },
+    { "post": "interior", "name": "Vo Dinh Phuc", "integrity": 35, "standing": 50, "agenda": "SELF_ENRICHMENT" }
+  ],
+  "nlf": [
+    { "post": "procurement", "name": "Duong Thi Hoa", "integrity": 60, "standing": 60, "agenda": "REARM" },
+    { "post": "defence", "name": "Trinh Van Sang", "integrity": 65, "standing": 65, "agenda": "NON_ALIGNMENT" },
+    { "post": "finance", "name": "Ngo Thi Kim", "integrity": 75, "standing": 50, "agenda": "AUSTERITY" },
+    { "post": "interior", "name": "Dang Van Chau", "integrity": 50, "standing": 55, "agenda": "MODERNISE" }
+  ],
+  "laos": [
+    { "post": "procurement", "name": "Khamsing Vongsavath", "integrity": 50, "standing": 55, "agenda": "AUSTERITY" },
+    { "post": "defence", "name": "Bounthanh Sisavath", "integrity": 45, "standing": 50, "agenda": "REARM" },
+    { "post": "finance", "name": "Somchai Phommachan", "integrity": 60, "standing": 50, "agenda": "NON_ALIGNMENT" },
+    { "post": "interior", "name": "Vilayvanh Keomany", "integrity": 30, "standing": 45, "agenda": "SELF_ENRICHMENT" }
+  ]
+}

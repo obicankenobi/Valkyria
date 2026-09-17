@@ -187,3 +187,29 @@ describe('computeUnitCostNow (P49 klart-når)', () => {
     }
   })
 })
+
+// P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1/8, skyddsräcke 2): "Order byter
+// inspectorIntegrity mot officialId ... Formeln i computeScore ändras inte en
+// rad — den får samma tal från en annan källa." Det här testet pinnar
+// computeScore SJÄLV, oberoende av var talet nu kommer ifrån (bidding.ts/
+// queries.ts slår upp det ur Official.integrity, se de filernas egna tester) —
+// ett brutet värde här betyder att formeln rördes, inte att källan bytte.
+describe('computeScore — pinnat värde (skyddsräcke 2, oförändrad formel genom etapp 5)', () => {
+  it('samma indata (samma inspectorIntegrity-tal som förut) ger samma poäng som före P54', () => {
+    const score = computeScore({
+      bidPrice: 2000000,
+      bidDeliveryTurns: 3,
+      bidGrade: 'A',
+      bidBribe: 50000,
+      referencePrice: 2000000,
+      requiredDeliveryTurns: 3,
+      weights: { price: 0.55, delivery: 0.3, relationship: 0.15 },
+      inspectorIntegrity: 55,
+      relationToPlayer: 40,
+      reputation: { reliability: 50, quality: 50 },
+      blocTerm: 2,
+    })
+
+    expect(score).toBeCloseTo(106.0875, 6)
+  })
+})

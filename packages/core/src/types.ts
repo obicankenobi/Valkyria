@@ -11,6 +11,7 @@ export type FrontId = string
 export type RivalId = string
 export type TheatreId = string
 export type ProductId = string
+export type OfficialId = string
 
 export type TechCategory =
   | 'infantry'
@@ -47,6 +48,11 @@ export interface GameState {
   }
   house: House
   factions: Record<FactionId, Faction>
+  // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): en tjänsteman per (faktion, post),
+  // id:ad `official-${factionId}-${post}` (se state.ts:s buildOfficials). Order.
+  // officialId pekar hit — samma person svarar på flera ordrar i rad, till
+  // skillnad från Order.inspectorIntegrity som nyrullades per order.
+  officials: Record<OfficialId, Official>
   fronts: Record<FrontId, Front>
   rivals: Record<RivalId, RivalHouse>
   theatres: Record<TheatreId, Theatre>
@@ -267,7 +273,11 @@ export interface Order {
     delivery: number
     relationship: number
   }
-  inspectorIntegrity: Pct // dold, avgör mutans effekt
+  // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): ersätter det tidigare inspectorIntegrity
+  // (nyrullat per order) — pekar nu på en persistent Official i state.officials.
+  // computeScore läser samma Pct-tal, bara ur en annan källa (skyddsräcke 2,
+  // formeln själv oförändrad).
+  officialId: OfficialId
   reason: OrderReason
   // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): vilken front leveransen är avsedd
   // för — null om ingen kan härledas eller väljas (SCRIPTED utan angiven front).
@@ -354,6 +364,29 @@ export interface Faction {
   // embargoed i den här etappen ändå). Frånvarande = embargot ger inget
   // råvarutryck, bara sin befintliga ekonomiska smäll.
   commoditySources?: Commodity[]
+}
+
+// P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1), ordagrant. Ersätter
+// Order.inspectorIntegrity — samma tal, en persistent källa i stället för
+// nyrullad per order. Post/Agenda är egna typer eftersom båda återanvänds
+// utanför Official (PolicyDecision, P57, skriver ur en tjänstemans post/agenda).
+export type Post = 'procurement' | 'defence' | 'finance' | 'interior'
+
+// P54 (avsnitt 3.2). Vikteffekten (weights.*-skiftet) byggs i P55 — här bara
+// den diskriminerade unionen, samma "typ i P54, effekt i P55"-uppdelning som
+// PolicyDecision (P57) och FUND_COUP (P61) har mot sina egna följdprompter.
+export type Agenda = 'REARM' | 'AUSTERITY' | 'MODERNISE' | 'NON_ALIGNMENT' | 'SELF_ENRICHMENT'
+
+export interface Official {
+  id: OfficialId
+  name: string // fiktivt, register per land — DESIGN.md §15
+  factionId: FactionId
+  post: Post
+  integrity: Pct // dold, ärver Order.inspectorIntegrity:s roll (avgör mutans effekt)
+  standing: Pct // hur säker posten är. Faller vid skandal, stiger vid kampanjstöd (P56/P57)
+  relationToPlayer: Pct
+  agenda: Agenda
+  status: 'active' | 'fallen' | 'dead'
 }
 
 export interface Theatre {

@@ -129,10 +129,18 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // ny GameState-form, men styrelsegranskningens pass/fail-utfall (och därmed
   // creditPenaltyMultiplier/BUYOUT-tidpunkten) kan skifta för samma seed. headlines
   // > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P54 (avsnitt 3.1/8, samma klart-når-krav). state.officials
+  // är ett nytt fält på GameState (tolv tjänstemän — fyra poster × tre
+  // faktioner), och Order.inspectorIntegrity (ett tal per order) ersatt av
+  // Order.officialId (en pekare till en persistent person). Trajektorin
+  // förändras genuint, inte bara formen: en faktions procurement-integritet är
+  // nu FAST över hela partiet (officials.json) i stället för nyrullad per
+  // order, vilket ändrar vilka bud som vinner. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1e2d4ef1f42af0' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9c812a019b1c' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '89fe741fa24cd' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1120b18bc71c05' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4cfb7d59084a4' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '161aea2285a982' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

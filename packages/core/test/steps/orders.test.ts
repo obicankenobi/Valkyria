@@ -366,3 +366,34 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     })
   })
 })
+
+// P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1/8, klart-når): "ett test visar att
+// samma tjänsteman ger samma integritet två turer i rad." Order.officialId
+// pekar nu på en PERSISTENT Official i stället för att rulla ett nytt tal per
+// order (det tidigare inspectorIntegrity) — muta samma person två gånger och
+// du vet vad du köper (avsnitt 3.1:s egen motivering).
+describe('orders — P54: officialId pekar på en persistent tjänsteman', () => {
+  it('en utlyst order pekar på faktionens procurement-tjänsteman, och samma tjänsteman/integritet återkommer i en senare tur', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.factions['rvn']!.materielNeed.artillery = 100
+    state.meta.turn = 0
+
+    orders(makeCtx(state, 'orders-seed-turn0').ctx)
+    const firstOrder = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun')!
+    expect(firstOrder).toBeDefined()
+    expect(firstOrder.officialId).toBe('official-rvn-procurement')
+
+    const integrityAfterFirst = state.officials['official-rvn-procurement']!.integrity
+
+    // Ny order, en senare tur — samma faktion, samma post.
+    state.factions['rvn']!.materielNeed.artillery = 100
+    state.meta.turn = 3
+    orders(makeCtx(state, 'orders-seed-turn3').ctx)
+    const secondOrder = state.market.openOrders.find(
+      (o) => o.buyerId === 'rvn' && o.productId === '105mm_field_gun' && o.id !== firstOrder.id,
+    )!
+    expect(secondOrder).toBeDefined()
+    expect(secondOrder.officialId).toBe(firstOrder.officialId)
+    expect(state.officials['official-rvn-procurement']!.integrity).toBe(integrityAfterFirst)
+  })
+})

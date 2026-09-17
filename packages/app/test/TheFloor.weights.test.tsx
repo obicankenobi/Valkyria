@@ -7,7 +7,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { createInitialState } from '@seventh-front/core'
+import { createInitialState, officialId } from '@seventh-front/core'
 import type { GameState, Order, TurnSubmission } from '@seventh-front/core'
 import { TheFloor } from '../src/components/TheFloor.js'
 
@@ -31,7 +31,9 @@ function makeOrder(state: GameState): Order {
     expiresTurn: state.meta.turn + 3,
     competingRivals: [],
     weights: DISTINCTIVE_WEIGHTS,
-    inspectorIntegrity: 50,
+    // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): buyerId är faktions-beroende
+    // (Object.keys ovan) — officialId() i stället för att anta vilken faktion.
+    officialId: officialId(buyerId, 'procurement'),
     reason: { kind: 'PEACETIME_REPLACEMENT' },
     frontId: 'front-1',
   }

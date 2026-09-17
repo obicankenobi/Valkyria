@@ -44,6 +44,12 @@ export const bidding: ResolveStep = (ctx) => {
     const product = getProduct(order.productId)
     const faction = draft.factions[order.buyerId]
     const buyerName = faction ? faction.name.toUpperCase() : order.buyerId.toUpperCase()
+    // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): integriteten läses nu ur den
+    // persistenta Official ordern pekar på, inte ur ordern själv. computeScore
+    // och dess fältnamn (inspectorIntegrity) är oförändrade — bara källan flyttad
+    // (skyddsräcke 2).
+    const official = draft.officials[order.officialId]
+    const officialIntegrity = official ? official.integrity : 0
 
     const playerBids = submission.bids.filter((b) => b.orderId === order.id)
     for (const extra of playerBids.slice(1)) {
@@ -104,7 +110,7 @@ export const bidding: ResolveStep = (ctx) => {
           referencePrice: order.referencePrice,
           requiredDeliveryTurns: order.requiredDeliveryTurns,
           weights: order.weights,
-          inspectorIntegrity: order.inspectorIntegrity,
+          inspectorIntegrity: officialIntegrity,
           relationToPlayer: faction ? faction.relationToPlayer : 0,
           reputation: draft.house.reputation,
           blocTerm: faction ? alignmentPenalty(faction.alignment, draft.house) : 0,
@@ -154,7 +160,7 @@ export const bidding: ResolveStep = (ctx) => {
         referencePrice: order.referencePrice,
         requiredDeliveryTurns: order.requiredDeliveryTurns,
         weights: order.weights,
-        inspectorIntegrity: order.inspectorIntegrity,
+        inspectorIntegrity: officialIntegrity,
         relationToPlayer: rival.relations[order.buyerId] ?? 0,
         reputation: rival.reputation,
         blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) : 0,

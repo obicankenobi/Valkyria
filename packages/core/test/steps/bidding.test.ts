@@ -41,7 +41,10 @@ function dueOrder(overrides: Partial<Order> = {}): Order {
     expiresTurn: 0,
     competingRivals: ['brandt', 'costigan', 'meridian'],
     weights: { price: 0.55, delivery: 0.3, relationship: 0.15 },
-    inspectorIntegrity: 50,
+    // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): buyerId ovan är 'rvn' — samma
+    // faktions procurement-tjänsteman finns garanterat i state byggd av
+    // createInitialState. Ingen testkörning i den här filen ändrar buyerId.
+    officialId: 'official-rvn-procurement',
     reason: { kind: 'PEACETIME_REPLACEMENT' },
     frontId: 'front-1',
     ...overrides,

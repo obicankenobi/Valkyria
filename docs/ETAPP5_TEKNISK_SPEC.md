@@ -1,10 +1,11 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.3 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c) helt klar (2026-09-17).**
+**Version 1.0.4 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c) och P54 klara
+(2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. **P53 (P53a+P53b+P53c) helt klar (2026-09-17, se avsnitt 8). `P54` är nästa steg.**
+11. **P53 (P53a+P53b+P53c) och P54 klara (2026-09-17, se avsnitt 8). `P55` är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -592,13 +593,25 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 
 ### 5A — Rummet
 
-**P54 — tjänstemannen får ett namn**
+**P54 — tjänstemannen får ett namn — BYGGD 2026-09-17**
 > `Official`, namnregistret som scenariodata, `Order.inspectorIntegrity` → `Order.officialId`.
 > Dela `applyActions.ts` om den spränger.
 >
 > *Klart när:* ett test visar att `computeScore` ger identisk poäng som före för samma
 > integritetstal; ett test visar att samma tjänsteman ger samma integritet två turer i rad; ett
 > test visar att en `fallen` tjänsteman ersätts med nollställd relation; golden omfryst.
+>
+> **Klart:** samtliga fyra villkor uppfyllda. `pricing.test.ts` pinnar `computeScore` mot ett
+> hårdkodat värde (skyddsräcke 2 — formeln själv oförändrad, bara källan för
+> `inspectorIntegrity`-talet flyttad från `Order` till `state.officials`). `orders.test.ts`
+> visar att en order en senare tur pekar på SAMMA `officialId` med OFÖRÄNDRAD integritet. Nytt
+> `officials.test.ts`: `replaceOfficial` (ren funktion, ingen live-utlösare ännu — se
+> `officials.ts`s egen kommentar, byggs i P56/P57) nollställer `relationToPlayer` och sätter
+> `status: 'active'` för både en `fallen` och en `dead` tjänsteman. `applyActions.ts` INTE rörd
+> — P54 bygger ingen ny `PlayerAction`, sprängpunkten hör till P56/P57. `golden.test.ts`s tre
+> `expectedHash` omfrysta — genuin trajektorieändring (en faktions procurement-integritet är nu
+> FAST i stället för nyrullad per order), inte bara formen. Fullt testsvep grönt (400 tester,
+> lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
 **P55 — agendan viktar affären**
 > `Agenda` enligt 3.2, som andra viktskiftare vid sidan av `weightPressureShift`.
@@ -743,3 +756,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.1 | 2026-09-16 | **ANTAGEN.** Ägaren godkände samtliga åtta beslutspunkter enligt förslagets egna rekommendationer, ordagrant (se `docs/ANDRINGSLOGG.md` samma datum). Avsnitt 10 omskrivet från öppna frågor till ett beslutsprotokoll. Inga sakändringar mot 1.0 — namnet, prompträckvidden (P53–P64), `politics`-steget, `Official`-ersättningen, `Front.status`, `LEAK`/`SABOTAGE`/`TURN` och den omskrivna femårsklausulen stod redan som rekommendationer och blev nu beslut. `P53` är nästa steg |
 | 1.0.2 | 2026-09-17 | **P53 reviderad innan den kördes, efter mätning.** Ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden i stället för P53:s ursprungliga "omkalibrera `boardTarget`". Mätning (härnessen, n=30–60/botpolicy, med och utan styrelsegranskning) visade att en ren kalibrering inte hade räckt: alla fyra botpolicyer har 0 kr bokförd intäkt vid tur 6 (kravet: 2,16 Mkr), och utan granskningen dör tre av fyra ändå i `INSOLVENCY` vid tur 15–17 — grundorsaken är att `Faction.materielNeed` startar på 0, vilket ger noll ordrar turerna 1–4 medan fasta kostnader löper. `aggressive` (45 % marknadsandel) överlever, vilket avslöjar att alla fyra kaskadmätningarna (P37/P42/P47/P52) kördes mot `balanced` (9,7 % marknadsandel) — en svag botstrategi, inte bara en svag ekonomi. P53 delad i P53a (seeda `materielNeed` vid start), P53b (`board.ts` mäter orderbok + rampad kurva) och P53c (balanspass, verifierar `threshold`). Avsnitt 2.1 och avsnitt 10 punkt 1 fick varsin reviderad-blockquote, ingen gammal rad redigerad. Se `docs/ANDRINGSLOGG.md` samma datum för mätskripten och fullständiga tabeller |
 | 1.0.3 | 2026-09-17 | **P53 (P53a+P53b+P53c) helt klar.** P53a byggd: `Faction.materielNeed` seedas till `orderTriggerThreshold` (`state.ts`), härnessmätning bekräftar mätbart tidigare första bokförda intäkt för alla fyra botpolicyer. P53b byggd: `board.ts`s `progressSnapshot` inkluderar nu orderbokens obetalda andel, `expectedProgress` bytt från linjär till kvadratisk bana (`computeExpectedProgress`), härnessmätning visar `BUYOUT`-frekvens 0 %/0 %/67 %/70 % (var identisk 100 % för alla fyra). P53c verifierad, ingen kod/data ändrad: känslighetsanalys mot 1,5×/2×/2,5× bekräftar att `boardTarget.threshold` (2×) ger den tydligaste diskrimineringen. Golden omfryst i både P53a och P53b (separata commits). Avsnitt 8:s tre prompter fick var sin "BYGGD/VERIFIERAD"-rubrik och klart-blockquote. `P54` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för samtliga mätningar och exakta hash-värden |
+| 1.0.4 | 2026-09-17 | **P54 byggd — 5A:s ingång, `Official` ersätter `Order.inspectorIntegrity`.** `Official`/`Post`/`Agenda`-typerna (avsnitt 3.1/3.2 — typen nu, viktseffekten i P55), `GameState.officials`, ny `officials.json` (fyra fiktiva tjänstemän per faktion) läst av `state.ts`s nya `buildOfficials`, ny ren modul `officials.ts` (`officialId`/`findOfficial`/`replaceOfficial`). `Order.officialId` ersätter `inspectorIntegrity` — `orders.ts` slår upp köparens `procurement`-tjänsteman i stället för att rulla ett nytt tal per order. `computeScore` (`pricing.ts`) HELT ORÖRD, skyddsräcke 2 pinnat med ett test. `applyActions.ts` medvetet inte rörd (ingen ny `PlayerAction` i P54). Golden omfryst — genuin trajektorieändring, inte bara ny form. Avsnitt 8:s P54-block fick en "BYGGD"-rubrik och klart-blockquote. `P55` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |

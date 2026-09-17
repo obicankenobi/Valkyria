@@ -16,6 +16,7 @@ import indochinaSlice from '../../data/scenarios/indochina-slice.json' with { ty
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForFront, computeReferencePrice, getProduct } from '../../pricing.js'
+import { findOfficial } from '../../officials.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
 import type { Faction, FactionId, FrontId, GameState, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
 
@@ -57,6 +58,13 @@ interface NewOrderParams {
   supplyCostIndex: number
   weights: { price: number; delivery: number; relationship: number }
   rng: import('../../rng.js').Rng
+  // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1): köparens procurement-tjänsteman —
+  // "muta samma person två gånger och du vet vad du köper" kräver att SAMMA
+  // Official återanvänds över flera ordrar, i stället för ett nyrullat tal per
+  // order (det tidigare inspectorIntegrity). Anropsplatsen slår upp den (alltid
+  // 'procurement' — den enda post en anbudsaffär rör, se avsnitt 3.1), inte
+  // buildOrder, av samma skäl som frontId redan slås upp av anroparen.
+  officialId: string
   reason: OrderReason
   // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): vilken front leveransen är avsedd
   // för — null om ingen känd/vald (SCRIPTED).
@@ -77,8 +85,6 @@ function buildOrder(p: NewOrderParams): Order {
     p.rng.next() * (BALANCE.statedBudgetMaxFactor - BALANCE.statedBudgetMinFactor) + BALANCE.statedBudgetMinFactor
   const statedBudget = round(trueBudget * statedBudgetFactor)
 
-  const inspectorIntegrity = p.rng.int(0, 100)
-
   return {
     id: p.id,
     buyerId: p.buyerId,
@@ -93,7 +99,7 @@ function buildOrder(p: NewOrderParams): Order {
     expiresTurn: p.currentTurn + BALANCE.orderBiddingWindowTurns,
     competingRivals: p.competingRivals,
     weights: p.weights,
-    inspectorIntegrity,
+    officialId: p.officialId,
     reason: p.reason,
     frontId: p.frontId,
   }
@@ -200,6 +206,10 @@ export const orders: ResolveStep = (ctx) => {
       const weightingFront = highestPressureFront(draft, scripted.buyerId)
       const heat = weightingFront !== null ? computeHeatForFront(draft, weightingFront) : 0
       const pressure = weightingFront !== null ? computePressureForFront(draft, scripted.buyerId, weightingFront) : 0
+      // P54 (avsnitt 3.1): en faktions ordrar hör alltid till dess procurement-
+      // tjänsteman — officials.json garanterar en per (faktion, post), se
+      // state.ts:s buildOfficials.
+      const official = findOfficial(draft, scripted.buyerId, 'procurement')!
       const order = buildOrder({
         id: nextId(),
         buyerId: scripted.buyerId,
@@ -212,6 +222,7 @@ export const orders: ResolveStep = (ctx) => {
         supplyCostIndex: draft.market.supplyCostIndex,
         weights: weightsForPressure(pressure),
         rng,
+        officialId: official.id,
         reason: { kind: 'SCRIPTED' },
         frontId: null,
       })
@@ -355,6 +366,8 @@ function tryIssueOrder(
     return null
   }
 
+  // P54 (avsnitt 3.1): se motiveringen vid steg 1:s (scriptade) anropsställe ovan.
+  const official = findOfficial(draft, factionId, 'procurement')!
   const order = buildOrder({
     id: nextId(),
     buyerId: factionId,
@@ -367,6 +380,7 @@ function tryIssueOrder(
     supplyCostIndex: draft.market.supplyCostIndex,
     weights,
     rng,
+    officialId: official.id,
     reason,
     frontId,
   })
