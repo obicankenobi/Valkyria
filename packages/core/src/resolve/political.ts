@@ -33,6 +33,14 @@ interface Balance {
   // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): INFLUENCE.
   influencePublicSupportCostPerPoint: number
   influenceRelationsCostPerPoint: number
+  // P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4): FUND_COUP.
+  fundCoupCost: number
+  fundCoupBaseSuccessPct: number
+  fundCoupMinSuccessPct: number
+  fundCoupCaughtCounterIntelligenceGain: number
+  fundCoupFailureRelationPenalty: number
+  fundCoupNeutralAlignmentShift: number
+  fundCoupPreferredSupplierTurns: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -104,6 +112,9 @@ export function applyPolitical(
       return
     case 'INFLUENCE':
       applyInfluence(ctx, action)
+      return
+    case 'FUND_COUP':
+      applyFundCoup(ctx, action)
       return
   }
 }
@@ -360,4 +371,110 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
     actorIsPlayer: true,
     subjectId: target.id,
   })
+}
+
+// P61 (avsnitt 4.4, DESIGN.md §13): "stor, sällsynt, dyr." Lyckandechansen
+// följer P60:s "base - counterIntelligence"-mönster men mot en LÄGRE bas
+// (fundCoupBaseSuccessPct 40, mot intelOp-familjens 90) — en kupp är en
+// mycket större operation. "Sällsynt" löst genom en engångsspärr per
+// faktion (Faction.coupAttempted), inte en gissad nedkylningslängd.
+function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'FUND_COUP' }>): void {
+  const { draft, rng, emit, rejected } = ctx
+  const house = draft.house
+
+  const target = draft.factions[action.targetFactionId]
+  if (!target) {
+    rejected.push({ action, reason: 'unknown target faction' })
+    return
+  }
+  if (!Number.isFinite(action.spend) || action.spend < 0) {
+    rejected.push({ action, reason: 'invalid spend amount' })
+    return
+  }
+  if (target.coupAttempted) {
+    rejected.push({ action, reason: 'coup already attempted against this faction' })
+    return
+  }
+
+  target.coupAttempted = true
+  house.treasury -= action.spend
+  const successPct = clamp(BALANCE.fundCoupBaseSuccessPct - target.counterIntelligence, BALANCE.fundCoupMinSuccessPct, 100)
+
+  if (rng.chance(successPct)) {
+    const alignmentBefore = target.alignment
+    // "Ny alignment" (fynd 1.2: fältets FÖRSTA skrivare) — en ren
+    // teckenflippning byter block; en redan neutral faktion (0) skjuts till
+    // en fast nivå i stället, annars gav flippningen 0 igen (ingen effekt).
+    target.alignment = alignmentBefore === 0 ? BALANCE.fundCoupNeutralAlignmentShift : -alignmentBefore
+
+    const coupId = emit({
+      severity: 'headline',
+      scope: 'faction',
+      headline: `${house.name.toUpperCase()} FUNDS A SUCCESSFUL COUP IN ${target.name.toUpperCase()} — ALIGNMENT ${alignmentBefore.toFixed(0)} → ${target.alignment.toFixed(0)}`,
+      causeId: null,
+      delta: { treasury: -action.spend, alignment: target.alignment - alignmentBefore },
+      actorIsPlayer: true,
+      subjectId: target.id,
+    })
+
+    // "Annullerade kontrakt hos den gamla regimen" — samma mönster som
+    // factions.ts:s bankruptcy-annullering, båda kedjorna (spelarens
+    // Contract OCH varje rivals RivalContract), inte bara spelarens egna.
+    for (const contract of draft.market.contracts) {
+      if (contract.buyerId !== target.id) continue
+      if (contract.status === 'voided' || contract.status === 'fulfilled') continue
+      contract.status = 'voided'
+      emit({
+        severity: 'report',
+        scope: 'market',
+        headline: `CONTRACT ${contract.id} VOIDED — NEW REGIME IN ${target.name.toUpperCase()}`,
+        causeId: coupId,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: target.id,
+      })
+    }
+    for (const rival of Object.values(draft.rivals)) {
+      for (const contract of rival.contracts) {
+        if (contract.buyerId !== target.id) continue
+        if (contract.status === 'voided' || contract.status === 'fulfilled') continue
+        contract.status = 'voided'
+        emit({
+          severity: 'report',
+          scope: 'market',
+          headline: `${rival.name.toUpperCase()}'S CONTRACT ${contract.id} VOIDED — NEW REGIME IN ${target.name.toUpperCase()}`,
+          causeId: coupId,
+          delta: {},
+          actorIsPlayer: false,
+          subjectId: target.id,
+        })
+      }
+    }
+
+    // "Förköpsrätt" — omskriven till fem TURER (GK-B, avsnitt 10 punkt 6,
+    // DESIGN.md §13). Återanvänder P57:s preferredSupplier-fält (samma
+    // effekt i bidding.ts), men med ett utgångsdatum den permanenta
+    // PolicyDecision-varianten aldrig satte.
+    target.preferredSupplier = 'player'
+    target.preferredSupplierUntilTurn = draft.meta.turn + BALANCE.fundCoupPreferredSupplierTurns
+  } else {
+    const before = target.counterIntelligence
+    target.counterIntelligence = Math.min(100, before + BALANCE.fundCoupCaughtCounterIntelligenceGain)
+    const relationBefore = target.relationToPlayer
+    target.relationToPlayer = Math.max(0, relationBefore - BALANCE.fundCoupFailureRelationPenalty)
+
+    emit({
+      severity: 'headline',
+      scope: 'faction',
+      headline: `${house.name.toUpperCase()}'S COUP ATTEMPT IN ${target.name.toUpperCase()} FAILS — RELATIONS PERMANENTLY DAMAGED (−£${action.spend.toLocaleString('en-GB')})`,
+      causeId: null,
+      delta: {
+        treasury: -action.spend,
+        counterIntelligence: target.counterIntelligence - before,
+        relationToPlayer: target.relationToPlayer - relationBefore,
+      },
+      actorIsPlayer: true,
+      subjectId: target.id,
+    })
+  }
 }

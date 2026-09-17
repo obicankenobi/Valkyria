@@ -183,6 +183,26 @@ function sabotageFirstRival(state: GameState, actions: PlayerAction[]): void {
   actions.push({ type: 'INTEL', op: 'SABOTAGE', stationId: target.stationId, targetId: target.rivalId })
 }
 
+// P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4/6, GK-A/skyddsräcke 4): FUND_COUP
+// är helt nytt. "Stor, sällsynt, dyr" — boten kräver en STOR kassabuffert
+// (2× fundCoupCost, inte bara precis råd) innan den ens överväger en kupp,
+// och väljer deterministiskt den icke-bankrutta, icke-redan-försökta
+// faktion med LÄGST counterIntelligence (den enklaste måltavlan — samma
+// "svag tjänst -> billigare/säkrare operation"-princip som P60:s
+// intelOpSuccessPct).
+const FUND_COUP_TREASURY_MULTIPLE = 2
+
+function fundCoupWeakestCounterIntelligence(state: GameState, actions: PlayerAction[]): void {
+  if (state.house.treasury < BOT_BALANCE.fundCoupCost * FUND_COUP_TREASURY_MULTIPLE) return
+  const candidates = Object.values(state.factions).filter((f) => !f.bankrupt && !f.coupAttempted)
+  if (candidates.length === 0) return
+  let weakest = candidates[0]!
+  for (const faction of candidates.slice(1)) {
+    if (faction.counterIntelligence < weakest.counterIntelligence) weakest = faction
+  }
+  actions.push({ type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: weakest.id, spend: BOT_BALANCE.fundCoupCost })
+}
+
 // P60 (GK-A): TURN, samma "deklarerad, avvisad -> faktiskt byggd"-status som
 // LEAK/SABOTAGE. Riktas mot den FÖRSTA aktiva stationens NATIONS
 // procurement-tjänsteman — samma post BRIBE (etapp 1,5) alltid riktat mot,
@@ -306,6 +326,7 @@ export const aggressive: Policy = (state) => {
   brokerFavourableDeal(state, actions) // P57, GK-A: nytt verb, minst en bot
   leakAgainstFirstRival(state, actions) // P60, GK-A: nytt verb, minst en bot
   sabotageFirstRival(state, actions) // P60, GK-A: nytt verb, minst en bot
+  fundCoupWeakestCounterIntelligence(state, actions) // P61, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit, actions)
 
   return { standingOrders: [], bids, actions }

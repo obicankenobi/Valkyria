@@ -282,5 +282,13 @@
   "turnFailureStandingPenalty": 20,
   "intelCaughtCounterIntelligenceGain": 10,
   "influencePublicSupportCostPerPoint": 3000,
-  "influenceRelationsCostPerPoint": 1500
+  "influenceRelationsCostPerPoint": 1500,
+  "_p61_note": "ETAPP5_TEKNISK_SPEC.md avsnitt 4.4 och DESIGN.md avsnitt 13 ger FUND_COUP:s form i prosa ('stor, sällsynt, dyr') men inga tal -- sex nya, PROVISORISKA balanstal. fundCoupCost (1000000) -- 'dyr', i storleksordningen buildLineCost (1200000), den dyraste enskilda handlingen i spelet efter en produktionslinje. fundCoupBaseSuccessPct (40) -- lägre än intelOpBaseSuccessPct (90): en kupp är en mycket större, farligare operation än en enskild LEAK/SABOTAGE/TURN, så basoddsen är sämre INNAN counterIntelligence ens räknas in (samma 'base - counterIntelligence'-formel som P60, avräknad mot en lägre bas). fundCoupMinSuccessPct (5) -- samma golv som intelOpMinSuccessPct, av samma skäl. fundCoupCaughtCounterIntelligenceGain (25) -- 'larmad kontraspionage' (ordagrant, ett starkare ord än INTEL-operationernas 'åker fast'), mer än dubbelt intelCaughtCounterIntelligenceGain (10). fundCoupFailureRelationPenalty (40) -- 'permanent skadad relation', en engångshändelse långt större än en enskild BRIBE/STAGE_INCIDENT-svängning (jmf voidedContractRelationPenalty 15), eftersom en misslyckad kupp är en oåterkallelig politisk katastrof, inte en förhandlingsmotgång. fundCoupNeutralAlignmentShift (50) -- edge-fallet en redan neutral (alignment 0) faktion: en ren teckenflippning (-alignment) hade gett 0 igen, vilket bryter 'ny alignment' som effekt, så en neutral faktion skjuts till en fast, måttlig nivå i stället. fundCoupPreferredSupplierTurns (5) -- avsnitt 10 punkt 6/GK-B, ordagrant 'något som betalar sig inom partiet': DESIGN.md §13:s 'förköpsrätt i fem år' (tjugo turer) skrivs om till fem TURER, samma tal GK-B:s egen text namnger ('avläsbar effekt inom fem turer'). Se docs/ANDRINGSLOGG.md.",
+  "fundCoupCost": 1000000,
+  "fundCoupBaseSuccessPct": 40,
+  "fundCoupMinSuccessPct": 5,
+  "fundCoupCaughtCounterIntelligenceGain": 25,
+  "fundCoupFailureRelationPenalty": 40,
+  "fundCoupNeutralAlignmentShift": 50,
+  "fundCoupPreferredSupplierTurns": 5
 }

@@ -44,8 +44,8 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59 och P60 (5B) klara
-(2026-09-17), P61 är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61 (5B) klara
+(2026-09-17), P62 är nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-09-17**: `Official`/
@@ -118,6 +118,17 @@ sänker `standing`. `INFLUENCE` (nytt `POLITICAL`-op, alltid lyckad) flyttar en 
 `publicSupport` eller dess enkelriktade `relations` mot ett annat land, `direction`-styrt.
 `aggressive` fick LEAK/SABOTAGE, `balanced` fick INFLUENCE/TURN (skyddsräcke 4/GK-A). Golden
 omfryst. Se `docs/ANDRINGSLOGG.md`.
+**P61 BYGGD 2026-09-17**: `FUND_COUP` (nytt `POLITICAL`-op). Lyckandechans mot en lägre bas än
+P60:s INTEL-familj (`fundCoupBaseSuccessPct` 40) minus `counterIntelligence`. "Sällsynt" löst
+med en engångsspärr per faktion (`Faction.coupAttempted`). Vid framgång: `Faction.alignment`
+flippas (fältets FÖRSTA skrivare, fynd 1.2 — en neutral faktion skjuts till en fast nivå i
+stället), den gamla regimens samtliga kontrakt annulleras (spelarens OCH rivalers), och en
+TIDSBEGRÄNSAD förköpsrätt sätts (`preferredSupplierUntilTurn`, `factions.ts`s nya
+`expirePreferredSupplier`) — `DESIGN.md` §13:s "förköpsrätt i fem år" skrevs om till fem TURER
+i samma commit (GK-B, avsnitt 10 punkt 6, med loggrad). Vid misslyckande: `counterIntelligence`
+och `relationToPlayer` skadas permanent. `aggressive` fick `fundCoupWeakestCounterIntelligence`
+(skyddsräcke 4/GK-A). Golden VERIFIERAD (ingen omfrysning krävdes — kontrollerat, inte
+antaget). Se `docs/ANDRINGSLOGG.md`.
 P53 är därför delad i **P53a**
 (scenariodata: `materielNeed` seedas till `orderTriggerThreshold` vid start, inte 0 — **BYGGD
 2026-09-17**: `state.ts`, golden omfryst, härnessmätning n=30/botpolicy bekräftar första bokförda

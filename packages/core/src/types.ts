@@ -385,6 +385,19 @@ export interface Faction {
   // (avsnitt 3.4: "politiken ska vara en arena där spelaren kan förlora mot
   // någon annan"). `undefined` = ingen bonus.
   preferredSupplier?: 'player' | RivalId
+  // P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4): en lyckad FUND_COUP sätter
+  // BÅDA `preferredSupplier`/detta fält tillsammans — "förköpsrätt" som
+  // upphör efter `fundCoupPreferredSupplierTurns` (GK-B, avsnitt 10 punkt 6:
+  // DESIGN.md §13:s "fem år" skrevs om till fem TURER), läst och rensat av
+  // factions.ts:s expirePreferredSupplier. `undefined`/`null` = P57:s
+  // ursprungliga, ORÄNDSADE `preferredSupplier` (permanent tills en ny
+  // PolicyDecision skriver över den) — den här expiry-mekaniken är alltså
+  // OPT-IN, inte en bakåtgående ändring av P57:s beteende.
+  preferredSupplierUntilTurn?: number | null
+  // P61: "stor, sällsynt" — en kupp kan bara FÖRSÖKAS en gång per faktion
+  // och parti, vinst eller förlust. Enklaste, mest bokstavliga läsningen av
+  // "sällsynt" som inte kräver en gissad nedkylningslängd.
+  coupAttempted?: boolean
   // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1), ordagrant: "samma form som
   // RivalHouse.relations" — land-till-land, inte land-till-spelare
   // (relationToPlayer, ovan, är ett helt separat fält). Nyckel: en annan
@@ -629,6 +642,13 @@ export type PlayerAction =
   // FAVOUR kostar `marginCost`, inte `spend` — "det enda verbet i spelet som inte
   // kostar pengar" (avsnitt 3.3) ska inte kunna bokföras mot treasury av misstag.
   | { type: 'POLITICAL'; op: 'STAGE_INCIDENT' | 'BACK_CHANNEL'; targetFactionId: FactionId; spend: Money }
+  // P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4): FUND_COUP har samma FORM
+  // (targetFactionId + spend, rör ett LAND, ingen person) som STAGE_INCIDENT/
+  // BACK_CHANNEL, men en EGEN unionsmedlem — samma "delad form, egen op"-
+  // uppdelning som BRIBE/FUND_CAMPAIGN har mot FAVOUR, så `applyPolitical`s
+  // switch kan dispatcha FUND_COUP till sin egen funktion utan att bredda
+  // `applyFactionTargetedPolitical`s Extract-signatur.
+  | { type: 'POLITICAL'; op: 'FUND_COUP'; targetFactionId: FactionId; spend: Money }
   | { type: 'POLITICAL'; op: 'BRIBE' | 'FUND_CAMPAIGN'; officialId: OfficialId; spend: Money }
   | { type: 'POLITICAL'; op: 'FAVOUR'; officialId: OfficialId; marginCost: Money }
   // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "betala för att flytta en
@@ -659,7 +679,7 @@ export type PlayerAction =
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
 // P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda. P60 (avsnitt 4.3): INFLUENCE.
-export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_CAMPAIGN' | 'FAVOUR' | 'INFLUENCE'
+export type PoliticalOp = 'BRIBE' | 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_CAMPAIGN' | 'FAVOUR' | 'INFLUENCE' | 'FUND_COUP'
 export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY'
 
 // QUOTE är inte en PlayerAction. Bud ligger i TurnSubmission.bids och kostar inga

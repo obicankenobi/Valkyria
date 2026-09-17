@@ -320,3 +320,16 @@ describe('skyddsräcke 4 (avsnitt 6, GK-A): INFLUENCE/LEAK/SABOTAGE/TURN föreko
     expect(usesTurn).toBe(true)
   })
 })
+
+// P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 6, skyddsräcke 4/GK-A): FUND_COUP är
+// helt nytt.
+describe('skyddsräcke 4 (avsnitt 6, GK-A): FUND_COUP förekommer i minst en botpolicy', () => {
+  it('minst en policy skickar en FUND_COUP-handling när huset har en stor kassabuffert', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    state.house.treasury = 10000000
+    const usesFundCoup = Object.values(POLICIES).some((policy) =>
+      policy(state).actions.some((a) => a.type === 'POLITICAL' && a.op === 'FUND_COUP'),
+    )
+    expect(usesFundCoup).toBe(true)
+  })
+})

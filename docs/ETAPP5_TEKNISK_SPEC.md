@@ -1,15 +1,16 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.10 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60 klara
+**Version 1.0.11 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60/P61 klara
 (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
 11. **5A (P53–P58) klar (2026-09-17, se avsnitt 8) — med två dokumenterade, kvarstående luckor
 (P58:s blockquote: ingen live-utlösare för fallna tjänstemän, `EMBARGO` strukturellt onåbart mot
-måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Front.status`) och P60
-(`INFLUENCE`/`Faction.counterIntelligence`/`LEAK`/`SABOTAGE`/`TURN`) klara samma dag. `P61`
-("kuppen") är nästa steg.**
+måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Front.status`), P60
+(`INFLUENCE`/`Faction.counterIntelligence`/`LEAK`/`SABOTAGE`/`TURN`) och P61 (`FUND_COUP`,
+`DESIGN.md` §13 omskriven i samma commit) klara samma dag. `P62` ("lönnmordet") är nästa
+steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -785,12 +786,35 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > faktiskt skickade). Fullt testsvep grönt (459 tester rotnivå, lint, typecheck, build, e2e). Se
 > `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
-**P61 — kuppen**
+**P61 — kuppen — BYGGD 2026-09-17**
 > `FUND_COUP` enligt 4.4, inklusive den första skrivningen till `Faction.alignment`.
 >
 > *Klart när:* ett test visar att en lyckad kupp ändrar `alignment` och annullerar den gamla
 > regimens kontrakt; ett test visar att en misslyckad höjer `counterIntelligence` permanent;
 > golden omfryst.
+>
+> **Klart:** samtliga två tester skrivna och gröna. `FUND_COUP` (nytt `POLITICAL`-op, samma
+> `targetFactionId`/`spend`-form som `STAGE_INCIDENT`/`BACK_CHANNEL` men en egen unionsmedlem).
+> Lyckandechansen följer P60:s "base − counterIntelligence"-mönster mot en LÄGRE bas
+> (`fundCoupBaseSuccessPct` 40, mot `intelOp`-familjens 90) — "stor" läst som svårare, inte bara
+> dyrare. "Sällsynt" löst med en engångsspärr per faktion (`Faction.coupAttempted`, vinst eller
+> förlust), inte en gissad nedkylningslängd. Vid framgång: `target.alignment` flippas
+> (`Faction.alignment`s FÖRSTA skrivare, fynd 1.2 — en redan neutral faktion skjuts till
+> `fundCoupNeutralAlignmentShift` i stället för en verkningslös 0→0), samtliga den gamla
+> regimens kontrakt annulleras (spelarens OCH varje rivals), och `preferredSupplier`/`
+> relations` sätts med ett UTGÅNGSDATUM (`preferredSupplierUntilTurn`, `factions.ts`s nya
+> `expirePreferredSupplier`) — DESIGN.md §13:s "förköpsrätt i fem år" skrivs om till fem TURER
+> (GK-B, avsnitt 10 punkt 6, uppdaterat i samma commit med loggrad). Vid misslyckande:
+> `counterIntelligence` stiger permanent, `relationToPlayer` skadas permanent. `aggressive`
+> (harness) fick `fundCoupWeakestCounterIntelligence` (skyddsräcke 4/GK-A) — kräver en kassabuffert
+> på 2× `fundCoupCost` innan den ens övervägs, riktad mot den enklaste måltavlan. Sex nya
+> PROVISORISKA balanstal. **Golden VERIFIERAD, inte omfrysning som krävdes:** samtliga tre
+> scriptade partier gav identiska hash-värden — `coupAttempted`/`preferredSupplierUntilTurn` är
+> optionella och oskrivna tills första gången de faktiskt sätts (ingen formändring för de
+> specifika partierna), och `aggressive`s nya kassabuffert (2× 1 000 000) nåddes aldrig av något
+> av de tre scriptade partierna inom sina respektive slutlägen (ingen trajektorieändring). Fullt
+> testsvep grönt (468 tester rotnivå, lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`,
+> 2026-09-17, för hela genomförandet.
 
 **P62 — lönnmordet**
 > `ASSASSINATE` enligt 4.5, med skyddsräcke 3:s typnivåtest i samma commit.
@@ -894,3 +918,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.8 | 2026-09-17 | **P58 mätt — 5A klar med två dokumenterade luckor.** Härnessmätning n=200/`balanced` mot avsnitt 7:s fem 5A-rader: tre träffar (agendan ändrar vinnaren 34,5 % av 15–35 %; minst ett `PolicyDecision` 100 % av >70 %; `FAVOUR` trots bättre alternativ 50,8 % av >40 %) utan att röra `balance.json`/scenariodata. Två strukturella missar, ingen fixad med kalibrering: (1) "tjänsteman byts ut" 0 % — `replaceOfficial` (P54) har aldrig fått en live-utlösare; varken P56 eller P57 byggde den `officials.ts`s egen kommentar förutsatte. (2) `EMBARGO` 100 % (mål 10–30 %) — `Policy` saknar rng (hård regel 2), så `balanced`s `favourBestRelationOfficial` skyddar alltid EXAKT samma tjänsteman oavsett seed, vilket gör den enda `NON_ALIGNMENT`-kvalificerade tjänstemannens EMBARGO strukturellt bimodal (0 eller 100 %, aldrig ett mellanläge) — verifierat, inte gissat. Båda kräver kod, inte data, och byggs INTE i ett "ingen kod"-pass — lämnas dokumenterade, samma linje som P52:s `supplyIndexMaxStep`-fynd | Avsnitt 7:s måltabell fick en "Mätt (P58)"-kolumn och avsnitt 8:s P58-block ett fullt blockquote, per P58:s eget syfte: mäta, kalibrera det som går, dokumentera ärligt det som inte gör det |
 | 1.0.9 | 2026-09-17 | **P59 byggd — länderna ser varandra, 5B påbörjad.** `Faction.relations: Record<FactionId, Pct>` (land-till-land) och `Front.status: 'war' | 'ceasefire' | 'dormant'` (alla scenariofronter startar 'war'). `fronts.ts`/`attrition.ts` gate:ar på `status !== 'war'` -- en ceasefire-front genererar varken stridsförluster eller materielbehov. `relations` faller av leveranser (`deliveries.ts`, symmetriskt) och lyckade `STAGE_INCIDENT` (`political.ts`, mot frontmotståndaren), stiger av `BACK_CHANNEL` och en liten passiv återhämtning varje tur (`factions.ts`). `Front.status`-övergångarna är rena tröskeljämförelser (ingen rng): war->ceasefire vid "FORCED TO SUE FOR PEACE" (tidigare bara en notis, fynd 1.5 -- nu dess FÖRSTA mekaniska konsekvens) eller ömsesidigt höga relationer; ceasefire->war vid hög doomsday eller kollapsade relationer. Nio nya PROVISORISKA balanstal. Golden omfryst -- den största enskilda trajektorieändringen sedan P53b. Fullt testsvep grönt (443 tester rotnivå, lint, typecheck, build, e2e) | Avsnitt 4.1/4.2, avsnitt 8:s P59-block fick en "BYGGD"-rubrik och klart-blockquote, per P59:s eget klart-når |
 | 1.0.10 | 2026-09-17 | **P60 byggd — kampanjen och tjänsten.** `Faction.counterIntelligence: Pct` (nytt; `counterIntelligenceDefault` är både startvärdet och nämnaren i exposure-skalningsformeln). Skalar exposure för ALLA INTEL-operationer med en exponeringseffekt, inklusive det redan byggda `EXPAND` (P18), inte bara de tre nya. `LEAK`/`SABOTAGE`/ `TURN` delar en gemensam lyckandechans (`intelOpBaseSuccessPct - counterIntelligence`) och en gemensam "åker fast"-bestraffning (`markIntelOpCaught`). `LEAK` sänker en rivals `relations[nation]`. `SABOTAGE` sätter `rival.sabotagedUntilTurn` -- fältets FÖRSTA spelarstyrda skrivare, `bidding.ts` hoppade redan över en saboterad rivals bud sedan P25. `TURN` riktas mot ett `Official`: lyckad höjer `relationToPlayer`, misslyckad sänker `standing`. `INFLUENCE` (nytt `POLITICAL`-op, alltid lyckad) flyttar en faktions `publicSupport` eller dess enkelriktade `relations` mot ett annat land, `direction`-styrt. `aggressive` fick LEAK/SABOTAGE, `balanced` fick INFLUENCE/TURN (skyddsräcke 4/GK-A). Tio nya PROVISORISKA balanstal. Golden omfryst. Fullt testsvep grönt (459 tester rotnivå, lint, typecheck, build, e2e) | Avsnitt 4.3, avsnitt 8:s P60-block fick en "BYGGD"-rubrik och klart-blockquote, per P60:s eget klart-når |
+| 1.0.11 | 2026-09-17 | **P61 byggd — kuppen.** `FUND_COUP` (nytt `POLITICAL`-op, samma form som STAGE_INCIDENT/BACK_CHANNEL, egen unionsmedlem). Lyckandechans mot en lägre bas än P60:s INTEL-familj (fundCoupBaseSuccessPct 40) minus counterIntelligence. "Sällsynt" löst med en engångsspärr per faktion (Faction.coupAttempted). Vid framgång: Faction.alignment flippas (fältets FÖRSTA skrivare, fynd 1.2 -- en neutral faktion skjuts till fundCoupNeutralAlignmentShift), den gamla regimens samtliga kontrakt annulleras (spelarens OCH rivalers), och en tidsbegränsad förköpsrätt sätts (preferredSupplierUntilTurn, factions.ts:s nya expirePreferredSupplier). DESIGN.md §13:s "förköpsrätt i fem år" skrevs om till fem TURER i samma commit (GK-B, avsnitt 10 punkt 6, med loggrad). Vid misslyckande: counterIntelligence och relationToPlayer skadas permanent. `aggressive` fick fundCoupWeakestCounterIntelligence (skyddsräcke 4/GK-A). Sex nya PROVISORISKA balanstal. Golden VERIFIERAD (inte omfrysning som krävdes) -- inget av de tre scriptade partierna triggade vare sig fältformändringen eller botens kassabuffert-tröskel. Fullt testsvep grönt (468 tester rotnivå, lint, typecheck, build, e2e) | Avsnitt 4.4, avsnitt 8:s P61-block fick en "BYGGD"-rubrik och klart-blockquote, per P61:s eget klart-når |

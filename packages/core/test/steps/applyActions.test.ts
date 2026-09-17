@@ -708,6 +708,110 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
       ])
     })
   })
+
+  // P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4, DESIGN.md §13): FUND_COUP —
+  // "stor, sällsynt, dyr." Seeds funna genom sökning (samma metod som
+  // stage-incident-seed-0/2).
+  describe('P61: FUND_COUP', () => {
+    it('(P61 klart-når) en lyckad kupp ändrar alignment och annullerar den gamla regimens kontrakt (spelarens OCH rivalers)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const alignmentBefore = rvn.alignment
+      const playerContract = {
+        id: 'contract-1',
+        buyerId: 'rvn',
+        productId: '105mm_field_gun',
+        quantity: 10,
+        unitsDelivered: 0,
+        price: 100000,
+        unitCostAtSigning: 50000,
+        grade: 'A' as const,
+        dueTurn: 10,
+        status: 'active' as const,
+        lateEventId: null,
+        frontId: null,
+      }
+      state.market.contracts = [playerContract]
+      const rival = state.rivals['brandt']!
+      const rivalContract = {
+        id: 'rival-contract-1',
+        buyerId: 'rvn',
+        productId: '105mm_field_gun',
+        quantity: 10,
+        unitsDelivered: 0,
+        dueTurn: 10,
+        status: 'active' as const,
+        lateEventId: null,
+      }
+      rival.contracts = [rivalContract]
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: 'rvn', spend: 1000000 }
+      const { ctx, emitted } = makeCtx(state, [action], 'coup-seed-5')
+      applyActions(ctx)
+
+      expect(rvn.alignment).not.toBe(alignmentBefore)
+      expect(rvn.alignment).toBe(-alignmentBefore)
+      expect(playerContract.status).toBe('voided')
+      expect(rivalContract.status).toBe('voided')
+      expect(rvn.coupAttempted).toBe(true)
+      expect(rvn.preferredSupplier).toBe('player')
+      expect(rvn.preferredSupplierUntilTurn).toBe(state.meta.turn + balance.fundCoupPreferredSupplierTurns)
+      expect(emitted.some((e) => e.headline.includes('SUCCESSFUL COUP'))).toBe(true)
+    })
+
+    it('en kupp mot en redan neutral faktion (alignment 0) skjuter till fundCoupNeutralAlignmentShift, inte 0 igen', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.alignment = 0
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: 'rvn', spend: 1000000 }
+      applyActions(makeCtx(state, [action], 'coup-seed-5').ctx)
+
+      expect(rvn.alignment).toBe(balance.fundCoupNeutralAlignmentShift)
+    })
+
+    it('(P61 klart-når) en misslyckad kupp höjer counterIntelligence permanent och skadar relationToPlayer', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      const alignmentBefore = rvn.alignment
+      const ciBefore = rvn.counterIntelligence
+      const relationBefore = rvn.relationToPlayer
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: 'rvn', spend: 1000000 }
+      const { ctx, emitted } = makeCtx(state, [action], 'coup-seed-0')
+      applyActions(ctx)
+
+      expect(rvn.alignment).toBe(alignmentBefore) // orört — misslyckandet ändrar INTE alignment
+      expect(rvn.counterIntelligence).toBe(ciBefore + balance.fundCoupCaughtCounterIntelligenceGain)
+      expect(rvn.relationToPlayer).toBe(Math.max(0, relationBefore - balance.fundCoupFailureRelationPenalty))
+      expect(rvn.coupAttempted).toBe(true) // spärren gäller vinst ELLER förlust
+      expect(emitted.some((e) => e.headline.includes('COUP ATTEMPT') && e.headline.includes('FAILS'))).toBe(true)
+    })
+
+    it('"sällsynt": en andra FUND_COUP mot samma faktion avvisas, vinst eller förlust', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      state.factions['rvn']!.coupAttempted = true
+
+      const action: PlayerAction = { type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: 'rvn', spend: 1000000 }
+      const { ctx } = makeCtx(state, [action])
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([{ action, reason: 'coup already attempted against this faction' }])
+    })
+
+    it('avvisas för okänd faktion eller ogiltig spend', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const badTarget: PlayerAction = { type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: 'atlantis', spend: 1000000 }
+      const badSpend: PlayerAction = { type: 'POLITICAL', op: 'FUND_COUP', targetFactionId: 'rvn', spend: -1 }
+      const { ctx } = makeCtx(state, [badTarget, badSpend])
+      applyActions(ctx)
+
+      expect(ctx.rejected).toEqual([
+        { action: badTarget, reason: 'unknown target faction' },
+        { action: badSpend, reason: 'invalid spend amount' },
+      ])
+    })
+  })
 })
 
 describe('applyActions — INTEL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.4)', () => {

@@ -58,9 +58,31 @@ export const factions: ResolveStep = (ctx) => {
     }
     if (processLowSupport(faction, emit)) suedForPeace.add(faction.id)
     applyRelationsPassiveRecovery(faction, draft.factions, emit)
+    expirePreferredSupplier(faction, draft.meta.turn, emit)
   }
 
   updateFrontStatuses(draft, suedForPeace, emit)
+}
+
+// P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4): en lyckad FUND_COUP:s
+// "förköpsrätt" har ett utgångsdatum (preferredSupplierUntilTurn, GK-B) —
+// P57:s ursprungliga PolicyDecision-variant satte ALDRIG det fältet, så den
+// är opåverkad (villkoret är false för `undefined`/`null`).
+function expirePreferredSupplier(faction: Faction, turn: number, emit: ResolveContext['emit']): void {
+  if (faction.preferredSupplierUntilTurn == null) return
+  if (turn < faction.preferredSupplierUntilTurn) return
+
+  faction.preferredSupplier = undefined
+  faction.preferredSupplierUntilTurn = undefined
+  emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${faction.name.toUpperCase()}'S PREFERENTIAL TREATMENT EXPIRES`,
+    causeId: null,
+    delta: {},
+    actorIsPlayer: false,
+    subjectId: faction.id,
+  })
 }
 
 // P59 (avsnitt 4.1): "stiger av ... tid" — den ENDA av de fyra drivarna

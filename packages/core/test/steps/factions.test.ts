@@ -370,4 +370,45 @@ describe('factions — materielNeed peacetidspåfyllnad (P34 klart-når, ETAPP3_
       expect(emitted2.some((e) => e.headline.includes('RELATIONS EASE WITH TIME'))).toBe(false)
     })
   })
+
+  // P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4, GK-B): en lyckad FUND_COUPs
+  // "förköpsrätt" har ett utgångsdatum, till skillnad från P57:s permanenta
+  // PREFERRED_SUPPLIER-variant.
+  describe('P61: preferredSupplierUntilTurn (expirePreferredSupplier)', () => {
+    it('preferredSupplier rensas exakt den tur preferredSupplierUntilTurn nås', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.preferredSupplier = 'player'
+      rvn.preferredSupplierUntilTurn = state.meta.turn
+
+      const { ctx, emitted } = makeCtx(state, 'expire-seed')
+      factions(ctx)
+
+      expect(rvn.preferredSupplier).toBeUndefined()
+      expect(rvn.preferredSupplierUntilTurn).toBeUndefined()
+      expect(emitted.some((e) => e.headline.includes('PREFERENTIAL TREATMENT EXPIRES'))).toBe(true)
+    })
+
+    it('preferredSupplier orört före preferredSupplierUntilTurn', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.preferredSupplier = 'player'
+      rvn.preferredSupplierUntilTurn = state.meta.turn + 3
+
+      factions(makeCtx(state, 'expire-seed-2').ctx)
+
+      expect(rvn.preferredSupplier).toBe('player')
+    })
+
+    it('P57s permanenta PREFERRED_SUPPLIER (preferredSupplierUntilTurn aldrig satt) rensas ALDRIG', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const rvn = state.factions['rvn']!
+      rvn.preferredSupplier = 'brandt'
+      // preferredSupplierUntilTurn lämnas undefined — P57:s ursprungliga beteende.
+
+      factions(makeCtx(state, 'expire-seed-3').ctx)
+
+      expect(rvn.preferredSupplier).toBe('brandt')
+    })
+  })
 })

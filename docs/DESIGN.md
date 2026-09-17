@@ -489,6 +489,14 @@ inblandad. Misslyckad attribution pekar tillbaka på dig.
 hos den gamla regimen, förköpsrätt i fem år. Vid misslyckande: förlorade pengar, larmad
 kontraspionage, permanent skadad relation.
 
+> **Ändrat i P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4/10 punkt 6, 2026-09-17):** byggdes i etapp 5,
+> inte etapp 2 (den ursprungliga etappmärkningen ovan är alltså historisk, inte längre aktuell —
+> se ETAPP5_TEKNISK_SPEC.md:s avsnitt 1.2/1.7-fynd för varför `alignment` och kupp-verbet legat
+> obyggda så länge). "Förköpsrätt i fem år" (tjugo turer, ett helt `INDOCHINA_SLICE`-parti) skrevs
+> om till fem TURER (GK-B: "varje ny mekanik ska ha en avläsbar effekt inom fem turer") —
+> ett löfte som varar längre än partiet är en slutscen, inte en mekanik spelaren kan räkna på.
+> Se `docs/ANDRINGSLOGG.md` för hela resonemanget.
+
 `BACK CHANNEL` — den enda handling som sänker `DOOMSDAY` mycket. Kostar en executive action och
 stora pengar. Spelet måste göra det frestande att skjuta upp den.
 

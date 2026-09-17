@@ -58,6 +58,7 @@ interface BotTuningBalance {
   gradePriceWeightThreshold: number
   brokerRelationThreshold: number
   brokerIntegrityThreshold: number
+  fundCoupCost: number
 }
 const BOT_TUNING_BALANCE = balanceData as unknown as BotTuningBalance
 
@@ -73,6 +74,10 @@ export const BOT_BALANCE = {
   // separat bot-gissning.
   brokerRelationThreshold: BOT_TUNING_BALANCE.brokerRelationThreshold,
   brokerIntegrityThreshold: BOT_TUNING_BALANCE.brokerIntegrityThreshold,
+  // P61 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.4, GK-A/skyddsräcke 4): samma
+  // kostnad political.ts:s FUND_COUP-gren faktiskt drar — policies.ts
+  // budgeterar mot EXAKT samma tal, inte en separat bot-gissning.
+  fundCoupCost: BOT_TUNING_BALANCE.fundCoupCost,
 } as const
 
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per
