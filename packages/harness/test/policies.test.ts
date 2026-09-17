@@ -270,3 +270,20 @@ describe('skyddsräcke 4 (avsnitt 6, GK-A): FUND_CAMPAIGN och FAVOUR förekommer
     expect(usesFavour).toBe(true)
   })
 })
+
+// P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 6, skyddsräcke 4/GK-A): BROKER var den
+// sista tysta grenen (avsnitt 1.10/3.5) — samma krav, samma mönster som P56.
+// relationToPlayer/integrity höjs uttryckligen (ett fräscht parti börjar under
+// BOT_BALANCE.brokerRelationThreshold för alla, se politics.ts:s egen
+// kommentar om varför relationToPlayer aldrig stiger av sig själv).
+describe('skyddsräcke 4 (avsnitt 6, GK-A): BROKER förekommer i minst en botpolicy', () => {
+  it('minst en policy skickar en BROKER-handling när en tjänsteman är gynnsam', () => {
+    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    for (const official of Object.values(state.officials)) {
+      official.relationToPlayer = 100
+      official.integrity = 100
+    }
+    const usesBroker = Object.values(POLICIES).some((policy) => policy(state).actions.some((a) => a.type === 'BROKER'))
+    expect(usesBroker).toBe(true)
+  })
+})

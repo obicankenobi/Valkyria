@@ -89,17 +89,71 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
     ])
   })
 
-  it('BROKER förblir en helt obyggd no-op (ingen prompt äger den ännu) — men konsumerar en actionPoint', () => {
+  // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5): BROKER byggd — den sista tysta
+  // grenen. Avgörs av köparens procurement-tjänsteman (relationToPlayer +
+  // integrity), förbi computeScore helt, INTE av anbudsformeln.
+  it('(P57) BROKER går igenom när procurement-tjänstemannens relation och integrity når över tröskeln: direktkontrakt, standing/scandalRisk drabbas', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.actionPoints = 2
+    const official = state.officials['official-rvn-procurement']!
+    official.relationToPlayer = 60 // >= brokerRelationThreshold (50); integrity 55 >= brokerIntegrityThreshold (40) redan i scenariodata
+    const standingBefore = official.standing
+    const scandalBefore = official.scandalRisk
+
+    const action: PlayerAction = { type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 100000 }
+    const { ctx, emitted } = makeCtx(state, [action])
+    applyActions(ctx)
+
+    expect(ctx.rejected).toEqual([])
+    expect(state.market.contracts).toHaveLength(1)
+    const contract = state.market.contracts[0]!
+    expect(contract.buyerId).toBe('rvn')
+    expect(contract.productId).toBe('105mm_field_gun')
+    expect(contract.quantity).toBe(10)
+    expect(contract.price).toBe(100000)
+    expect(contract.grade).toBe('A')
+    expect(contract.status).toBe('active')
+    expect(contract.frontId).toBeNull()
+    expect(official.standing).toBe(standingBefore - balance.brokerStandingCost)
+    expect(official.scandalRisk).toBe(scandalBefore + balance.brokerScandalRiskGain)
+    expect(emitted.some((e) => e.headline.includes('BROKERS A DIRECT DEAL'))).toBe(true)
+  })
+
+  it('(P57) BROKER avvisas ("official will not broker this deal") när tjänstemannens relation är under tröskeln — hård regel 6', () => {
     const state = createInitialState('indochina-slice', 'seed')
     state.house.actionPoints = 2
     const before = JSON.parse(JSON.stringify(state.house)) as typeof state.house
 
-    const { ctx, emitted } = makeCtx(state, [{ type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 100000 }])
+    const action: PlayerAction = { type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 100000 }
+    const { ctx, emitted } = makeCtx(state, [action])
     applyActions(ctx)
 
-    expect(state.house).toEqual(before) // ingen ekonomisk effekt
-    expect(ctx.rejected).toEqual([]) // inte AVVISAD (ogiltig) — bara aldrig byggd
+    expect(state.house).toEqual(before)
+    expect(state.market.contracts).toEqual([])
+    expect(ctx.rejected).toEqual([{ action, reason: 'official will not broker this deal' }])
     expect(emitted).toEqual([])
+  })
+
+  it('(P57) BROKER avvisas för okänd köpare, ogiltig quantity/price och okänd produkt', () => {
+    const state = createInitialState('indochina-slice', 'seed')
+    state.house.actionPoints = 10
+    const official = state.officials['official-rvn-procurement']!
+    official.relationToPlayer = 100 // hade annars godkänts — isolerar de fyra valideringarna
+
+    const badBuyer: PlayerAction = { type: 'BROKER', buyerId: 'nope', productId: '105mm_field_gun', quantity: 10, price: 100000 }
+    const badQuantity: PlayerAction = { type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: -1, price: 100000 }
+    const badPrice: PlayerAction = { type: 'BROKER', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 10, price: 0 }
+    const badProduct: PlayerAction = { type: 'BROKER', buyerId: 'rvn', productId: 'not_a_real_product', quantity: 10, price: 100000 }
+    const { ctx } = makeCtx(state, [badBuyer, badQuantity, badPrice, badProduct])
+    applyActions(ctx)
+
+    expect(state.market.contracts).toEqual([])
+    expect(ctx.rejected).toEqual([
+      { action: badBuyer, reason: 'unknown buyer faction' },
+      { action: badQuantity, reason: 'invalid quantity' },
+      { action: badPrice, reason: 'invalid price' },
+      { action: badProduct, reason: 'unknown product' },
+    ])
   })
 
   it('(P17 klart-när) en fjärde handling avvisas med "no executive actions remaining" när chiefOfStaff <= 70 (3 actionPoints)', () => {

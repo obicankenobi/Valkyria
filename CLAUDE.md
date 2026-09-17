@@ -44,8 +44,8 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **P53 (P53a+P53b+P53c), P54, P55 och P56 klara (2026-09-17), P57 är
-nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **P53 (P53a+P53b+P53c), P54, P55, P56 och P57 klara
+(2026-09-17), P58 är nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-09-17**: `Official`/
@@ -64,7 +64,20 @@ oförändrad, skyddsräcke 4 intakt). `applyActions.ts` (568 rader) sprängdes �
 till ny `resolve/political.ts`, ner till 427 rader (samma mönster som P23:s `crisis.ts`/
 `upkeep.ts`). BRIBE riktades om (relationsvinst skalad mot låg integritet, höjer `scandalRisk`,
 taket nu per tjänsteman). FUND_CAMPAIGN/FAVOUR nya — vardera en bot (skyddsräcke 4/GK-A).
-Golden omfryst, se `docs/ANDRINGSLOGG.md`) och 5B (länder som aktörer — `Faction.
+Golden omfryst, se `docs/ANDRINGSLOGG.md`. **P57 BYGGD 2026-09-17**: nytt steg `politics.ts`
+(mellan `factions`/`heat`, ägarbeslutet) — ett fast, PROVISORISKT agenda→`PolicyDecision`-schema
+(REARM→TENDER_REFORM, AUSTERITY→PRICE_CAP, MODERNISE→LICENCE_REVIEW, NON_ALIGNMENT→EMBARGO,
+SELF_ENRICHMENT→PREFERRED_SUPPLIER); `EMBARGO` är `Faction.embargoed`s FÖRSTA skrivare (fynd
+1.7); `PREFERRED_SUPPLIER` går i den här triggern alltid till en rival, aldrig spelaren.
+`BROKER` byggd (den sista helt tysta grenen) — direktkontrakt förbi `computeScore`, avgjort av
+köparens procurement-tjänstemans relation/integrity; `bidding.ts` fick en poängbonus adderad
+EFTER `computeScore` (skyddsräcke 2 intakt). **Genuint fynd under bygget**: `Official.
+relationToPlayer` startar på 0 för alla, så en obehandlad grind gjorde "ohörsammad" sant redan
+tur 1 och bröt två av etapp 3/4:s gröna invarianttester (skyddsräcke 5) — fixat med ett nytt
+PROVISORISKT balanstal `policyDecisionMinTurn` (4). `aggressive` (harness) fick
+`brokerFavourableDeal` (skyddsräcke 4/GK-A). Golden omfryst, se `docs/ANDRINGSLOGG.md`. **5A:s
+kodbygge (P54–P57) är därmed klart — `P58` (balanspass, ingen kod) är sista steget i 5A.**) och
+5B (länder som aktörer — `Faction.
 relations`, `Front.status`, `FUND_COUP`, `ASSASSINATE`, P59–P63). **P53 reviderad 2026-09-17,
 innan den kördes** (ägaren bad om en långsiktig lösning på `BUYOUT`-kaskaden, inte en tillfällig
 fix) — mätning visade att en ren `boardTarget`-omkalibrering, specens ursprungliga plan, inte

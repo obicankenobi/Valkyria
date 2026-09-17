@@ -7,7 +7,7 @@
 // och alla fyra INTERNAL/INTEL/POLITICAL-operationer avsnitt 10.2 nämner utöver det
 // är no-ops fram till P17/P18 — samma mönster som P3:s SUBMISSION_WITH_LOAN_ATTEMPT:
 // spec-ordagrant nu, och sant den dag en framtida prompt kopplar in dem.
-import { BOT_BALANCE, bidEstimate, getProduct } from '@seventh-front/core'
+import { BOT_BALANCE, bidEstimate, computeUnitCostNow, getProduct } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerAction, TurnSubmission } from '@seventh-front/core'
 
 export type Policy = (state: GameState) => TurnSubmission
@@ -99,6 +99,38 @@ function favourBestRelationOfficial(state: GameState, actions: PlayerAction[]): 
     if (official.relationToPlayer > best.relationToPlayer) best = official
   }
   actions.push({ type: 'POLITICAL', op: 'FAVOUR', officialId: best.id, marginCost: FAVOUR_MARGIN_COST })
+}
+
+// P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5/6, GK-A/skyddsräcke 4): "ingen bot har
+// någonsin anropat BROKER" (avsnitt 1.10) — samma genomgående krav som P56:s
+// FUND_CAMPAIGN/FAVOUR. Prövar mot EXAKT samma två trösklar som applyActions.ts:s
+// BROKER-gren faktiskt avgör mot (BOT_BALANCE.brokerRelationThreshold/
+// -IntegrityThreshold), inte en separat bot-gissning. m1_rifle — samma val som
+// crisis.ts:s krisköp (den enda produkten varje hus/faktion är techLevel-
+// behörig för, se den filens kommentar); BROKER går förbi anbudsformeln helt
+// (spec 3.5) så det finns ingen referensprispunkt att bjuda mot — priset sätts
+// i stället till egen styckkostnad × en fast marginal.
+const BROKER_QUANTITY = 50
+const BROKER_MARGIN_MULTIPLIER = 1.3
+
+function brokerFavourableDeal(state: GameState, actions: PlayerAction[]): void {
+  const officials = Object.values(state.officials).filter(
+    (o) =>
+      o.status === 'active' &&
+      o.post === 'procurement' &&
+      o.relationToPlayer >= BOT_BALANCE.brokerRelationThreshold &&
+      o.integrity >= BOT_BALANCE.brokerIntegrityThreshold,
+  )
+  if (officials.length === 0) return
+  let chosen = officials[0]!
+  for (const official of officials.slice(1)) {
+    if (official.relationToPlayer > chosen.relationToPlayer) chosen = official
+  }
+
+  const product = getProduct('m1_rifle')
+  const unitCost = computeUnitCostNow(product, 'A', state.market.commodities)
+  const price = Math.round(unitCost * BROKER_QUANTITY * BROKER_MARGIN_MULTIPLIER)
+  actions.push({ type: 'BROKER', buyerId: chosen.factionId, productId: product.id, quantity: BROKER_QUANTITY, price })
 }
 
 function takeLoan(amount: number, actions: PlayerAction[]): void {
@@ -209,6 +241,7 @@ export const aggressive: Policy = (state) => {
   const actions: PlayerAction[] = []
   stageIncidentIfCool(state, actions)
   fundCampaignForWeakestOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
+  brokerFavourableDeal(state, actions) // P57, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit, actions)
 
   return { standingOrders: [], bids, actions }

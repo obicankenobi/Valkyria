@@ -150,10 +150,20 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // nu skalad mot integrity, höjer scandalRisk); FUND_CAMPAIGN/FAVOUR är nya op
   // policies.ts:s aggressive/balanced nu skickar in (GK-A) -- genuin
   // trajektorieändring, inte bara formen. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P57 (avsnitt 3.4/3.5/8, samma klart-når-krav). Faction fick
+  // tre nya fält (trueBudgetCapFactor, weightsOverride, preferredSupplier) och
+  // Official fick hasIssuedPolicyDecision -- ny form. Det nya politics-steget
+  // (mellan factions och heat) kan från och med policyDecisionMinTurn (tur 4)
+  // fatta ett PolicyDecision för varje tjänsteman vars agenda är ohörsammad --
+  // EMBARGO/PRICE_CAP/TENDER_REFORM/LICENCE_REVIEW/PREFERRED_SUPPLIER kaskaderar
+  // alla nedströms genom ordergenerering och/eller anbud. aggressive skickar nu
+  // också BROKER (GK-A) när en tjänsteman är gynnsam. Genuin trajektorieändring,
+  // inte bara formen. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1d34b363345790' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2c083d751c256' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1b6498a94af0fe' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1cecfaf15ad5ed' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1d23ec42ebc1fc' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'a31560ca7c2b7' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

@@ -55,6 +55,11 @@ export const bidding: ResolveStep = (ctx) => {
     // om det kom från spelarens alignmentPenalty eller en rivals rivalBlocTerm
     // (samma term, bara två källor, se P24).
     const blocMultiplier = official && official.agenda === 'NON_ALIGNMENT' ? BALANCE.agendaNonAlignmentBlocMultiplier : 1
+    // P57 (avsnitt 3.4): PREFERRED_SUPPLIER — en poängbonus adderad EFTER
+    // computeScore (skyddsräcke 2, formeln själv orörd), till precis den
+    // kandidat (spelaren eller en namngiven rival) som faktionen gynnar.
+    const preferredBonus = (source: 'player' | RivalId): number =>
+      faction && faction.preferredSupplier === source ? BALANCE.preferredSupplierScoreBonus : 0
 
     const playerBids = submission.bids.filter((b) => b.orderId === order.id)
     for (const extra of playerBids.slice(1)) {
@@ -126,7 +131,7 @@ export const bidding: ResolveStep = (ctx) => {
           deliveryTurns: playerBid.deliveryTurns,
           grade: playerBid.grade,
           bribe: playerBid.bribe,
-          score,
+          score: score + preferredBonus('player'),
         })
       }
     }
@@ -170,7 +175,14 @@ export const bidding: ResolveStep = (ctx) => {
         reputation: rival.reputation,
         blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) * blocMultiplier : 0,
       })
-      candidates.push({ source: rivalId, price: rivalBid.price, deliveryTurns: rivalBid.deliveryTurns, grade: 'A', bribe: 0, score })
+      candidates.push({
+        source: rivalId,
+        price: rivalBid.price,
+        deliveryTurns: rivalBid.deliveryTurns,
+        grade: 'A',
+        bribe: 0,
+        score: score + preferredBonus(rivalId),
+      })
     }
 
     const winner = pickWinner(candidates)

@@ -7,8 +7,8 @@
 // medvetna no-ops, avvisade med 'not implemented in this stage', avsnitt 8.4).
 // BROKER och MARKET förblev helt obyggda i etapp 1,5 — ingen prompt i avsnitt
 // 10 ägde dem där. P51 (ETAPP4_TEKNISK_SPEC.md avsnitt 4.5) bygger MARKET
-// (BUY_FORWARD/RELEASE); BROKER förblir en no-op som konsumerar en
-// actionPoint, se filens slut.
+// (BUY_FORWARD/RELEASE). P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5) bygger BROKER
+// — den sista tysta grenen, se filens slut.
 //
 // P20 bygger CRISIS (avsnitt 9). Till skillnad från alla andra PlayerAction-typer
 // KOSTAR den ingen actionPoint (krisen är inte valfri) och hanteras därför i en
@@ -31,9 +31,12 @@ import { resolvePendingCrisis } from '../crisis.js'
 import { applyPolitical } from '../political.js'
 import { round } from '../../money.js'
 import { deriveSupplyCostIndex } from './supply.js'
+import { allProducts, computeUnitCostNow, getProduct } from '../../pricing.js'
+import { findOfficial } from '../../officials.js'
 import type { ResolveStep } from '../index.js'
 import type {
   Commodity,
+  Contract,
   Money,
   OfficialId,
   ProductionLine,
@@ -57,6 +60,12 @@ interface Balance {
   marketReleaseCommodityImpactPerMoney: number
   supplyIndexMin: number
   supplyIndexMax: number
+  // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5): BROKER.
+  brokerRelationThreshold: number
+  brokerIntegrityThreshold: number
+  brokerStandingCost: number
+  brokerScandalRiskGain: number
+  brokerDeliveryTurns: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -421,7 +430,81 @@ export const applyActions: ResolveStep = (ctx) => {
       continue
     }
 
-    // BROKER: se filens huvudkommentar — helt obyggd, men har redan konsumerat
-    // en actionPoint ovan.
+    if (action.type === 'BROKER') {
+      // P57 (avsnitt 3.5): "förbi computeScore helt" — direktkontrakt till ett
+      // pris SPELAREN sätter, avgjort av köparens procurement-tjänsteman
+      // (relationToPlayer + integrity), inte av anbudsformeln. grade hårdkodas
+      // till 'A' — BROKER-handlingen (types.ts) har inget grade-fält, samma
+      // provisoriska val som crisis.ts:s krisköp.
+      const faction = draft.factions[action.buyerId]
+      if (!faction) {
+        rejected.push({ action, reason: 'unknown buyer faction' })
+        continue
+      }
+      if (!Number.isFinite(action.quantity) || action.quantity <= 0) {
+        rejected.push({ action, reason: 'invalid quantity' })
+        continue
+      }
+      if (!Number.isFinite(action.price) || action.price <= 0) {
+        rejected.push({ action, reason: 'invalid price' })
+        continue
+      }
+      if (!allProducts().some((p) => p.id === action.productId)) {
+        rejected.push({ action, reason: 'unknown product' })
+        continue
+      }
+
+      const official = findOfficial(draft, action.buyerId, 'procurement')
+      if (
+        !official ||
+        official.status !== 'active' ||
+        official.relationToPlayer < BALANCE.brokerRelationThreshold ||
+        official.integrity < BALANCE.brokerIntegrityThreshold
+      ) {
+        rejected.push({ action, reason: 'official will not broker this deal' })
+        continue
+      }
+
+      const product = getProduct(action.productId)
+      const contract: Contract = {
+        id: `contract-broker-${action.buyerId}-${draft.meta.turn}-${actionsUsed}`,
+        buyerId: action.buyerId,
+        productId: action.productId,
+        quantity: action.quantity,
+        unitsDelivered: 0,
+        price: action.price,
+        unitCostAtSigning: computeUnitCostNow(product, 'A', draft.market.commodities),
+        grade: 'A',
+        dueTurn: draft.meta.turn + BALANCE.brokerDeliveryTurns,
+        status: 'active',
+        lateEventId: null,
+        // Går inte via en Order — samma fallback som crisis.ts:s krisköp.
+        frontId: null,
+      }
+      draft.market.contracts.push(contract)
+
+      // "en standing-kostnad för henne och en scandalRisk för båda" — henne:
+      // Official.standing/scandalRisk. Spelarsidan: Station.exposure i landet
+      // (House saknar ett House-nivå-scandalRisk-fält, se balance.json:s
+      // _p57_note), samma "ingen station, ingen effekt"-princip som
+      // misattributionExposurePenalty (political.ts).
+      official.standing = Math.max(0, official.standing - BALANCE.brokerStandingCost)
+      official.scandalRisk = Math.min(100, official.scandalRisk + BALANCE.brokerScandalRiskGain)
+      const station = house.stations.find((s) => s.nation === action.buyerId && s.status === 'active')
+      if (station) {
+        station.exposure = Math.min(100, station.exposure + BALANCE.brokerScandalRiskGain)
+      }
+
+      emit({
+        severity: 'headline',
+        scope: 'market',
+        headline: `${house.name.toUpperCase()} BROKERS A DIRECT DEAL WITH ${faction.name.toUpperCase()} — ${product.name.toUpperCase()} × ${action.quantity}`,
+        causeId: null,
+        delta: { price: action.price, standing: -BALANCE.brokerStandingCost, scandalRisk: BALANCE.brokerScandalRiskGain },
+        actorIsPlayer: true,
+        subjectId: action.buyerId,
+      })
+      continue
+    }
   }
 }

@@ -1,11 +1,12 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.6 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c), P54, P55 och P56
+**Version 1.0.7 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c), P54, P55, P56 och P57
 klara (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. **P53 (P53a+P53b+P53c), P54, P55 och P56 klara (2026-09-17, se avsnitt 8). `P57` är nästa steg.**
+11. **P53 (P53a+P53b+P53c), P54, P55, P56 och P57 klara (2026-09-17, se avsnitt 8). `P58` är
+nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -649,13 +650,32 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > Golden omfryst. Fullt testsvep grönt (415 tester, lint, typecheck, build, e2e). Se
 > `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet.
 
-**P57 — politiken slår tillbaka**
+**P57 — politiken slår tillbaka — BYGGD 2026-09-17**
 > `PolicyDecision` enligt 3.4, inklusive `EMBARGO` som första skrivare till `Faction.embargoed`.
 > `BROKER` byggs (3.5).
 >
 > *Klart när:* ett test visar att en ohörsammad agenda leder till ett beslut; ett test visar att
 > `EMBARGO` stoppar faktionens ordrar via den redan byggda kedjan; ett test visar att
 > `PREFERRED_SUPPLIER` kan gå till en rival; golden omfryst.
+>
+> **Klart:** samtliga tre villkor uppfyllda. Nytt steg `politics.ts`, insatt mellan `factions`
+> och `heat` (ägarbeslutet, avsnitt 10 punkt 3). Ett fast, PROVISORISKT 1:1-schema agenda→beslut
+> (`balance.json`s `_p57_note`): REARM→TENDER_REFORM, AUSTERITY→PRICE_CAP, MODERNISE→
+> LICENCE_REVIEW, NON_ALIGNMENT→EMBARGO, SELF_ENRICHMENT→PREFERRED_SUPPLIER. "Tillräcklig
+> standing"/"ohörsammad" operationaliserat mot `standing`/`relationToPlayer`, som redan fanns.
+> PREFERRED_SUPPLIER går i den här triggern alltid till en rival, aldrig spelaren. `BROKER`
+> byggd: direktkontrakt förbi `computeScore` helt, avgjort av köparens procurement-tjänstemans
+> relation/integrity — vid godkännande drabbas hennes `standing`/`scandalRisk` och (husets sida
+> av "en scandalRisk för båda") landets `Station.exposure`. **Ett genuint fynd under bygget:**
+> `Official.relationToPlayer` startar på 0 för alla, så "ohörsammad" var annars sant redan tur
+> 1 för varje tillräckligt högt stående tjänsteman — bröt två av etapp 3/4:s gröna
+> invarianttester (skyddsräcke 5). Fixat med ett nytt PROVISORISKT balanstal
+> `policyDecisionMinTurn` (4) som gate:ar hela steget. `bidding.ts` fick en
+> `preferredSupplierScoreBonus` adderad EFTER `computeScore` (skyddsräcke 2 intakt). `aggressive`
+> (harness) fick `brokerFavourableDeal` (GK-A/skyddsräcke 4). Elva nya PROVISORISKA balanstal.
+> Golden omfryst. Fullt testsvep grönt (core 376 + harness 42 + app 11 = 429 tester, lint,
+> typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och
+> `policyDecisionMinTurn`-fyndet.
 
 **P58 — balanspass 5A**
 > Ingen kod. Härnessen mot avsnitt 7:s 5A-rader. Skruva `balance.json` och scenariodata.
@@ -781,3 +801,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.4 | 2026-09-17 | **P54 byggd — 5A:s ingång, `Official` ersätter `Order.inspectorIntegrity`.** `Official`/`Post`/`Agenda`-typerna (avsnitt 3.1/3.2 — typen nu, viktseffekten i P55), `GameState.officials`, ny `officials.json` (fyra fiktiva tjänstemän per faktion) läst av `state.ts`s nya `buildOfficials`, ny ren modul `officials.ts` (`officialId`/`findOfficial`/`replaceOfficial`). `Order.officialId` ersätter `inspectorIntegrity` — `orders.ts` slår upp köparens `procurement`-tjänsteman i stället för att rulla ett nytt tal per order. `computeScore` (`pricing.ts`) HELT ORÖRD, skyddsräcke 2 pinnat med ett test. `applyActions.ts` medvetet inte rörd (ingen ny `PlayerAction` i P54). Golden omfryst — genuin trajektorieändring, inte bara ny form. Avsnitt 8:s P54-block fick en "BYGGD"-rubrik och klart-blockquote. `P55` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
 | 1.0.5 | 2026-09-17 | **P55 byggd — agendan viktar affären.** `weightsForOrder` (`orders.ts`) ersätter `weightsForPressure` — REARM/AUSTERITY skiftar `order.weights`, en andra viktskiftare vid sidan av `weightPressureShift` (P36). `bestEligibleProduct` fick ett MODERNISE-filter (`techRequired > agendaModerniseTechFloor`). NON_ALIGNMENT fördubblar `blocTerm` i `bidding.ts`/`queries.ts`. SELF_ENRICHMENT krävde ingen ny kod (redan i `officials.json`, P54). Tre nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P55-block fick en "BYGGD"-rubrik och klart-blockquote. `P56` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
 | 1.0.6 | 2026-09-17 | **P56 byggd — att påverka en människa.** `Official.scandalRisk`/`House.favourMarginSpent` nya fält. `PlayerAction`s `POLITICAL`-variant delad i tre (skyddsräcke 3: BRIBE/FUND_CAMPAIGN tar officialId, FAVOUR tar officialId+marginCost, STAGE_INCIDENT/BACK_CHANNEL behåller targetFactionId — `type` oförändrad, skyddsräcke 4 intakt). `applyActions.ts` (568 rader) sprängdes — POLITICAL utbruten till ny `resolve/political.ts` (427 rader kvar), samma mönster som P23. BRIBE riktades om (relationsvinst skalad mot låg integritet, höjer scandalRisk, taket per tjänsteman). FUND_CAMPAIGN/FAVOUR nya, vardera en bot (aggressive/balanced). Golden omfryst. Avsnitt 8:s P56-block fick en "BYGGD"-rubrik och klart-blockquote. `P57` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
+| 1.0.7 | 2026-09-17 | **P57 byggd — politiken slår tillbaka, 5A klar.** Nytt steg `politics.ts` (mellan `factions`/`heat`, ägarbeslutet). Ett fast, PROVISORISKT agenda→`PolicyDecision`-schema; `EMBARGO` är `Faction.embargoed`s FÖRSTA skrivare (fynd 1.7); `PREFERRED_SUPPLIER` går i den här triggern alltid till en rival. `BROKER` byggd (avsnitt 3.5, den sista helt tysta grenen) — direktkontrakt förbi `computeScore`, avgjort av köparens procurement-tjänstemans relation/integrity. `bidding.ts` fick en poängbonus adderad EFTER `computeScore` (skyddsräcke 2 intakt). **Genuint fynd under bygget:** `Official.relationToPlayer` startar på 0 för alla, så en obehandlad grind gjorde "ohörsammad" sant redan tur 1 och bröt två av etapp 3/4:s gröna invarianttester (skyddsräcke 5) — fixat med ett nytt PROVISORISKT balanstal `policyDecisionMinTurn` (4). `aggressive` (harness) fick `brokerFavourableDeal` (GK-A/skyddsräcke 4). Elva nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P57-block fick en "BYGGD"-rubrik och klart-blockquote. **5A:s kodbygge (P54–P57) är därmed klart** — `P58` (balanspass, ingen kod) är sista steget i 5A. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och kalibreringsfyndet |

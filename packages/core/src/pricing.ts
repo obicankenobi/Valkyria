@@ -52,6 +52,9 @@ interface Balance {
   // alignmentPenalty/rivalBlocTerm:s utslag — läst här (delad av bidding.ts och
   // queries.ts, samma skäl som resten av den här filens BALANCE).
   agendaNonAlignmentBlocMultiplier: number
+  // P57 (avsnitt 3.4): PREFERRED_SUPPLIER — en poängbonus adderad EFTER
+  // computeScore (skyddsräcke 2, formeln själv rörs inte), läst av bidding.ts.
+  preferredSupplierScoreBonus: number
 }
 
 export const BALANCE = balanceData as unknown as Balance

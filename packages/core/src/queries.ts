@@ -56,6 +56,8 @@ interface BotTuningBalance {
   passiveMaxConcurrentBids: number
   gradeCashPressureThreshold: number
   gradePriceWeightThreshold: number
+  brokerRelationThreshold: number
+  brokerIntegrityThreshold: number
 }
 const BOT_TUNING_BALANCE = balanceData as unknown as BotTuningBalance
 
@@ -65,6 +67,12 @@ export const BOT_BALANCE = {
   // P31 (avsnitt 6.1): tröskeln för "order.weights.price är högt" i den delade
   // grade-regeln alla fyra botar nu använder, se policies.ts:s chooseGrade.
   gradePriceWeightThreshold: BOT_TUNING_BALANCE.gradePriceWeightThreshold,
+  // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5, GK-A/skyddsräcke 4): samma två
+  // trösklar som applyActions.ts:s BROKER-gren läser — policies.ts prövar
+  // mot EXAKT samma villkor den faktiska handlingen sedan avgörs av, inte en
+  // separat bot-gissning.
+  brokerRelationThreshold: BOT_TUNING_BALANCE.brokerRelationThreshold,
+  brokerIntegrityThreshold: BOT_TUNING_BALANCE.brokerIntegrityThreshold,
 } as const
 
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per

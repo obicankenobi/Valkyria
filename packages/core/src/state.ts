@@ -334,6 +334,8 @@ function buildOfficials(scenario: ScenarioFile): Record<OfficialId, Official> {
         // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): en spelregel (byggs upp av
         // BRIBE), inte scenariodata — se types.ts:s egen kommentar.
         scandalRisk: 0,
+        // P57 (avsnitt 3.4): ingen tjänsteman har fattat ett beslut vid start.
+        hasIssuedPolicyDecision: false,
       }
     }
   }

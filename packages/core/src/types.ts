@@ -370,6 +370,21 @@ export interface Faction {
   // embargoed i den här etappen ändå). Frånvarande = embargot ger inget
   // råvarutryck, bara sin befintliga ekonomiska smäll.
   commoditySources?: Commodity[]
+  // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.4): tre av `PolicyDecision`s fem
+  // effekter skriver hit. `embargoed` (ovan) och `Station.exposure` (LICENCE_
+  // REVIEW) hade redan färdiga fält — dessa tre saknades.
+  //
+  // PRICE_CAP: ett tak på `orders.ts`s `trueBudgetFactor`-slump, permanent för
+  // faktionen tills en framtida prompt river det. `undefined` = inget tak.
+  trueBudgetCapFactor?: number
+  // TENDER_REFORM: ERSÄTTER (inte skiftar) `orders.ts`s pressure/agenda-vikter
+  // för faktionens ordrar, permanent. `undefined` = ordinarie vikter gäller.
+  weightsOverride?: { price: number; delivery: number; relationship: number }
+  // PREFERRED_SUPPLIER: en poängbonus i bidding.ts till EN vinnare —
+  // `'player'` eller en specifik rivals id. Kan gå till en rival, avsiktligt
+  // (avsnitt 3.4: "politiken ska vara en arena där spelaren kan förlora mot
+  // någon annan"). `undefined` = ingen bonus.
+  preferredSupplier?: 'player' | RivalId
 }
 
 // P54 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.1), ordagrant. Ersätter
@@ -397,7 +412,20 @@ export interface Official {
   // Startar på 0 för alla — en spelregel (byggs upp av spelarens BRIBE, inte
   // scenariodata), inte något officials.json sätter per tjänsteman.
   scandalRisk: Pct
+  // P57 (avsnitt 3.4): en enda PolicyDecision per tjänsteman — inte en ny per
+  // tur så fort villkoren håller i sig (annars re-triggar t.ex. PREFERRED_
+  // SUPPLIER en ny slumpad mottagare varje tur). PROVISORISKT (specen ger
+  // ingen kadens) — hon har "använt sitt inflytande" en gång, sedan är hon
+  // tyst tills en framtida prompt bygger en verklig återhämtning.
+  hasIssuedPolicyDecision: boolean
 }
+
+// P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.4), tabellen ordagrant. Rent
+// beskrivande — TAS ALDRIG emot som spelarhandling, bara emitterad i
+// WireEvent-rubriken för att namnge vilket beslut som fattades. Själva
+// EFFEKTEN skrivs direkt till Faction/Station-fälten tabellen namnger (se
+// politics.ts), inte till en lagrad PolicyDecision-post i state.
+export type PolicyDecision = 'EMBARGO' | 'PRICE_CAP' | 'TENDER_REFORM' | 'LICENCE_REVIEW' | 'PREFERRED_SUPPLIER'
 
 export interface Theatre {
   id: string

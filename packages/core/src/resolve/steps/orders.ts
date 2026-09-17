@@ -72,6 +72,9 @@ interface NewOrderParams {
   // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): vilken front leveransen är avsedd
   // för — null om ingen känd/vald (SCRIPTED).
   frontId: FrontId | null
+  // P57 (avsnitt 3.4): PRICE_CAP skriver Faction.trueBudgetCapFactor — ett
+  // permanent tak på faktorn nedan, `null` = inget tak (ordinarie intervall).
+  trueBudgetCapFactor: number | null
 }
 
 function buildOrder(p: NewOrderParams): Order {
@@ -80,8 +83,12 @@ function buildOrder(p: NewOrderParams): Order {
   // trueBudget: köparens verkliga tak, ett stycke över/under referencePrice.
   // statedBudget: den siffra köparen UPPGER — "kan vara lögn" (spec 2.4) — alltid
   // en andel av trueBudget, aldrig högre.
-  const trueBudgetFactor =
+  const rolledTrueBudgetFactor =
     p.rng.next() * (BALANCE.trueBudgetMaxFactor - BALANCE.trueBudgetMinFactor) + BALANCE.trueBudgetMinFactor
+  // PRICE_CAP (avsnitt 3.4): "trueBudget-faktorerna för faktionen" — ett tak,
+  // aldrig ett golv. Draget slumpas ALLTID (rngCursor rör sig identiskt oavsett
+  // tak — samma determinism-krav som resten av filen), bara resultatet klampas.
+  const trueBudgetFactor = p.trueBudgetCapFactor === null ? rolledTrueBudgetFactor : Math.min(rolledTrueBudgetFactor, p.trueBudgetCapFactor)
   const trueBudget = round(referencePrice * trueBudgetFactor)
 
   const statedBudgetFactor =
@@ -188,7 +195,18 @@ function clamp01(value: number): number {
 // deras mekaniska effekt ligger i produktvalet (bestEligibleProduct), blocTerm
 // (bidding.ts/queries.ts) respektive redan i officials.json:s startdata (låg
 // integrity by construction, se filens P54-kommentar).
-function weightsForOrder(pressure: number, agenda: Agenda): { price: number; delivery: number; relationship: number } {
+//
+// P57 (avsnitt 3.4): TENDER_REFORM skriver Faction.weightsOverride, en
+// permanent ERSÄTTNING (inte ett tredje skift) — kollas FÖRST, samma
+// "senaste, starkaste regeln vinner" som embargo/bankrutt redan avgör hela
+// utlysningen (se anropsställena).
+function weightsForOrder(
+  pressure: number,
+  agenda: Agenda,
+  weightsOverride?: Faction['weightsOverride'],
+): { price: number; delivery: number; relationship: number } {
+  if (weightsOverride) return { ...weightsOverride }
+
   const pressureShift = pressure * NEED_BALANCE.weightPressureShift
   const weights = {
     price: BALANCE.bidWeightsDefault.price - pressureShift,
@@ -245,11 +263,12 @@ export const orders: ResolveStep = (ctx) => {
         competingRivals: allRivalIds,
         heat,
         supplyCostIndex: draft.market.supplyCostIndex,
-        weights: weightsForOrder(pressure, official.agenda),
+        weights: weightsForOrder(pressure, official.agenda, buyer.weightsOverride),
         rng,
         officialId: official.id,
         reason: { kind: 'SCRIPTED' },
         frontId: null,
+        trueBudgetCapFactor: buyer.trueBudgetCapFactor ?? null,
       })
       draft.market.openOrders.push(order)
       emit({
@@ -295,7 +314,11 @@ export const orders: ResolveStep = (ctx) => {
     // P54 (avsnitt 3.1): samma "faktionens ordrar hör till dess procurement-
     // tjänsteman"-motivering som scriptade ordrar ovan.
     const official = findOfficial(draft, request.factionId, 'procurement')!
-    const weights = weightsForOrder(computePressureForFront(draft, request.factionId, request.frontId), official.agenda)
+    const weights = weightsForOrder(
+      computePressureForFront(draft, request.factionId, request.frontId),
+      official.agenda,
+      faction.weightsOverride,
+    )
     const issuedOrder = tryIssueOrder(
       ctx,
       request.factionId,
@@ -416,6 +439,7 @@ function tryIssueOrder(
     officialId: official.id,
     reason,
     frontId,
+    trueBudgetCapFactor: faction.trueBudgetCapFactor ?? null,
   })
   draft.market.openOrders.push(order)
   return { order, product, quantity }
@@ -466,7 +490,11 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
   // P54 (avsnitt 3.1): samma "faktionens ordrar hör till dess procurement-
   // tjänsteman"-motivering som scriptade/namngivna ordrar ovan.
   const official = findOfficial(draft, factionId, 'procurement')!
-  const weights = weightsForOrder(frontId !== null ? computePressureForFront(draft, factionId, frontId) : 0, official.agenda)
+  const weights = weightsForOrder(
+    frontId !== null ? computePressureForFront(draft, factionId, frontId) : 0,
+    official.agenda,
+    faction.weightsOverride,
+  )
 
   // Egen budget (maxOrdersPerFactionPerTurn), separat från steg 2:s namngivna
   // ersättningsordrar — se steg 2:s motivering (P40, avsnitt 5.4).

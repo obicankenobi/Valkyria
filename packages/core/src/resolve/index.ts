@@ -28,6 +28,7 @@ import { deliveries } from './steps/deliveries.js'
 import { fronts } from './steps/fronts.js'
 import { attrition } from './steps/attrition.js'
 import { factions } from './steps/factions.js'
+import { politics } from './steps/politics.js'
 import { heat } from './steps/heat.js'
 import { supply } from './steps/supply.js'
 import { doomsday } from './steps/doomsday.js'
@@ -56,6 +57,9 @@ const PIPELINE: ResolveStep[] = [
   fronts, // frontresolve + attribution
   attrition, // materielförslitning — ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 3, insatt direkt efter fronts (P33)
   factions, // ekonomi, publicSupport, bankrutt
+  // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 10 punkt 3, beslutat vid antagandet):
+  // nytt steg, ordagrant placerat mellan factions och heat.
+  politics, // en tjänsteman med tillräcklig standing vars agenda är ohörsammad fattar ett beslut
   heat, // per teater
   supply, // supplyCostIndex — ETAPP1_5_TEKNISK_SPEC.md avsnitt 3, insatt mellan heat och doomsday
   doomsday, // avkylning, trösklar, krisevent
