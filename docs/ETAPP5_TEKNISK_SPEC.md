@@ -4,7 +4,7 @@
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. `P53a` är nästa steg.
+11. `P53a` klar (2026-09-17, se avsnitt 8). `P53b` är nästa steg.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -528,7 +528,7 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > av tre prompter. Ingen av dem rör `boardTarget.threshold` — måltalet (2×) mättes vara rätt,
 > det var vad som mättes mot det som saknade grund.
 
-**P53a — arméerna startar mitt i kriget, inte i fred**
+**P53a — arméerna startar mitt i kriget, inte i fred — BYGGD 2026-09-17**
 > `Faction.materielNeed[cat]` seedas till `balance.json`s `orderTriggerThreshold[cat]` för varje
 > faktion vid scenariostart (`state.ts`), inte 0. Ingen kod i `orders.ts`/`factions.ts` rörs —
 > bara startvärdet. Scenariodata, inte en ny mekanik.
@@ -537,6 +537,15 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > `orderTriggerThreshold` för samtliga kategorier vid tur 0; en härnessmätning (n≥30, samtliga
 > fyra botpolicyer) visar att första bokförda intäkten sker mätbart tidigare än före ändringen;
 > golden omfryst i denna commit och ingen annan, med loggrad.
+>
+> **Klart:** samtliga tre villkor uppfyllda. Två nya tester i `state.test.ts` (exakt
+> `orderTriggerThreshold` per faktion, oberoende objekt per faktion). Härnessmätning n=30/
+> botpolicy, första bokförda intäkt: `passive` tur 10,00→7,60 (var 29/30 utan intäkt alls →
+> 0/30), `aggressive` 7,21→3,33, `balanced` 7,73→3,50, `capacity` 7,73→3,57 — mätbart tidigare
+> för alla fyra. `golden.test.ts`s tre `expectedHash` omfrysta, `fixtures/balance.frozen.json`
+> orörd (`orderTriggerThreshold` fanns redan i `balance.json`). Fullt testsvep grönt (391
+> tester, lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela
+> mätningen.
 
 **P53b — styrelsen mäter orderboken, inte bara kassan**
 > `board.ts`s `updateProgressSnapshot`: `progressSnapshot` = (bokförd intäkt + kontrakterat,

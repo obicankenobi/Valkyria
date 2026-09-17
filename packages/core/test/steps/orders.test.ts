@@ -148,6 +148,12 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     it('ett behov under orderTriggerThreshold hoppas över — ingen order, behovet orört', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const rvn = state.factions['rvn']!
+      // P53a (ETAPP5_TEKNISK_SPEC.md avsnitt 2.1): materielNeed seedas numera
+      // till orderTriggerThreshold för ALLA kategorier, inte bara den här
+      // testade — nollställ övriga så testet isolerat prövar bara artillery.
+      for (const category of Object.keys(rvn.materielNeed) as (keyof typeof rvn.materielNeed)[]) {
+        rvn.materielNeed[category] = 0
+      }
       rvn.materielNeed.artillery = 11 // under tröskeln (12)
       state.meta.turn = 0
 
@@ -175,6 +181,13 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     it('UNMET NEED emitteras när behovet är över tröskeln men ingen köpbar produkt finns i kategorin', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const nlf = state.factions['nlf']! // techLevel 1 — kan bara köpa m1_rifle (infantry)
+      // P53a (ETAPP5_TEKNISK_SPEC.md avsnitt 2.1): materielNeed seedas numera
+      // till orderTriggerThreshold för ALLA kategorier — nollställ infantry
+      // (nlf:s enda köpbara kategori) så den inte själv utlyser en order och
+      // döljer testets riktiga fråga (artillery, som nlf inte kan köpa alls).
+      for (const category of Object.keys(nlf.materielNeed) as (keyof typeof nlf.materielNeed)[]) {
+        nlf.materielNeed[category] = 0
+      }
       nlf.materielNeed.artillery = 300 // långt över tröskeln (12), men ingen icke-restricted artilleriprodukt nlf får köpa
       state.meta.turn = 0
 

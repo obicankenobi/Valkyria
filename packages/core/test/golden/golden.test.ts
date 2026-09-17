@@ -114,10 +114,18 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // House.commodityHoldings (fem nollor i alla tre scriptade partier — ingen
   // botpolicy skickar in en MARKET-handling, så BUY_FORWARD/RELEASE rörs aldrig
   // här). Formen ändras alltså, inte trajektorin. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P53a (ETAPP5_TEKNISK_SPEC.md avsnitt 2.1/8, "golden omfryst
+  // i denna commit och ingen annan" — se docs/ANDRINGSLOGG.md, 2026-09-17).
+  // Faction.materielNeed seedas nu till orderTriggerThreshold i stället för 0
+  // (state.ts, buildFactions) — samma fält som förut, men ett annat
+  // starttillstånd för alla tre faktioner i alla tre partierna, vilket flyttar
+  // ordergenereringen från tur ~5-10 till tur 0 och kaskaderar genom hela
+  // partiets 20 turer. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'cdcb04ad614ba' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '5737955b83923' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1c641a04f5db0f' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '857850cf63974' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'f01c0dc195068' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '18d7dc1a191c20' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

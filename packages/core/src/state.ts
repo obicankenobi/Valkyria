@@ -4,6 +4,7 @@
 // (data/rivals.json) och bygger ett fullständigt GameState. Startvärdena är de som
 // står i scenariofilen — createInitialState uppfinner inget eget och kör ingen
 // spelregel (ingen ekonomi-, anbuds- eller frontlogik hör hemma här, det är P3–P8).
+import balanceData from './data/balance.json' with { type: 'json' }
 import rivalsCatalog from './data/rivals.json' with { type: 'json' }
 import indochinaSlice from './data/scenarios/indochina-slice.json' with { type: 'json' }
 import type {
@@ -23,6 +24,17 @@ import type {
   TechCategory,
   Theatre,
 } from './types.js'
+
+// P53a (ETAPP5_TEKNISK_SPEC.md avsnitt 2.1/8): materielNeed seedas till
+// orderTriggerThreshold, inte 0 — se buildFactions nedan för hela motiveringen.
+// Mätt i praktiken, INTE bara en spelregel som "körs" här (filens egen
+// huvudkommentar): utan seedningen genererar orders.ts inga ordrar alls
+// turerna 1-4 (fredstidspåfyllningen tar 5-10 turer att nå tröskeln från noll),
+// medan husets fasta kostnader redan löper från tur 1.
+interface Balance {
+  orderTriggerThreshold: Record<TechCategory, number>
+}
+const BALANCE = balanceData as unknown as Balance
 
 const TECH_CATEGORIES: readonly TechCategory[] = [
   'infantry',
@@ -265,7 +277,13 @@ function buildFactions(scenario: ScenarioFile): Record<FactionId, Faction> {
       bankrupt: false,
       negativeTreasuryTurns: 0,
       lowSupportTurns: 0,
-      materielNeed: uniformCategoryRecord(0),
+      // P53a (ETAPP5_TEKNISK_SPEC.md avsnitt 2.1): krigförande arméer har redan
+      // ett stående upphandlingsbehov 1964, inte tomma förråd — seedas till
+      // orderTriggerThreshold (utlysningströskeln) i stället för 0. Ett
+      // spritt objekt per faktion (inte samma referens från balance.json),
+      // annars skulle orders.ts:s mutation av EN faktions behov läcka in i
+      // alla andras.
+      materielNeed: { ...BALANCE.orderTriggerThreshold },
     }
   }
   return factions

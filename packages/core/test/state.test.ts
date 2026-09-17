@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cloneState, createInitialState } from '../src/state.js'
+import balance from '../src/data/balance.json' with { type: 'json' }
 
 describe('createInitialState', () => {
   it('JSON-serialiserar och deserialiserar bitvis identiskt', () => {
@@ -94,6 +95,30 @@ describe('createInitialState', () => {
 
   it('kastar på okänt scenarioId', () => {
     expect(() => createInitialState('does-not-exist', 'test-seed')).toThrow()
+  })
+
+  // P53a (ETAPP5_TEKNISK_SPEC.md avsnitt 2.1/8, klart-når): krigförande arméer
+  // har redan ett stående upphandlingsbehov vid partistart, inte tomma förråd
+  // — annars genererar orders.ts inga ordrar alls turerna 1-4 (mätt: se
+  // docs/ANDRINGSLOGG.md, 2026-09-17), medan husets fasta kostnader redan
+  // löper från tur 1.
+  it('(P53a klart-når) varje faktions materielNeed seedas till orderTriggerThreshold, inte 0', () => {
+    const state = createInitialState('indochina-slice', 'test-seed')
+
+    for (const faction of Object.values(state.factions)) {
+      expect(faction.materielNeed).toEqual(balance.orderTriggerThreshold)
+    }
+  })
+
+  it('varje faktions materielNeed är ett eget objekt — mutation hos en läcker inte till en annan', () => {
+    const state = createInitialState('indochina-slice', 'test-seed')
+    const factions = Object.values(state.factions)
+    expect(factions.length).toBeGreaterThan(1)
+
+    factions[0]!.materielNeed.artillery = 999
+    for (const faction of factions.slice(1)) {
+      expect(faction.materielNeed.artillery).not.toBe(999)
+    }
   })
 })
 
