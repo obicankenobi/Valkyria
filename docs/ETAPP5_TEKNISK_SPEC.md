@@ -1,12 +1,12 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.7 — antagen (ägarbeslut 2026-09-16), P53 (P53a+P53b+P53c), P54, P55, P56 och P57
-klara (2026-09-17).**
+**Version 1.0.8 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar (2026-09-17).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. **P53 (P53a+P53b+P53c), P54, P55, P56 och P57 klara (2026-09-17, se avsnitt 8). `P58` är
-nästa steg.**
+11. **5A (P53–P58) klar (2026-09-17, se avsnitt 8) — med två dokumenterade, kvarstående luckor
+(P58:s blockquote: ingen live-utlösare för fallna tjänstemän, `EMBARGO` strukturellt onåbart mot
+måltabellens 10–30 %-rad). `P59` (5B, "länderna ser varandra") är nästa steg.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -501,20 +501,20 @@ anges. **Samtliga rader förutsätter att P53 (`boardTarget`-omkalibreringen, av
 är körd** — med en oförändrad `boardTarget` är partiet elva turer långt och ungefär hälften av
 raderna nedan är onåbara av samma skäl som i P47 och P52.
 
-| Kriterium | Målvärde | Halva |
-|---|---|---|
-| **Partier där minst en tjänsteman byts ut medan spelaren har en relation till henne** | **> 60 %** | 5A |
-| Andel ordrar där agendan faktiskt ändrade vinnaren (mot samma order utan agenda) | 15–35 % | 5A |
-| **Partier där spelaren drabbas av minst ett `PolicyDecision`** | **> 70 %** | 5A |
-| Partier där `EMBARGO` utlöses mot spelaren minst en gång | 10–30 % | 5A |
-| `FAVOUR` valt minst en gång av en bot som hade ett mer lönsamt alternativ | > 40 % | 5A |
-| **Partier där minst en front byter `status` minst en gång** | **> 50 %** | 5B |
-| Partier där en `ceasefire` mätbart sänker ordervolymen turen efter | alltid, när den inträffar | 5B |
-| **Partier där `counterIntelligence` stigit mätbart av spelarens egna operationer** | **> 50 %** | 5B |
-| Lyckade kupper per parti | 0–1, aldrig fler | 5B |
-| `alignment` ändras minst en gång i ett parti | > 20 % | 5B |
-| Etapp 3:s och 4:s invarianter (skyddsräcke 5) | alltid | båda |
-| **Är spelet bättre? (avsnitt 0)** | **Ägarens omdöme efter P64, inte en siffra** | båda |
+| Kriterium | Målvärde | Halva | Mätt (P58) |
+|---|---|---|---|
+| **Partier där minst en tjänsteman byts ut medan spelaren har en relation till henne** | **> 60 %** | 5A | **0 % — MISS, strukturellt (ingen live-utlösare byggd, se P58:s blockquote)** |
+| Andel ordrar där agendan faktiskt ändrade vinnaren (mot samma order utan agenda) | 15–35 % | 5A | 34,5 % — TRÄFF |
+| **Partier där spelaren drabbas av minst ett `PolicyDecision`** | **> 70 %** | 5A | **100 % — TRÄFF** |
+| Partier där `EMBARGO` utlöses mot spelaren minst en gång | 10–30 % | 5A | **100 % — MISS, strukturellt (se P58:s blockquote)** |
+| `FAVOUR` valt minst en gång av en bot som hade ett mer lönsamt alternativ | > 40 % | 5A | 50,8 % — TRÄFF |
+| **Partier där minst en front byter `status` minst en gång** | **> 50 %** | 5B | ej mätt än — P64 |
+| Partier där en `ceasefire` mätbart sänker ordervolymen turen efter | alltid, när den inträffar | 5B | ej mätt än — P64 |
+| **Partier där `counterIntelligence` stigit mätbart av spelarens egna operationer** | **> 50 %** | 5B | ej mätt än — P64 |
+| Lyckade kupper per parti | 0–1, aldrig fler | 5B | ej mätt än — P64 |
+| `alignment` ändras minst en gång i ett parti | > 20 % | 5B | ej mätt än — P64 |
+| Etapp 3:s och 4:s invarianter (skyddsräcke 5) | alltid | båda | höll (full CI grön genom P57, se `docs/ANDRINGSLOGG.md`) |
+| **Är spelet bättre? (avsnitt 0)** | **Ägarens omdöme efter P64, inte en siffra** | båda | ej avgjort än — P64 |
 
 Den sista raden är inte en formalitet. Den är den enda raden i hela dokumentet som kan underkänna
 etappen, och den besvaras av en människa som spelat, inte av härnessen.
@@ -677,8 +677,53 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och
 > `policyDecisionMinTurn`-fyndet.
 
-**P58 — balanspass 5A**
+**P58 — balanspass 5A — MÄTT 2026-09-17**
 > Ingen kod. Härnessen mot avsnitt 7:s 5A-rader. Skruva `balance.json` och scenariodata.
+>
+> **Mätt:** ad-hoc härnesskript (ej committat, samma mönster som P37/P42/P47/P52/P53), n=200,
+> `balanced` (avsnitt 7:s eget metodval, "om inget annat anges"). Resultat mot avsnitt 7:s fem
+> 5A-rader:
+>
+> | Rad | Mål | Mätt | Utfall |
+> |---|---|---|---|
+> | Tjänsteman byts ut med kvarvarande relation | > 60 % | **0 %** | MISS — strukturellt |
+> | Agendan ändrar vinnaren | 15–35 % | **34,5 %** | TRÄFF |
+> | Spelaren drabbas av minst ett `PolicyDecision` | > 70 % | **100 %** | TRÄFF |
+> | `EMBARGO` mot spelaren minst en gång | 10–30 % | **100 %** | MISS — strukturellt |
+> | `FAVOUR` trots mer lönsamt alternativ | > 40 % | **50,8 %** | TRÄFF |
+>
+> **Rad 1 (0 %) — INGEN kalibrering kan fixa den här, `replaceOfficial` har aldrig fått en
+> anropare.** `officials.ts`s egen kommentar (skriven i P54) förutsatte att "den faktiska
+> utlösaren — standing som faller till 0, skandal — hör till P56/P57." Varken P56 eller P57
+> byggde den. Sökt igenom hela `src/`: `replaceOfficial` anropas ingenstans, `status: 'fallen'`
+> sätts ingenstans. Det här är samma sorts fynd som P41:s `THE_WORLD`-gap — en spec-förutsättning
+> som visade sig inte hålla, upptäckt vid mätning, inte vid bygget. Ingen ägare fanns att fråga i
+> den här sessionen (autonomt läge); i stället för att uppfinna en lösning under ett "ingen
+> kod"-pass (scope creep in i P58, byggt runt problemet — exakt vad `CLAUDE.md` säger åt mig att
+> INTE göra) dokumenteras fyndet här, ärligt, som 0 % — inte ett falskt ✅. En riktig utlösare
+> (`standing`/`scandalRisk`-tröskel → `replaceOfficial`, plus ett namnregister för ERSÄTTARE,
+> som `officials.json` idag saknar) är ett eget, obyggt stycke arbete utanför P53–P64:s
+> nuvarande promptlista.
+>
+> **Rad 4 (100 %) — strukturellt onåbar mot EXAKT den botpolicy avsnitt 7 föreskriver, av samma
+> skäl som P52:s `supplyIndexMaxStep`-fynd (`ETAPP4_TEKNISK_SPEC.md` avsnitt 7).** `Policy` har
+> ingen `rng` (hård regel 2) — `balanced`s `favourBestRelationOfficial` väljer alltid EXAKT samma
+> tjänsteman (först i `Object.values(state.officials)`s fasta iterationsordning, oavsett seed),
+> så `relationToPlayer` för alla ÖVRIGA elva tjänstemän förblir 0 i varje enda parti. Bara EN
+> tjänsteman i hela scenariot (`officials.json`) har både `NON_ALIGNMENT` och `standing` (65) över
+> `policyDecisionStandingThreshold` (60): `nlf`s försvarsminister. Utan RNG i vägen dit är hennes
+> EMBARGO antingen 0 % eller 100 % för HELA populationen beroende på var tröskeln sätts — aldrig
+> något däremellan. Verifierat: sänkt hennes `standing` under tröskeln ger 0 %, inte ett tal i
+> 10–30-intervallet. En riktig fix kräver kod (rng-baserat FAVOUR-mål, eller flera samtidigt
+> sårbara `NON_ALIGNMENT`-tjänstemän så att EN skyddas och resten inte) — inte data. **Lämnas
+> orört**, samma linje som `supplyIndexMaxStep`/`boardTarget`/`BUY_FORWARD`.
+>
+> Rad 2/3/5 träffar mål utan någon ändring i `balance.json` eller scenariodata — ingen
+> kalibrering behövdes för de tre. **P58 avslutar 5A:s kodbygge (P54–P57) med två ärliga, kvarstående
+> luckor** — se ovan för exakt vad som saknas och varför de inte byggs här. Se
+> `docs/ANDRINGSLOGG.md`, 2026-09-17, för mätskriptets fulla metodik (inklusive kontrafaktisk
+> agenda-neutralisering för rad 2, och varför den mätningen begränsas till turer före
+> `policyDecisionMinTurn`).
 
 ### 5B — Världen
 
@@ -802,3 +847,4 @@ egna rekommendationer, ordagrant.**
 | 1.0.5 | 2026-09-17 | **P55 byggd — agendan viktar affären.** `weightsForOrder` (`orders.ts`) ersätter `weightsForPressure` — REARM/AUSTERITY skiftar `order.weights`, en andra viktskiftare vid sidan av `weightPressureShift` (P36). `bestEligibleProduct` fick ett MODERNISE-filter (`techRequired > agendaModerniseTechFloor`). NON_ALIGNMENT fördubblar `blocTerm` i `bidding.ts`/`queries.ts`. SELF_ENRICHMENT krävde ingen ny kod (redan i `officials.json`, P54). Tre nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P55-block fick en "BYGGD"-rubrik och klart-blockquote. `P56` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
 | 1.0.6 | 2026-09-17 | **P56 byggd — att påverka en människa.** `Official.scandalRisk`/`House.favourMarginSpent` nya fält. `PlayerAction`s `POLITICAL`-variant delad i tre (skyddsräcke 3: BRIBE/FUND_CAMPAIGN tar officialId, FAVOUR tar officialId+marginCost, STAGE_INCIDENT/BACK_CHANNEL behåller targetFactionId — `type` oförändrad, skyddsräcke 4 intakt). `applyActions.ts` (568 rader) sprängdes — POLITICAL utbruten till ny `resolve/political.ts` (427 rader kvar), samma mönster som P23. BRIBE riktades om (relationsvinst skalad mot låg integritet, höjer scandalRisk, taket per tjänsteman). FUND_CAMPAIGN/FAVOUR nya, vardera en bot (aggressive/balanced). Golden omfryst. Avsnitt 8:s P56-block fick en "BYGGD"-rubrik och klart-blockquote. `P57` är nästa steg. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet |
 | 1.0.7 | 2026-09-17 | **P57 byggd — politiken slår tillbaka, 5A klar.** Nytt steg `politics.ts` (mellan `factions`/`heat`, ägarbeslutet). Ett fast, PROVISORISKT agenda→`PolicyDecision`-schema; `EMBARGO` är `Faction.embargoed`s FÖRSTA skrivare (fynd 1.7); `PREFERRED_SUPPLIER` går i den här triggern alltid till en rival. `BROKER` byggd (avsnitt 3.5, den sista helt tysta grenen) — direktkontrakt förbi `computeScore`, avgjort av köparens procurement-tjänstemans relation/integrity. `bidding.ts` fick en poängbonus adderad EFTER `computeScore` (skyddsräcke 2 intakt). **Genuint fynd under bygget:** `Official.relationToPlayer` startar på 0 för alla, så en obehandlad grind gjorde "ohörsammad" sant redan tur 1 och bröt två av etapp 3/4:s gröna invarianttester (skyddsräcke 5) — fixat med ett nytt PROVISORISKT balanstal `policyDecisionMinTurn` (4). `aggressive` (harness) fick `brokerFavourableDeal` (GK-A/skyddsräcke 4). Elva nya PROVISORISKA balanstal. Golden omfryst. Avsnitt 8:s P57-block fick en "BYGGD"-rubrik och klart-blockquote. **5A:s kodbygge (P54–P57) är därmed klart** — `P58` (balanspass, ingen kod) är sista steget i 5A. Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela genomförandet och kalibreringsfyndet |
+| 1.0.8 | 2026-09-17 | **P58 mätt — 5A klar med två dokumenterade luckor.** Härnessmätning n=200/`balanced` mot avsnitt 7:s fem 5A-rader: tre träffar (agendan ändrar vinnaren 34,5 % av 15–35 %; minst ett `PolicyDecision` 100 % av >70 %; `FAVOUR` trots bättre alternativ 50,8 % av >40 %) utan att röra `balance.json`/scenariodata. Två strukturella missar, ingen fixad med kalibrering: (1) "tjänsteman byts ut" 0 % — `replaceOfficial` (P54) har aldrig fått en live-utlösare; varken P56 eller P57 byggde den `officials.ts`s egen kommentar förutsatte. (2) `EMBARGO` 100 % (mål 10–30 %) — `Policy` saknar rng (hård regel 2), så `balanced`s `favourBestRelationOfficial` skyddar alltid EXAKT samma tjänsteman oavsett seed, vilket gör den enda `NON_ALIGNMENT`-kvalificerade tjänstemannens EMBARGO strukturellt bimodal (0 eller 100 %, aldrig ett mellanläge) — verifierat, inte gissat. Båda kräver kod, inte data, och byggs INTE i ett "ingen kod"-pass — lämnas dokumenterade, samma linje som P52:s `supplyIndexMaxStep`-fynd | Avsnitt 7:s måltabell fick en "Mätt (P58)"-kolumn och avsnitt 8:s P58-block ett fullt blockquote, per P58:s eget syfte: mäta, kalibrera det som går, dokumentera ärligt det som inte gör det |
