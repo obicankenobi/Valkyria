@@ -122,10 +122,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // starttillstånd för alla tre faktioner i alla tre partierna, vilket flyttar
   // ordergenereringen från tur ~5-10 till tur 0 och kaskaderar genom hela
   // partiets 20 turer. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P53b (ETAPP5_TEKNISK_SPEC.md avsnitt 8, samma klart-når-krav).
+  // board.ts:s progressSnapshot inkluderar nu obetald orderbok, inte bara bokförd
+  // intäkt, och expectedProgress bytte bana från linjär till kvadratisk — ingen
+  // ny GameState-form, men styrelsegranskningens pass/fail-utfall (och därmed
+  // creditPenaltyMultiplier/BUYOUT-tidpunkten) kan skifta för samma seed. headlines
+  // > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '857850cf63974' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'f01c0dc195068' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '18d7dc1a191c20' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1e2d4ef1f42af0' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9c812a019b1c' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '89fe741fa24cd' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

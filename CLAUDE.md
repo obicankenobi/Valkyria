@@ -44,7 +44,7 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **P53a klar (2026-09-17), P53b är nästa steg.** Den ger
+`701c56a`) är den **aktiva** specen — **P53a och P53b klara (2026-09-17), P53c är nästa steg.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58) och 5B (länder som aktörer — `Faction.
@@ -61,8 +61,11 @@ av marknaden — `aggressive` (45 %) överlever hela scenariot. P53 är därför
 2026-09-17**: `state.ts`, golden omfryst, härnessmätning n=30/botpolicy bekräftar första bokförda
 intäkten mätbart tidigare för alla fyra policyer, se `docs/ANDRINGSLOGG.md`), **P53b**
 (`board.ts`: styrelsen mäter orderbok + en rampad, kvadratisk förväntanskurva i stället för bara
-linjär bokförd intäkt — nästa steg) och **P53c** (balanspass — `boardTarget.threshold`, 2×, mättes
-vara rätt siffra och rörs inte). Se specens avsnitt 2.1 och 10 punkt 1 för de fullständiga
+linjär bokförd intäkt — **BYGGD 2026-09-17**: `progressSnapshot`/`computeExpectedProgress`, golden
+omfryst, härnessmätning n=30/botpolicy visar `BUYOUT`-frekvens 0 %/0 %/67 %/70 % (`passive`/
+`aggressive`/`balanced`/`capacity`) i stället för identisk 100 % för alla fyra, se
+`docs/ANDRINGSLOGG.md`) och **P53c** (balanspass — `boardTarget.threshold`, 2×, mättes vara rätt
+siffra och rörs inte — nästa steg). Se specens avsnitt 2.1 och 10 punkt 1 för de fullständiga
 mätningarna, och
 avsnitt 1 för de tio premisskontrollerade fynden specen bygger på (bl.a. att `Faction.alignment`
 aldrig skrivs av någon kod, att `Station.coverage` är helt död data sedan etapp 1, och att

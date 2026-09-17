@@ -4,7 +4,7 @@
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
-11. `P53a` klar (2026-09-17, se avsnitt 8). `P53b` är nästa steg.
+11. `P53a` och `P53b` klara (2026-09-17, se avsnitt 8). `P53c` är nästa steg.
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -547,7 +547,7 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > tester, lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela
 > mätningen.
 
-**P53b — styrelsen mäter orderboken, inte bara kassan**
+**P53b — styrelsen mäter orderboken, inte bara kassan — BYGGD 2026-09-17**
 > `board.ts`s `updateProgressSnapshot`: `progressSnapshot` = (bokförd intäkt + kontrakterat,
 > ej levererat värde) / `foundingCapital`, i stället för bara bokförd intäkt. `runReview`s
 > `expectedProgress`-formel byts från linjär (`threshold × turn/dueTurn`) till kvadratisk
@@ -559,6 +559,15 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > av `threshold`, inte hälften; en härnessmätning (n≥30) visar att `BUYOUT`-frekvensen skiljer
 > sig mellan botpolicyer i stället för att vara identisk för alla fyra; golden omfryst i denna
 > commit och ingen annan, med loggrad.
+>
+> **Klart:** samtliga fyra villkor uppfyllda. `progressSnapshot`-testet och `computeExpectedProgress`-
+> testet (en ny, exporterad ren funktion, samma mönster som P50:s `deriveSupplyCostIndex`) båda i
+> `board.test.ts`. Härnessmätning n=30/botpolicy: `BUYOUT`-frekvens `passive` 0 %, `aggressive`
+> 0 % (29/30 `SCENARIO_COMPLETE`), `balanced` 67 %, `capacity` 70 % — tydligt olika, och följer nu
+> policyernas mätta ekonomiska styrka (snittintäkt 6,50/7,52/2,08/0,81 Mkr) i stället för att vara
+> identisk 100 % för alla fyra. `golden.test.ts`s tre `expectedHash` omfrysta. Fullt testsvep
+> grönt (393 tester, lint, typecheck, build, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17, för hela
+> mätningen.
 
 **P53c — balanspass: håller 2×?**
 > Ingen kod. Härnessen mot `boardTarget.threshold` (2×) med P53a+P53b på plats. Skruva bara

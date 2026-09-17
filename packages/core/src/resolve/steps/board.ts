@@ -16,9 +16,21 @@
 // economy.ts (P3, patchad) multiplicerar creditLimit med — en minimal, nödvändig
 // komplettering av redan committad kod för att en explicit spec-mening ska ha en
 // faktisk effekt, inte en ny uppgift.
+//
+// P53b (ETAPP5_TEKNISK_SPEC.md avsnitt 8, "styrelsen mäter orderboken, inte bara
+// kassan"): progressSnapshot räknade tidigare bara bokförd intäkt — en siffra som
+// per konstruktion är noll de första turerna (leveranser tar flera turer), oavsett
+// hur mycket spelaren redan sålt. progressSnapshot inkluderar nu även den obetalda
+// andelen av spelarens egna aktiva/sena kontrakt (`draft.market.contracts` —
+// innehåller bara spelarens kontrakt, se bidding.ts:s `winner.source === 'player'`-
+// gren; rivalernas kontrakt lever separat i `state.rivals[...].contracts` och ska
+// inte räknas mot spelarens egen styrelsegranskning). `expectedProgress`-banan
+// byttes samtidigt från linjär till kvadratisk (samma `threshold` vid `dueTurn`,
+// lägre krav tidigt) — se docs/ANDRINGSLOGG.md, 2026-09-17, för den fulla mätningen
+// bakom båda ändringarna.
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type { House } from '../../types.js'
+import type { Contract, House } from '../../types.js'
 
 interface Balance {
   boardReviewTolerance: number
@@ -26,12 +38,22 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-function updateProgressSnapshot(house: House): void {
+function updateProgressSnapshot(house: House, contracts: Contract[]): void {
   const target = house.boardTarget
   if (target.metric !== 'revenue') return // se filens huvudkommentar — oimplementerat, oanvänt i etapp 1
 
   const cumulativeRevenue = house.revenueByTurn.reduce((sum, r) => sum + r, 0)
-  target.progressSnapshot = house.foundingCapital > 0 ? cumulativeRevenue / house.foundingCapital : 0
+  const backlog = contracts
+    .filter((c) => c.status === 'active' || c.status === 'late')
+    .reduce((sum, c) => sum + c.price * (1 - c.unitsDelivered / c.quantity), 0)
+  target.progressSnapshot = house.foundingCapital > 0 ? (cumulativeRevenue + backlog) / house.foundingCapital : 0
+}
+
+// P53b: exporterad rent för egen testbarhet, samma "en delad, ren funktion i
+// stället för att pinna en privat formel indirekt"-mönster som P50:s
+// deriveSupplyCostIndex.
+export function computeExpectedProgress(threshold: number, turn: number, dueTurn: number): number {
+  return threshold * (turn / dueTurn) ** 2
 }
 
 export const board: ResolveStep = (ctx) => {
@@ -39,7 +61,7 @@ export const board: ResolveStep = (ctx) => {
   const house = draft.house
   const target = house.boardTarget
 
-  updateProgressSnapshot(house)
+  updateProgressSnapshot(house, draft.market.contracts)
 
   if (!target.reviewTurns.includes(draft.meta.turn)) return
   if (target.lastReviewTurn === draft.meta.turn) return // redan avgjord den här turen (skydd mot dubbelkörning)
@@ -55,8 +77,9 @@ function runReview(ctx: ResolveContext): void {
 
   target.lastReviewTurn = turn
 
-  // Den linjära banan som skulle nå threshold vid dueTurn (spec 5, "Board").
-  const expectedProgress = target.threshold * (turn / target.dueTurn)
+  // P53b: kvadratisk bana, inte linjär — samma threshold vid dueTurn, lägre krav
+  // tidigt (se filens huvudkommentar).
+  const expectedProgress = computeExpectedProgress(target.threshold, turn, target.dueTurn)
   const passMark = expectedProgress * (1 - BALANCE.boardReviewTolerance)
   const passed = target.progressSnapshot >= passMark
 
