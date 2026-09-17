@@ -44,9 +44,20 @@ kaskaden (se nästa stycke) lämnas orörd, med "löser andra fronten den?" som 
 P47:s måltabell snarare än ett antagande; namnet var "Två krig, en verkstad" i förslaget.
 Etapp 1, 1,5, 2, 3 och 4 lämnas stående som historik. Etapp 5, "Näst mäktigast i rummet",
 `docs/ETAPP5_TEKNISK_SPEC.md` (P53–P64, antagen som ägarbeslut 2026-09-16, validerad mot commit
-`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61/P62/P63 (5B) klara
-(2026-09-17) — 5B och därmed hela etapp 5 är helt klar. P64 (balanspass 5B och etappgranskning)
-är nästa och sista steget.** Den ger
+`701c56a`) är den **aktiva** specen — **5A (P53–P58) helt klar, P59/P60/P61/P62/P63/P64 (5B)
+klara (2026-09-17) — HELA ETAPP 5:s KODBYGGE ÄR KLART.** Bara avsnitt 0:s fråga ("blir spelet
+bättre av att köparna får ansikten?") återstår, och den kräver uttryckligen ägarens eget omdöme
+efter att ha spelat — inget en kodsession kan besvara. **P64:s mätning (n=200 `balanced` + n=200
+`aggressive`) gav ett TRÄFF (`counterIntelligence` steg i 100 % av partierna) och tre
+strukturellt diagnostiserade MISS: frontstatus ändras aldrig (`relations`/`doomsday`/
+`publicSupport`-trösklarna ligger tillsammans utom räckhåll för hur bottarna faktiskt spelar,
+inom partier på i snitt ~11 turer), och lyckade kupper/`alignment`-ändringar är noll — INTE av
+ointresse, utan för att `aggressive` faktiskt skickar in `FUND_COUP`/`ASSASSINATE` varje
+möjlig tur (798 respektive 798 gånger över 200 partier) men de avvisas nästan alltid av
+`house.actionPoints` (3/tur) — `aggressive`s egen handlingslista har vuxit sig längre än sin
+egen budget sedan P56 (verifierat med ett riktat debugskript, inte gissat). Ingen kod ändrad i
+P64 (uttryckligen "ingen kod") — se `docs/ETAPP5_TEKNISK_SPEC.md` avsnitt 7/8 och
+`docs/ANDRINGSLOGG.md` för hela genomförandet.** Den ger
 designdokumentets tredje pelare ("du är alltid näst mäktigast i rummet") dess första mekanik, i
 två oberoende halvor: 5A (`Official` — köparnas tjänstemän får namn, minne och agendor, ersätter
 den hittills anonyma `Order.inspectorIntegrity`, P54–P58 — **P54 BYGGD 2026-09-17**: `Official`/
@@ -150,9 +161,17 @@ kodbasen (fynd 1.4: fältvärdet funnits sedan etapp 1, aldrig kontrollerat för
 `integrity`/`agenda` gates till `null`; namn/post/standing/relationToPlayer visas alltid,
 ordagrant efter avsnitt 8. Ingen ny mekanik — `TheHouse.tsx`s hårdkodade
 tjänsteman-genväg för BRIBE/FUND_CAMPAIGN/FAVOUR rördes medvetet inte (utanför scope). Golden
-ORÖRD (verifierat, inte antaget — ren presentation). Se `docs/ANDRINGSLOGG.md`. **5A och 5B
-(P53–P63) är därmed BÅDA helt klara — P64 (balanspass 5B och etappgranskning, ingen kod, sista
-steget i etapp 5) är nästa steg.**
+ORÖRD (verifierat, inte antaget — ren presentation). Se `docs/ANDRINGSLOGG.md`.
+**P64 MÄTT 2026-09-17** (ingen kod): härnessmätning n=200 `balanced` + n=200 `aggressive` mot
+avsnitt 7:s fem 5B-rader. Ett TRÄFF (`counterIntelligence` 100 %). Tre MISS, strukturellt
+diagnostiserade: frontstatus ändras aldrig (`relations`/`doomsday`/`publicSupport`-trösklarna
+tillsammans utom räckhåll inom ~11-turerspartier); lyckade kupper/`alignment`-ändringar är noll
+INTE av ointresse — `aggressive` skickar in `FUND_COUP`/`ASSASSINATE` 798 gånger vardera över
+200 partier men avvisas nästan alltid av `house.actionPoints` (3/tur) — `aggressive`s egen
+handlingslista har vuxit förbi sin egen budget sedan P56 (verifierat med riktat debugskript).
+Se `docs/ETAPP5_TEKNISK_SPEC.md` avsnitt 7/8 och `docs/ANDRINGSLOGG.md`. **5A och 5B (P53–P64)
+är därmed BÅDA helt klara — HELA ETAPP 5:s KODBYGGE ÄR KLART. Bara avsnitt 0:s fråga (ägarens
+omdöme efter att ha spelat) återstår, och den kräver en människa, inte en kodsession.**
 P53 är därför delad i **P53a**
 (scenariodata: `materielNeed` seedas till `orderTriggerThreshold` vid start, inte 0 — **BYGGD
 2026-09-17**: `state.ts`, golden omfryst, härnessmätning n=30/botpolicy bekräftar första bokförda

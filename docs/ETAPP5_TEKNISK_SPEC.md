@@ -1,7 +1,7 @@
 # THE SEVENTH FRONT — Teknisk spec, etapp 5: NÄST MÄKTIGAST I RUMMET
 
-**Version 1.0.13 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60/P61/P62/P63 klara
-(2026-09-17).**
+**Version 1.0.14 — antagen (ägarbeslut 2026-09-16), 5A (P53–P58) klar, P59/P60/P61/P62/P63/P64
+klara (2026-09-17) — HELA ETAPPENS KODBYGGE KLART, väntar bara på ägarens omdöme (avsnitt 0).**
 Validerad mot `obicankenobi/Valkyria` commit `701c56a` (etapp 4 avslutad, alla P43–P52 körda,
 båda P52-fynden avgjorda). Samtliga åtta öppna beslutspunkter avgjorda enligt förslagets egna
 rekommendationer, se avsnitt 10. P53 delad i P53a/P53b/P53c efter mätning, se avsnitt 2.1 och
@@ -11,7 +11,11 @@ måltabellens 10–30 %-rad). P59 (5B:s första prompt, `Faction.relations`/`Fro
 (`INFLUENCE`/`Faction.counterIntelligence`/`LEAK`/`SABOTAGE`/`TURN`), P61 (`FUND_COUP`,
 `DESIGN.md` §13 omskriven i samma commit) och P62 (`ASSASSINATE`, `replaceOfficial`:s FÖRSTA
 live-utlösare) klara samma dag. P63 ("rummet blir synligt", UI — ny femte flik "THE POLITICS",
-`officialDisplay()`) klar samma dag. `P64` (balanspass 5B och etappgranskning) är nästa steg.**
+`officialDisplay()`) klar samma dag. **P64 (balanspass 5B och etappgranskning) MÄTT samma dag —
+se avsnitt 7/8: ett TRÄFF (`counterIntelligence`), tre MISS, samtliga strukturellt
+diagnostiserade (frontstatus/ceasefire aldrig nådd; kupper/`alignment` kvävs av `aggressive`s
+egen `actionPoints`-kö, inte av ointresse). Etapp 5:s hela kodbygge är därmed klart — bara
+avsnitt 0:s fråga, ägarens eget omdöme efter att ha spelat, återstår.**
 
 Prosan är på svenska. All kod, alla identifierare, alla UI-strängar och all speldata är på
 engelska och ska användas ordagrant.
@@ -506,20 +510,20 @@ anges. **Samtliga rader förutsätter att P53 (`boardTarget`-omkalibreringen, av
 är körd** — med en oförändrad `boardTarget` är partiet elva turer långt och ungefär hälften av
 raderna nedan är onåbara av samma skäl som i P47 och P52.
 
-| Kriterium | Målvärde | Halva | Mätt (P58) |
+| Kriterium | Målvärde | Halva | Mätt (P58/P64) |
 |---|---|---|---|
 | **Partier där minst en tjänsteman byts ut medan spelaren har en relation till henne** | **> 60 %** | 5A | **0 % — MISS, strukturellt (ingen live-utlösare byggd, se P58:s blockquote)** |
 | Andel ordrar där agendan faktiskt ändrade vinnaren (mot samma order utan agenda) | 15–35 % | 5A | 34,5 % — TRÄFF |
 | **Partier där spelaren drabbas av minst ett `PolicyDecision`** | **> 70 %** | 5A | **100 % — TRÄFF** |
 | Partier där `EMBARGO` utlöses mot spelaren minst en gång | 10–30 % | 5A | **100 % — MISS, strukturellt (se P58:s blockquote)** |
 | `FAVOUR` valt minst en gång av en bot som hade ett mer lönsamt alternativ | > 40 % | 5A | 50,8 % — TRÄFF |
-| **Partier där minst en front byter `status` minst en gång** | **> 50 %** | 5B | ej mätt än — P64 |
-| Partier där en `ceasefire` mätbart sänker ordervolymen turen efter | alltid, när den inträffar | 5B | ej mätt än — P64 |
-| **Partier där `counterIntelligence` stigit mätbart av spelarens egna operationer** | **> 50 %** | 5B | ej mätt än — P64 |
-| Lyckade kupper per parti | 0–1, aldrig fler | 5B | ej mätt än — P64 |
-| `alignment` ändras minst en gång i ett parti | > 20 % | 5B | ej mätt än — P64 |
-| Etapp 3:s och 4:s invarianter (skyddsräcke 5) | alltid | båda | höll (full CI grön genom P57, se `docs/ANDRINGSLOGG.md`) |
-| **Är spelet bättre? (avsnitt 0)** | **Ägarens omdöme efter P64, inte en siffra** | båda | ej avgjort än — P64 |
+| **Partier där minst en front byter `status` minst en gång** | **> 50 %** | 5B | **0 % (balanced OCH aggressive, n=200 vardera) — MISS, strukturellt, se P64:s blockquote** |
+| Partier där en `ceasefire` mätbart sänker ordervolymen turen efter | alltid, när den inträffar | 5B | **EJ MÄTBAR — noll ceasefire-övergångar i 400 partier, se ovan** |
+| **Partier där `counterIntelligence` stigit mätbart av spelarens egna operationer** | **> 50 %** | 5B | **100 % (båda policyerna) — TRÄFF** |
+| Lyckade kupper per parti | 0–1, aldrig fler | 5B | **0 i samtliga 400 partier (inom bound, men INTE meningsfullt prövat — se P64:s blockquote om `aggressive`s egen actionPoints-svält)** |
+| `alignment` ändras minst en gång i ett parti | > 20 % | 5B | **0 % (båda policyerna) — MISS, samma rotorsak som kupraden** |
+| Etapp 3:s och 4:s invarianter (skyddsräcke 5) | alltid | båda | höll (full CI grön genom P63, 477 tester, se `docs/ANDRINGSLOGG.md`) |
+| **Är spelet bättre? (avsnitt 0)** | **Ägarens omdöme efter P64, inte en siffra** | båda | **VÄNTAR PÅ ÄGAREN — denna rad kan inte besvaras av en kodsession, se P64:s blockquote** |
 
 Den sista raden är inte en formalitet. Den är den enda raden i hela dokumentet som kan underkänna
 etappen, och den besvaras av en människa som spelat, inte av härnessen.
@@ -879,9 +883,72 @@ etappen, och den besvaras av en människa som spelat, inte av härnessen.
 > presentation) — verifierat genom att köra hela testsviten, inte antaget. Fullt testsvep grönt
 > (477 tester rotnivå, lint, typecheck, build×3, e2e). Se `docs/ANDRINGSLOGG.md`, 2026-09-17.
 
-**P64 — balanspass 5B och etappgranskning**
+**P64 — balanspass 5B och etappgranskning — MÄTT 2026-09-17**
 > Ingen kod. Härnessen mot hela avsnitt 7. Sedan den sista raden: ägaren spelar och svarar på
 > avsnitt 0:s fråga.
+>
+> **Mätt.** Ad-hoc härnesskript (ej committat, samma konvention som P37/P42/P47/P52/P53/P58),
+> n=200 `balanced` OCH n=200 `aggressive` (avsnitt 7:s egen "balanced om inget annat anges"
+> lämnar `aggressive` som naturligt komplement för de två rader — kupper, `alignment` — vars
+> mekanik `balanced` aldrig ens FÖRSÖKER, se P61/P62: `FUND_COUP`/`ASSASSINATE` är bara wired
+> till `aggressive`). **Ett rent TRÄFF:** `counterIntelligence` steg mätbart i 100 % av partierna
+> under BÅDA policyerna (mål > 50 %) — robust, eftersom fältets EV enda skrivare (verifierat med
+> grep innan mätningen skrevs) är spelarstyrda operationer (`markIntelOpCaught` för LEAK/
+> SABOTAGE/TURN, `FUND_COUP`s misslyckandegren, `ASSASSINATE`s alltid-gren) — "av spelarens egna
+> operationer" krävde alltså ingen egen attributionslogik i mätskriptet, bara "steg
+> `counterIntelligence` någonsin".
+>
+> **Tre rader MISS, samtliga strukturellt diagnostiserade, inte gissade:**
+>
+> 1. **Frontstatus ändras aldrig (0 % mot mål > 50 %), och därmed är ceasefire-ordervolymraden
+>    helt omätbar** (noll ceasefire-övergångar i 400 partier totalt). Diagnostiserat med
+>    instrumentering, inte antaget: `updateFrontStatuses` (`factions.ts`) har två vägar in till
+>    `ceasefire` — `mutualGoodwill` (BÅDA sidors `relations` ≥ `ceasefireRelationThreshold` 70)
+>    och `forcedPeace` ("FORCED TO SUE FOR PEACE", `publicSupport` < 25 i tre turer i rad). Ingen
+>    av dem nås: högsta `relations`-värde uppmätt över samtliga 400 partier var 65 (`aggressive`)
+>    — front-motståndarpar startar på `relationsAtWarStart` 20, och `relationsPassiveRecoveryPerTurn`
+>    (+1/tur) äts i praktiken upp av `relationsDeliveryDecay` (−1/tur) så länge fronten är aktivt
+>    het, vilket den nästan alltid är. Den enda snabba vägen upp, `BACK_CHANNEL` (+10/gång), är
+>    `balanced`s exklusiva verktyg (`aggressive` anropar det aldrig alls) och gated på
+>    `doomsday > 65` — ett tak `balanced` ALDRIG korsade i något av sina 200 partier (högsta
+>    uppmätta `doomsdayPeak`: 59). Lägsta uppmätta `publicSupport` var 65 (`balanced`) respektive
+>    50 (`aggressive`) — långt över `forcedPeace`s tröskel på 25. Partierna är dessutom korta
+>    (medel-sluttur ~11, samma `BUYOUT`/`INSOLVENCY`-mönster som P53:s ursprungsmätning) — även om
+>    relations klättrade fortare funnes det sällan tid. **Ingen av dessa är en enskild
+>    kalibreringsmiss** (som `policyDecisionMinTurn` i P57) — det är en kedja av tre oberoende,
+>    var för sig rimliga trösklar (70/65/25) som tillsammans aldrig råkar ligga inom räckhåll för
+>    hur de två härnesspolicyerna faktiskt spelar. En riktig fix (lägre trösklar, en tredje bot
+>    som aktivt spelar mot fred, eller längre partier) är en egen kalibreringsprompt, inte något
+>    P64 — uttryckligen "ingen kod" — kan eller ska göra här.
+> 2. **Lyckade kupper (0 i samtliga 400 partier, mål 0–1 "aldrig fler") och `alignment`-ändringar
+>    (0 % mot mål > 20 %) — samma rotorsak, och en ANNAN än radens egen formulering antyder.**
+>    Instrumenterades separat: `aggressive` SKICKAR faktiskt in `FUND_COUP` och `ASSASSINATE`
+>    varje tur villkoren tillåter (798 respektive 798 inskickade förslag över 200 partier — inte
+>    noll försök). Samtliga avvisas, med EXAKT samma skäl varje gång:
+>    `'no executive actions remaining'`. `house.actionPoints` är 3 (`state.ts`); `applyActions.ts`
+>    räknar `actionsUsed` i INSKICKNINGSORDNING och avvisar allt bortom de tre första, oavsett typ.
+>    `aggressive`s egen handlingslista (`policies.ts`) har vuxit — en rad per prompt sedan P56 —
+>    till att pusha STAGE_INCIDENT, FUND_CAMPAIGN, BROKER, LEAK, SABOTAGE FÖRE FUND_COUP och
+>    ASSASSINATE, som därför i praktiken NÄSTAN ALDRIG når någon av de tre lediga platserna;
+>    verifierat med ett riktat debugkript som loggar `rejected`-orsaken per tur (samma teknik som
+>    seed-jakten i P57/P60/P61) — samma avvisningsorsak varje enda gång ett förslag skickades in.
+>    `alignment` har (fynd 1.2, sedan P61) EXAKT en skrivare — en LYCKAD `FUND_COUP` — så när den
+>    aldrig körs klart förblir `alignment` per definition orörd. **Detta är INTE "GK-A/skyddsräcke
+>    4 uppfylls inte"** — skyddsräcke 4:s eget test (`policies.test.ts`) bevisar bara att boten
+>    KAN producera handlingen isolerat, inte att den NÅGONSIN vinner om utrymme i en fullastad
+>    verklig tur, och den skillnaden är precis vad P64:s mätning i sin tur avslöjar. En riktig fix
+>    (höjt `actionPoints`, en egen prioritetsordning, eller ett skarpare val bland konkurrerande
+>    POLITICAL-handlingar) är kod — utanför P64:s eget "ingen kod"-mandat — så lämnas
+>    dokumenterad, inte byggd runt.
+>
+> **Skyddsräcke 5:** höll genom hela etapp 5 (full CI grön vid varje commit P53–P63, 477 tester
+> vid P63, se `docs/ANDRINGSLOGG.md`).
+>
+> **Den sista raden (avsnitt 0:s fråga) kan inte besvaras här.** Den kräver, ordagrant, "ägarens
+> omdöme efter att ha spelat, inte en siffra" — en kodsession kan mäta att mekaniken fungerar
+> (fyra av nio 5B/5A-delrader TRÄFF, fem strukturellt diagnostiserade MISS) men inte om
+> upplevelsen faktiskt blir bättre. **Etapp 5:s hela kodbygge (P53–P63) är därmed klart** — det
+> enda som återstår är att ägaren spelar och avgör avsnitt 0:s fråga.
 
 ---
 
