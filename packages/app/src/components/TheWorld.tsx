@@ -1,10 +1,11 @@
 // THE WORLD — läsvy: fronter, faktioner, heat, DOOMSDAY, stationer. Se
-// ETAPP1_TEKNISK_SPEC.md avsnitt 8, DESIGN.md avsnitt 18. Ingen karta —
-// fronten ritas som en linje med en position, exakt vad simuleringen
-// modellerar (DESIGN.md: "en karta som är mer detaljerad än modellen är ett
-// löfte spelet inte kan hålla").
+// ETAPP1_TEKNISK_SPEC.md avsnitt 8, DESIGN.md avsnitt 18. Fronterna ritas som
+// en schematisk sektortavla (P66, ETAPP6_TEKNISK_SPEC.md §4, DESIGN.md §18
+// reviderat 2026-09-18) — se SectorBoard.tsx.
 import { DISPLAY_THRESHOLDS, formationDisplay } from '@seventh-front/core'
 import type { Front, FormationDisplay, GameState } from '@seventh-front/core'
+import { SECTOR_LAYOUTS } from '../sectorLayout.js'
+import { SectorBoard, statusTone, strengthBandTone } from './SectorBoard.js'
 import { Bar, Meter, Panel, Tag } from './ui.js'
 
 function doomsdayTone(value: number): 'green' | 'amber' | 'red' {
@@ -13,22 +14,15 @@ function doomsdayTone(value: number): 'green' | 'amber' | 'red' {
   return 'green'
 }
 
-function statusTone(status: FormationDisplay['status']): 'green' | 'amber' | 'red' | 'neutral' {
-  if (status === 'destroyed') return 'red'
-  if (status === 'mauled') return 'amber'
-  if (status === 'refitting') return 'neutral'
-  return 'green'
-}
-
-function strengthBandTone(band: FormationDisplay['strengthBand']): 'green' | 'amber' | 'red' {
-  if (band === 'stark') return 'green'
-  if (band === 'medel') return 'amber'
-  return 'red'
-}
-
 // P41 (avsnitt 5.5): "THE_WORLD-specens deriveDeployment blir överflödig och
 // ersätts: förbanden har redan en sectorId. Utgruppering behöver inte längre
 // härledas — den finns." Grupperar bara, härleder ingenting.
+//
+// P66 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter den här textlistan
+// för varje theatre som redan har en post i SECTOR_LAYOUTS (front-1/indochina
+// från och med den här prompten). En theatre utan layoutdata (front-laos,
+// tills P67) faller fortsatt tillbaka på den gamla, rent typografiska listan
+// nedan — skyddsräcke 4:s helhetsfall, inte en bugg.
 function groupBySector(state: GameState, front: Front): Map<string, FormationDisplay[]> {
   const bySector = new Map<string, FormationDisplay[]>()
   for (const formation of front.formations) {
@@ -38,6 +32,82 @@ function groupBySector(state: GameState, front: Front): Map<string, FormationDis
     else bySector.set(display.sectorId, [display])
   }
   return bySector
+}
+
+// Den gamla, rent typografiska framställningen (fallback, skyddsräcke 4) —
+// oförändrad sedan P41, bara utbruten till en egen komponent så SectorBoard
+// kan ta över för de theatres som har layoutdata utan att duplicera JSX:en
+// för sidhuvud/mätare i själva .map()-anropet.
+function OldFrontCard({ front, state }: { front: Front; state: GameState }) {
+  const sideA = state.factions[front.sideA]
+  const sideB = state.factions[front.sideB]
+  const markerPct = ((front.position + 100) / 200) * 100
+  const totalCasualties = front.casualtiesTotal.a + front.casualtiesTotal.b
+  // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "visa per front i THE WORLD
+  // vilka kontrakt som matar den." Bara aktiva/sena — fulfilled/voided
+  // levererar inte mer.
+  const feedingContracts = state.market.contracts.filter(
+    (c) => c.frontId === front.id && (c.status === 'active' || c.status === 'late'),
+  ).length
+
+  return (
+    <div className="front">
+      <div className="front-sides">
+        <span className="side-a">{sideA ? sideA.name : front.sideA}</span>
+        <span className="meter-label">
+          {front.id} · attacking: side {front.attacker.toUpperCase()} · {totalCasualties} casualties ·{' '}
+          {feedingContracts} contract{feedingContracts === 1 ? '' : 's'} feeding
+        </span>
+        <span className="side-b">{sideB ? sideB.name : front.sideB}</span>
+      </div>
+
+      <div className="frontline">
+        <div className="frontline-center" />
+        <div className="frontline-marker" style={{ left: `${markerPct}%` }} />
+      </div>
+
+      <div className="front-stats">
+        <Meter label="Morale A" value={front.morale.a} display={front.morale.a.toFixed(0)} tone="blue" />
+        <Meter label="Morale B" value={front.morale.b} display={front.morale.b.toFixed(0)} tone="red" />
+        <Meter
+          label="Strength A"
+          value={front.strength.a}
+          max={Math.max(front.strength.a, front.strength.b, 1)}
+          display={front.strength.a.toFixed(0)}
+          tone="blue"
+        />
+        <Meter
+          label="Strength B"
+          value={front.strength.b}
+          max={Math.max(front.strength.a, front.strength.b, 1)}
+          display={front.strength.b.toFixed(0)}
+          tone="red"
+        />
+      </div>
+
+      {/* P41 (avsnitt 5.1/5.5): förbanden, grupperade per sectorId — inte en
+          karta (DESIGN.md §18/§21), samma typografiska lägesbord som resten
+          av vyn. Namn/readiness/equipment dimmas per formationDisplay
+          (skyddsräcke 3); status/doktrin/sektor visas alltid. */}
+      {front.formations.length > 0 && (
+        <div className="front-formations">
+          {[...groupBySector(state, front).entries()].map(([sectorId, formations]) => (
+            <div className="front-sector" key={sectorId}>
+              <div className="front-sector-head">{sectorId.toUpperCase()}</div>
+              {formations.map((formation) => (
+                <div className="formation-row" key={formation.id}>
+                  <span className={formation.side === 'a' ? 'side-a' : 'side-b'}>{formation.name}</span>
+                  <span className="mono">{formation.doctrine}</span>
+                  <Tag tone={statusTone(formation.status)}>{formation.status}</Tag>
+                  <Tag tone={strengthBandTone(formation.strengthBand)}>{formation.strengthBand}</Tag>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function TheWorld({ state }: { state: GameState }) {
@@ -84,77 +154,19 @@ export function TheWorld({ state }: { state: GameState }) {
       </div>
 
       <Panel title="Fronts" flush>
-        {Object.values(state.fronts).map((front) => {
-          const sideA = state.factions[front.sideA]
-          const sideB = state.factions[front.sideB]
-          const markerPct = ((front.position + 100) / 200) * 100
-          const totalCasualties = front.casualtiesTotal.a + front.casualtiesTotal.b
-          // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "visa per front i THE
-          // WORLD vilka kontrakt som matar den." Bara aktiva/sena — fulfilled/
-          // voided levererar inte mer.
-          const feedingContracts = state.market.contracts.filter(
-            (c) => c.frontId === front.id && (c.status === 'active' || c.status === 'late'),
-          ).length
-
-          return (
-            <div className="front" key={front.id}>
-              <div className="front-sides">
-                <span className="side-a">{sideA ? sideA.name : front.sideA}</span>
-                <span className="meter-label">
-                  {front.id} · attacking: side {front.attacker.toUpperCase()} · {totalCasualties} casualties ·{' '}
-                  {feedingContracts} contract{feedingContracts === 1 ? '' : 's'} feeding
-                </span>
-                <span className="side-b">{sideB ? sideB.name : front.sideB}</span>
-              </div>
-
-              <div className="frontline">
-                <div className="frontline-center" />
-                <div className="frontline-marker" style={{ left: `${markerPct}%` }} />
-              </div>
-
-              <div className="front-stats">
-                <Meter label="Morale A" value={front.morale.a} display={front.morale.a.toFixed(0)} tone="blue" />
-                <Meter label="Morale B" value={front.morale.b} display={front.morale.b.toFixed(0)} tone="red" />
-                <Meter
-                  label="Strength A"
-                  value={front.strength.a}
-                  max={Math.max(front.strength.a, front.strength.b, 1)}
-                  display={front.strength.a.toFixed(0)}
-                  tone="blue"
-                />
-                <Meter
-                  label="Strength B"
-                  value={front.strength.b}
-                  max={Math.max(front.strength.a, front.strength.b, 1)}
-                  display={front.strength.b.toFixed(0)}
-                  tone="red"
-                />
-              </div>
-
-              {/* P41 (avsnitt 5.1/5.5): förbanden, grupperade per sectorId — inte
-                  en karta (DESIGN.md §18/§21), samma typografiska lägesbord som
-                  resten av vyn. Namn/readiness/equipment dimmas per formationDisplay
-                  (skyddsräcke 3); status/doktrin/sektor visas alltid. */}
-              {front.formations.length > 0 && (
-                <div className="front-formations">
-                  {[...groupBySector(state, front).entries()].map(([sectorId, formations]) => (
-                    <div className="front-sector" key={sectorId}>
-                      <div className="front-sector-head">{sectorId.toUpperCase()}</div>
-                      {formations.map((formation) => (
-                        <div className="formation-row" key={formation.id}>
-                          <span className={formation.side === 'a' ? 'side-a' : 'side-b'}>{formation.name}</span>
-                          <span className="mono">{formation.doctrine}</span>
-                          <Tag tone={statusTone(formation.status)}>{formation.status}</Tag>
-                          <Tag tone={strengthBandTone(formation.strengthBand)}>{formation.strengthBand}</Tag>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {Object.values(state.fronts).map((front) =>
+          // P66 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter hela det
+          // gamla per-front-kortet för varje theatre SECTOR_LAYOUTS redan
+          // känner till (front-1/indochina från och med den här prompten). En
+          // theatre utan layoutdata (front-laos, tills P67) faller tillbaka på
+          // den gamla, rent typografiska markupen nedan — skyddsräcke 4:s
+          // helhetsfall, inte en bugg.
+          SECTOR_LAYOUTS[front.theatreId] ? (
+            <SectorBoard front={front} state={state} key={front.id} />
+          ) : (
+            <OldFrontCard front={front} state={state} key={front.id} />
+          ),
+        )}
       </Panel>
 
       <Panel title="Factions" flush>

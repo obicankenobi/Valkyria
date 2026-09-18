@@ -9,7 +9,8 @@ härledningsfunktion i `packages/core/src/queries.ts` — aldrig `resolve/`, ald
 aldrig golden-snapshoten. Kan köras parallellt med etapp 5 (P54–P63) utan krockrisk: ingen fil de
 båda etapperna skriver i delas.
 
-**Status (2026-09-18): P65 (huvudmenyn) BYGGD. P66–P72 återstår.**
+**Status (2026-09-18): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina) BYGGDA. P67–P72
+återstår.**
 
 > **Fynd vid antagandet (2026-09-18, se `docs/ANDRINGSLOGG.md`):** `UI_GRANSKNING_OCH_SKARMSPEC.md`,
 > som §0 och §5 ovan hänvisar till som redan levererad, finns INTE i repot — sökt igenom hela
@@ -277,6 +278,47 @@ också: säg till, det blir en egen liten spec (en enda ny mekanik: vad får ett
 `TheWorld.tsx`s Fronts-panel för `front-1`/`indochina`. Test: `queries.deriveSectorControl.test.ts`
 (gruppering, `side`-beräkning, `'empty'`/`'contested'`-fallen), `SectorBoard.test.tsx` (jsdom-render,
 en nod per sektor, ingen förbandsdata synlig innan sektorn klickats).
+
+> **Klart 2026-09-18.** Samtliga klart-när-villkor uppfyllda. `deriveSectorControl` (`queries.ts`)
+> grupperar `front.formations` på `sectorId` (samma logik som den gamla `groupBySector`, flyttad
+> hit). `side` avgörs av sida A:s andel av total styrka i sektorn mot EXAKT samma tröskelpar
+> `formationDisplay` redan definierar (`formationStrengthBandLowPct`/`-HighPct`, 33/66) — inget
+> nytt balanstal, samma "återanvänd en befintlig, konceptuellt likartad tröskel"-princip som P62:s
+> DOOMSDAY-gräns. `'empty'` läst som "sammanlagd styrka noll" (täcker både tomma sektorer och
+> sektorer där allt slagits ut), beräknat på RIKTIG `Formation.strength` — inte det
+> `formationDisplay`-dimmade värdet, eftersom kontrollstatus är grov/synlig oavsett
+> underrättelsedjup (samma princip som `front.position` alltid varit synlig utan station).
+> `SectorControl` (nytt, i `types.ts` — inte inline i `queries.ts` som specens illustrativa
+> snippet visade, för att matcha den etablerade konventionen `FormationDisplay`/`OfficialDisplay`
+> redan följer). `SECTOR_LAYOUTS` (`sectorLayout.ts`, ny fil i `packages/app`) fylld bara för
+> `indochina` — `laos` är uttryckligen P67:s eget tillägg, inte en del av den här prompten.
+> `SectorBoard.tsx` (ny komponent) — ett litet, dokumenterat avsteg från §4.4:s bokstav: eftersom
+> `TheWorld.tsx`s "Fronts-panel (rad 86–158)" faktiskt var HELA per-front-kortet (sidhuvud,
+> moral/styrka-mätare, den gamla 1D-frontlinjen, förbandslistan), inte bara visualiseringen,
+> äger `SectorBoard` nu HELA kortet för en theatre med layoutdata — sidhuvud och mätare
+> oförändrade, bara den gamla 1D-stapeln och textlistan bytt mot SVG-tavlan. Frontlinje-
+> indikatorn (§4.4 punkt 3) byggs INTE här — uttryckligen P68:s egen prompt, en medveten,
+> tillfällig lucka för `front-1` mellan P66 och P68 (den gamla 1D-stapeln försvinner, den nya
+> 2D-markören finns inte än), inte glömd. Klick-för-att-expandera byggd med en enda
+> `expandedSectorId: string | null`-state (i stället för en toggle-mängd) — enklaste rimliga
+> datastruktur för "vilken sektor är öppen", som redan-av-sig-själv ger P69:s "en sektor åt
+> gången"-egenskap; P69 blir därmed sin egen, dedikerade verifiering snarare än en kodändring,
+> samma "verifierad, ingen kod krävdes"-mönster som P53c/P61/P62. Skyddsräcke 4 byggd åt BÅDA
+> hållen: en hel theatre utan layoutdata (`front-laos`, till P67) faller tillbaka på den gamla
+> textlistan; en enskild sektor `deriveSectorControl` känner till men `SECTOR_LAYOUTS` saknar
+> (ett nytt scenario, inte uppdaterad layoutdata) renderas som en fallback-rad, aldrig en krasch
+> — testat med en teknicerad "spökformation" i en okänd sektor. Fyra befintliga tester
+> uppdaterade (`TheWorld.formations.test.tsx`s två P41-fall klickar nu igenom rätt sektornod i
+> stället för att läsa `container.textContent` direkt, eftersom förbandsdata nu är gömd tills
+> klick). Ett latent, tidigare osynligt race upptäckt och fixat i samma svep: `play-20-turns.
+> spec.ts`s `startFreshGame` raderade IndexedDB samtidigt som appens egen hydrering (nu även
+> huvudmenyns `hasSavedGame`-koll, P65) asynkront kunde återskapa databasen EFTER raderingen —
+> osynligt innan P65:s meny gav ett `hasSave`-beroende steg att avslöja det på. Fixat genom att
+> vänta in att menyn faktiskt hydrerats INNAN radering, aldrig radera medan appen fortfarande
+> öppnar sin egen anslutning. Manuellt verifierat i en riktig Chromium-körning (skärmdumpar):
+> fyra noder, korrekt färgning, klick-för-att-expandera, Laos-fallbacken. Golden ORÖRD — ingen
+> `resolve/`, ingen `balance.json`. Fullt testsvep grönt (498 tester rotnivå, lint, typecheck,
+> build×3, e2e körd tre gånger i rad för att verifiera racet var löst). Se `docs/ANDRINGSLOGG.md`.
 
 **P67** — samma för `front-laos`/`laos` (bevisar att layouten och komponenten generaliserar över
 fler än en theatre utan hårdkodning av frontantal).

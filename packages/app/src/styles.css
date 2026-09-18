@@ -1267,6 +1267,64 @@ td.is-key {
   font-size: 13px;
 }
 
+/* ── Sector board (P66, ETAPP6_TEKNISK_SPEC.md §4.4) ─────────────────── */
+
+.sector-board {
+  margin-top: 14px;
+}
+
+.sector-board-svg {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.sector-edge {
+  stroke: var(--line-strong);
+  stroke-width: 0.6;
+}
+
+.sector-node-group {
+  cursor: pointer;
+}
+
+.sector-node {
+  stroke: var(--panel);
+  stroke-width: 0.8;
+  transition: r 120ms ease;
+}
+
+.sector-node-group:hover .sector-node {
+  r: 5;
+}
+
+.sector-node.is-a {
+  fill: var(--west);
+}
+
+.sector-node.is-b {
+  fill: var(--east);
+}
+
+.sector-node.is-contested {
+  fill: var(--amber);
+}
+
+.sector-node.is-empty {
+  fill: var(--line-strong);
+}
+
+.sector-node-label {
+  fill: var(--ink-dim);
+  font-family: var(--font-mono);
+  font-size: 3.4px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
 /* Respektera användarens inställning — rörelsen är dekor, inte information. */
 @media (prefers-reduced-motion: reduce) {
   * {

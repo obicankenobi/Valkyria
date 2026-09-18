@@ -9,7 +9,21 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
-import type { BidEstimate, Formation, FormationDisplay, GameState, Grade, Money, Official, OfficialDisplay, Order, Pct, RivalId } from './types.js'
+import type {
+  BidEstimate,
+  Formation,
+  FormationDisplay,
+  Front,
+  GameState,
+  Grade,
+  Money,
+  Official,
+  OfficialDisplay,
+  Order,
+  Pct,
+  RivalId,
+  SectorControl,
+} from './types.js'
 
 const WIN_BAND_POINTS = 5
 const MONTE_CARLO_SAMPLES = 100
@@ -140,6 +154,59 @@ export function formationDisplay(state: GameState, formation: Formation): Format
     equipment: known ? { ...formation.equipment } : null,
     known,
   }
+}
+
+// P66 (ETAPP6_TEKNISK_SPEC.md §4.3), ordagrant: "Grupperar front.formations på
+// sectorId (samma logik som TheWorld.tsx:s groupBySector i dag, FLYTTAD hit så
+// att komponenten blir en ren presentation av redan härledd data). side avgörs
+// av vilken sidas SUMMA av strength (känd eller ej) är störst i sektorn —
+// beräknat på det RIKTIGA Formation.strength, inte det formationDisplay-dimmade
+// (kontrollstatus är grov/synlig oavsett underrättelsedjup, precis som
+// front.position redan alltid varit synlig utan någon station). 'empty' om
+// inga formationer finns där — läst som "sammanlagd styrka noll" (täcker både
+// en sektor utan förband alls OCH en där samtliga förband slagits ut, strength
+// 0), inte "sektorn saknas i layoutdata" (det avgör SectorBoard.tsx, appen,
+// via SECTOR_LAYOUTS — queries.ts känner inte till presentationsdata,
+// CLAUDE.md hård regel 1). 'contested' vid "praktiskt taget paritet" —
+// PROVISORISKT tolkat som samma tredjedelströskel formationStrengthBandLowPct/
+// -HighPct (33/66) redan definierar, applicerad på sidan A:s andel av total
+// styrka i stället för att gissa ett nytt talpar: inget nytt balanstal
+// behövs, samma "återanvänd en befintlig, konceptuellt likartad tröskel"-
+// princip som P62:s DOOMSDAY-gräns återanvände STAGE_INCIDENT:s.
+export function deriveSectorControl(state: GameState, front: Front): SectorControl[] {
+  const bySector = new Map<string, Formation[]>()
+  for (const formation of front.formations) {
+    const group = bySector.get(formation.sectorId)
+    if (group) group.push(formation)
+    else bySector.set(formation.sectorId, [formation])
+  }
+
+  const result: SectorControl[] = []
+  for (const [sectorId, formations] of bySector) {
+    let strengthA = 0
+    let strengthB = 0
+    for (const formation of formations) {
+      if (formation.side === 'a') strengthA += formation.strength
+      else strengthB += formation.strength
+    }
+
+    const total = strengthA + strengthB
+    let side: SectorControl['side']
+    if (total === 0) {
+      side = 'empty'
+    } else {
+      const sharePctA = (strengthA / total) * 100
+      side =
+        sharePctA < FORMATION_DISPLAY_BALANCE.formationStrengthBandLowPct
+          ? 'b'
+          : sharePctA > FORMATION_DISPLAY_BALANCE.formationStrengthBandHighPct
+            ? 'a'
+            : 'contested'
+    }
+
+    result.push({ sectorId, side, formations: formations.map((formation) => formationDisplay(state, formation)) })
+  }
+  return result
 }
 
 // P63 (ETAPP5_TEKNISK_SPEC.md avsnitt 8), ordagrant: "tjänstemän, agendor,

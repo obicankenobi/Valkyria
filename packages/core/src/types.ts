@@ -779,3 +779,14 @@ export interface OfficialDisplay {
   agenda: Agenda | null // null om cabinetCoverage === false
   cabinetCoverage: boolean // true om huset har en aktiv station med 'cabinet' i landet
 }
+
+// P66 (ETAPP6_TEKNISK_SPEC.md §4.3), byggd av queries.ts:s deriveSectorControl().
+// formations återanvänder FormationDisplay rakt av — skyddsräcke 3 ärvs gratis,
+// ingen egen gatinglogik här. side är grov kontrollstatus (vilken sida som har
+// mest styrka i sektorn), inte förbandsdetaljer — synlig oavsett station,
+// samma princip som Front.position redan varit.
+export interface SectorControl {
+  sectorId: string
+  side: 'a' | 'b' | 'contested' | 'empty'
+  formations: FormationDisplay[]
+}

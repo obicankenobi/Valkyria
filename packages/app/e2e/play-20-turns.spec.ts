@@ -46,8 +46,29 @@ function parseMoney(text: string): number {
 }
 
 async function startFreshGame(page: Page): Promise<void> {
+  // P65 (ETAPP6_TEKNISK_SPEC.md §3) avslöjade en race som förut var osynlig:
+  // en `page.goto('/')` monterar appen, vars EGEN hydrering (useGame.ts +
+  // App.tsx:s hasSavedGame-koll) genast öppnar (och därmed, om den inte finns,
+  // SKAPAR) IndexedDB-databasen asynkront. Raderar man INNAN de effekterna
+  // hunnit klart kan appens egen, redan pågående öppning hinna återskapa
+  // databasen EFTER att raderingen lyckats — utan meny fanns inget steg som
+  // avslöjade det (hasSave var aldrig frågat). Fixat genom att vänta in att
+  // menyn (och därmed appens hydrering) faktiskt renderat FÖRST, sedan radera,
+  // sedan ladda om — aldrig radera samtidigt som appen fortfarande öppnar.
   await page.goto('/')
-  await page.evaluate(() => indexedDB.deleteDatabase('seventh-front'))
+  await page.getByTestId('menu-continue').waitFor()
+  await page.waitForTimeout(300)
+  // indexedDB.deleteDatabase är händelsestyrd, inte löftesbaserad — utan att
+  // vänta in onsuccess/onerror återvänder page.evaluate innan raderingen
+  // faktiskt skett.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.deleteDatabase('seventh-front')
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(request.error)
+      }),
+  )
   await page.reload()
   await expect(page.getByRole('heading', { name: 'THE SEVENTH FRONT' })).toBeVisible()
 
