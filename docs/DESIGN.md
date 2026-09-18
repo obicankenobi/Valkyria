@@ -593,9 +593,17 @@ Estetik: **lägesrummet under lampan** — mörk yta, telexgult för spelarens e
 tabellsiffror för allt räknebart. Registret är fortfarande papper, skrivmaskin och telexremsa, men
 utfört som ett spelgränssnitt: paneler, mätare och staplar där ett tal har en skala att läsas mot.
 Sparsamma övergångar, aldrig dekorativ rörelse, alltid avstängda vid `prefers-reduced-motion`.
-Ingen karta i etapp 1 — fronten visas som en linje med en position, vilket är allt simuleringen
-faktiskt modellerar. Att rita en karta som är mer detaljerad än modellen är ett löfte spelet inte
-kan hålla.
+Sektortavlan — en schematisk regiontavla (SVG-noder + linjer mellan namngivna sektorer, se
+ETAPP6_TEKNISK_SPEC.md §4) i stället för en rent typografisk panellista. Fortfarande INTE en
+geografiskt korrekt karta och INTE ett taktiskt lager — sektorernas inbördes placering är fast,
+handgjord layoutdata, inte härledd geografi, och en sektor är fortfarande bara en grupperingsnyckel
+för `Formation.sectorId`, aldrig en yta trupper rör sig fritt över.
+
+> Omprövat av ägaren igen 2026-09-18 (se `docs/ANDRINGSLOGG.md`). Raden löd tidigare: "Ingen karta i
+> etapp 1 — fronten visas som en linje med en position, vilket är allt simuleringen faktiskt
+> modellerar. Att rita en karta som är mer detaljerad än modellen är ett löfte spelet inte kan
+> hålla." Invändningen höll fram till etapp 3B; sedan `Formation.sectorId` fick verkliga
+> platsnamn håller den inte längre.
 
 > Omprövat av ägaren efter P12 (se `docs/ANDRINGSLOGG.md`). Raden löd tidigare "papper,
 > skrivmaskin, telexremsa. Monospace för siffror. Ingen animation." — P11/P12 byggdes ordagrant
@@ -655,7 +663,9 @@ spelet.
 
 Så att det inte smyger tillbaka in.
 
-- Hexkarta och taktiskt lager
+- **Taktiskt lager** (enheter som rör sig fritt i realtid över en yta — se §18:s reviderade rad
+  för vad som ersatte den tidigare "hexkarta och taktiskt lager"-raden: en schematisk sektortavla,
+  antagen som ägarbeslut 2026-09-18, se `docs/ANDRINGSLOGG.md` och `ETAPP6_TEKNISK_SPEC.md`)
 - Realtid
 - Sex samtidiga fronter
 - Separata agenter som huvudenhet i underrättelsesystemet
