@@ -215,17 +215,28 @@ Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
 `docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan).
 
 Etapp 6, "Kartan och huvudmenyn", `docs/ETAPP6_TEKNISK_SPEC.md` (P65–P72, antagen som ägarbeslut
-2026-09-18) är **ANTAGEN men OBYGGD** — ägarbeslutet är loggat (`docs/ANDRINGSLOGG.md`, samma dag)
-och `docs/DESIGN.md` §18/§21 är omskrivna i samma commit (§18: "ingen karta"-pelaren riven, ersatt
-av en schematisk sektortavla; §21: "hexkarta och taktiskt lager" uppdelad så bara "taktiskt lager"
-kvarstår bortskuret), men ingen kod är skriven — vänta på en explicit instruktion om P65 eller
-vidare innan du börjar bygga. Ren frontend-etapp (`packages/app` + en enda ny härledningsfunktion
-i `queries.ts`, §4.3) — rör aldrig `resolve/`, `balance.json` eller golden-snapshoten (skyddsräcke
-2). Kan köras parallellt med etapp 5:s kvarvarande ägarbedömning utan krockrisk. **Känt fynd vid
-antagandet** (se `docs/ANDRINGSLOGG.md`, 2026-09-18): specens `UI_GRANSKNING_OCH_SKARMSPEC.md`
-(sagd "levererad föregående pass") finns inte i repot — sökt igenom hela git-historiken, noll
-träffar, samma mönster som den saknade THE_WORLD-specen i etapp 3. Blockerar inget (specen är
-självbärande) — ägaren tillfrågad, valde att fortsätta ändå, dokumenterat, inte löst.
+2026-09-18) är **ANTAGEN — P65 BYGGD 2026-09-18, P66–P72 återstår.** Ägarbeslutet är loggat
+(`docs/ANDRINGSLOGG.md`, samma dag) och `docs/DESIGN.md` §18/§21 är omskrivna i samma commit (§18:
+"ingen karta"-pelaren riven, ersatt av en schematisk sektortavla; §21: "hexkarta och taktiskt
+lager" uppdelad så bara "taktiskt lager" kvarstår bortskuret). Ren frontend-etapp (`packages/app` +
+en enda ny härledningsfunktion i `queries.ts`, §4.3, ännu obyggd) — rör aldrig `resolve/`,
+`balance.json` eller golden-snapshoten (skyddsräcke 2). Kan köras parallellt med etapp 5:s
+kvarvarande ägarbedömning utan krockrisk. **Känt fynd vid antagandet** (se `docs/ANDRINGSLOGG.md`,
+2026-09-18): specens `UI_GRANSKNING_OCH_SKARMSPEC.md` (sagd "levererad föregående pass") finns
+inte i repot — sökt igenom hela git-historiken, noll träffar, samma mönster som den saknade
+THE_WORLD-specen i etapp 3. Blockerar inget (specen är självbärande) — ägaren tillfrågad, valde
+att fortsätta ändå, dokumenterat, inte löst. **P65 BYGGD 2026-09-18**: `'menu'` som ny startvy i
+`App.tsx`s `View`-union, grindar VARJE sidladdning. `MainMenu.tsx` (ny komponent) enligt specens
+gränssnitt; bekräftelsedialogen för "New Game" placerad i `MainMenu.tsx` själv (samma `hasSave`-
+gren som redan avgör Continue-knappens disabled-status, undviker duplicering — beteendet
+identiskt, se `docs/ANDRINGSLOGG.md` för hela resonemanget). `hasSavedGame` byggd i
+`persistence.ts`, rättad mot `loadGame`s faktiska returtyp (`SavedGame | null`, inte `undefined`
+som specens utkast antog). `SAVE_SLOT` flyttad till `game.ts` och exporterad — enda källan
+`App.tsx`/`useGame.ts` nu delar. Två befintliga e2e-test uppdaterade att klicka igenom menyn (en
+förväntad konsekvens, inte en bugg). Sju nya tester (`App.menu.test.tsx`) — tre mot ett riktigt
+`<App/>`, fyra mot `MainMenu` direkt med mockade props (jsdom saknar `indexedDB` helt, verifierat,
+så `hasSave=true`-grenen testas isolerat i stället för genom en trasig IndexedDB-runda). Manuellt
+verifierat i en riktig Chromium-körning. Golden ORÖRD. Se `docs/ANDRINGSLOGG.md`.
 
 Etapp 5:s kodbygge (P53–P64) är klart (se ovan) men väntar på ägarens omdöme (avsnitt 0:s fråga)
 och räknas därför inte som historik ännu. **Läs den promptens avsnitt i den spec som gäller innan

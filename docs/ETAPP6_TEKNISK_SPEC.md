@@ -9,6 +9,8 @@ härledningsfunktion i `packages/core/src/queries.ts` — aldrig `resolve/`, ald
 aldrig golden-snapshoten. Kan köras parallellt med etapp 5 (P54–P63) utan krockrisk: ingen fil de
 båda etapperna skriver i delas.
 
+**Status (2026-09-18): P65 (huvudmenyn) BYGGD. P66–P72 återstår.**
+
 > **Fynd vid antagandet (2026-09-18, se `docs/ANDRINGSLOGG.md`):** `UI_GRANSKNING_OCH_SKARMSPEC.md`,
 > som §0 och §5 ovan hänvisar till som redan levererad, finns INTE i repot — sökt igenom hela
 > git-historiken (`git log --all --diff-filter=A --name-only`), noll träffar. Samma mönster som
@@ -89,7 +91,7 @@ Stations-panelen och ett minimalt ljudlager är konsekventa med resten — utan 
 
 ---
 
-## 3. Huvudmenyn (P65)
+## 3. Huvudmenyn (P65) — BYGGD 2026-09-18
 
 Ny vy i unionen (`App.tsx` rad 15): `type View = 'menu' | 'wire' | 'floor' | 'house' | 'world'`.
 `hydrated`-grenen (rad 73–79) ersätts: efter laddning visas `'menu'` som starttillstånd, inte
@@ -132,6 +134,36 @@ bygg den med en tom `.menu-backdrop`-yta avsedd för det redan nu.
 är `null` om `hasSavedGame('default')` returnerar `false`. "Nytt parti" visar en bekräftelsedialog
 ("Det här skriver över ditt sparade parti") bara om `hasSave` är `true`. Ett nytt test
 (`App.menu.test.tsx`) bevisar alla tre.
+
+> **Klart.** Samtliga tre villkor uppfyllda. `hasSavedGame` byggd i `persistence.ts` — med en
+> rättelse mot specens eget utkast: `loadGame` returnerar redan `SavedGame | null` (inte
+> `undefined`), så implementationen jämför mot `null`, inte `undefined` — en ren premisskontroll
+> mot den faktiska signaturen, ingen beteendeändring. `MainMenu.tsx` byggd exakt enligt det givna
+> gränssnittet. **Ett litet, medvetet avsteg från prosans ansvarsfördelning:** bekräftelsedialogen
+> ("App.tsx visar en bekräftelsedialog själv om hasSave är true") ligger i `MainMenu.tsx` själv,
+> inte i `App.tsx` — samma `hasSave`-gren avgör redan "Continue"-knappens `disabled`, så att låta
+> samma komponent äga båda undviker att grenen dupliceras i två filer. Beteendet är identiskt
+> (dialogen visas innan `onNewGame` anropas); bara vilken fil JSX:en bor i skiljer sig. Motiverat
+> även av testbarhet: jsdom saknar `indexedDB` helt (verifierat — `window.indexedDB` är
+> `undefined`), så `hasSave=true`-grenen kan inte drivas genom en riktig `<App/>`-rendering i
+> testmiljön; med logiken i `MainMenu` testas den grenen direkt mot komponenten med mockade props,
+> utan att behöva `vi.mock` eller en `fake-indexeddb`-import (ingen sådan fanns i repot sedan
+> tidigare). `SAVE_SLOT` flyttad från `useGame.ts` till `game.ts` och exporterad — `App.tsx`s
+> `hasSavedGame`-koll och `useGame.ts`s egen `loadGame`/`saveGame` måste peka på exakt samma flik,
+> inte två separata kopior av samma sträng. Två befintliga e2e-test (`persist-mid-turn.spec.ts`,
+> `play-20-turns.spec.ts`) uppdaterade för att klicka igenom menyn vid varje spelstart/omladdning
+> — en förväntad, genuin konsekvens av att menyn nu grindar VARJE sidladdning, inte en bugg i
+> P65:s egen kod. Nya `App.menu.test.tsx` (7 tester): tre mot ett riktigt `<App/>`-render (startar
+> på menyn; Continue inaktiverad/houseName utan sträng "Continue as" när inget sparat parti finns
+> — jsdoms `indexedDB`-lucka faller tillbaka på exakt samma "otillgängligt"-gren som privat läge,
+> verifierat att det INTE krascher; New Game går rakt in i spelet utan dialog när inget är sparat)
+> och fyra mot `MainMenu` direkt (Continue aktiverad + husnamn när `hasSave` är `true`;
+> bekräftelsedialogen visas och `onNewGame` anropas först vid bekräftelse; Avbryt stänger dialogen
+> utan att anropa `onNewGame`; ingen krasch med `houseName=null`). Manuellt verifierat i en riktig
+> Chromium-körning (skärmdumpar, `npm run dev`): menyn, den inaktiverade Continue-knappen, den
+> ifyllda subtiteln efter en sparning, och bekräftelsedialogen ser alla ut som avsett. Golden
+> ORÖRD — ingen kod i `packages/core` rörd. Fullt testsvep grönt (484 tester rotnivå, lint,
+> typecheck, build×3, e2e — båda de uppdaterade e2e-testerna).
 
 ---
 

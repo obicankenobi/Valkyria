@@ -87,3 +87,15 @@ export async function loadGame(slot: string): Promise<SavedGame | null> {
     db.close()
   }
 }
+
+// P65 (ETAPP6_TEKNISK_SPEC.md §3): huvudmenyn behöver veta OM ett parti finns
+// utan att ladda det. loadGame returnerar `null` (inte `undefined` — specens
+// eget utkast antog fel returtyp, rättat mot den faktiska signaturen ovan) när
+// inget är sparat eller migreringen misslyckas — båda räknas som "inget att
+// fortsätta". Anropsplatsen (App.tsx) ansvarar för att fånga ett förkastat
+// löfte (IndexedDB otillgängligt, t.ex. privat läge) — samma gräns som
+// useGame.ts:s egen loadGame-anrop redan drar.
+export async function hasSavedGame(slot: string): Promise<boolean> {
+  const saved = await loadGame(slot)
+  return saved !== null
+}

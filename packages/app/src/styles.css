@@ -1200,6 +1200,73 @@ td.is-key {
   border-bottom: none;
 }
 
+/* ── Main menu (P65, ETAPP6_TEKNISK_SPEC.md §3) ──────────────────────── */
+
+.menu-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 40px 20px;
+  background: var(--bg);
+  /* Samma primitiv som body:s ljus (rad ~68 ovan), skalad upp och centrerad —
+     en "omslagsbild" i stället för ett ljus över ett skrivbord. */
+  background-image: radial-gradient(90% 70% at 50% 42%, rgba(227, 169, 81, 0.12), transparent 65%);
+}
+
+.menu-backdrop {
+  /* Tom yta, avsedd för en framtida bakgrundsbild (ETAPP6_TEKNISK_SPEC.md §3/§8).
+     Rör inte förrän riktiga bildtillgångar finns. */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.menu-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  max-width: 440px;
+  text-align: center;
+}
+
+.menu-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 44px rgba(227, 169, 81, 0.25);
+}
+
+.menu-subtitle {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.menu-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 13px;
+}
+
 /* Respektera användarens inställning — rörelsen är dekor, inte information. */
 @media (prefers-reduced-motion: reduce) {
   * {

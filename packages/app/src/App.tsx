@@ -1,8 +1,9 @@
 // THE SEVENTH FRONT — appskalet: HUD, navigation, turordning. De fyra vyerna
 // ligger i components/. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState } from '@seventh-front/core'
+import { MainMenu } from './components/MainMenu.js'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
@@ -10,8 +11,10 @@ import { TheWire } from './components/TheWire.js'
 import { TheWorld } from './components/TheWorld.js'
 import { formatMoney } from './components/ui.js'
 import { useGame } from './useGame.js'
+import { hasSavedGame } from './persistence.js'
+import { SAVE_SLOT } from './game.js'
 
-type View = 'wire' | 'floor' | 'house' | 'world' | 'politics'
+type View = 'menu' | 'wire' | 'floor' | 'house' | 'world' | 'politics'
 
 const ENDING_LABEL: Record<string, string> = {
   INSOLVENCY: 'Insolvent — the house is liquidated',
@@ -67,13 +70,47 @@ function Hud({ state }: { state: GameState }) {
 export function App() {
   const { state, draft, lastRejected, hydrated, setBid, removeBid, addAction, removeAction, setCrisisChoice, endTurn, restart } =
     useGame()
-  const [view, setView] = useState<View>('wire')
+  const [view, setView] = useState<View>('menu') // P65 (ETAPP6_TEKNISK_SPEC.md §3): menyn grindar inträdet, inte spelet direkt
+  const [hasSave, setHasSave] = useState(false)
+
+  // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
+  // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
+  // Samma gräns som useGame.ts drar: ett förkastat löfte (IndexedDB
+  // otillgängligt, t.ex. privat läge) tolkas som "inget sparat parti", inte
+  // som ett fel som ska synas.
+  useEffect(() => {
+    let cancelled = false
+    hasSavedGame(SAVE_SLOT)
+      .then((found) => {
+        if (!cancelled) setHasSave(found)
+      })
+      .catch(() => {
+        if (!cancelled) setHasSave(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   if (!hydrated) {
     return (
       <div className="app">
         <p className="loading">Loading saved game…</p>
       </div>
+    )
+  }
+
+  if (view === 'menu') {
+    return (
+      <MainMenu
+        houseName={hasSave ? state.house.name : null}
+        hasSave={hasSave}
+        onContinue={() => setView('wire')}
+        onNewGame={() => {
+          restart()
+          setView('wire')
+        }}
+      />
     )
   }
 

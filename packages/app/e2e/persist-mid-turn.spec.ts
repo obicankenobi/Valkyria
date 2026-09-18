@@ -11,6 +11,12 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'THE SEVENTH FRONT' })).toBeVisible()
 
+  // P65 (ETAPP6_TEKNISK_SPEC.md §3): appen startar nu på huvudmenyn, inte
+  // spelet direkt. Inget sparat parti finns i en färsk browserkontext, så
+  // "New Game" går rakt in — ingen bekräftelsedialog att klicka igenom.
+  await page.getByTestId('menu-new-game').click()
+  await expect(page.getByTestId('hud')).toBeVisible()
+
   // Spela fram tills en order faktiskt finns att bjuda på (ordergenerering är
   // sannolikhetsbaserad per faktion och tur) — högst 10 turer, annars är
   // scenariot fel konfigurerat.
@@ -41,6 +47,12 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
 
   await page.reload()
   await expect(page.getByRole('heading', { name: 'THE SEVENTH FRONT' })).toBeVisible()
+
+  // Ett sparat parti finns nu (autosparat) — menyn visas igen (P65), men med
+  // "Continue" aktiverad den här gången. Samma parti, inte ett nytt.
+  await expect(page.getByTestId('menu-continue')).toBeEnabled()
+  await page.getByTestId('menu-continue').click()
+  await expect(page.getByTestId('hud')).toBeVisible()
 
   // Partiets tillstånd (tur, kassa, doomsday — headerraden) är oförändrat.
   const headerAfter = await page.getByTestId('datestamp').textContent()

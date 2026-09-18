@@ -50,6 +50,11 @@ async function startFreshGame(page: Page): Promise<void> {
   await page.evaluate(() => indexedDB.deleteDatabase('seventh-front'))
   await page.reload()
   await expect(page.getByRole('heading', { name: 'THE SEVENTH FRONT' })).toBeVisible()
+
+  // P65 (ETAPP6_TEKNISK_SPEC.md §3): appen startar på huvudmenyn. Databasen
+  // just raderad ovan — inget sparat parti, "New Game" går rakt in.
+  await page.getByTestId('menu-new-game').click()
+  await expect(page.getByTestId('hud')).toBeVisible()
 }
 
 // Spelar upp till 20 turer. Returnerar true så fort en kris flaggats OCH lösts.

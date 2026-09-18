@@ -5,6 +5,12 @@ import type { TurnSubmission } from '@seventh-front/core'
 
 export const SCENARIO_ID = 'indochina-slice'
 
+// P65 (ETAPP6_TEKNISK_SPEC.md §3): flyttad hit från useGame.ts och exporterad
+// — App.tsx:s hasSavedGame-koll (huvudmenyn) och useGame.ts:s egen
+// load/saveGame måste peka på EXAKT samma flik, inte två separata kopior av
+// samma sträng.
+export const SAVE_SLOT = 'default'
+
 export function emptySubmission(): TurnSubmission {
   return { standingOrders: [], bids: [], actions: [] }
 }

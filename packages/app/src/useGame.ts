@@ -5,10 +5,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createInitialState, resolveTurn } from '@seventh-front/core'
 import type { Bid, GameState, PlayerAction, TurnSubmission } from '@seventh-front/core'
-import { SCENARIO_ID, emptySubmission, newSeed } from './game.js'
+import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
-
-const SAVE_SLOT = 'default'
 
 export interface RejectedEntry {
   action: PlayerAction | Bid
