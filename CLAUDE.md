@@ -216,8 +216,9 @@ Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
 
 Etapp 6, "Kartan och huvudmenyn", `docs/ETAPP6_TEKNISK_SPEC.md` (P65–P72, antagen som ägarbeslut
 2026-09-18) är **ANTAGEN — P65 (huvudmenyn, 2026-09-18), P66 (sektortavlan, front-1/indochina,
-2026-09-18), P67 (sektortavlan, front-laos/laos, 2026-09-19) och P68 (frontlinje-
-interpolationen, 2026-09-19) BYGGDA, P69–P72 återstår.**
+2026-09-18), P67 (sektortavlan, front-laos/laos, 2026-09-19), P68 (frontlinje-interpolationen,
+2026-09-19), P69 (klick-för-att-expandera-sektor, verifierad, 2026-09-19) och P70 (turövergången
+dramatiseras, 2026-09-19) BYGGDA, P71–P72 återstår.**
 Ägarbeslutet är loggat
 (`docs/ANDRINGSLOGG.md`, samma dag) och `docs/DESIGN.md` §18/§21 är omskrivna i samma commit (§18:
 "ingen karta"-pelaren riven, ersatt av en schematisk sektortavla; §21: "hexkarta och taktiskt

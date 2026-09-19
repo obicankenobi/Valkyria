@@ -46,6 +46,13 @@ function parseMoney(text: string): number {
 }
 
 async function startFreshGame(page: Page): Promise<void> {
+  // P70 (ETAPP6_TEKNISK_SPEC.md §5): THE WIRE avslöjar nu händelser en i
+  // taget med en kort fördröjning, avstängt vid prefers-reduced-motion — och
+  // testet nedan läser `.wire-item` direkt efter endTurnButton.click() utan
+  // att vänta in animationen. reducedMotion: 'reduce' gör att ALLA händelser
+  // renderas synkront (exakt den gren komponenten själv har för det), så
+  // kontrollen förblir deterministisk i stället för att racea mot en timer.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   // P65 (ETAPP6_TEKNISK_SPEC.md §3) avslöjade en race som förut var osynlig:
   // en `page.goto('/')` monterar appen, vars EGEN hydrering (useGame.ts +
   // App.tsx:s hasSavedGame-koll) genast öppnar (och därmed, om den inte finns,

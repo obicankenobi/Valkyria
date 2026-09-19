@@ -9,11 +9,48 @@
 // välja" (9.4). Den blockerar INTE att spelaren byter flik eller avslutar
 // turen ändå — 9.3 dokumenterar uttryckligen att en utebliven CRISIS-handling
 // bara ger automatiskt BACK_DOWN, inte ett fel.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { causeChain } from '../wireChain.js'
 import { Panel, Tag } from './ui.js'
+
+// P70 (ETAPP6_TEKNISK_SPEC.md §5): "Ny sekvens: WireEvent-listan avslöjas en
+// händelse i taget med kort fördröjning, avstängd vid prefers-reduced-
+// motion." jsdom saknar `window.matchMedia` helt
+// (verifierat, samma sorts lucka som `indexedDB` — se persistence.ts/P65) —
+// vakten nedan gör hooken ofarlig i test/SSR i stället för att kasta.
+export const REVEAL_INTERVAL_MS = 180
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function useRevealedCount(itemCount: number, resetKey: unknown): number {
+  const reduced = prefersReducedMotion()
+  const [revealed, setRevealed] = useState(reduced ? itemCount : 0)
+
+  useEffect(() => {
+    if (reduced) {
+      setRevealed(itemCount)
+      return
+    }
+    setRevealed(0)
+    if (itemCount === 0) return
+    let shown = 0
+    const timer = setInterval(() => {
+      shown += 1
+      setRevealed(shown)
+      if (shown >= itemCount) clearInterval(timer)
+    }, REVEAL_INTERVAL_MS)
+    return () => clearInterval(timer)
+    // resetKey (wire-referensen) styr avsiktligt NÄR sekvensen spelas om — inte
+    // itemCount, som bara läses vid varje tick och inte ska trigga en omstart.
+  }, [resetKey, reduced])
+
+  return revealed
+}
 
 // delta bär modelländringar (spec 2.6). Pengar visas som pengar, allt annat som
 // råa tal — nyckelnamnet avgör, inte en gissning på storleken.
@@ -144,6 +181,12 @@ export function TheWire({
   const sorted = [...wire].sort((a, b) => b.turn - a.turn)
   const headlines = sorted.filter((e) => e.severity === 'headline').length
   const crisisChosen = draft.actions.some((a) => a.type === 'CRISIS')
+  // P70 (ETAPP6_TEKNISK_SPEC.md §5): telexet avslöjas en händelse i taget —
+  // `wire` (propen, inte `sorted`, som är en NY array varje render) styr NÄR
+  // sekvensen spelas om, så den bara startar när partiets tillstånd faktiskt
+  // ändrats (en ny tur), inte vid varje omrendering.
+  const revealedCount = useRevealedCount(sorted.length, wire)
+  const visible = sorted.slice(0, revealedCount)
 
   return (
     <>
@@ -163,8 +206,8 @@ export function TheWire({
             Quiet on the line. End the turn to set the world in motion.
           </p>
         ) : (
-          <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {sorted.map((event) => (
+          <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="wire-list">
+            {visible.map((event) => (
               <EventRow key={event.id} event={event} wire={wire} />
             ))}
           </ul>

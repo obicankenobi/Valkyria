@@ -10,7 +10,8 @@ aldrig golden-snapshoten. Kan köras parallellt med etapp 5 (P54–P63) utan kro
 båda etapperna skriver i delas.
 
 **Status (2026-09-19): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina), P67
-(sektortavlan, front-laos/laos), P68 (frontlinje-interpolationen) BYGGDA. P69–P72 återstår.**
+(sektortavlan, front-laos/laos), P68 (frontlinje-interpolationen), P69 (klick-för-att-expandera,
+verifierad), P70 (turövergången dramatiseras) BYGGDA. P71–P72 återstår.**
 
 > **Fynd vid antagandet (2026-09-18, se `docs/ANDRINGSLOGG.md`):** `UI_GRANSKNING_OCH_SKARMSPEC.md`,
 > som §0 och §5 ovan hänvisar till som redan levererad, finns INTE i repot — sökt igenom hela
@@ -371,6 +372,14 @@ toleransbaserad assertion, samma stil som andra numeriska tester i repot).
 DOM innan klick, närvarande efter, försvinner vid klick på en annan sektor (en expanderad sektor
 åt gången — håller tavlan kompakt).
 
+> **Klart 2026-09-19 — verifierad, ingen kod krävdes.** Precis som P66:s egen blockquote förutsåg:
+> `expandedSectorId: string | null` (byggd i P66) ger "en sektor åt gången" som en naturlig
+> konsekvens av datastrukturen, inte en särskild regel att implementera. Ett nytt, dedikerat test
+> (`SectorBoard.test.tsx`) bevisar det i stället för att anta det: `.formation-row` saknas i DOM
+> innan klick, finns efter ett klick på en sektornod, och försvinner (ersatt av den nya sektorns
+> egen rad) vid klick på en ANNAN sektornod — samma "verifierad, ingen kod krävdes"-mönster som
+> P53c/P61/P62. Golden ORÖRD (ingen kod alls ändrad, bara testfilen). Se `docs/ANDRINGSLOGG.md`.
+
 ---
 
 ## 5. Övriga tillägg för spelkänsla (P70–P72)
@@ -383,6 +392,33 @@ Ny sekvens: `WireEvent`-listan (redan orsakskedjad via `causeId`) avslöjas en h
 kort fördröjning, avstängd vid `prefers-reduced-motion` (samma respekt som redan finns i
 `styles.css`-kommentaren). Klart när: ett test bevisar att alla händelser renderas synkront när
 `prefers-reduced-motion: reduce` är satt, och sekventiellt annars.
+
+> **Klart 2026-09-19.** Ny `useRevealedCount(itemCount, resetKey)`-hook i `TheWire.tsx` — vid
+> `prefers-reduced-motion: reduce` sätts `revealed` direkt till `itemCount` (synkront, ingen
+> timer startas alls); annars räknas den upp en i taget med `setInterval(..., REVEAL_INTERVAL_MS)`
+> (180 ms, en presentationskonstant, exporterad för testet — inget balanstal, rör bara
+> `packages/app`). `resetKey` är avsiktligt `wire`-propen (referensen), inte `sorted.length` —
+> sekvensen spelas bara om när partiets tillstånd faktiskt ändrats (en ny tur), aldrig vid en
+> orelaterad omrendering. `prefersReducedMotion()` vaktar mot att `window.matchMedia` helt saknas
+> i jsdom (verifierat med ett fristående node-skript mot `jsdom`-paketet direkt, samma sorts lucka
+> som `indexedDB`/P65) — returnerar `false` i stället för att kasta. `.wire-item` fick en kort
+> `animation: wire-reveal 200ms ease-out`-infadning i `styles.css`; den globala
+> `@media (prefers-reduced-motion: reduce) { animation: none !important }`-regeln (redan i filen)
+> stänger av den automatiskt, som ett andra, CSS-nivå-skydd vid sidan av hookens egen JS-vakt.
+> Tre nya tester (`TheWire.reveal.test.tsx`, `window.matchMedia` mockad manuellt): alla händelser
+> synkront vid reducerad rörelse utan att någon timer behöver köras; sekventiell avslöjning en i
+> taget vid `vi.useFakeTimers()`/`vi.advanceTimersByTime(REVEAL_INTERVAL_MS)` (första gången
+> riktiga timers mockas i repot); en tom `wire` kraschar inte i någon av grenarna. **Sidoeffekt
+> upptäckt och fixad innan den blev en trasig testkörning, inte efteråt:** `play-20-turns.spec.ts`s
+> adaptiva STAGE_INCIDENT/BRIBE-regel läser `.wire-item`-innehåll synkront direkt efter
+> `endTurnButton.click()` — utan fix hade den alltid läst en tom eller ofullständig lista. Fixat
+> med `page.emulateMedia({ reducedMotion: 'reduce' })` i `startFreshGame()`, samma deterministiska
+> gren komponenten redan har, i stället för en tidsbaserad `waitForTimeout`-gissning.
+> `persist-mid-turn.spec.ts` rörd inte — har inget `.wire-item`-beroende (kontrollerat, inte
+> antaget). Manuellt verifierat i en riktig Chromium-körning (skärmdumpar vid 50 ms och ~2050 ms
+> efter turslut: tomt respektive delvis avslöjat, exakt det progressionen förutsäger). Golden
+> ORÖRD — ren presentation, ingen `resolve/`, ingen `balance.json`. Fullt testsvep grönt (513
+> tester rotnivå, lint, typecheck, build×3, e2e körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
 
 **P71 — Stations blir kort.** `TheWorld.tsx`s Stations-`<table>` (rad 204–244) byggs om till samma
 kort-mönster `Factions`-panelen redan använder (rad 160–202). Ren konsekvens, ingen ny data. Klart

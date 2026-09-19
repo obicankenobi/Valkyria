@@ -150,3 +150,32 @@ describe('SectorBoard generaliserar till en andra theatre utan hårdkodning (P67
     expect(trailCircle.getAttribute('class')).toContain('is-b')
   })
 })
+
+// P69 (§4.4 punkt 4, §4.6): "klick-för-att-expandera-sektor. Test: formation-row
+// är frånvarande i DOM innan klick, närvarande efter, försvinner vid klick på
+// en annan sektor (en expanderad sektor åt gången — håller tavlan kompakt)."
+// Ingen kod ändrad för P69 — den enda `expandedSectorId: string | null`-staten
+// P66 byggde (se dess egen "BYGGD"-blockquote) ger redan "en åt gången" som en
+// naturlig konsekvens av datastrukturen, inte en särskild regel. Det här är
+// alltså en dedikerad VERIFIERING, samma "verifierad, ingen kod krävdes"-
+// mönster som P53c/P61/P62 följde när mätningen/logiken redan höll.
+describe('SectorBoard — en expanderad sektor åt gången (P69 klart-når)', () => {
+  it('formation-row saknas innan klick, finns efter, och försvinner när en ANNAN sektor klickas', () => {
+    const state = createInitialState('indochina-slice', 'sector-board-seed')
+    state.house.stations = [
+      { id: 'station-1', city: 'SAIGON', nation: 'rvn', depth: 2, exposure: 0, coverage: ['military'], status: 'active' },
+    ]
+
+    render(<SectorBoard front={state.fronts['front-1']!} state={state} />)
+
+    expect(document.querySelector('.formation-row')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('sector-node-hue'))
+    expect(document.querySelector('.formation-row')).toBeTruthy()
+    expect(screen.getByTestId('sector-detail').textContent).toContain('HUE')
+
+    fireEvent.click(screen.getByTestId('sector-node-cu-chi'))
+    expect(screen.getByTestId('sector-detail').textContent).toContain('CU CHI')
+    expect(screen.getByTestId('sector-detail').textContent).not.toContain('HUE')
+  })
+})

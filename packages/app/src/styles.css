@@ -587,6 +587,23 @@ td.is-key {
   border-bottom: 1px solid rgba(33, 41, 50, 0.7);
   padding: 9px 16px;
   transition: background 120ms ease;
+  /* P70 (ETAPP6_TEKNISK_SPEC.md §5): varje rad avslöjas i tur och ordning
+     (TheWire.tsx:s useRevealedCount) — den korta infadningen ger själva
+     avslöjandet dess "dramatisering". Avstängd automatiskt av den globala
+     reduced-motion-regeln nedan (animation: none !important), samma
+     JS-nivå-vakt (prefersReducedMotion) stänger av TAKTEN separat.  */
+  animation: wire-reveal 200ms ease-out;
+}
+
+@keyframes wire-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .wire-item:last-child {
