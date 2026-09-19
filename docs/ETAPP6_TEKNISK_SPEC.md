@@ -10,7 +10,7 @@ aldrig golden-snapshoten. Kan köras parallellt med etapp 5 (P54–P63) utan kro
 båda etapperna skriver i delas.
 
 **Status (2026-09-19): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina), P67
-(sektortavlan, front-laos/laos) BYGGDA. P68–P72 återstår.**
+(sektortavlan, front-laos/laos), P68 (frontlinje-interpolationen) BYGGDA. P69–P72 återstår.**
 
 > **Fynd vid antagandet (2026-09-18, se `docs/ANDRINGSLOGG.md`):** `UI_GRANSKNING_OCH_SKARMSPEC.md`,
 > som §0 och §5 ovan hänvisar till som redan levererad, finns INTE i repot — sökt igenom hela
@@ -341,6 +341,31 @@ fler än en theatre utan hårdkodning av frontantal).
 **P68** — frontlinje-interpolationen (§4.4, punkt 3) med `front.trace`-tondämpning. Test: en känd
 `trace`-sekvens ger en känd, avrundningsbar SVG-koordinat (ingen pixel-för-pixel-snapshot — en
 toleransbaserad assertion, samma stil som andra numeriska tester i repot).
+
+> **Klart 2026-09-19.** Ny, exporterad `interpolateFrontPosition(layout, position)` i
+> `SectorBoard.tsx` — läser explicit `SectorLayoutEntry[]`-arrayen i LISTORDNING (inte
+> grannskapsgrafen `neighbours` bygger linjerna av; de råkar sammanfalla i dag eftersom båda
+> theatres redan är en rak kedja, men koden gör aldrig det antagandet). `position` (-100..100)
+> mappas till en andel `t` (0..1, samma formel `markerPct` redan använde: `(position+100)/200`),
+> skalas mot antalet SEGMENT (`layout.length - 1`) för att hitta rätt par grannoder, och
+> interpoleras linjärt mellan dem — klampad i båda ändar så en extrapolerad position (bör aldrig
+> hända, `position` är redan -100..100 i `types.ts`) aldrig kan hamna utanför tavlan. `front.trace`
+> (§4.4, ordagrant "de TRE föregående värdena"): `trace.slice(-3)`, inte alla fyra
+> `FRONT_TRACE_LENGTH` kan hålla — `fronts.ts`s egen ordning (`trace.push(front.position)` FÖRE
+> `front.position` uppdateras samma tur) gör trace:s sista element till den SENAST föregående
+> positionen, så `slice(-3)` är exakt "de tre föregående", visade nyast→äldst (mest→minst synliga,
+> `opacity` 0,5/0,35/0,2) så tondämpningen läses som bakåt i tiden. Markören själv: en amber cirkel
+> (`.frontline-marker`, samma telexgula ton den gamla `.frontline-marker`-stapeln hade),
+> `pointer-events: none` — informativ, aldrig ett klickmål (sektornoderna under äger klicket).
+> Nio nya tester (`SectorBoard.frontline.test.tsx`): fem mot `interpolateFrontPosition` isolerat
+> (första/sista noden exakt, mittsegmentets mittpunkt handräknad, en tvånodslayout, klampning),
+> fyra mot ett riktigt `<SectorBoard/>`-render med en KÄND `front.trace`-sekvens som ger kända,
+> handräknade SVG-koordinater (`toBeCloseTo`, samma toleransstil som `board.test.ts`/`pricing.
+> test.ts`), plus tondämpningens ordning (strikt avtagande opacitet) och två kantfall (färre än
+> tre spårpunkter, helt tom trace vid partistart — ingen krasch). Golden ORÖRD — ren presentation,
+> `front.trace`/`front.position` bara LÄSTA, aldrig skrivna. Manuellt verifierat i en riktig
+> Chromium-körning (skärmdump). Fullt testsvep grönt (509 tester rotnivå, lint, typecheck,
+> build×3, e2e). Se `docs/ANDRINGSLOGG.md`.
 
 **P69** — klick-för-att-expandera-sektor (§4.4, punkt 4). Test: `formation-row` är frånvarande i
 DOM innan klick, närvarande efter, försvinner vid klick på en annan sektor (en expanderad sektor

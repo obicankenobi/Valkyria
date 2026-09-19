@@ -216,7 +216,8 @@ Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
 
 Etapp 6, "Kartan och huvudmenyn", `docs/ETAPP6_TEKNISK_SPEC.md` (P65–P72, antagen som ägarbeslut
 2026-09-18) är **ANTAGEN — P65 (huvudmenyn, 2026-09-18), P66 (sektortavlan, front-1/indochina,
-2026-09-18) och P67 (sektortavlan, front-laos/laos, 2026-09-19) BYGGDA, P68–P72 återstår.**
+2026-09-18), P67 (sektortavlan, front-laos/laos, 2026-09-19) och P68 (frontlinje-
+interpolationen, 2026-09-19) BYGGDA, P69–P72 återstår.**
 Ägarbeslutet är loggat
 (`docs/ANDRINGSLOGG.md`, samma dag) och `docs/DESIGN.md` §18/§21 är omskrivna i samma commit (§18:
 "ingen karta"-pelaren riven, ersatt av en schematisk sektortavla; §21: "hexkarta och taktiskt
@@ -257,6 +258,14 @@ dataspost, `SECTOR_LAYOUTS.laos` (`plain-of-jars`, `ho-chi-minh-trail`) — NOLL
 kräver bevisat. Skyddsräcke 4:s "hel theatre utan layoutdata"-test flyttat till en fabricerad
 `theatreId` (front-laos har nu layoutdata). Tre nya tester, samma kodväg som indochina.
 Manuellt verifierat i en riktig Chromium-körning. Golden ORÖRD. Se `docs/ANDRINGSLOGG.md`.
+**P68 BYGGD 2026-09-19**: frontlinje-interpolationen. Ny `interpolateFrontPosition()`
+(`SectorBoard.tsx`) mappar `front.position` (-100..100) till en koordinat linjärt interpolerad
+över `SECTOR_LAYOUTS`s noder i LISTORDNING, klampad i båda ändar. `front.trace` (ordagrant "de
+TRE föregående värdena"): `trace.slice(-3)`, visade nyast→äldst med avtagande opacitet
+(0,5/0,35/0,2). Amber markör, `pointer-events: none` (sektornoderna äger klicket). Nio nya
+tester — fem mot funktionen isolerat (handräknade koordinater, `toBeCloseTo`), fyra mot ett
+riktigt render med en känd trace-sekvens. Golden ORÖRD (bara läsning). Manuellt verifierat i en
+riktig Chromium-körning. Se `docs/ANDRINGSLOGG.md`.
 
 Etapp 5:s kodbygge (P53–P64) är klart (se ovan) men väntar på ägarens omdöme (avsnitt 0:s fråga)
 och räknas därför inte som historik ännu. **Läs den promptens avsnitt i den spec som gäller innan

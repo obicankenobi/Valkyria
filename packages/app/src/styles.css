@@ -1325,6 +1325,22 @@ td.is-key {
   pointer-events: none;
 }
 
+/* P68 (ETAPP6_TEKNISK_SPEC.md §4.4 punkt 3): frontlinje-indikatorn — samma
+   telexgula markör som den gamla 1D-stapelns .frontline-marker hade, nu
+   projicerad på tavlan. pointer-events: none — markören är information,
+   aldrig ett klickmål (noderna under den äger klicket). */
+.frontline-marker {
+  fill: var(--amber);
+  stroke: var(--bg);
+  stroke-width: 0.6;
+  pointer-events: none;
+}
+
+.frontline-marker-trace {
+  fill: var(--amber);
+  pointer-events: none;
+}
+
 /* Respektera användarens inställning — rörelsen är dekor, inte information. */
 @media (prefers-reduced-motion: reduce) {
   * {

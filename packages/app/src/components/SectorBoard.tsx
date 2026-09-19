@@ -6,12 +6,13 @@
 // hexkarta (DESIGN.md §18/§21, reviderat 2026-09-18) — sektorernas placering
 // är fast, handgjord layoutdata (sectorLayout.ts), inte härledd geografi.
 //
-// P66 bygger sidhuvudet, moral/styrka-mätarna, linjerna, noderna och klick-
-// för-att-expandera (§4.4 punkt 1/2/4). Frontlinje-indikatorn (§4.4 punkt 3,
-// och den gamla 1D .frontline-stapeln den ersätter) är EXPLICIT P68:s egen
-// prompt (§4.6) — en medveten, tillfällig lucka i P66/P67, inte glömd: att
-// bygga den nu hade föregripit P68:s egen "känd trace-sekvens ger känd
-// koordinat"-test.
+// P66 byggde sidhuvudet, moral/styrka-mätarna, linjerna, noderna och klick-
+// för-att-expandera (§4.4 punkt 1/2/4). P68 (§4.4 punkt 3) lägger till
+// frontlinje-indikatorn — front.position (plus de tre föregående värdena i
+// front.trace, tonade svagare) interpolerat linjärt över sektorernas x/y i
+// LISTORDNING (inte grannskapsgrafen — de råkar sammanfalla här eftersom
+// båda theatres redan är en linjär kedja, men interpolateFrontPosition
+// läser explicit `layout`-arrayen, aldrig `neighbours`).
 import { useState } from 'react'
 import { deriveSectorControl } from '@seventh-front/core'
 import type { Front, FormationDisplay, GameState, SectorControl } from '@seventh-front/core'
@@ -87,6 +88,35 @@ function uniqueEdges(layout: SectorLayoutEntry[]): [SectorLayoutEntry, SectorLay
   return edges
 }
 
+// P68 (ETAPP6_TEKNISK_SPEC.md §4.4 punkt 3): "front.position ... interpolerat
+// linjärt över sektorernas x/y i den ordning de listas för theatern — en ren
+// visualisering av samma skalär TheWorld.tsx redan ritar som en 1D-markör,
+// bara projicerad på tavlans två dimensioner i stället för en rak linje."
+// position går -100 (sida A vunnit, längst mot layout[0]) … +100 (sida B
+// vunnit, längst mot layout[sista]) — samma skala den gamla `markerPct`-
+// beräkningen (`(position + 100) / 200`) redan använde. Klampad — position
+// är redan -100..100 per types.ts, men en framtida ändring ska aldrig kunna
+// producera en koordinat utanför tavlan.
+export function interpolateFrontPosition(layout: SectorLayoutEntry[], position: number): { x: number; y: number } {
+  const first = layout[0]
+  if (!first) return { x: 50, y: 50 } // tom layout når aldrig hit i praktiken — SectorBoard renderar bara med layout.length > 0
+  if (layout.length === 1) return { x: first.x, y: first.y }
+
+  const clamped = Math.max(-100, Math.min(100, position))
+  const t = (clamped + 100) / 200 // 0..1
+  const segments = layout.length - 1
+  const scaled = t * segments
+  const index = Math.min(Math.floor(scaled), segments - 1)
+  const localT = scaled - index
+
+  const from = layout[index]!
+  const to = layout[index + 1]!
+  return {
+    x: from.x + (to.x - from.x) * localT,
+    y: from.y + (to.y - from.y) * localT,
+  }
+}
+
 // Sidhuvudet och moral/styrka-mätarna, oförändrade mot den gamla markupen —
 // samma information, bara den gamla 1D-frontlinjestapeln och den gamla
 // textlistan under den bytt mot tavlan.
@@ -159,6 +189,14 @@ export function SectorBoard({ front, state }: { front: Front; state: GameState }
   const expandedControl = expandedSectorId ? controlBySector.get(expandedSectorId) : undefined
   const expandedEntry = expandedSectorId ? layout.find((entry) => entry.sectorId === expandedSectorId) : undefined
 
+  // §4.4 punkt 3, ordagrant: "de TRE föregående värdena i front.trace" — inte
+  // alla fyra FRONT_TRACE_LENGTH kan hålla (fronts.ts). trace:s sista element
+  // är den SENASTE föregående positionen (pushad före front.position
+  // uppdateras samma tur, se fronts.ts), så de tre sista är exakt "de tre
+  // föregående", äldst→nyast i arrayen. Visas nyast→äldst (mest → minst
+  // synlig) för att tondämpningen ska läsas som "bakåt i tiden".
+  const tracePositions = front.trace.slice(-3).reverse()
+
   return (
     <div className="front">
       <FrontHeader front={front} state={state} />
@@ -188,6 +226,24 @@ export function SectorBoard({ front, state }: { front: Front; state: GameState }
               </g>
             )
           })}
+          {tracePositions.map((tracePosition, i) => {
+            const point = interpolateFrontPosition(layout, tracePosition)
+            return (
+              <circle
+                key={`trace-${i}`}
+                cx={point.x}
+                cy={point.y}
+                r={2}
+                className="frontline-marker-trace"
+                style={{ opacity: 0.5 - i * 0.15 }}
+                data-testid={`frontline-marker-trace-${i}`}
+              />
+            )
+          })}
+          {(() => {
+            const point = interpolateFrontPosition(layout, front.position)
+            return <circle cx={point.x} cy={point.y} r={2.6} className="frontline-marker" data-testid="frontline-marker" />
+          })()}
         </svg>
 
         {expandedEntry && (
