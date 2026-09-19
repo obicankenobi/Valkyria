@@ -18,11 +18,13 @@ function doomsdayTone(value: number): 'green' | 'amber' | 'red' {
 // ersätts: förbanden har redan en sectorId. Utgruppering behöver inte längre
 // härledas — den finns." Grupperar bara, härleder ingenting.
 //
-// P66 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter den här textlistan
-// för varje theatre som redan har en post i SECTOR_LAYOUTS (front-1/indochina
-// från och med den här prompten). En theatre utan layoutdata (front-laos,
-// tills P67) faller fortsatt tillbaka på den gamla, rent typografiska listan
-// nedan — skyddsräcke 4:s helhetsfall, inte en bugg.
+// P66/P67 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter den här
+// textlistan för varje theatre som redan har en post i SECTOR_LAYOUTS —
+// P66 (front-1/indochina), P67 (front-laos/laos), utan att röra en rad här
+// eller i SectorBoard.tsx (bara en ny dataspost). Funktionen och
+// OldFrontCard nedan lever kvar oanvända av dagens enda scenario, men är
+// fortfarande skyddsräcke 4:s helhetsfall för en FRAMTIDA theatre utan
+// layoutdata — inte dödkod att städa bort.
 function groupBySector(state: GameState, front: Front): Map<string, FormationDisplay[]> {
   const bySector = new Map<string, FormationDisplay[]>()
   for (const formation of front.formations) {
@@ -155,12 +157,11 @@ export function TheWorld({ state }: { state: GameState }) {
 
       <Panel title="Fronts" flush>
         {Object.values(state.fronts).map((front) =>
-          // P66 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter hela det
-          // gamla per-front-kortet för varje theatre SECTOR_LAYOUTS redan
-          // känner till (front-1/indochina från och med den här prompten). En
-          // theatre utan layoutdata (front-laos, tills P67) faller tillbaka på
-          // den gamla, rent typografiska markupen nedan — skyddsräcke 4:s
-          // helhetsfall, inte en bugg.
+          // P66/P67 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter hela
+          // det gamla per-front-kortet för varje theatre SECTOR_LAYOUTS
+          // känner till — i dag båda (front-1/indochina, front-laos/laos).
+          // OldFrontCard nedan är skyddsräcke 4:s helhetsfall för en
+          // FRAMTIDA theatre utan layoutdata, inte en bugg eller dödkod.
           SECTOR_LAYOUTS[front.theatreId] ? (
             <SectorBoard front={front} state={state} key={front.id} />
           ) : (

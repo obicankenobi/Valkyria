@@ -1,12 +1,20 @@
-// SectorBoard.test.tsx — P66 klart-när (ETAPP6_TEKNISK_SPEC.md §4.6): "jsdom-
+// SectorBoard.test.tsx — P66 klart-når (ETAPP6_TEKNISK_SPEC.md §4.6): "jsdom-
 // render, en nod per sektor, ingen förbandsdata synlig innan sektorn
 // klickats." Renderar SectorBoard PÅ RIKTIGT, samma mönster som
 // TheFloor.weights.test.tsx/TheWorld.formations.test.tsx.
+//
+// P67 (§4.6): "samma för front-laos/laos (bevisar att layouten och
+// komponenten generaliserar över fler än en theatre utan hårdkodning av
+// frontantal)" — se beskrivningen 'SectorBoard generaliserar ...' nedan.
+// Ingen kod i SectorBoard.tsx eller queries.ts rördes för P67, bara en ny
+// post i SECTOR_LAYOUTS (sectorLayout.ts) — skyddsräcke 4:s "hel theatre
+// utan layoutdata"-test flyttades därför till en FABRICERAD theatreId (ingen
+// riktig front saknar längre layoutdata i det enda scenario som finns).
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
-import type { Formation, GameState } from '@seventh-front/core'
+import type { Formation, Front, GameState } from '@seventh-front/core'
 import { SectorBoard } from '../src/components/SectorBoard.js'
 
 afterEach(cleanup)
@@ -15,6 +23,10 @@ function withFormations(state: GameState, formations: Formation[]): GameState {
   const clone: GameState = JSON.parse(JSON.stringify(state))
   clone.fronts['front-1']!.formations = formations
   return clone
+}
+
+function withFabricatedTheatre(front: Front): Front {
+  return { ...front, theatreId: 'unmapped-theatre' }
 }
 
 describe('SectorBoard (§4.4, P66 klart-når)', () => {
@@ -87,12 +99,54 @@ describe('SectorBoard (§4.4, P66 klart-når)', () => {
     expect(screen.queryByTestId('sector-node-unmapped-sector')).toBeNull()
   })
 
-  it('skyddsräcke 4: en theatre helt utan layoutdata (front-laos, tills P67) faller tillbaka på en textlista, ingen krasch, ingen SVG', () => {
+  it('skyddsräcke 4: en theatre helt utan layoutdata faller tillbaka på en textlista, ingen krasch, ingen SVG', () => {
     const state = createInitialState('indochina-slice', 'sector-board-seed')
+    const front = withFabricatedTheatre(state.fronts['front-laos']!)
 
-    const { container } = render(<SectorBoard front={state.fronts['front-laos']!} state={state} />)
+    const { container } = render(<SectorBoard front={front} state={state} />)
 
     expect(container.querySelector('svg')).toBeNull()
     expect(screen.getByTestId('sector-board-unlayouted')).toBeTruthy()
+  })
+})
+
+// P67 (§4.6): samma tavla, samma komponent, samma deriveSectorControl — bara
+// en ny SECTOR_LAYOUTS-post (laos) bevisar att ingenting i P66:s bygge var
+// tyst hårdkodat mot indochinas fyra sektorer eller mot exakt EN front.
+describe('SectorBoard generaliserar till en andra theatre utan hårdkodning (P67 klart-när)', () => {
+  it('en nod per sektor för front-laos/laos (plain-of-jars, ho-chi-minh-trail), ingen förbandsdata synlig innan klick', () => {
+    const state = createInitialState('indochina-slice', 'sector-board-laos-seed')
+
+    render(<SectorBoard front={state.fronts['front-laos']!} state={state} />)
+
+    expect(screen.getByTestId('sector-node-plain-of-jars')).toBeTruthy()
+    expect(screen.getByTestId('sector-node-ho-chi-minh-trail')).toBeTruthy()
+    expect(screen.queryByTestId('sector-detail')).toBeNull()
+    expect(document.querySelector('.formation-row')).toBeNull()
+  })
+
+  it('klick på en laos-nod öppnar dess formationslista — samma interaktion som indochina, ingen egen kodväg', () => {
+    const state = createInitialState('indochina-slice', 'sector-board-laos-seed')
+    state.house.stations = [
+      { id: 'station-1', city: 'VIENTIANE', nation: 'laos', depth: 2, exposure: 0, coverage: ['military'], status: 'active' },
+    ]
+
+    render(<SectorBoard front={state.fronts['front-laos']!} state={state} />)
+
+    fireEvent.click(screen.getByTestId('sector-node-plain-of-jars'))
+    expect(screen.getByTestId('sector-detail')).toBeTruthy()
+    expect(document.querySelector('.formation-row')).toBeTruthy()
+  })
+
+  it('noderna färgas efter deriveSectorControl:s side precis som för indochina — plain-of-jars (bara laos, sida a) får is-a, ho-chi-minh-trail (bara nlf, sida b) får is-b', () => {
+    const state = createInitialState('indochina-slice', 'sector-board-laos-seed')
+
+    render(<SectorBoard front={state.fronts['front-laos']!} state={state} />)
+
+    const plainCircle = document.querySelector('[data-testid="sector-node-plain-of-jars"] circle')!
+    const trailCircle = document.querySelector('[data-testid="sector-node-ho-chi-minh-trail"] circle')!
+
+    expect(plainCircle.getAttribute('class')).toContain('is-a')
+    expect(trailCircle.getAttribute('class')).toContain('is-b')
   })
 })

@@ -215,8 +215,9 @@ Bakgrunden till etapp 2 finns i dess egna avsnitt 0/1; den
 `docs/RAPPORT2_LANGSIKTIG_PLAN.md` (långsiktig plan).
 
 Etapp 6, "Kartan och huvudmenyn", `docs/ETAPP6_TEKNISK_SPEC.md` (P65–P72, antagen som ägarbeslut
-2026-09-18) är **ANTAGEN — P65 (huvudmenyn) och P66 (sektortavlan, front-1/indochina) BYGGDA
-2026-09-18, P67–P72 återstår.** Ägarbeslutet är loggat
+2026-09-18) är **ANTAGEN — P65 (huvudmenyn, 2026-09-18), P66 (sektortavlan, front-1/indochina,
+2026-09-18) och P67 (sektortavlan, front-laos/laos, 2026-09-19) BYGGDA, P68–P72 återstår.**
+Ägarbeslutet är loggat
 (`docs/ANDRINGSLOGG.md`, samma dag) och `docs/DESIGN.md` §18/§21 är omskrivna i samma commit (§18:
 "ingen karta"-pelaren riven, ersatt av en schematisk sektortavla; §21: "hexkarta och taktiskt
 lager" uppdelad så bara "taktiskt lager" kvarstår bortskuret). Ren frontend-etapp (`packages/app` +
@@ -250,6 +251,12 @@ P69:s "en åt gången"-egenskap redan nu. Skyddsräcke 4 åt båda hållen (hel 
 layoutdata → gammal textlista, en sektor utan layoutpost → fallback-rad). Ett latent IndexedDB-
 race i `play-20-turns.spec.ts` upptäckt och fixat (menyn avslöjade det). Manuellt verifierat i
 en riktig Chromium-körning. Golden ORÖRD. Se `docs/ANDRINGSLOGG.md`.
+**P67 BYGGD 2026-09-19**: sektortavlan generaliserad till `front-laos`/`laos`. En enda ny
+dataspost, `SECTOR_LAYOUTS.laos` (`plain-of-jars`, `ho-chi-minh-trail`) — NOLL rader ändrade i
+`SectorBoard.tsx` eller `deriveSectorControl`, precis vad "generaliserar utan hårdkodning"
+kräver bevisat. Skyddsräcke 4:s "hel theatre utan layoutdata"-test flyttat till en fabricerad
+`theatreId` (front-laos har nu layoutdata). Tre nya tester, samma kodväg som indochina.
+Manuellt verifierat i en riktig Chromium-körning. Golden ORÖRD. Se `docs/ANDRINGSLOGG.md`.
 
 Etapp 5:s kodbygge (P53–P64) är klart (se ovan) men väntar på ägarens omdöme (avsnitt 0:s fråga)
 och räknas därför inte som historik ännu. **Läs den promptens avsnitt i den spec som gäller innan

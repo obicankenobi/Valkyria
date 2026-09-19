@@ -9,8 +9,8 @@ härledningsfunktion i `packages/core/src/queries.ts` — aldrig `resolve/`, ald
 aldrig golden-snapshoten. Kan köras parallellt med etapp 5 (P54–P63) utan krockrisk: ingen fil de
 båda etapperna skriver i delas.
 
-**Status (2026-09-18): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina) BYGGDA. P67–P72
-återstår.**
+**Status (2026-09-19): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina), P67
+(sektortavlan, front-laos/laos) BYGGDA. P68–P72 återstår.**
 
 > **Fynd vid antagandet (2026-09-18, se `docs/ANDRINGSLOGG.md`):** `UI_GRANSKNING_OCH_SKARMSPEC.md`,
 > som §0 och §5 ovan hänvisar till som redan levererad, finns INTE i repot — sökt igenom hela
@@ -322,6 +322,21 @@ en nod per sektor, ingen förbandsdata synlig innan sektorn klickats).
 
 **P67** — samma för `front-laos`/`laos` (bevisar att layouten och komponenten generaliserar över
 fler än en theatre utan hårdkodning av frontantal).
+
+> **Klart 2026-09-19.** En enda ny dataspost — `SECTOR_LAYOUTS.laos` (`plain-of-jars`,
+> `ho-chi-minh-trail`, koordinaterna ur §4.2:s ursprungliga snippet) i `sectorLayout.ts`. Noll
+> rader ändrade i `SectorBoard.tsx` eller `queries.ts`s `deriveSectorControl` — precis vad
+> "generaliserar utan hårdkodning" kräver bevisat, inte antaget. Skyddsräcke 4:s "hel theatre
+> utan layoutdata"-test (P66) gick inte längre att köra mot `front-laos` (den har nu
+> layoutdata) — flyttat till en fabricerad `theatreId` i stället, samma fallback-väg, verifierat
+> att den fortfarande finns kvar för en framtida theatre. Tre nya tester
+> (`SectorBoard.test.tsx`): en nod per laos-sektor med förbandsdata gömd innan klick (samma
+> klart-när-form som P66), klick öppnar formationslistan, och nodfärgning (`plain-of-jars`
+> bara `laos`/sida a → `is-a`, `ho-chi-minh-trail` bara `nlf`/sida b → `is-b`) — allt via SAMMA
+> kodväg som indochina, inget eget specialfall. Manuellt verifierat i en riktig
+> Chromium-körning (skärmdump): båda noderna, linjen mellan dem, klicket. Golden ORÖRD. Fullt
+> testsvep grönt (501 tester rotnivå, lint, typecheck, build×3, e2e körd två gånger). Se
+> `docs/ANDRINGSLOGG.md`.
 
 **P68** — frontlinje-interpolationen (§4.4, punkt 3) med `front.trace`-tondämpning. Test: en känd
 `trace`-sekvens ger en känd, avrundningsbar SVG-koordinat (ingen pixel-för-pixel-snapshot — en
