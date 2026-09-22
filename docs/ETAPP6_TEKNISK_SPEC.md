@@ -9,9 +9,10 @@ härledningsfunktion i `packages/core/src/queries.ts` — aldrig `resolve/`, ald
 aldrig golden-snapshoten. Kan köras parallellt med etapp 5 (P54–P63) utan krockrisk: ingen fil de
 båda etapperna skriver i delas.
 
-**Status (2026-09-19): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina), P67
+**Status (2026-09-22): P65 (huvudmenyn), P66 (sektortavlan, front-1/indochina), P67
 (sektortavlan, front-laos/laos), P68 (frontlinje-interpolationen), P69 (klick-för-att-expandera,
-verifierad), P70 (turövergången dramatiseras) BYGGDA. P71–P72 återstår.**
+verifierad), P70 (turövergången dramatiseras), P71 (Stations blir kort), P72 (ljudlagrets tysta
+infrastruktur) BYGGDA. Etapp 6 är därmed HELT KLAR — samtliga åtta prompter (P65–P72).**
 
 > **Fynd vid antagandet (2026-09-18, se `docs/ANDRINGSLOGG.md`):** `UI_GRANSKNING_OCH_SKARMSPEC.md`,
 > som §0 och §5 ovan hänvisar till som redan levererad, finns INTE i repot — sökt igenom hela
@@ -424,11 +425,64 @@ kort fördröjning, avstängd vid `prefers-reduced-motion` (samma respekt som re
 kort-mönster `Factions`-panelen redan använder (rad 160–202). Ren konsekvens, ingen ny data. Klart
 när: ingen `<table>` kvar i `TheWorld.tsx`, ett snapshot-test uppdaterat.
 
+> **Klart 2026-09-22.** Stations-panelen återanvänder EXAKT samma CSS-klasser som Factions-kortet
+> redan definierar (`.faction-card`/`-head`/`-name`/`-meters`) i stället för att införa en parallell
+> `.station-*`-uppsättning — de var redan generiska per-item-kortklasser, inte semantiskt låsta till
+> fraktioner, så återanvändningen är den minsta möjliga diffen som ger "samma kort-mönster"
+> bokstavligt. Huvudet visar stad + en sammanfattande undertextrad (nation · djup · coverage) +
+> statustaggar (Active/Dormant/Burned + den villkorade "Under surveillance", oförändrad logik och
+> tröskel från `DISPLAY_THRESHOLDS.exposureBurnThreshold`); en `Meter`-rad visar exponeringen i
+> stället för den gamla handrullade `Bar`+siffra-kombinationen — `Bar`-importen i `TheWorld.tsx`
+> blev därmed oanvänd och togs bort. Repot saknar en `toMatchSnapshot`-infrastruktur, så "ett
+> snapshot-test" läst som samma slags riktiga jsdom-render de andra panelerna redan testas med
+> (`TheWorld.formations.test.tsx`, `ThePolitics.gating.test.tsx`) — tre nya tester
+> (`TheWorld.stations.test.tsx`): ingen `<table>` kvar, korrekt fältvisning i kortform, och att
+> "Under surveillance" bara triggas för en AKTIV station över tröskeln (en burned station med
+> ännu högre exponering visas aldrig med den taggen). Manuellt verifierat i en riktig
+> Chromium-körning (skärmdump). Golden ORÖRD — ren presentation, ingen ny data. Fullt testsvep
+> grönt (516 tester rotnivå, lint, typecheck, build×3, e2e).
+
 **P72 — Ljudlager.** Web Audio-baserade korta effekter (turavslut, doomsday-tröskelpassage,
 knapptryck), en global mute-toggle sparad i `persistence.ts` och synlig i huvudmenyn (§3).
 **Förutsätter att ljudfiler skaffats** (CC0-källor, se §8) — bygg den tysta infrastrukturen
 (mute-toggle, uppspelningskrokar) även om filerna saknas vid körtillfället; koppla in de faktiska
 ljuden så fort de finns, utan att behöva röra koden igen.
+
+> **Klart 2026-09-22.** Ny fil `packages/app/src/sound.ts` — en fast `SoundEffect`-union
+> (`'turn-end' | 'doomsday-threshold' | 'button-press'`) mappad mot `public/sounds/*.mp3`
+> (Vites vanliga statiska-filkonvention; ingen fil finns än, exakt §2/§8:s kända begränsning).
+> `playSound()` sväljer VARJE fel tyst — saknad fil (`fetch` ger `!response.ok`), trasig
+> `decodeAudioData`, och `AudioContext` HELT FRÅNVARANDE i jsdom (verifierat med ett fristående
+> node-skript mot `jsdom`-paketet direkt, samma sorts miljölucka som `matchMedia`/`indexedDB`
+> — se P65/P70) — i stället för att kasta, precis den "tysta infrastruktur"-egenskap prompten
+> efterfrågar. En ren, DOM-fri `crossedDoomsdayThreshold(before, after, thresholds)` avgör
+> "doomsday-tröskelpassage": en UPPÅTGÅENDE korsning av EN ELLER FLERA av `DISPLAY_THRESHOLDS`s
+> redan existerande tre doomsday-nivåer (watch/crisis/exchange, samma tal `TheWorld.tsx`s
+> `Meter`-märken redan visar) — inget nytt balanstal. Turavslut och tröskelpassage triggas
+> tillsammans i `useGame.ts`s `endTurn`, den enda platsen som synkront har BÅDE `state.doomsday`
+> (före) och `result.state.doomsday` (efter) i samma anrop — `App.tsx`s egen `handleEndTurn` har
+> bara vad React redan hunnit rendera, inte det färska before/after-paret. "Knapptryck" löst med
+> EN enda `document`-nivå click-delegering i `App.tsx` (`target.closest('button')`) i stället för
+> att röra varje enskild knappkomponent i alla fyra vyerna — samma "en uppgift i taget"-princip
+> som resten av etappen. Mute-togglen: `persistence.ts` fick `loadMuted`/`saveMuted` (nya
+> funktioner, `SOUND_SETTINGS_KEY = 'settings:sound'` i SAMMA objektlager som spardatan — ingen
+> `DB_VERSION`-höjning eller migrering behövs, samma "ingen ändring av befintliga funktioner"-
+> princip som P65:s `hasSavedGame`); `MainMenu.tsx` fick två nya props (`muted`/`onToggleMuted`)
+> och en synlig `SOUND: ON`/`SOUND: OFF`-knapp; `App.tsx` läser/skriver via samma
+> förkastat-löfte-är-"omutad"-gräns som `hasSavedGame` redan drar för "inget sparat parti", och
+> håller `sound.ts`s modulnivå-flagga i synk med React-staten i en egen `useEffect`. Nio nya
+> tester (`sound.test.ts`, DOM-fria för `crossedDoomsdayThreshold`, `playSound` bevisat att
+> aldrig kasta med/utan mute i jsdom) plus två nya `MainMenu`-tester (togglens två textlägen,
+> `onToggleMuted` anropad vid klick) — befintliga `App.menu.test.tsx`-anrop till `<MainMenu>`
+> uppdaterade med de två nya obligatoriska propsen. Manuellt verifierat i en riktig
+> Chromium-körning: togglen växlar `SOUND: ON` ↔ `SOUND: OFF`, noll konsolfel trots att
+> klickdelegeringen (och därmed ett verkligt `fetch`-404-försök mot en ännu obefintlig
+> `button-press.mp3`) triggas för varje klick — samma nollfel-kontroll som redan täcker hela
+> `play-20-turns.spec.ts`s tjugoturersparti, körd två gånger i rad efter ändringen. Golden ORÖRD
+> — allt nytt ligger i `packages/app`, `packages/core` orört. Fullt testsvep grönt (527 tester
+> rotnivå, lint, typecheck, build×3, e2e körd två gånger i rad).
+>
+> **Etapp 6 är därmed HELT KLAR — samtliga åtta prompter (P65–P72) byggda.**
 
 ---
 

@@ -1284,6 +1284,14 @@ td.is-key {
   font-size: 13px;
 }
 
+/* P72 (ETAPP6_TEKNISK_SPEC.md §5): mute-togglen, mindre och tystare än
+   Continue/New Game — den är en inställning, inte en spelhandling. */
+.menu-mute {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+}
+
 /* ── Sector board (P66, ETAPP6_TEKNISK_SPEC.md §4.4) ─────────────────── */
 
 .sector-board {

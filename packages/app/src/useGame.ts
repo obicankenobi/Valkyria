@@ -3,10 +3,21 @@
 // ETAPP1_TEKNISK_SPEC.md avsnitt 8 (useState-exemplet). Ingen state-
 // hanteringsbibliotek — bara useState, exakt som specen ber om.
 import { useCallback, useEffect, useState } from 'react'
-import { createInitialState, resolveTurn } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, createInitialState, resolveTurn } from '@seventh-front/core'
 import type { Bid, GameState, PlayerAction, TurnSubmission } from '@seventh-front/core'
 import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
+import { crossedDoomsdayThreshold, playSound } from './sound.js'
+
+// P72 (ETAPP6_TEKNISK_SPEC.md §5): "doomsday-tröskelpassage" läst som en av
+// de tre nivåer THE WORLD redan visar spelaren (Meter-märkena i TheWorld.tsx)
+// — inget nytt balanstal, bara samma tre DISPLAY_THRESHOLDS-fält återanvända
+// som en lista.
+const DOOMSDAY_SOUND_THRESHOLDS = [
+  DISPLAY_THRESHOLDS.doomsdayCrisisWatch,
+  DISPLAY_THRESHOLDS.doomsdayCrisisEvent,
+  DISPLAY_THRESHOLDS.doomsdayNuclearExchange,
+]
 
 export interface RejectedEntry {
   action: PlayerAction | Bid
@@ -104,6 +115,16 @@ export function useGame(): UseGameResult {
   const endTurn = useCallback(() => {
     if (state.status.kind === 'ended') return
     const result = resolveTurn(state, draft)
+    // P72 (ETAPP6_TEKNISK_SPEC.md §5): "turavslut" och "doomsday-
+    // tröskelpassage" delar den enda plats som synkront har BÅDE state
+    // (före) och result.state (efter) — App.tsx:s egen handleEndTurn har
+    // bara det React redan hunnit rendera, inte det färska before/after-
+    // paret. playSound() sväljer alla fel själv (se sound.ts), så inget
+    // try/catch behövs här.
+    void playSound('turn-end')
+    if (crossedDoomsdayThreshold(state.doomsday, result.state.doomsday, DOOMSDAY_SOUND_THRESHOLDS)) {
+      void playSound('doomsday-threshold')
+    }
     setState(result.state)
     setDraft(emptySubmission())
     setLastRejected(result.rejected)

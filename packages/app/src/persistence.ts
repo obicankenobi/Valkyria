@@ -99,3 +99,42 @@ export async function hasSavedGame(slot: string): Promise<boolean> {
   const saved = await loadGame(slot)
   return saved !== null
 }
+
+// P72 (ETAPP6_TEKNISK_SPEC.md §5): "en global mute-toggle sparad i
+// persistence.ts". Delar samma objektlager (STORE_NAME) och databas som
+// spardatan i stället för ett eget schema/en egen version — nyckeln
+// 'settings:sound' krockar aldrig med `saveKey(slot)`s `save:${slot}`-form,
+// så ingen DB_VERSION-höjning eller migrering behövs (samma "ingen ändring
+// av befintliga funktioner"-princip som hasSavedGame ovan, P65). Anropsplatsen
+// (App.tsx) drar samma gräns som hasSavedGame/loadGame: ett förkastat löfte
+// (IndexedDB otillgängligt) tolkas som "omutad", inte som ett fel.
+const SOUND_SETTINGS_KEY = 'settings:sound'
+
+export async function loadMuted(): Promise<boolean> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<boolean | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(SOUND_SETTINGS_KEY)
+      request.onsuccess = () => resolve(request.result as boolean | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? false
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveMuted(muted: boolean): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(muted, SOUND_SETTINGS_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}

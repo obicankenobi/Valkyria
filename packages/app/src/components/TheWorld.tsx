@@ -6,7 +6,7 @@ import { DISPLAY_THRESHOLDS, formationDisplay } from '@seventh-front/core'
 import type { Front, FormationDisplay, GameState } from '@seventh-front/core'
 import { SECTOR_LAYOUTS } from '../sectorLayout.js'
 import { SectorBoard, statusTone, strengthBandTone } from './SectorBoard.js'
-import { Bar, Meter, Panel, Tag } from './ui.js'
+import { Meter, Panel, Tag } from './ui.js'
 
 function doomsdayTone(value: number): 'green' | 'amber' | 'red' {
   if (value >= DISPLAY_THRESHOLDS.doomsdayCrisisEvent) return 'red'
@@ -214,46 +214,39 @@ export function TheWorld({ state }: { state: GameState }) {
         })}
       </Panel>
 
-      <Panel title="Stations">
-        <table>
-          <thead>
-            <tr>
-              <th>City</th>
-              <th>Nation</th>
-              <th>Depth</th>
-              <th>Coverage</th>
-              <th style={{ width: 150 }}>Exposure</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {state.house.stations.map((station) => (
-              <tr key={station.id}>
-                <td className="is-key">{station.city}</td>
-                <td>{state.factions[station.nation]?.name ?? station.nation}</td>
-                <td>{station.depth}/5</td>
-                <td>{station.coverage.join(', ')}</td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ width: 28 }}>{station.exposure.toFixed(0)}</span>
-                    <Bar ratio={station.exposure / 100} tone={station.exposure > 50 ? 'red' : 'green'} />
-                  </div>
-                </td>
-                <td>
-                  {station.status === 'active' && <Tag tone="green">Active</Tag>}
-                  {station.status === 'dormant' && <Tag>Dormant</Tag>}
-                  {station.status === 'burned' && <Tag tone="red">Burned</Tag>}
-                  {/* P29 (avsnitt 4.2): "ett slutvillkor spelaren inte ser komma är
-                      inte ett beslut" — samma tröskel wire-reporten (upkeep.ts)
-                      redan varnar mot, läst härifrån (DISPLAY_THRESHOLDS). */}
-                  {station.status === 'active' && station.exposure > DISPLAY_THRESHOLDS.exposureBurnThreshold && (
-                    <Tag tone="amber">Under surveillance</Tag>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* P71 (ETAPP6_TEKNISK_SPEC.md §5): samma kort-mönster Factions-panelen
+          ovan använder (.faction-card/-head/-name/-meters) — ren konsekvens,
+          ingen ny data, inget nytt fält. */}
+      <Panel title="Stations" flush>
+        {state.house.stations.map((station) => (
+          <div className="faction-card" key={station.id}>
+            <div className="faction-head">
+              <span className="faction-name">{station.city}</span>
+              <span className="meter-label">
+                {state.factions[station.nation]?.name ?? station.nation} · depth {station.depth}/5 ·{' '}
+                {station.coverage.join(', ')}
+              </span>
+              {station.status === 'active' && <Tag tone="green">Active</Tag>}
+              {station.status === 'dormant' && <Tag>Dormant</Tag>}
+              {station.status === 'burned' && <Tag tone="red">Burned</Tag>}
+              {/* P29 (avsnitt 4.2): "ett slutvillkor spelaren inte ser komma är
+                  inte ett beslut" — samma tröskel wire-reporten (upkeep.ts)
+                  redan varnar mot, läst härifrån (DISPLAY_THRESHOLDS). */}
+              {station.status === 'active' && station.exposure > DISPLAY_THRESHOLDS.exposureBurnThreshold && (
+                <Tag tone="amber">Under surveillance</Tag>
+              )}
+            </div>
+
+            <div className="faction-meters">
+              <Meter
+                label="Exposure"
+                value={station.exposure}
+                display={station.exposure.toFixed(0)}
+                tone={station.exposure > 50 ? 'red' : 'green'}
+              />
+            </div>
+          </div>
+        ))}
       </Panel>
     </>
   )

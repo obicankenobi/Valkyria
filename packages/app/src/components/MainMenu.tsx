@@ -14,11 +14,15 @@ export function MainMenu({
   hasSave,
   onContinue,
   onNewGame,
+  muted,
+  onToggleMuted,
 }: {
   houseName: string | null // null om inget sparat parti finns
   hasSave: boolean
   onContinue: () => void
   onNewGame: () => void
+  muted: boolean // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
+  onToggleMuted: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
 
@@ -57,6 +61,9 @@ export function MainMenu({
             New Game
           </button>
         </div>
+        <button type="button" className="btn btn-ghost menu-mute" onClick={onToggleMuted} data-testid="menu-mute-toggle">
+          {muted ? 'Sound: Off' : 'Sound: On'}
+        </button>
       </div>
 
       {confirming && (

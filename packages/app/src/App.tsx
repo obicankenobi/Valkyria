@@ -11,8 +11,9 @@ import { TheWire } from './components/TheWire.js'
 import { TheWorld } from './components/TheWorld.js'
 import { formatMoney } from './components/ui.js'
 import { useGame } from './useGame.js'
-import { hasSavedGame } from './persistence.js'
+import { hasSavedGame, loadMuted, saveMuted } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
+import { playSound, setMuted as setSoundMuted } from './sound.js'
 
 type View = 'menu' | 'wire' | 'floor' | 'house' | 'world' | 'politics'
 
@@ -72,6 +73,7 @@ export function App() {
     useGame()
   const [view, setView] = useState<View>('menu') // P65 (ETAPP6_TEKNISK_SPEC.md §3): menyn grindar inträdet, inte spelet direkt
   const [hasSave, setHasSave] = useState(false)
+  const [muted, setMuted] = useState(false) // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -92,6 +94,53 @@ export function App() {
     }
   }, [])
 
+  // P72: samma gräns som ovan — ett förkastat löfte (IndexedDB otillgängligt)
+  // tolkas som "omutad", inte som ett fel.
+  useEffect(() => {
+    let cancelled = false
+    loadMuted()
+      .then((value) => {
+        if (!cancelled) setMuted(value)
+      })
+      .catch(() => {
+        if (!cancelled) setMuted(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Håller sound.ts:s modulnivå-flagga i synk med React-staten ovan — den
+  // enda platsen som skriver till den, så playSound() (anropad från useGame.ts
+  // och klickdelegeringen nedan) alltid läser ett färskt värde.
+  useEffect(() => {
+    setSoundMuted(muted)
+  }, [muted])
+
+  function handleToggleMuted() {
+    const next = !muted
+    setMuted(next)
+    saveMuted(next).catch(() => {
+      // Persistens är best-effort, samma princip som useGame.ts:s autospar.
+    })
+  }
+
+  // P72 ("knapptryck"): en enda click-delegering i stället för att röra varje
+  // knappkomponent i appen — samma "en uppgift i taget"-princip som resten av
+  // etappen. closest('button') fångar alla riktiga knappar, inklusive de i
+  // MainMenu och de fyra vyerna, utan att någon av dem behöver veta att ljud
+  // finns.
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      const target = event.target
+      if (target instanceof Element && target.closest('button')) {
+        void playSound('button-press')
+      }
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
+
   if (!hydrated) {
     return (
       <div className="app">
@@ -110,6 +159,8 @@ export function App() {
           restart()
           setView('wire')
         }}
+        muted={muted}
+        onToggleMuted={handleToggleMuted}
       />
     )
   }

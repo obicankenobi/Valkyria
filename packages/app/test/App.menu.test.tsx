@@ -49,7 +49,16 @@ describe('App — huvudmenyn grindar inträdet (P65 klart-när, riktigt <App/>-r
 
 describe('MainMenu — hasSave=true-grenen (mockade props, se filhuvudet för varför)', () => {
   it('Continue aktiverad och subtitle visar husnamnet när hasSave är true', () => {
-    render(<MainMenu houseName="Meridian Arms" hasSave={true} onContinue={vi.fn()} onNewGame={vi.fn()} />)
+    render(
+      <MainMenu
+        houseName="Meridian Arms"
+        hasSave={true}
+        onContinue={vi.fn()}
+        onNewGame={vi.fn()}
+        muted={false}
+        onToggleMuted={vi.fn()}
+      />,
+    )
 
     expect(screen.getByTestId('menu-continue')).toHaveProperty('disabled', false)
     expect(screen.getByTestId('menu-subtitle').textContent).toContain('Meridian Arms')
@@ -57,7 +66,16 @@ describe('MainMenu — hasSave=true-grenen (mockade props, se filhuvudet för va
 
   it('New Game visar en bekräftelsedialog INNAN onNewGame anropas, när hasSave är true', () => {
     const onNewGame = vi.fn()
-    render(<MainMenu houseName="Meridian Arms" hasSave={true} onContinue={vi.fn()} onNewGame={onNewGame} />)
+    render(
+      <MainMenu
+        houseName="Meridian Arms"
+        hasSave={true}
+        onContinue={vi.fn()}
+        onNewGame={onNewGame}
+        muted={false}
+        onToggleMuted={vi.fn()}
+      />,
+    )
 
     fireEvent.click(screen.getByTestId('menu-new-game'))
     expect(screen.getByTestId('new-game-confirm')).toBeTruthy()
@@ -70,7 +88,16 @@ describe('MainMenu — hasSave=true-grenen (mockade props, se filhuvudet för va
 
   it('Avbryt i bekräftelsedialogen stänger den utan att anropa onNewGame', () => {
     const onNewGame = vi.fn()
-    render(<MainMenu houseName="Meridian Arms" hasSave={true} onContinue={vi.fn()} onNewGame={onNewGame} />)
+    render(
+      <MainMenu
+        houseName="Meridian Arms"
+        hasSave={true}
+        onContinue={vi.fn()}
+        onNewGame={onNewGame}
+        muted={false}
+        onToggleMuted={vi.fn()}
+      />,
+    )
 
     fireEvent.click(screen.getByTestId('menu-new-game'))
     fireEvent.click(screen.getByTestId('new-game-confirm-cancel'))
@@ -80,8 +107,42 @@ describe('MainMenu — hasSave=true-grenen (mockade props, se filhuvudet för va
   })
 
   it('Continue inaktiverad och houseName-prop null renderas utan att krascha när hasSave är false', () => {
-    render(<MainMenu houseName={null} hasSave={false} onContinue={vi.fn()} onNewGame={vi.fn()} />)
+    render(
+      <MainMenu houseName={null} hasSave={false} onContinue={vi.fn()} onNewGame={vi.fn()} muted={false} onToggleMuted={vi.fn()} />,
+    )
 
     expect(screen.getByTestId('menu-continue')).toHaveProperty('disabled', true)
+  })
+})
+
+// P72 (ETAPP6_TEKNISK_SPEC.md §5): "en global mute-toggle ... synlig i
+// huvudmenyn". Mockade props, samma princip som ovan.
+describe('MainMenu — mute-togglen (P72 klart-når)', () => {
+  it('visar "Sound: On" när muted är false, och anropar onToggleMuted vid klick', () => {
+    const onToggleMuted = vi.fn()
+    render(
+      <MainMenu
+        houseName={null}
+        hasSave={false}
+        onContinue={vi.fn()}
+        onNewGame={vi.fn()}
+        muted={false}
+        onToggleMuted={onToggleMuted}
+      />,
+    )
+
+    const toggle = screen.getByTestId('menu-mute-toggle')
+    expect(toggle.textContent).toBe('Sound: On')
+
+    fireEvent.click(toggle)
+    expect(onToggleMuted).toHaveBeenCalledOnce()
+  })
+
+  it('visar "Sound: Off" när muted är true', () => {
+    render(
+      <MainMenu houseName={null} hasSave={false} onContinue={vi.fn()} onNewGame={vi.fn()} muted={true} onToggleMuted={vi.fn()} />,
+    )
+
+    expect(screen.getByTestId('menu-mute-toggle').textContent).toBe('Sound: Off')
   })
 })
