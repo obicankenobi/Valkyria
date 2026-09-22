@@ -282,8 +282,57 @@ riktigt render med en känd trace-sekvens. Golden ORÖRD (bara läsning). Manuel
 riktig Chromium-körning. Se `docs/ANDRINGSLOGG.md`.
 
 Etapp 5:s kodbygge (P53–P64) är klart (se ovan) men väntar på ägarens omdöme (avsnitt 0:s fråga)
-och räknas därför inte som historik ännu. **Läs den promptens avsnitt i den spec som gäller innan
-du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
+och räknas därför inte som historik ännu.
+
+Etapp 7, "Spelbordet", `docs/ETAPP7_TEKNISK_SPEC.md` (P73–P95, **Antagen 2026-09-22**) är den
+**aktiva** specen. Den gör om hela gränssnittet från en flikad webbsida med formulär till ett
+mobilanpassat spelbord: en geografisk teaterkarta (Natural Earth, SVG/`d3-geo`/`d3-zoom`) som
+huvudskärm, handlingar som startar i världen i stället för i formulär, och ett nytt visuellt
+register — "det fysiska krigsrummet 1965" (papperskarta, acetat och fettkrita, manillamappar,
+skrivmaskin, bakelit, Dymo-etiketter) som ersätter etapp 6:s mörka telexgula palett. Byggs som en
+vertikal skiva (Sydvietnam, slutlig kvalitet, 7B) innan den breddas (7C–7E). Tre referensskisser
+för OPERATIONS (kartans huvudvy) ligger godkända i `docs/ui/reference/`. Premisskontrollen (§0)
+verifierad ordagrant mot koden vid antagandet — se `docs/ANDRINGSLOGG.md` för hela protokollet
+(besluten A–J, F uppskjutet till efter P75). **Läs specens egna avsnitt för den prompt du kör
+innan du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
+
+## Spelgränssnitt — regler (etapp 7)
+
+Gäller varje UI-prompt i etapp 7 (`docs/ETAPP7_TEKNISK_SPEC.md` §3), så att de inte behöver
+upprepas i varje prompt.
+
+1. Sidan scrollar aldrig. Appen fyller 100dvh. Paneler scrollar inuti sig själva, med stylad rullist.
+2. Inga webbläsarkontroller syns. Aldrig `<select>`, `input[type=number]`, checkbox eller radio.
+   Använd komponenterna i designsystemet: Slider, Stepper, Segmented, TierPicker, Toggle.
+3. Varje interaktivt element har fyra tillstånd: idle, pressed, selected, disabled (plus hover,
+   bara på skrivbord). Pressed syns och hörs inom 100 ms.
+4. Allt som ändras rör sig. Paneler glider, modaler skalar in, skärmbyten tonar,
+   150–250 ms. Tal som ändras räknar till sitt nya värde och blinkar grönt eller rött.
+5. Alla verb, resurser och flikar har en ikon. Text är etikett till ikonen, inte ersättning.
+6. Alla paneler använder samma ram (Panel-komponenten): rubrikband, hörnmarkeringar, textur.
+7. Högst två rader brödtext i en panel. Resten bakom "More".
+8. Allt är ett föremål från 1965. HUD: en lackerad stålpanel med visarinstrument, räkneverk och
+   signallampor. Kartan: tryckt papper med acetat och fettkrita ovanpå. Lådor och formulär:
+   manillamappar och blanketter med skrivmaskinstext. Handlingar: registerkort. Knappar: bakelit.
+   Etiketter: Dymo-tejp. Nyheter: telexpapper. Inga glödeffekter, inga gradienter i neonfärg,
+   ingen glasmorfism, inget som ser ut som en skärm från framtiden.
+9. Valt föremål på kartan har en tydlig kontur. (Skrivbord: markörer för grepp och pekare.)
+10. Mobil först. Varje skärm byggs för 390×844 i stående läge och skalas sedan upp, aldrig tvärtom.
+11. Träffytor minst 44×44 px. Primära handlingar i nedre tredjedelen av skärmen.
+12. Respektera säkra områden: `env(safe-area-inset-*)` runt HUD och bottendocka.
+13. Ingen information bara vid hovring. Allt som visas vid hovring på skrivbord nås med tryck på mobil.
+14. Brödtext minst 13 px. Etiketter i versaler med kondenserat typsnitt minst 11 px. Tal i HUD minst 15 px.
+15. `prefers-reduced-motion` stänger av all rörelse utom tillståndsbyten.
+16. Kortkommandon (skrivbord): 1–5 för skärmarna, Enter för End Quarter, Esc för paus.
+17. Varje UI-prompt avslutas med `npm run shots` i båda formaten och en jämförelse mot `docs/ui/reference/`.
+18. Ingen text får överlappa annan text eller klippas av sin ruta. Kontrolleras automatiskt:
+    ett Playwright-test går igenom varje textelement på varje skärm i båda formaten och underkänner
+    om `scrollWidth > clientWidth`, och ett test över kartan underkänner om två etiketters eller
+    markörers avgränsningsrutor skär varandra. Testet körs i CI. Etiketter som inte får plats
+    på en zoomnivå döljs enligt §6.9, de krymps aldrig under minimistorleken.
+
+Regel 1, 2 och 4, tillsammans med helskärms-PWA:n (§2I), gör ensamma mer för "det ser ut som ett
+spel" än någon grafisk tillgång.
 
 ## Hårda regler
 
