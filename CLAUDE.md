@@ -220,12 +220,18 @@ P66 (sektortavlan, front-1/indochina, 2026-09-18), P67 (sektortavlan, front-laos
 2026-09-19), P68 (frontlinje-interpolationen, 2026-09-19), P69 (klick-för-att-expandera-sektor,
 verifierad, 2026-09-19), P70 (turövergången dramatiseras, 2026-09-19), P71 (Stations blir kort,
 2026-09-22) och P72 (ljudlagrets tysta infrastruktur — mute-toggle, uppspelningskrokar, inga
-ljudfiler ännu, 2026-09-22). **Riktiga bild- och ljudtillgångar** (§7/§8:s egen, avsiktligt
-avskurna sista bit) har nu sin egen, kort leverans: `docs/GRAFISKA_TILLGANGAR.md`
-(2026-09-22) — en tillgångslista och färdiga AI-bildprompter för de bilder appen faktiskt har
-en kodkrok för (`.menu-backdrop`, se `MainMenu.tsx`) plus två kompletterande förslag
-(favicon/app-ikon, papperskornstextur). Ingen kod ändrad av dokumentet självt — bilderna
-kopplas in i en egen, liten ändring den dagen filerna finns.
+ljudfiler ännu, 2026-09-22). **Riktiga bildtillgångar** (§7/§8:s egen, avsiktligt avskurna
+sista bit) fick sin egen, kort leverans: `docs/GRAFISKA_TILLGANGAR.md` (2026-09-22) — en
+tillgångslista och AI-bildprompter för menybakgrunden (`.menu-backdrop`s enda spec-namngivna
+kodkrok) plus två kompletterande förslag (favicon/app-ikon, papperskornstextur). Ägaren
+genererade alla tre (Gemini) och laddade upp dem till grenen samma dag; **samtliga tre är nu
+inkopplade** — menybakgrunden i `.menu-backdrop` (en mörk scrim garanterar textkontrast oavsett
+fotoinnehåll), favicon/app-ikon i `index.html` (kompassrosen, center-beskuren till kvadrat med
+Pillow eftersom Gemini inte respekterade "square canvas"), och papperskornstexturen i ett nytt
+`.panel::before`-pseudo-element (`styles.css`, 5 % opacity — ren CSS, rör aldrig `ui.tsx`s
+delade `Panel`-komponent). Ljudfiler skaffades INTE i samma runda — `sound.ts`s krokar (P72)
+väntar fortfarande. Se `docs/GRAFISKA_TILLGANGAR.md`s tre "Klart 2026-09-22"-blockquoter och
+`docs/ANDRINGSLOGG.md` för hela genomförandet.
 Ägarbeslutet är loggat
 (`docs/ANDRINGSLOGG.md`, samma dag) och `docs/DESIGN.md` §18/§21 är omskrivna i samma commit (§18:
 "ingen karta"-pelaren riven, ersatt av en schematisk sektortavla; §21: "hexkarta och taktiskt

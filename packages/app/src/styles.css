@@ -308,12 +308,29 @@ table th {
 /* ── Paneler ───────────────────────────────────────────────────────── */
 
 .panel {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   margin-bottom: 16px;
   overflow: hidden;
+}
+
+/* Papperskorn-texturen (ETAPP6_TEKNISK_SPEC.md §7/§8, docs/GRAFISKA_TILLGANGAR.md §3) — den
+   "papper, telexremsa"-känsla filens egen designkommentar längst upp beskrev i ord men som
+   fram tills nu bara uttrycktes i CSS-primitiv. Ett ::before i stället för en extra JSX-nod i
+   ui.tsx:s delade Panel-komponent — ren CSS, rör ingen komponentfil. 5 % opacity (mitten av
+   dokumentets ≤4–6 %-krav), pointer-events: none så den aldrig stjäl klick från panelinnehållet
+   som ligger EFTER pseudo-elementet i DOM-ordningen och därför redan renderar ovanpå det. */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/images/paper-grain.png');
+  background-repeat: repeat;
+  opacity: 0.05;
+  pointer-events: none;
 }
 
 .panel-head {

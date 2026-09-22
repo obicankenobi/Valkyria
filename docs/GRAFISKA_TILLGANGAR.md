@@ -13,10 +13,9 @@ redan väntade på en bild — `MainMenu.tsx`s `.menu-backdrop`, en tom, avsiktl
 kommentaren "Tom yta, avsedd för en framtida bakgrundsbild". Resten av listan nedan var
 kompletterande förslag, tydligt märkta som sådana — inte spec-krav.
 
-> **Status 2026-09-22: tillgång 1 (menybakgrunden) och 2 (app-ikonen) genererade och inkopplade.**
-> Se respektive avsnitt nedan för var filerna ligger och vad som ändrades i koden. Tillgång 3
-> (papperskornstexturen) återstår — försök 1 avvisades av Gemini, en omskriven prompt finns i
-> avsnitt 3.
+> **Status 2026-09-22: samtliga tre tillgångar genererade och inkopplade.** Se
+> "Klart 2026-09-22"-blockquoterna i respektive avsnitt nedan för var filerna ligger och vad som
+> ändrades i koden. Den här leveransen är därmed komplett.
 
 ## Stilriktlinjer (gäller alla prompter nedan)
 
@@ -148,14 +147,27 @@ Efter generering: kör bilden genom valfritt "seamless tile"-verktyg (t.ex. Phot
 Offset-filter, eller ett gratis online-tileringsverktyg) — ingen AI-bildmodell garanterar
 sömlös upprepning utan uttrycklig efterbehandling, oavsett hur prompten är skriven.
 
+> **Klart 2026-09-22.** Försök 2 lyckades (Gemini) — men gav en 1408×768-bild med en synlig
+> vinjettering (mörkare kanter/hörn), inte den önskade helt jämna ytan. Löst utan ett externt
+> tileringsverktyg: center-beskuren (Pillow) till en 345×345-kvadrat från bildens mitt, där
+> hörn- och centermedelvärdet ligger inom två gråtoner av varandra (mätt, inte antaget) — alltså
+> UTANFÖR vinjetteringen — och skalad till `packages/app/public/images/paper-grain.png`
+> (512×512, gråskala). En svag vertikal vikningslinje från originalfotot syns fortfarande i
+> beskärningen; vid den låga opaciteten koden faktiskt använder är den i praktiken osynlig (se
+> nedan). Ny kodkrok byggd (fanns ingen tidigare, till skillnad från menybakgrunden):
+> `.panel::before` (`styles.css`) — ett pseudo-element i stället för en extra JSX-nod i
+> `ui.tsx`s delade `Panel`-komponent, så ändringen stannar i CSS. `background-repeat: repeat`,
+> `opacity: 0.05` (mitten av dokumentets eget ≤4–6 %-krav, en bokstavlig CSS-opacitet i stället
+> för att förlita sig på en blend mode-approximation), `pointer-events: none`. Manuellt
+> verifierat i en riktig Chromium-körning, både en full vy och en inzoomad beskärning av en
+> panel: kornet är synligt vid närgranskning men stör aldrig läsbarheten, noll konsolfel. Golden
+> ORÖRD — ren CSS. Fullt testsvep grönt.
+
 ---
 
 ## Nästa steg
 
-Tillgång 1 (menybakgrunden) och 2 (app-ikonen/favicon) är klara och inkopplade, se
-"Klart 2026-09-22"-blockquoten i respektive avsnitt ovan. Kvar:
-
-1. Generera papperskornstexturen med den omskrivna prompten i avsnitt 3 (försök 2).
-2. Lägg filen i `packages/app/public/images/` (samma mönster som de två andra).
-3. Säg till, så byggs en liten, ny kodkrok för den (den finns inte än, till skillnad från
-   menybakgrunden) — dokumenterad i `docs/ANDRINGSLOGG.md` som vanligt.
+Samtliga tre tillgångar är klara och inkopplade, se "Klart 2026-09-22"-blockquoterna i
+respektive avsnitt ovan. Inget kvarstår av den här leveransen. Ett eventuellt framtida steg
+(inte begärt, bara noterat): en PWA-manifest (`vite.config.ts`s egen, ännu ej inlösta kommentar)
+skulle direkt kunna återanvända `app-icon-512.png`, som redan finns och väntar oanvänd.
