@@ -105,17 +105,24 @@ prioritet — testa först utan, då ren CSS redan bär estetiken.
 
 **Format:** PNG, tileable (sömlös upprepning), 256×256 eller 512×512, gråskala.
 
-**AI-bildprompt:**
+> **Försök 1 avvisat (2026-09-22, Gemini):** den ursprungliga prompten ("seamless, tileable...")
+> gav "jag verkar inte ha tillgång till det innehållet" — en generisk avvisning, inte ett
+> policyträffande innehåll. Trolig orsak: tekniskt/abstrakt textur-språk ("seamless tileable",
+> "no visible seams when repeated") ligger utanför vad en chattbaserad bildmodell tolkad för
+> foton/illustrationer hanterar bra. Prompten nedan är omskriven som ett konkret FOTOMOTIV i
+> stället för en teknisk texturspec — samma resultat, mindre sannolikt att avvisas.
 
-> A seamless, tileable grayscale paper grain and subtle fiber texture, like old typewriter or
-> telex paper — very fine noise, faint horizontal fiber lines, extremely low contrast (mostly
-> mid-grey, no strong blacks or whites). No text, no stains, no folds, no visible edges. Must
-> tile seamlessly with no visible seams when repeated. Flat, even lighting, top-down scan-like
-> quality.
+**AI-bildprompt (omskriven, försök 2):**
+
+> A close-up photograph of a blank sheet of old, slightly aged off-white paper — like vintage
+> typewriter or telex paper. Soft, even studio lighting from directly above, no shadows. Subtle
+> visible paper fiber texture and fine grain. Completely blank: no text, no writing, no stains,
+> no folds, no creases. The paper fills the entire frame edge to edge, flat and straight-on, like
+> a flatbed scan.
 
 Efter generering: kör bilden genom valfritt "seamless tile"-verktyg (t.ex. Photoshops
-Offset-filter, eller ett gratis online-tileringsverktyg) om AI-modellen inte garanterar
-sömlöshet själv — de flesta bildmodeller gör det inte utan uttrycklig efterbehandling.
+Offset-filter, eller ett gratis online-tileringsverktyg) — ingen AI-bildmodell garanterar
+sömlös upprepning utan uttrycklig efterbehandling, oavsett hur prompten är skriven.
 
 ---
 
