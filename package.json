@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "harness": "npm run build --workspace=packages/core --workspace=packages/harness && node packages/harness/dist/index.js",
-    "test:e2e": "playwright test --config=packages/app/playwright.config.ts"
+    "test:e2e": "playwright test --config=packages/app/playwright.config.ts",
+    "shots": "npm run shots --workspace=packages/app"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

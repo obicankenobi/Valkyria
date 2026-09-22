@@ -1,54 +1,89 @@
 /* THE SEVENTH FRONT — visuellt system.
  *
- * Estetiken är omprövad av ägaren (se docs/ANDRINGSLOGG.md och spec avsnitt 8):
- * från "monospace på vitt papper, ingen styling" till ett lägesrum i kalla
- * krigets register — mörkt, tätt, med telexgul accent och riktig typografisk
- * hierarki. Registret är samma som förut (papper, telexremsa, skrivmaskin), men
- * utfört som ett spelgränssnitt i stället för ett dokument.
+ * P73 (ETAPP7_TEKNISK_SPEC.md §10, ägarbeslut J): registret bytt från "lägesrum,
+ * mörkt, telexgult" (etapp 6) till DET FYSISKA KRIGSRUMMET 1965 — en tryckt
+ * papperskarta, acetat och fettkrita, manillamappar, skrivmaskin, bakelit,
+ * Dymo-etiketter, en lackerad stålpanel. Etapp 6:s mörka palett lästes som
+ * futuristisk (§0.5/§4 — DEFCON struken som förebild av samma skäl). Exakta
+ * hexvärden hämtade ur de tre godkända referensskisserna (`docs/ui/reference/`,
+ * inte gissade — grep över samtliga tre filers inline-SVG-färger).
  *
- * Inga externa typsnitt laddas: appen ska fungera offline (PWA, avsnitt 8), så
- * karaktären kommer ur versaler, teckenavstånd och vikt i systemstackar i
- * stället för ur en nedladdad fil.
+ * Tokennamnen är AVSIKTLIGT oförändrade sedan etapp 6 (--bg, --panel, --amber,
+ * --red, --green, --blue, --west, --east m.fl.) trots att de nya värdena inte
+ * längre är "mörk bakgrund"/"telexgult" — bara VÄRDENA byts (P73:s eget
+ * klart-när: "paletten ur §10 har ersatt de gamla"), inte namnen. Ett namnbyte
+ * hade krävt att röra varje `var(--amber)`/`tone="amber"`-anropsplats i hela
+ * `packages/app` (ui.tsx, TheHouse.tsx, TheWorld.tsx, TheWire.tsx, MainMenu.tsx,
+ * SectorBoard.tsx, ThePolitics.tsx) utan att någon av P73:s egna klart-när-
+ * villkor kräver det — samma "en uppgift i taget"-princip som resten av
+ * projektet. `--amber` betyder nu bokstavligen ockra (§10: "ockra för husets
+ * egna markeringar, arvtagaren till telexgult") — samma ROLL, ny färg.
+ *
+ * Paketerade typsnitt (main.tsx, @fontsource) ersätter systemstackarna — §0.5:s
+ * eget fynd höll aldrig ("ingen service worker finns", så offline-motiveringen
+ * för systemtypsnitt var grundlös från början).
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Ytor: en nästan svart bas med kallt blågrått i panelerna. */
-  --bg: #090b0e;
-  --panel: #10141a;
-  --panel-raised: #151a21;
-  --panel-sunken: #0c0f14;
-  --line: #212932;
-  --line-strong: #333d49;
+  /* Ytor: krämvitt papper som bas, manilla för lådor/kort, aldrig rent vitt. */
+  --bg: #ebe1c7; /* papperskartans bottenfärg */
+  --panel: #f6f1e3; /* manillamapp / kort — den ljusaste ytan */
+  --panel-raised: #f3ecda;
+  --panel-sunken: #efe6cc;
+  --line: #cdbb8c; /* kant, åldrat papper */
+  --line-strong: #a3957a;
 
-  /* Text */
-  --ink: #e4e9f0;
-  --ink-dim: #97a3b2;
-  --ink-faint: #66717e;
+  /* Text — sepiabläck, aldrig rent svart */
+  --ink: #241f18;
+  --ink-dim: #51483b;
+  --ink-faint: #7d6f58;
 
-  /* Accenter */
-  --amber: #e3a951; /* spelaren, telexgult */
-  --amber-soft: rgba(227, 169, 81, 0.14);
-  --red: #e0584d;
-  --red-soft: rgba(224, 88, 77, 0.14);
-  --green: #4eb289;
-  --green-soft: rgba(78, 178, 137, 0.14);
-  --blue: #6c9ee0;
-  --blue-soft: rgba(108, 158, 224, 0.14);
+  /* Accenter — fettkrita och ockra */
+  --amber: #b0700f; /* husets ockra, telexgults arvtagare (§10) */
+  --amber-soft: rgba(176, 112, 15, 0.14);
+  --amber-glow: #f2b441; /* signallampa/glöd, inte text */
+  --red: #b3302a; /* fettkrita, röd */
+  --red-soft: rgba(179, 48, 42, 0.14);
+  --green: #4d7a3e;
+  --green-soft: rgba(77, 122, 62, 0.14);
+  --blue: #2d5a8c; /* fettkrita, blå */
+  --blue-soft: rgba(45, 90, 140, 0.14);
 
-  /* Blocksidor */
-  --west: #6c9ee0;
-  --east: #d0553f;
+  /* Blocksidor — samma fettkrita som --blue/--red, egna namn av läsbarhetsskäl */
+  --west: #2d5a8c;
+  --east: #b3302a;
+
+  /* Lackerad stålpanel (HUD, avsnitt 3 regel 8) — den enda MÖRKA ytan kvar,
+     avsiktligt: instrumentpanelen är ett eget föremål, inte sidans bas. */
+  --steel-dark: #11140e;
+  --steel: #22271f;
+  --steel-mid: #353b33;
+  --steel-light: #474f44;
+  --steel-highlight: #8b917f;
+  --steel-ink: #d9d1b6; /* text/etiketter på stålpanelen */
+
+  /* Hav och kustlinje */
+  --sea: #b9c8c3;
+  --sea-line: #9fb2ad;
+  --sepia-ink: #5d4b35; /* kustlinjer, gränser */
+
+  /* Rivalhus (presentationsfärg, en delad ton — enskilda rivaler kan få egna i 7C) */
+  --rival: #6b4f9e;
 
   --radius: 3px;
   --radius-lg: 5px;
 
-  --font-display: 'Helvetica Neue', 'Arial Narrow', Inter, system-ui, sans-serif;
-  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, Consolas, monospace;
+  /* §10: Archivo Narrow (etiketter/gränssnitt), Stardos Stencil (stora rubriker/
+     knappar, "schablonmålat"), Courier Prime (allt skrivmaskinsskrivet — mappar,
+     kort, telex, tal), Libre Baskerville (landnamn, kursiv för hav). */
+  --font-ui: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  --font-display: 'Stardos Stencil', 'Arial Narrow', sans-serif;
+  --font-mono: 'Courier Prime', 'Courier New', monospace;
+  --font-serif: 'Libre Baskerville', Georgia, serif;
 
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 8px 20px rgba(36, 31, 24, 0.18);
 }
 
 * {
@@ -69,7 +104,7 @@ body {
 
 body {
   /* Svagt ljus uppifrån — lampan över kartbordet, inte en gradient för sin egen skull. */
-  background-image: radial-gradient(120% 60% at 50% -10%, rgba(227, 169, 81, 0.06), transparent 60%);
+  background-image: radial-gradient(120% 60% at 50% -10%, rgba(176, 112, 15, 0.06), transparent 60%);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -281,7 +316,7 @@ table th {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   padding: 9px 20px;
-  box-shadow: 0 0 20px rgba(227, 169, 81, 0.22);
+  box-shadow: 0 0 20px rgba(176, 112, 15, 0.22);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -403,7 +438,7 @@ table th {
 
 .tag.is-amber {
   color: var(--amber);
-  border-color: rgba(227, 169, 81, 0.45);
+  border-color: rgba(176, 112, 15, 0.45);
   background: var(--amber-soft);
 }
 .tag.is-red {
@@ -661,7 +696,7 @@ td.is-key {
 
 .wire-glyph.is-headline {
   background: var(--amber);
-  box-shadow: 0 0 8px rgba(227, 169, 81, 0.7);
+  box-shadow: 0 0 8px rgba(176, 112, 15, 0.7);
 }
 .wire-glyph.is-report {
   background: var(--ink-dim);
@@ -996,7 +1031,7 @@ td.is-key {
   bottom: -3px;
   width: 3px;
   background: var(--amber);
-  box-shadow: 0 0 10px rgba(227, 169, 81, 0.8);
+  box-shadow: 0 0 10px rgba(176, 112, 15, 0.8);
   transform: translateX(-1px);
   transition: left 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -1247,7 +1282,7 @@ td.is-key {
   background: var(--bg);
   /* Samma primitiv som body:s ljus (rad ~68 ovan), skalad upp och centrerad —
      en "omslagsbild" i stället för ett ljus över ett skrivbord. */
-  background-image: radial-gradient(90% 70% at 50% 42%, rgba(227, 169, 81, 0.12), transparent 65%);
+  background-image: radial-gradient(90% 70% at 50% 42%, rgba(176, 112, 15, 0.12), transparent 65%);
 }
 
 .menu-backdrop {
@@ -1282,7 +1317,7 @@ td.is-key {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  text-shadow: 0 0 44px rgba(227, 169, 81, 0.25);
+  text-shadow: 0 0 44px rgba(176, 112, 15, 0.25);
 }
 
 .menu-subtitle {
@@ -1395,4 +1430,818 @@ td.is-key {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Etapp 7 designsystem (P73, ETAPP7_TEKNISK_SPEC.md §3/§11.3)
+   Namnrymd .ds-* — skild från de äldre klasserna ovan (.panel/.btn/.tab m.fl.,
+   som de fyra BEFINTLIGA vyerna fortsätter använda oförändrat tills de byggs
+   om skärm för skärm, P76+). Regelnumren nedan syftar på CLAUDE.md:s
+   "Spelgränssnitt — regler (etapp 7)".
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Panel: rubrikband, hörnmarkeringar, textur (regel 6) ────────────── */
+
+.ds-panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+.ds-panel::before {
+  /* Samma papperskornstextur som P72:s .panel::before, återanvänd rakt av. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/images/paper-grain.png');
+  background-repeat: repeat;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.ds-corner {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-color: var(--steel-mid);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ds-corner-tl {
+  top: 4px;
+  left: 4px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.ds-corner-tr {
+  top: 4px;
+  right: 4px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.ds-corner-bl {
+  bottom: 4px;
+  left: 4px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+.ds-corner-br {
+  bottom: 4px;
+  right: 4px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+.ds-panel-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  border-bottom: 1px solid var(--line);
+}
+
+.ds-panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.ds-panel-body {
+  position: relative;
+  padding: 16px 18px;
+}
+
+/* ── Button: bakelit (regel 8), fyra tillstånd (regel 3) ──────────────── */
+
+.ds-button {
+  appearance: none;
+  min-height: 44px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  transition: transform 80ms ease, box-shadow 80ms ease, background 80ms ease;
+}
+
+.ds-button.is-primary {
+  background: linear-gradient(180deg, var(--amber) 0%, #8f590c 100%);
+  color: #fbf3e2;
+  box-shadow: 0 2px 0 #6e4406, inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.ds-button.is-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #c37f14 0%, #8f590c 100%);
+}
+.ds-button.is-primary:active:not(:disabled),
+.ds-button.is-primary.is-selected {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #6e4406, inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.ds-button.is-secondary {
+  background: linear-gradient(180deg, var(--steel-light) 0%, var(--steel) 100%);
+  color: var(--steel-ink);
+  box-shadow: 0 2px 0 var(--steel-dark), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.ds-button.is-secondary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--steel-highlight) 0%, var(--steel) 100%);
+}
+.ds-button.is-secondary:active:not(:disabled),
+.ds-button.is-secondary.is-selected {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--steel-dark), inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.ds-button.is-ghost {
+  background: transparent;
+  color: var(--ink-dim);
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+.ds-button.is-ghost:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink-dim);
+}
+.ds-button.is-ghost:active:not(:disabled),
+.ds-button.is-ghost.is-selected {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.ds-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── IconButton ────────────────────────────────────────────────────── */
+
+.ds-icon-button {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--steel-light) 0%, var(--steel) 100%);
+  color: var(--steel-ink);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 0 var(--steel-dark), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  font-size: 18px;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.ds-icon-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--steel-highlight) 0%, var(--steel) 100%);
+}
+.ds-icon-button:active:not(:disabled),
+.ds-icon-button.is-selected {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--steel-dark), inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  color: var(--amber-glow);
+}
+.ds-icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── DsTab ─────────────────────────────────────────────────────────── */
+
+.ds-tab {
+  appearance: none;
+  min-height: 44px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  background: transparent;
+  border: none;
+  border-top: 2px solid transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  position: relative;
+}
+.ds-tab.is-active {
+  color: var(--amber);
+  border-top-color: var(--amber);
+}
+.ds-tab-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.ds-tab-label {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ds-tab-count {
+  position: absolute;
+  top: 2px;
+  right: 18%;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--red);
+  color: #fbf3e2;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Card / registerkort ───────────────────────────────────────────── */
+
+.ds-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 2px 4px rgba(36, 31, 24, 0.12);
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.ds-card.is-clickable {
+  cursor: pointer;
+  min-height: 44px;
+}
+.ds-card.is-clickable:hover {
+  border-color: var(--ink-dim);
+}
+.ds-card.is-selected {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px var(--amber-soft);
+}
+
+/* ── ActionSlot (§7.2) ─────────────────────────────────────────────── */
+
+.ds-action-slot {
+  display: flex;
+  align-items: stretch;
+  min-height: 44px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ds-action-slot.is-empty {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  color: var(--ink-faint);
+}
+.ds-action-slot-plus {
+  font-size: 18px;
+  font-weight: 700;
+}
+.ds-action-slot-main {
+  appearance: none;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.ds-action-slot-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ds-action-slot-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ds-action-slot-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ds-action-slot-cost {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+}
+.ds-action-slot-remove {
+  appearance: none;
+  width: 32px;
+  min-width: 32px;
+  background: var(--panel-sunken);
+  border: none;
+  border-left: 1px solid var(--line);
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 14px;
+}
+.ds-action-slot-remove:hover {
+  color: var(--red);
+}
+
+/* ── BottomSheet ───────────────────────────────────────────────────── */
+
+.ds-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 31, 24, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 40;
+}
+.ds-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 55vh;
+  background: var(--panel);
+  border-top: 2px solid var(--line-strong);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -8px 24px rgba(36, 31, 24, 0.25);
+  display: flex;
+  flex-direction: column;
+  transition: max-height 200ms ease;
+}
+.ds-sheet.is-expanded {
+  max-height: 92vh;
+}
+.ds-sheet-handle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 8px 0 4px;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  min-height: 24px;
+}
+.ds-sheet-grip {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.ds-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 18px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.ds-sheet-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.ds-sheet-subtitle {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.ds-sheet-close {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.ds-sheet-body {
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+}
+
+/* ── DsSlider ──────────────────────────────────────────────────────── */
+
+.ds-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ds-slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.ds-slider-value {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.ds-slider-track {
+  position: relative;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+.ds-slider-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-sunken);
+  border: 1px solid var(--line-strong);
+}
+.ds-slider-fill {
+  position: absolute;
+  left: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--amber);
+  pointer-events: none;
+}
+.ds-slider-thumb {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff8ea, var(--amber));
+  border: 2px solid var(--ink);
+  box-shadow: 0 2px 3px rgba(36, 31, 24, 0.35);
+}
+.ds-slider-thumb:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ── Stepper ───────────────────────────────────────────────────────── */
+
+.ds-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ds-stepper-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.ds-stepper-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ds-stepper-btn {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--steel-light), var(--steel));
+  color: var(--steel-ink);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ds-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.ds-stepper-value {
+  min-width: 48px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ── Segmented ─────────────────────────────────────────────────────── */
+
+.ds-segmented {
+  display: flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ds-segmented-opt {
+  appearance: none;
+  flex: 1;
+  min-height: 44px;
+  background: var(--panel);
+  border: none;
+  border-right: 1px solid var(--line-strong);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.ds-segmented-opt:last-child {
+  border-right: none;
+}
+.ds-segmented-opt.is-selected {
+  background: var(--amber);
+  color: #fbf3e2;
+}
+
+/* ── TierPicker (§7.3) ─────────────────────────────────────────────── */
+
+.ds-tierpicker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.ds-tier {
+  appearance: none;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 6px;
+  background: var(--panel);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.ds-tier-label {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.ds-tier-amount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.ds-tier-effect {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+.ds-tier.is-selected {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-soft);
+}
+.ds-tier.is-selected .ds-tier-label {
+  color: var(--red);
+}
+
+/* ── DsToggle ──────────────────────────────────────────────────────── */
+
+.ds-toggle {
+  appearance: none;
+  min-height: 44px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 6px 2px;
+  cursor: pointer;
+  text-align: left;
+}
+.ds-toggle-label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+}
+.ds-toggle-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--panel-sunken);
+  border: 1px solid var(--line-strong);
+  flex-shrink: 0;
+  transition: background 120ms ease;
+}
+.ds-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff8ea, var(--line-strong));
+  box-shadow: 0 1px 2px rgba(36, 31, 24, 0.4);
+  transition: transform 120ms ease;
+}
+.ds-toggle.is-on .ds-toggle-track {
+  background: var(--amber);
+  border-color: var(--amber);
+}
+.ds-toggle.is-on .ds-toggle-knob {
+  transform: translateX(20px);
+  background: linear-gradient(180deg, #fff8ea, #fff);
+}
+
+/* ── InfoTooltip ───────────────────────────────────────────────────── */
+
+.ds-tooltip {
+  position: relative;
+  display: inline-block;
+}
+.ds-tooltip-trigger {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 50%;
+  background: var(--panel-sunken);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-faint);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ds-tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 10px;
+  background: var(--ink);
+  color: var(--panel);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(36, 31, 24, 0.3);
+  z-index: 30;
+}
+
+@media (hover: hover) {
+  .ds-tooltip-trigger:hover + .ds-tooltip-bubble,
+  .ds-tooltip:hover .ds-tooltip-bubble {
+    display: block;
+  }
+}
+
+/* ── FormationToken (§6.4) ─────────────────────────────────────────── */
+
+.ds-token {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ds-token-shape {
+  fill: var(--panel);
+  stroke-width: 1.8;
+}
+.ds-token.is-side-a .ds-token-shape {
+  stroke: var(--west);
+}
+.ds-token.is-side-b .ds-token-shape {
+  stroke: var(--east);
+}
+.ds-token.is-side-neutral .ds-token-shape {
+  stroke: var(--ink-dim);
+}
+.ds-token-letter {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+.ds-token-dots {
+  display: flex;
+  gap: 2px;
+}
+.ds-token-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ink-dim);
+}
+.ds-token.is-status-mauled .ds-token-shape {
+  stroke-dasharray: 2 2;
+  opacity: 0.6;
+}
+.ds-token.is-status-refitting .ds-token-shape {
+  opacity: 0.45;
+}
+.ds-token.is-unknown .ds-token-shape {
+  fill: var(--panel-sunken);
+}
+.ds-token.is-unknown .ds-token-letter {
+  fill: var(--ink-faint);
+}
+
+/* ── Komponentsidan (ComponentLibrary.tsx) ────────────────────────────── */
+
+.ds-library {
+  min-height: 100dvh;
+  background: var(--bg);
+  padding: 20px 16px calc(40px + env(safe-area-inset-bottom));
+}
+.ds-library-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+.ds-library-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 0 0 20px;
+}
+.ds-library-section {
+  margin-bottom: 28px;
+}
+.ds-library-section-title {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.ds-library-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ds-library-caption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  width: 100%;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState } from '@seventh-front/core'
+import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
@@ -68,7 +69,19 @@ function Hud({ state }: { state: GameState }) {
   )
 }
 
+// P73 (ETAPP7_TEKNISK_SPEC.md §11.3): komponentsidan nås via ?screen=components,
+// aldrig genom vanlig navigation i spelet — bara npm run shots och manuell
+// granskning. Läst en gång från den statiska query-strängen, inte reaktiv state:
+// URL:en ändras aldrig under en session (samma "stabil villkorskontroll före
+// första hooket"-mönster som gör den säker att avgöra INNAN useGame() anropas).
+function wantsComponentLibrary(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).get('screen') === 'components'
+}
+
 export function App() {
+  if (wantsComponentLibrary()) return <ComponentLibrary />
+
   const { state, draft, lastRejected, hydrated, setBid, removeBid, addAction, removeAction, setCrisisChoice, endTurn, restart } =
     useGame()
   const [view, setView] = useState<View>('menu') // P65 (ETAPP6_TEKNISK_SPEC.md §3): menyn grindar inträdet, inte spelet direkt
