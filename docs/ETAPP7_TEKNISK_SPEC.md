@@ -1,6 +1,8 @@
 # ETAPP 7 — SPELBORDET
 
-*Version 1.3. Antas när ägarens startprompt (`docs/ETAPP7_STARTPROMPT.md`) körs; statusraden ändras då till "Antagen". Skriven mot grenen `claude/funny-lamport-nvno9f`, commit `22a5ea2` (2026-09-22).*
+*Version 1.3. **Antagen 2026-09-22.** Premisskontrollen (§0) verifierad ordagrant mot koden vid
+antagandet, inget avvek. Skriven mot grenen `claude/funny-lamport-nvno9f`, commit `22a5ea2`
+(2026-09-22). Se `docs/ANDRINGSLOGG.md` för hela beslutsprotokollet (A–J).*
 
 Prosan är på svenska. All kod, alla identifierare och alla UI-strängar är på engelska.
 
