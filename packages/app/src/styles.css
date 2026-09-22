@@ -1234,11 +1234,17 @@ td.is-key {
 }
 
 .menu-backdrop {
-  /* Tom yta, avsedd för en framtida bakgrundsbild (ETAPP6_TEKNISK_SPEC.md §3/§8).
-     Rör inte förrän riktiga bildtillgångar finns. */
+  /* Bakgrundsbilden (ETAPP6_TEKNISK_SPEC.md §3/§8, docs/GRAFISKA_TILLGANGAR.md) — en mörk
+     scrim lagd DIREKT i samma background-image-egenskap (första lagret, ovanpå fotot) i
+     stället för en extra DOM-nod, så .menu-content alltid har tillräcklig kontrast oavsett
+     exakt motiv i bilden (samma kontrastkrav dokumentet självt satte upp). */
   position: absolute;
   inset: 0;
   pointer-events: none;
+  background-image: linear-gradient(180deg, rgba(9, 11, 14, 0.55) 0%, rgba(9, 11, 14, 0.8) 60%, rgba(9, 11, 14, 0.94) 100%),
+    url('/images/menu-backdrop.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .menu-content {

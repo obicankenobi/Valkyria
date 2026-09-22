@@ -7,11 +7,16 @@ ljudtillgångar själva (bara krokarna för dem) — en egen, avgränsad uppgift
 en tillgångslista och färdiga AI-bildprompter." Ingen kod ändras av det här dokumentet — det är
 en lista att arbeta ur, inte en prompt i P65–P72-sekvensen.
 
-Repot har i dag **noll bildfiler** (verifierat, sökt igenom hela `packages/app`). Allt visuellt
-är CSS: gradienter, färgtoken, typografi. Det finns exakt **en** plats i koden som redan väntar
-på en bild — `MainMenu.tsx`s `.menu-backdrop` (`styles.css` rad 1236–1242), en tom, avsiktligt
-lämnad yta med kommentaren "Tom yta, avsedd för en framtida bakgrundsbild". Resten av listan
-nedan är kompletterande förslag, tydligt märkta som sådana — inte spec-krav.
+Repot hade vid leveransen **noll bildfiler** (verifierat, sökt igenom hela `packages/app`). Allt
+visuellt var CSS: gradienter, färgtoken, typografi. Det fanns exakt **en** plats i koden som
+redan väntade på en bild — `MainMenu.tsx`s `.menu-backdrop`, en tom, avsiktligt lämnad yta med
+kommentaren "Tom yta, avsedd för en framtida bakgrundsbild". Resten av listan nedan var
+kompletterande förslag, tydligt märkta som sådana — inte spec-krav.
+
+> **Status 2026-09-22: tillgång 1 (menybakgrunden) och 2 (app-ikonen) genererade och inkopplade.**
+> Se respektive avsnitt nedan för var filerna ligger och vad som ändrades i koden. Tillgång 3
+> (papperskornstexturen) återstår — försök 1 avvisades av Gemini, en omskriven prompt finns i
+> avsnitt 3.
 
 ## Stilriktlinjer (gäller alla prompter nedan)
 
@@ -68,7 +73,15 @@ genom `background-size: cover`-mönstret övriga bakgrunder i filen använder), 
 **Om resultatet blir för detaljrikt i mitten:** be modellen om en variant, eller lägg till "the
 center third of the image is nearly black, empty negative space" i slutet av prompten.
 
----
+> **Klart 2026-09-22.** Genererad bild (Gemini) sparad som `packages/app/public/images/
+> menu-backdrop.jpg` (1376×768, 112 KB — inom budgeten). `.menu-backdrop` (`styles.css`)
+> lager: bilden PLUS en mörk `linear-gradient`-scrim i SAMMA `background-image`-egenskap (första
+> lagret, ovanpå fotot i CSS:ens lagerordning) — 55 % svart uppe, 94 % nere, så `.menu-content`
+> (som sitter centrerat, INTE bara i nedre tredjedelen som ursprungsprompten antog) får garanterad
+> kontrast oavsett exakt fotoinnehåll, i stället för att förlita sig på att varje framtida bild
+> råkar vara mörk nog av sig själv. Ingen `MainMenu.tsx`-ändring behövdes — kroken var redan där.
+> Manuellt verifierat i en riktig Chromium-körning (skärmdump): titel och knappar fullt läsbara,
+> noll konsolfel. Fullt testsvep grönt.
 
 ## 2. App-ikon / favicon (komplement, inte spec-krav)
 
@@ -93,6 +106,17 @@ oförändrad den dagen).
 **Om resultatet är för detaljrikt:** en ikon som ser bra ut genererad i hög upplösning läses
 sällan bra vid 16 px — be uttryckligen om "extremely simplified, reads clearly at 16 pixels,
 no more than 3 distinct shapes."
+
+> **Klart 2026-09-22.** Genererad bild (Gemini, kompassrosmotivet) kom som en liggande
+> 1376×768-bild med märket centrerat, inte den begärda kvadratiska duken — modellen respekterade
+> inte "square canvas"-instruktionen. Löst utan att be om en ny generering: center-beskuren till
+> en 768×768-kvadrat (Pillow, `python3`) och skalad till fyra storlekar i
+> `packages/app/public/images/`: `favicon-32.png`, `favicon-64.png` (`<link rel="icon">`,
+> `index.html`), `app-icon-180.png` (`apple-touch-icon`), `app-icon-512.png` (oanvänd ännu —
+> sparad för den dag en PWA-manifest byggs, se `vite.config.ts`s egen kommentar om det). Ersatte
+> den tidigare tomma data-URI-faviconen. Verifierat vid 64×64 (skärmdump av den faktiska
+> genererade filen, inte antaget): märket läses tydligt. Manuellt verifierat i en riktig
+> Chromium-körning att alla fyra filerna svarar 200, ingen 404. Fullt testsvep grönt.
 
 ---
 
@@ -128,9 +152,10 @@ sömlös upprepning utan uttrycklig efterbehandling, oavsett hur prompten är sk
 
 ## Nästa steg
 
-1. Generera bilderna (valfritt AI-bildverktyg, prompterna ovan är modelloberoende).
-2. Lägg dem i `packages/app/public/` (Vites statiska-filkonvention, samma mönster som
-   `sound.ts`s `public/sounds/`) — t.ex. `public/images/menu-backdrop.webp`.
-3. Säg till, så kopplas `.menu-backdrop` in i `MainMenu.tsx`/`styles.css` i en egen, liten
-   ändring (en `background-image`-rad plus `object-fit`/`opacity`-justering om bilden är för
-   stark bakom texten) — dokumenterad i `docs/ANDRINGSLOGG.md` som vanligt.
+Tillgång 1 (menybakgrunden) och 2 (app-ikonen/favicon) är klara och inkopplade, se
+"Klart 2026-09-22"-blockquoten i respektive avsnitt ovan. Kvar:
+
+1. Generera papperskornstexturen med den omskrivna prompten i avsnitt 3 (försök 2).
+2. Lägg filen i `packages/app/public/images/` (samma mönster som de två andra).
+3. Säg till, så byggs en liten, ny kodkrok för den (den finns inte än, till skillnad från
+   menybakgrunden) — dokumenterad i `docs/ANDRINGSLOGG.md` som vanligt.
