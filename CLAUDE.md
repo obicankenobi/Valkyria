@@ -369,6 +369,29 @@ fixat genom att ersätta texten med en ren bana, samma "form, inte textmätning"
 `DoctrineGlyph` redan använder. Golden ORÖRD. Fullt testsvep grönt: 555 tester, lint,
 typecheck, build, e2e (16 tester, körd två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md`
 §13:s P77-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
+**P78 BYGGD 2026-09-26**: `validateAction`/`previewAction` (nya, `packages/core`, ren
+core-refaktorering — ingen `packages/app`-fil rörd). Ny toppnivåfil `validateAction.ts`
+replikerar VARJE avvisningsvillkor som tidigare låg inline i `applyActions.ts`/
+`political.ts`, ordagrant samma reason-strängar — båda filerna anropar den nu i stället
+för att upprepa kontrollerna. `ResolveContext` fick ett nytt fält, `state` (state vid
+turens BÖRJAN, aldrig muterat), en ren mekanisk följdändring i alla femton
+`resolve/steps/*.test.ts`-filer. Två genuina fynd: `bribeGainThisTurn` visade sig ALDRIG
+vara en avvisningsorsak (behöver ingen validateAction-gren); `remainingCredit`
+(TAKE_LOAN) är det, men en enkel state/draft-diff är fel om en REPAY föregår ett
+TAKE_LOAN i samma inskickning — löst med en klampad diff, exakt utom en dokumenterat
+accepterad, otestad kombination (TAKE_LOAN–REPAY–TAKE_LOAN samma tur). Beslut,
+dokumenterat: "no executive actions remaining" (handlingstaket) ligger KVAR utanför
+validateAction — den handlar om köns kapacitet, inte handlingens egen giltighet,
+strukturellt outtryckbar av en funktion som bara ser en handling åt gången. Ny
+`previewAction.ts`: `cost`/`successPct`/`successPctKnown`, alla sannolikhetsformler
+återanvända (`intelOpSuccessPct` exporterad, `fundCoupSuccessPct` ny och exporterad) i
+stället för handkopierade. "Motståndarens counterIntelligence utan station visas som
+Unknown" löst med samma `effectiveDepth`-grind som `formationDisplay`/`officialDisplay`.
+Scope-beslut: ett balansintervall per verb (t.ex. STAGE_INCIDENTs heat-spann) är
+UTTRYCKLIGEN inte med — P79 avgör vilka verb som behöver mer än kostnad/sannolikhet.
+Golden ORÖRD. Fullt testsvep grönt: 610 tester (555→610), lint, typecheck (alla tre
+paket), build. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P78-blockquote och
+`docs/ANDRINGSLOGG.md` för hela genomförandet.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

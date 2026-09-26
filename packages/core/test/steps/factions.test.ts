@@ -13,6 +13,7 @@ function makeCtx(state: GameState, seed: string): { ctx: ResolveContext; emitted
   const ids: string[] = []
   let seq = 0
   const ctx: ResolveContext = {
+    state,
     draft: state,
     submission: EMPTY_SUBMISSION,
     rng: createRng(seed, 0),

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { applyActions } from '../../src/resolve/steps/applyActions.js'
 import { endings } from '../../src/resolve/steps/endings.js'
 import { createRng } from '../../src/rng.js'
-import { createInitialState } from '../../src/state.js'
+import { cloneState, createInitialState } from '../../src/state.js'
 import { bidEstimate } from '../../src/queries.js'
 import { alignmentPenalty } from '../../src/pricing.js'
 import balance from '../../src/data/balance.json' with { type: 'json' }
@@ -17,7 +17,13 @@ function makeCtx(
   const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
   let seq = 0
   const submission: TurnSubmission = { standingOrders: [], bids: [], actions }
+  // P78: ctx.state måste vara en FRYST ögonblicksbild av läget innan den här
+  // inskickningens actions körs — validateAction()s TAKE_LOAN-kontroll diffar
+  // draft.house.debt mot den. draft === state (samma referens, som förut) är
+  // medvetet: testerna nedan läser `state` EFTER applyActions(ctx) och
+  // förväntar sig att se mutationerna, så bara ctx.state kan vara en kopia.
   const ctx: ResolveContext = {
+    state: cloneState(state),
     draft: state,
     submission,
     rng: createRng(seed, 0),

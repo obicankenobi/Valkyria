@@ -42,6 +42,12 @@ import { endings } from './steps/endings.js'
 export type ResolveStep = (ctx: ResolveContext) => void
 
 export interface ResolveContext {
+  // P78 (ETAPP7_TEKNISK_SPEC.md §7.4): state vid TURENS BÖRJAN, innan någon av
+  // den här inskickningens actions är tillämpade — validateAction() behöver
+  // den för att räkna TAKE_LOAN:s kreditrest korrekt (se validateAction.ts:s
+  // egen kommentar). Aldrig muterad (samma indata som resolveTurns eget
+  // `state`-argument, inte en klon av draft) — hård regel 3 gäller ograverad.
+  state: Readonly<GameState>
   draft: GameState
   submission: TurnSubmission
   rng: Rng
@@ -80,6 +86,7 @@ export function resolveTurn(state: Readonly<GameState>, submission: TurnSubmissi
   const rejected: TurnResult['rejected'] = []
 
   const ctx: ResolveContext = {
+    state,
     draft,
     submission,
     rng,

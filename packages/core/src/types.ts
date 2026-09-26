@@ -726,6 +726,12 @@ export interface TurnResult {
   rejected: { action: PlayerAction | Bid; reason: string }[]
 }
 
+// P78 (ETAPP7_TEKNISK_SPEC.md §7.4), ordagrant: "validateAction(state, draft,
+// action): { ok: true } | { ok: false; reason: string }". Samma reason-form
+// som en rejected-post redan har, bara utan action-fältet — validateAction()
+// vet redan vilken action den prövade, anroparen behöver bara orsaken.
+export type ActionValidation = { ok: true } | { ok: false; reason: string }
+
 // ── 4.3 Vad spelaren får se ──────────────────────────────────────────────────
 
 export interface BidEstimate {
@@ -734,6 +740,24 @@ export interface BidEstimate {
   lowestRivalHouse: RivalId | null // endast depth >= 4
   winBand: { price: Money; confidence: Pct }[]
   yourUnitCost: Money // alltid exakt — du känner din egen verkstad
+}
+
+// P78 (ETAPP7_TEKNISK_SPEC.md §7.4), byggd av previewAction(). Ordagrant:
+// "kostnad, intervall ur balansfilen, sannolikheter där underrättelsen
+// räcker" — den här första versionen täcker de två fält som gäller FLEST av
+// de 22 verben (kostnad och sannolikhet). Ett balansintervall per verb (t.ex.
+// STAGE_INCIDENTs heat-spann) är UTTRYCKLIGEN inte med än — P79 (som faktiskt
+// bygger TierPicker-gränssnittet mot detta) avgör vilka verb som behöver mer
+// än kostnad/sannolikhet, i stället för att den detaljen uppfinns i blindo
+// utan en konsument. Se ANDRINGSLOGG.md.
+export interface ActionPreview {
+  cost: Money | null // treasury-effekten handlingen självdeklarerar. null = ingen (FAVOUR, TAKE_LOAN, WITHDRAW, BROKER m.fl. — se previewAction.ts)
+  successPct: Pct | null // null = inte slumpavgjord (t.ex. INFLUENCE, ASSASSINATE lyckas alltid) ELLER dold (successPctKnown === false)
+  // Samma princip som FormationDisplay.known/OfficialDisplay.cabinetCoverage:
+  // false → UI visar successPct som "Unknown", inte det faktiska talet.
+  // "Motståndarens counterIntelligence utan station visas som Unknown" (§7.4,
+  // ordagrant) — gated av effectiveDepth(state, den berörda nationen) > 0.
+  successPctKnown: boolean
 }
 
 // P41 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), byggd av

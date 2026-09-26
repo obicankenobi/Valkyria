@@ -835,6 +835,83 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P78 — `validateAction` och `previewAction`.** Utbrutna ur `applyActions.ts`. *Klart när:* golden bitvis identisk; varje avvisningsorsak har ett test som visar samma svar från båda.
 
+> **Klart 2026-09-26.** Ny toppnivåfil `validateAction.ts` (inte under `resolve/`, som
+> `queries.ts`/`pricing.ts` — en UI-anropare i P79 har ingen `ResolveContext`): en enda
+> switch över `PlayerAction['type']`/`op` som replikerar VARJE avvisningsvillkor som
+> tidigare låg inline i `applyActions.ts`/`political.ts`, ordagrant samma reason-strängar.
+> `applyActions.ts` och `political.ts` anropar den nu i stället för att upprepa
+> kontrollerna — `political.ts`s fem funktioner tappade sina `rejected.push`-grenar helt
+> (applyActions.ts validerar INNAN den dispatchar dit, se filens egen kommentar) och
+> använder `!`-assertioner på sina uppslag, samma mönster som INTEL/MARKET/BROKER-
+> grenarna i applyActions.ts redan fick. `isTakeLoanPayload`/`isRepayPayload`/
+> `isHirePayload`/`isRndPayload`/`COMMODITIES`/`TECH_CATEGORIES`/`HIRABLE_ROLES` flyttade
+> till validateAction.ts (nu den enda källan, applyActions.ts importerar tillbaka dem för
+> TypeScript-avsmalning i sin egen mutationskod).
+>
+> **`ResolveContext` fick ett nytt fält, `state`** (state vid turens BÖRJAN, aldrig
+> muterat) — signaturen `validateAction(state, draft, action)` behöver BÅDA: `draft` för
+> de flesta kontrollerna (nuläget, inklusive föregående actions i SAMMA inskickning),
+> `state` bara för TAKE_LOAN:s kreditrest (se nästa stycke). `resolveTurn` sätter den från
+> sitt eget, redan existerande `state`-argument (ingen extra klon). Ren mekanisk följd:
+> alla femton `resolve/steps/*.test.ts`-filers `ResolveContext`-literaler fick samma
+> `state`-fält (`state, draft: state,` — samma referens, ingen semantisk skillnad för de
+> steg som inte anropar validateAction). `applyActions.test.ts` är undantaget: dess
+> `ctx.state` är en RIKTIG klon tagen FÖRE mutation (`cloneState(state)`), eftersom testerna
+> läser `state` EFTER anropet och förväntar sig mutationerna på samma objekt som `draft`.
+>
+> **Genuint fynd, upptäckt under bygget, INTE tyst löst:** två av de gamla lokala
+> spårarna (`remainingCredit`, `bribeGainThisTurn`) fanns bara som loop-lokala variabler,
+> aldrig i `GameState`. Utredning visade att `bribeGainThisTurn` ALDRIG var en
+> avvisningsorsak (BRIBE:s tak klipper bara vinsten tystare, avvisar aldrig) — den behöver
+> alltså ingen validateAction-gren, oförändrad kvar i `political.ts`. `remainingCredit`
+> (TAKE_LOAN) ÄR en avvisningsorsak. En enkel `draft.house.debt − state.house.debt`-diff
+> visade sig FEL i ett smalt fall: en REPAY tidigare i samma inskickning sänker `debt`,
+> vilket en naiv diff skulle läsa som "mer kreditutrymme" — ett beteende
+> ORIGINALKODEN aldrig hade (`remainingCredit` där påverkades ENDAST av TAKE_LOAN).
+> Löst med en klampad diff (`Math.max(0, …)`), som är EXAKT för alla scenarier UTOM
+> "TAKE_LOAN, sedan REPAY, sedan ett nytt TAKE_LOAN i SAMMA inskickning" (då tillåter
+> validateAction marginellt mer lånat än originalkoden). Sökt igenom hela test- och
+> golden-sviten: den sekvensen förekommer INGENSTANS. Beslut: den klampade diffen
+> används, avvikelsen dokumenteras (här och i `test/validateAction.test.ts`s egen
+> kommentar) i stället för att tröskla in ett nytt `GameState`-fält bara för att täcka ett
+> otestat, hypotetiskt fall — se ANDRINGSLOGG.md.
+>
+> **Beslut, dokumenterat: "no executive actions remaining" (handlingstaket) ligger KVAR
+> utanför `validateAction`**, oförändrad i `applyActions.ts`s egen loop. Den kontrollen
+> handlar om KÖNS kapacitet (hur många actions föregår den här i inskickningen), inte om
+> handlingens EGEN giltighet — strukturellt outtryckbar av `validateAction(state, draft,
+> action)`, som bara ser EN handling åt gången, aldrig hela listan eller dess ordning.
+> `test/validateAction.test.ts`s sista test visar det uttryckligen: två i övrigt giltiga
+> handlingar validerar var för sig, men den andra avvisas ändå av `resolveTurn` när
+> `actionPoints` tar slut.
+>
+> `previewAction.ts` (ny): `cost`/`successPct`/`successPctKnown`. Alla sannolikhetsformler
+> ÅTERANVÄNDA (inte handkopierade) — `intelOpSuccessPct` exporterad från applyActions.ts,
+> `fundCoupSuccessPct` ny, exporterad från political.ts (bröt ut den inline-formeln som
+> redan fanns) — samma "en formel, en källa"-princip som bidEstimate/bidding.ts
+> (ANDRINGSLOGG.md 2026-09-13). "Motståndarens counterIntelligence utan station visas som
+> Unknown" (§7.4, ordagrant) löst med SAMMA `effectiveDepth(state, nation) > 0`-grind som
+> `formationDisplay`/`officialDisplay` redan använder — både för FUND_COUP (mot VILKET
+> land som helst, ingen egen station krävs för att FÖRSÖKA) och för
+> LEAK/SABOTAGE/TURN (som kräver en egen station, men en nyrekryterad sådan har depth 0
+> och är ändå "Unknown" — samma grind oavsett att stationen är din egen).
+>
+> **Scope-beslut, dokumenterat i `types.ts`s `ActionPreview`-kommentar:** "intervall ur
+> balansfilen" (§7.4, t.ex. STAGE_INCIDENTs heat-spann) är UTTRYCKLIGEN INTE med i den
+> här versionen — bara `cost`/`successPct`, de två fält som gäller flest av de 22 verben.
+> P79 (som faktiskt bygger `TierPicker`-gränssnittet mot `ActionPreview`) avgör vilka verb
+> som behöver mer, i stället för att den formen uppfinns här utan en konsument som kan
+> bekräfta den.
+>
+> Golden ORÖRD (verifierat, `test/golden/golden.test.ts` grön, ingen omfrysning). Två nya
+> testfiler: `test/validateAction.test.ts` (40 tester — en parity-kontroll PER
+> avvisningsorsak, ordagrant klart-när: samma svar från `validateAction()` direkt OCH från
+> den fulla `resolveTurn()`-vägen, plus TAKE_LOAN-kreditrestens tre kantfall) och
+> `test/previewAction.test.ts` (15 tester, inklusive "Unknown"-exemplet). Fullt testsvep
+> grönt: 610 tester (555 → 610), lint, typecheck (alla tre paket), build. Ingen `packages/
+> app`-fil rörd — P78 är en ren `packages/core`-refaktorering, ingen UI, inget e2e-svep
+> relevant. Se `docs/ANDRINGSLOGG.md`.
+
 **P79 — Val, landets bottenark och handlingsplatserna.** Sydvietnam och dess huvudstad, station, tjänstemän och ordrar går att välja. Landets bottenark med underrättelseverben (alla sex) och `TierPicker`. Handlingsplatserna. *Klart när:* alla sex underrättelseverb går att köa från kartan och avgörs korrekt i en e2e-tur.
 
 **P80 — Kvartalsuppspelningen och NEWS DESK.** `wireAnchor`, rubrikläge som standard, full uppspelning som val, förstasidan. *Klart när:* minst 80 % av händelserna i en 20-turers golden-körning får ett ankare som inte är `hud`; annars redovisas vilka typer som saknar `subjectId`.

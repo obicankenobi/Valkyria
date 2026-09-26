@@ -25,30 +25,38 @@
 // `targetId` som nationen att rekrytera i. Avsnitt 9.2 säger uttryckligen att CRISIS
 // är den ENDA tillåtna ändringen av PlayerAction-unionen i etappen, så INTEL kan
 // inte få ett eget payload-fält — se ANDRINGSLOGG.md.
+//
+// P78 (ETAPP7_TEKNISK_SPEC.md §7.4): varje avvisning nedan går nu via en anrop
+// till validateAction() (../../validateAction.js) i stället för en egen inline-
+// kontroll — SAMMA villkor, SAMMA reason-strängar, bara flyttade dit så att en
+// framtida UI-anropare (P79) kan pröva ett kort mot EXAKT samma regler innan
+// turen skickas in. Efter ett godkänt validateAction()-svar slår grenarna nedan
+// upp sina mål EN GÅNG TILL (t.ex. `.find(...)!`) — validateAction returnerar
+// bara ok/inte-ok, aldrig de uppslagna objekten, så TypeScript kan inte smalna
+// av typen över ett funktionsanrop. Ett känt, litet pris för en delad sanningskälla.
+//
+// UNDANTAGET: "no executive actions remaining" (handlingstaket, nedan) är
+// KVAR här, utanför validateAction — den kontrollen handlar om KÖNS kapacitet
+// (hur många actions föregår den här i INSKICKNINGEN), inte om handlingens
+// EGEN giltighet, och kan strukturellt inte uttryckas av validateAction(state,
+// draft, action) (som bara ser EN handling i taget, aldrig hela listan/dess
+// ordning). Se validateAction.ts:s egen kommentar för den fulla motiveringen
+// och docs/ANDRINGSLOGG.md för beslutet.
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { advanceRndQueue, advanceStations } from '../upkeep.js'
 import { resolvePendingCrisis } from '../crisis.js'
 import { applyPolitical } from '../political.js'
 import { round } from '../../money.js'
 import { deriveSupplyCostIndex } from './supply.js'
-import { allProducts, computeUnitCostNow, getProduct } from '../../pricing.js'
+import { computeUnitCostNow, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
+import { validateAction } from '../../validateAction.js'
+import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type {
-  Commodity,
-  Contract,
-  GameState,
-  Money,
-  OfficialId,
-  ProductionLine,
-  RndProject,
-  Station,
-  TechCategory,
-} from '../../types.js'
+import type { Commodity, Contract, GameState, OfficialId, ProductionLine, RndProject, Station, TechCategory } from '../../types.js'
 
 interface Balance {
   buildLineCost: number
-  maxProductionLines: number
   hireCost: number
   hireGain: number
   rndProjectTurns: number
@@ -56,14 +64,11 @@ interface Balance {
   intelRecruitCost: number
   intelExposureMin: number
   intelExposureMax: number
-  maxStations: number
   commodityIndexWeight: Record<Commodity, number>
   marketReleaseCommodityImpactPerMoney: number
   supplyIndexMin: number
   supplyIndexMax: number
   // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5): BROKER.
-  brokerRelationThreshold: number
-  brokerIntegrityThreshold: number
   brokerStandingCost: number
   brokerScandalRiskGain: number
   brokerDeliveryTurns: number
@@ -80,15 +85,9 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-const COMMODITIES: readonly Commodity[] = ['oil', 'steel', 'uranium', 'titanium', 'rare_earths']
-
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
 }
-
-const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
-const HIRABLE_ROLES = ['chiefEngineer', 'chiefSalesman', 'chiefOfStaff'] as const
-type HirableRole = (typeof HIRABLE_ROLES)[number]
 
 // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "landets egen tjänst ... skalar
 // hur mycket exposure spelarens operationer i landet genererar" — gäller ALLA
@@ -110,8 +109,12 @@ function counterIntelligenceExposureMultiplier(draft: GameState, nation: string)
 // med svag tjänst och livsfarliga mot ett med stark" (avsnitt 4.3, ordagrant)
 // läst som en direkt procentenhet-för-procentenhet avräkning mot en hög
 // basnivå, klampad så en extremt stark tjänst aldrig gör operationen strikt
-// omöjlig. Se balance.json:s _p60_note.
-function intelOpSuccessPct(draft: GameState, nation: string): number {
+// omöjlig. Se balance.json:s _p60_note. Exporterad sedan P78 — previewAction.ts
+// (§7.4) återanvänder EXAKT samma formel för sin sannolikhetsförhandsvisning,
+// i stället för en egen handkopierad kopia (samma "en formel, en källa"-
+// motivering som bidEstimate/bidding.ts redan följer, se ANDRINGSLOGG.md
+// 2026-09-13).
+export function intelOpSuccessPct(draft: GameState, nation: string): number {
   const faction = draft.factions[nation]
   const ci = faction ? faction.counterIntelligence : BALANCE.counterIntelligenceDefault
   return clamp(BALANCE.intelOpBaseSuccessPct - ci, BALANCE.intelOpMinSuccessPct, 100)
@@ -150,40 +153,21 @@ function markIntelOpCaught(draft: GameState, station: Station, emit: ResolveCont
   })
 }
 
-function isTakeLoanPayload(payload: Record<string, unknown>): payload is { amount: number } {
-  return typeof payload.amount === 'number' && Number.isFinite(payload.amount) && payload.amount > 0
-}
-
-function isRepayPayload(payload: Record<string, unknown>): payload is { amount: number } {
-  return typeof payload.amount === 'number' && Number.isFinite(payload.amount) && payload.amount > 0
-}
-
-function isHirePayload(payload: Record<string, unknown>): payload is { role: HirableRole } {
-  return typeof payload.role === 'string' && (HIRABLE_ROLES as readonly string[]).includes(payload.role)
-}
-
-function isRndPayload(payload: Record<string, unknown>): payload is { category: TechCategory } {
-  return typeof payload.category === 'string' && (TECH_CATEGORIES as readonly string[]).includes(payload.category)
-}
-
 export const applyActions: ResolveStep = (ctx) => {
-  const { draft, submission, rng, emit, rejected } = ctx
+  const { state, draft, submission, rng, emit, rejected } = ctx
   const house = draft.house
 
   advanceRndQueue(house, emit)
   advanceStations(ctx)
   resolvePendingCrisis(ctx)
 
-  // house.creditLimit uppdateras inte förrän economy.ts (senare i samma pipeline-
-  // passage) — så flera TAKE_LOAN i samma inskickning måste bokföras mot en lokal,
-  // krympande kopia, annars kunde spelaren stapla lån långt över den faktiska
-  // gränsen genom att bara skicka in många handlingar samma tur.
-  let remainingCredit = house.creditLimit
   let rndSeq = 0
   // BRIBE:s tak (bribeRelationMaxPerTurn) är PER TJÄNSTEMAN per tur, inte totalt
   // (P56, ETAPP5_TEKNISK_SPEC.md avsnitt 3.3 — ändrat från per faktion) — flera
   // BRIBE mot samma person samma tur ska inte kringgå taket genom att delas upp,
-  // men två BRIBE mot OLIKA personer ska inte dela ett gemensamt tak.
+  // men två BRIBE mot OLIKA personer ska inte dela ett gemensamt tak. Detta är
+  // INTE en avvisningsorsak (gain klipps bara tystare, se political.ts) — hör
+  // därför inte hemma i validateAction, se den filens huvudkommentar.
   const bribeGainThisTurn = new Map<OfficialId, number>()
 
   let actionsUsed = 0
@@ -196,21 +180,19 @@ export const applyActions: ResolveStep = (ctx) => {
       continue
     }
 
+    const validation = validateAction(state, draft, action)
+    if (!validation.ok) {
+      rejected.push({ action, reason: validation.reason })
+      continue
+    }
+
     if (action.type === 'INTERNAL') {
       switch (action.op) {
         case 'TAKE_LOAN': {
-          if (!isTakeLoanPayload(action.payload)) {
-            rejected.push({ action, reason: 'invalid loan amount' })
-            continue
-          }
-          const amount = round(action.payload.amount)
-          if (amount > remainingCredit) {
-            rejected.push({ action, reason: 'credit limit exceeded' })
-            continue
-          }
+          const payload = action.payload as { amount: number }
+          const amount = round(payload.amount)
           house.debt += amount
           house.treasury += amount
-          remainingCredit -= amount
           emit({
             severity: 'ticker',
             scope: 'house',
@@ -224,15 +206,8 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'REPAY': {
-          if (!isRepayPayload(action.payload)) {
-            rejected.push({ action, reason: 'invalid repayment amount' })
-            continue
-          }
-          const amount: Money = round(action.payload.amount)
-          if (amount > Math.min(house.treasury, house.debt)) {
-            rejected.push({ action, reason: 'repayment exceeds treasury or debt' })
-            continue
-          }
+          const payload = action.payload as { amount: number }
+          const amount = round(payload.amount)
           house.treasury -= amount
           house.debt -= amount
           emit({
@@ -248,10 +223,6 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'BUILD_LINE': {
-          if (house.lines.length >= BALANCE.maxProductionLines) {
-            rejected.push({ action, reason: 'maximum production lines reached' })
-            continue
-          }
           const cost = BALANCE.buildLineCost
           house.treasury -= cost
           const line: ProductionLine = {
@@ -279,13 +250,10 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'HIRE': {
-          if (!isHirePayload(action.payload)) {
-            rejected.push({ action, reason: 'invalid hire role' })
-            continue
-          }
+          const payload = action.payload as { role: HirableRole }
           const cost = BALANCE.hireCost
           house.treasury -= cost
-          const role = action.payload.role
+          const role = payload.role
           const before = house.staff[role]
           house.staff[role] = Math.min(100, before + BALANCE.hireGain)
           emit({
@@ -301,11 +269,8 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'REPRIORITISE_RND': {
-          if (!isRndPayload(action.payload)) {
-            rejected.push({ action, reason: 'invalid R&D category' })
-            continue
-          }
-          const category = action.payload.category
+          const payload = action.payload as { category: TechCategory }
+          const category = payload.category
           const project: RndProject = {
             id: `rnd-${category}-${draft.meta.turn}-${rndSeq++}`,
             category,
@@ -339,11 +304,7 @@ export const applyActions: ResolveStep = (ctx) => {
     if (action.type === 'INTEL') {
       switch (action.op) {
         case 'EXPAND': {
-          const station = house.stations.find((s) => s.id === action.stationId)
-          if (!station) {
-            rejected.push({ action, reason: 'unknown station' })
-            continue
-          }
+          const station = house.stations.find((s) => s.id === action.stationId)!
           house.treasury -= BALANCE.intelExpandCost
           const depthBefore = station.depth
           station.depth = Math.min(5, station.depth + 1) as Station['depth']
@@ -368,15 +329,7 @@ export const applyActions: ResolveStep = (ctx) => {
 
         case 'RECRUIT': {
           // targetId återanvänds som nationen — se filens huvudkommentar.
-          const nation = action.targetId
-          if (!nation || !draft.factions[nation]) {
-            rejected.push({ action, reason: 'invalid recruit target' })
-            continue
-          }
-          if (house.stations.length >= BALANCE.maxStations) {
-            rejected.push({ action, reason: 'maximum stations reached' })
-            continue
-          }
+          const nation = action.targetId!
           house.treasury -= BALANCE.intelRecruitCost
           const faction = draft.factions[nation]!
           const station: Station = {
@@ -402,11 +355,7 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'WITHDRAW': {
-          const station = house.stations.find((s) => s.id === action.stationId)
-          if (!station) {
-            rejected.push({ action, reason: 'unknown station' })
-            continue
-          }
+          const station = house.stations.find((s) => s.id === action.stationId)!
           station.status = 'dormant'
           emit({
             severity: 'ticker',
@@ -426,17 +375,9 @@ export const applyActions: ResolveStep = (ctx) => {
         // gemensam bestraffning vid misslyckande (markIntelOpCaught). Bara
         // SUCCESS-effekten skiljer de tre åt.
         case 'LEAK': {
-          const station = house.stations.find((s) => s.id === action.stationId)
-          if (!station) {
-            rejected.push({ action, reason: 'unknown station' })
-            continue
-          }
-          const rivalId = action.targetId
-          const rival = rivalId ? draft.rivals[rivalId] : undefined
-          if (!rival) {
-            rejected.push({ action, reason: 'unknown rival target' })
-            continue
-          }
+          const station = house.stations.find((s) => s.id === action.stationId)!
+          const rivalId = action.targetId!
+          const rival = draft.rivals[rivalId]!
           house.treasury -= BALANCE.intelCovertOpCost
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             // "billiga mot ett land med svag tjänst" — leaker en rivals
@@ -452,7 +393,7 @@ export const applyActions: ResolveStep = (ctx) => {
               causeId: null,
               delta: { treasury: -BALANCE.intelCovertOpCost, [`relations.${station.nation}`]: after - before },
               actorIsPlayer: true,
-              subjectId: rivalId!,
+              subjectId: rivalId,
             })
           } else {
             emit({
@@ -470,17 +411,9 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'SABOTAGE': {
-          const station = house.stations.find((s) => s.id === action.stationId)
-          if (!station) {
-            rejected.push({ action, reason: 'unknown station' })
-            continue
-          }
-          const rivalId = action.targetId
-          const rival = rivalId ? draft.rivals[rivalId] : undefined
-          if (!rival) {
-            rejected.push({ action, reason: 'unknown rival target' })
-            continue
-          }
+          const station = house.stations.find((s) => s.id === action.stationId)!
+          const rivalId = action.targetId!
+          const rival = draft.rivals[rivalId]!
           house.treasury -= BALANCE.intelCovertOpCost
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             // Samma fält rivals.ts:s egen "misslyckad incident sabbar rivalen
@@ -495,7 +428,7 @@ export const applyActions: ResolveStep = (ctx) => {
               causeId: null,
               delta: { treasury: -BALANCE.intelCovertOpCost },
               actorIsPlayer: true,
-              subjectId: rivalId!,
+              subjectId: rivalId,
             })
           } else {
             emit({
@@ -513,16 +446,8 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'TURN': {
-          const station = house.stations.find((s) => s.id === action.stationId)
-          if (!station) {
-            rejected.push({ action, reason: 'unknown station' })
-            continue
-          }
-          const official = action.targetId ? draft.officials[action.targetId] : undefined
-          if (!official || official.status !== 'active' || official.factionId !== station.nation) {
-            rejected.push({ action, reason: 'unknown official target' })
-            continue
-          }
+          const station = house.stations.find((s) => s.id === action.stationId)!
+          const official = draft.officials[action.targetId!]!
           house.treasury -= BALANCE.intelCovertOpCost
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             const before = official.relationToPlayer
@@ -561,14 +486,6 @@ export const applyActions: ResolveStep = (ctx) => {
     // obyggd (avsnitt 9), fortfarande en no-op som bara konsumerar en
     // actionPoint (se testet för det).
     if (action.type === 'MARKET') {
-      if (!(COMMODITIES as readonly string[]).includes(action.commodity)) {
-        rejected.push({ action, reason: 'unknown commodity' })
-        continue
-      }
-      if (!Number.isFinite(action.spend) || action.spend <= 0) {
-        rejected.push({ action, reason: 'invalid market spend amount' })
-        continue
-      }
       const spend = round(action.spend)
       const commodity = action.commodity
 
@@ -579,10 +496,6 @@ export const applyActions: ResolveStep = (ctx) => {
         // production.ts), inte en låst kvantitet/pris. 1:1-kursen ÄR
         // mekaniken, se balance.json:s _p51_note — inget eget balanstal behövs
         // för BUY_FORWARD.
-        if (spend > house.treasury) {
-          rejected.push({ action, reason: 'insufficient treasury' })
-          continue
-        }
         house.treasury -= spend
         house.commodityHoldings[commodity] += spend
         emit({
@@ -599,10 +512,6 @@ export const applyActions: ResolveStep = (ctx) => {
         // trycker ner marknadspriset (avsnitt 4.4:s fjärde drivare, "egna
         // inköp") — asymmetriskt mot BUY_FORWARD med avsikt, spec 4.5 ordagrant:
         // bara RELEASE nämns "trycka ner priset ... hjälper dina konkurrenter".
-        if (spend > house.commodityHoldings[commodity]) {
-          rejected.push({ action, reason: 'release exceeds holding' })
-          continue
-        }
         house.commodityHoldings[commodity] -= spend
         house.treasury += spend
 
@@ -640,34 +549,8 @@ export const applyActions: ResolveStep = (ctx) => {
       // (relationToPlayer + integrity), inte av anbudsformeln. grade hårdkodas
       // till 'A' — BROKER-handlingen (types.ts) har inget grade-fält, samma
       // provisoriska val som crisis.ts:s krisköp.
-      const faction = draft.factions[action.buyerId]
-      if (!faction) {
-        rejected.push({ action, reason: 'unknown buyer faction' })
-        continue
-      }
-      if (!Number.isFinite(action.quantity) || action.quantity <= 0) {
-        rejected.push({ action, reason: 'invalid quantity' })
-        continue
-      }
-      if (!Number.isFinite(action.price) || action.price <= 0) {
-        rejected.push({ action, reason: 'invalid price' })
-        continue
-      }
-      if (!allProducts().some((p) => p.id === action.productId)) {
-        rejected.push({ action, reason: 'unknown product' })
-        continue
-      }
-
-      const official = findOfficial(draft, action.buyerId, 'procurement')
-      if (
-        !official ||
-        official.status !== 'active' ||
-        official.relationToPlayer < BALANCE.brokerRelationThreshold ||
-        official.integrity < BALANCE.brokerIntegrityThreshold
-      ) {
-        rejected.push({ action, reason: 'official will not broker this deal' })
-        continue
-      }
+      const faction = draft.factions[action.buyerId]!
+      const official = findOfficial(draft, action.buyerId, 'procurement')!
 
       const product = getProduct(action.productId)
       const contract: Contract = {

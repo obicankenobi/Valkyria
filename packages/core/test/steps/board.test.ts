@@ -12,6 +12,7 @@ function makeCtx(state: GameState): { ctx: ResolveContext; emitted: Omit<WireEve
   const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
   let seq = 0
   const ctx: ResolveContext = {
+    state,
     draft: state,
     submission: EMPTY_SUBMISSION,
     rng: createRng('board-test', 0),

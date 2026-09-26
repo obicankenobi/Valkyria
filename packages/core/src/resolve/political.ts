@@ -6,6 +6,14 @@
 // CAMPAIGN/FAVOUR är nya. applyPolitical är den enda funktionen som anropas utifrån
 // (från applyActions.ts), samma "en export, ett anropsställe"-princip som
 // resolvePendingCrisis.
+//
+// P78 (ETAPP7_TEKNISK_SPEC.md §7.4): applyActions.ts anropar validateAction()
+// för VARJE action, POLITICAL inkluderat, INNAN den dispatchar hit — så varje
+// funktion nedan körs bara efter ett godkänt svar. De gamla inline-kontrollerna
+// (mål finns, spend/marginCost giltigt, coupAttempted, official.status) togs
+// bort härifrån och lever nu bara i validateAction.ts — en delad sanningskälla
+// i stället för två. Uppslagen nedan (`draft.factions[...]!` osv.) använder `!`
+// eftersom validateAction redan bevisat att de existerar.
 import balanceData from '../data/balance.json' with { type: 'json' }
 import successorsData from '../data/successors.json' with { type: 'json' }
 import { addDoomsday } from './doomsdayGate.js'
@@ -140,18 +148,10 @@ function applyFactionTargetedPolitical(
   ctx: ResolveContext,
   action: Extract<PoliticalAction, { op: 'STAGE_INCIDENT' | 'BACK_CHANNEL' }>,
 ): void {
-  const { draft, rng, emit, rejected } = ctx
+  const { draft, rng, emit } = ctx
   const house = draft.house
 
-  const target = draft.factions[action.targetFactionId]
-  if (!target) {
-    rejected.push({ action, reason: 'unknown target faction' })
-    return
-  }
-  if (!Number.isFinite(action.spend) || action.spend < 0) {
-    rejected.push({ action, reason: 'invalid spend amount' })
-    return
-  }
+  const target = draft.factions[action.targetFactionId]!
 
   if (action.op === 'STAGE_INCIDENT') {
     house.treasury -= action.spend
@@ -238,20 +238,12 @@ function applyOfficialTargetedPolitical(
   action: Extract<PoliticalAction, { op: 'BRIBE' | 'FUND_CAMPAIGN' | 'FAVOUR' }>,
   bribeGainThisTurn: Map<OfficialId, number>,
 ): void {
-  const { draft, emit, rejected } = ctx
+  const { draft, emit } = ctx
   const house = draft.house
 
-  const official = draft.officials[action.officialId]
-  if (!official) {
-    rejected.push({ action, reason: 'unknown official' })
-    return
-  }
+  const official = draft.officials[action.officialId]!
 
   if (action.op === 'FAVOUR') {
-    if (!Number.isFinite(action.marginCost) || action.marginCost < 0) {
-      rejected.push({ action, reason: 'invalid margin cost' })
-      return
-    }
     // P56 (avsnitt 3.3): "det enda verbet i spelet som inte kostar pengar" —
     // treasury rörs ALDRIG här. house.favourMarginSpent är den enda bokföringen
     // (types.ts:s egen kommentar) — kostnaden mäts i utebliven marginal, inte i
@@ -272,11 +264,6 @@ function applyOfficialTargetedPolitical(
   }
 
   // BRIBE / FUND_CAMPAIGN — kostar treasury (spend).
-  if (!Number.isFinite(action.spend) || action.spend < 0) {
-    rejected.push({ action, reason: 'invalid spend amount' })
-    return
-  }
-
   if (action.op === 'FUND_CAMPAIGN') {
     house.treasury -= action.spend
     const gain = Math.min(action.spend / BALANCE.fundCampaignStandingCostPerPoint, 100 - official.standing)
@@ -329,19 +316,10 @@ function applyOfficialTargetedPolitical(
 // det inte finns något att bli avslöjad FÖR. `direction` gör den
 // dubbelriktad — specen säger "flytta", aldrig bara "sänka"/"höja".
 function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'INFLUENCE' }>): void {
-  const { draft, emit, rejected } = ctx
+  const { draft, emit } = ctx
   const house = draft.house
 
-  const target = draft.factions[action.targetFactionId]
-  if (!target) {
-    rejected.push({ action, reason: 'unknown target faction' })
-    return
-  }
-  if (!Number.isFinite(action.spend) || action.spend < 0) {
-    rejected.push({ action, reason: 'invalid spend amount' })
-    return
-  }
-
+  const target = draft.factions[action.targetFactionId]!
   const sign = action.direction === 'up' ? 1 : -1
 
   if (action.effect.kind === 'publicSupport') {
@@ -364,11 +342,7 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
   }
 
   const towardId = action.effect.towardFactionId
-  const toward = draft.factions[towardId]
-  if (!toward || towardId === target.id) {
-    rejected.push({ action, reason: 'invalid influence target' })
-    return
-  }
+  const toward = draft.factions[towardId]!
 
   const before = target.relations[towardId] ?? 0
   const after = clamp(before + (action.spend / BALANCE.influenceRelationsCostPerPoint) * sign, 0, 100)
@@ -392,27 +366,22 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
 // (fundCoupBaseSuccessPct 40, mot intelOp-familjens 90) — en kupp är en
 // mycket större operation. "Sällsynt" löst genom en engångsspärr per
 // faktion (Faction.coupAttempted), inte en gissad nedkylningslängd.
+// P78 (ETAPP7_TEKNISK_SPEC.md §7.4): exporterad så previewAction.ts kan visa
+// FUND_COUP:s sannolikhet med EXAKT samma formel som den faktiska
+// avgörandet nedan använder — samma "en formel, en källa"-motivering som
+// intelOpSuccessPct (applyActions.ts), se den funktionens egen kommentar.
+export function fundCoupSuccessPct(target: { counterIntelligence: number }): number {
+  return clamp(BALANCE.fundCoupBaseSuccessPct - target.counterIntelligence, BALANCE.fundCoupMinSuccessPct, 100)
+}
+
 function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'FUND_COUP' }>): void {
-  const { draft, rng, emit, rejected } = ctx
+  const { draft, rng, emit } = ctx
   const house = draft.house
 
-  const target = draft.factions[action.targetFactionId]
-  if (!target) {
-    rejected.push({ action, reason: 'unknown target faction' })
-    return
-  }
-  if (!Number.isFinite(action.spend) || action.spend < 0) {
-    rejected.push({ action, reason: 'invalid spend amount' })
-    return
-  }
-  if (target.coupAttempted) {
-    rejected.push({ action, reason: 'coup already attempted against this faction' })
-    return
-  }
-
+  const target = draft.factions[action.targetFactionId]!
   target.coupAttempted = true
   house.treasury -= action.spend
-  const successPct = clamp(BALANCE.fundCoupBaseSuccessPct - target.counterIntelligence, BALANCE.fundCoupMinSuccessPct, 100)
+  const successPct = fundCoupSuccessPct(target)
 
   if (rng.chance(successPct)) {
     const alignmentBefore = target.alignment
@@ -527,19 +496,10 @@ function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { o
 // de två (en enda aspirerande mening i 4.4:s sammanfattande stycke ändrar
 // inte en redan byggd, redan testad invariant). Se docs/ANDRINGSLOGG.md.
 function applyAssassinate(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'ASSASSINATE' }>): void {
-  const { draft, rng, emit, rejected } = ctx
+  const { draft, rng, emit } = ctx
   const house = draft.house
 
-  const official = draft.officials[action.officialId]
-  if (!official || official.status !== 'active') {
-    rejected.push({ action, reason: 'unknown official target' })
-    return
-  }
-  if (!Number.isFinite(action.spend) || action.spend < 0) {
-    rejected.push({ action, reason: 'invalid spend amount' })
-    return
-  }
-
+  const official = draft.officials[action.officialId]!
   const target = draft.factions[official.factionId]
   house.treasury -= action.spend
   official.status = 'dead'

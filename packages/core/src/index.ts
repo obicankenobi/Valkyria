@@ -32,3 +32,9 @@ export { getProduct, computeUnitCostNow } from './pricing.js'
 // officialId: appen och testerna behöver kunna slå upp en faktions
 // procurement-tjänsteman utan att duplicera id-schemat (P54, se officials.ts).
 export { officialId, findOfficial } from './officials.js'
+// P78 (ETAPP7_TEKNISK_SPEC.md §7.4): validateAction/previewAction — appens
+// enda väg att pröva ett kort mot exakt samma regler som resolveTurn faktiskt
+// använder (P79). ActionValidation/ActionPreview exporteras redan via
+// `export * from './types.js'` ovan.
+export { validateAction } from './validateAction.js'
+export { previewAction } from './previewAction.js'
