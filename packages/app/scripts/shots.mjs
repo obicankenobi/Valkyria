@@ -7,9 +7,10 @@
 // att bygge och facit kan jämföras sida vid sida. Ett dev-verktyg, inte ett
 // CI-test — se e2e/text-overflow.spec.ts för regel 18:s automatiska kontroll.
 //
-// Skärmlistan är avsiktligt kort i P73 (bara komponentsidan, det enda NYA denna
-// prompt bygger) — utökas i takt med att fler skärmar i etapp 7 färdigställs
-// (7B+), samma sorts växande lista som resten av projektets checkade-in skript.
+// Skärmlistan växer i takt med att fler skärmar i etapp 7 färdigställs, samma
+// sorts växande lista som resten av projektets checkade-in skript. P73 lade
+// bara komponentsidan; P74 lägger huvudmenyn och OPERATIONS-skalet (med
+// platshållarkartan — den riktiga kartan är P76).
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { createServer, get as httpGet } from 'node:http'
@@ -31,9 +32,38 @@ const REFERENCE_PORT = 4187
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
 
-// Skärmar denna prompt bygger. `path` är appens query-styrda ingång
-// (samma ?screen=-mönster som App.tsx:s wantsComponentLibrary()).
-const APP_SCREENS = [{ name: 'components', path: '/?screen=components' }]
+// Skärmar denna prompt bygger. `path` är appens query-styrda ingång (samma
+// ?screen=-mönster som App.tsx:s wantsComponentLibrary()). En skärm utan egen
+// query-ingång (huvudmenyn ligger redan på '/', OPERATIONS kräver att man
+// klickar sig förbi menyn) tar en `afterGoto`-hook i stället för att uppfinna
+// fler query-parametrar bara för skärmdumpsskriptet.
+const APP_SCREENS = [
+  { name: 'components', path: '/?screen=components' },
+  { name: 'main-menu', path: '/' },
+  {
+    name: 'operations',
+    path: '/',
+    async afterGoto(page) {
+      // Den föregående skärmen (main-menu) monterar redan <App/> en gång,
+      // vilket useGame.ts:s autospar-effekt (körs vid varje hydrering, även
+      // med ett helt nytt, oanvänt parti) redan hunnit spara till IndexedDB
+      // innan den här navigeringen — "New Game" visar då bekräftelsedialogen
+      // (hasSave=true), precis som för en riktig spelare med ett sparat
+      // parti. Samma gren som en riktig andra-besök-runda, inte en bugg i
+      // skärmdumpsskriptet.
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Ingen bekräftelsedialog visades — inget sparat parti fanns, "New
+        // Game" gick rakt in.
+      }
+      await page.getByTestId('hud').waitFor()
+    },
+  },
+]
 
 const REFERENCE_FILES = [
   'operations-1-start.html',
@@ -115,6 +145,7 @@ async function main() {
 
       for (const screen of APP_SCREENS) {
         await page.goto(`http://localhost:${APP_PORT}${screen.path}`)
+        if (screen.afterGoto) await screen.afterGoto(page)
         await page.waitForTimeout(300)
         const outPath = join(OUT_DIR, `${screen.name}-${format}.png`)
         await page.screenshot({ path: outPath, fullPage: true })

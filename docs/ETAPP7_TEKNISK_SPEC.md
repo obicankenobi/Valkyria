@@ -564,6 +564,66 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P74 — Skärmskalet och helskärms-PWA.** Fast viewport, ingen sidscroll, säkra områden. OPERATIONS-layouten för telefon ur §5 med platshållare, skrivbordsvarianten ovanpå. Flikrad med ikoner och nya namn (§2G). Bottenark. Övergångar mellan skärmar. HUD som instrumentpanel med räknande tal. Manifest och service worker enligt §10. *Klart när:* e2e grönt i telefonformat; spelet kan läggas på hemskärmen och startar i helskärm i stående läge; ingen `<select>` eller sifferfält synligt på de skärmar som byggts om; fem-sekunderstestet på en telefonbild.
 
+> **Klart 2026-09-26.** Ny `Shell.tsx` (`HudBar`, `QuarterBand`, `TelexTicker`, `ActionDock`,
+> `TabBar`, `MapPlaceholder`, `RejectedBanner`) — `App.tsx` omskriven kring den, `.ds-shell`
+> (100dvh, `overflow: hidden`, `env(safe-area-inset-*)` på topp/sidor) med `.ds-shell-content`
+> som ensam scrollar inuti sig själv. Flikraden (§2G:s nya namn, komponentbibliotekets
+> unicode-glyfer ⌖▤⚙☷≋ från specens egen §5-mockup) botten på telefon, vänstermeny på skrivbord
+> (`@media (min-width: 1024px)`, CSS grid). HUD:en räknar (`useCountUp`, `requestAnimationFrame`,
+> avstängd av `prefers-reduced-motion` — samma jsdom-säkra `matchMedia`-mönster som `TheWire.tsx`
+> redan använde) och fälls ut vid tryck för skuld/kredit/handlingspoäng. OPERATIONS-skärmen
+> renderar `MapPlaceholder` — riktig karta är P76; **bottenarket** är redan byggt som en
+> återanvändbar komponent i `designSystem.tsx` (P73) men får ingen egen instans i skalet här,
+> eftersom platshållarkartan saknar valbara objekt att öppna den från — kopplas in när P76/P79
+> ger kartan riktigt innehåll, inte en glömd rad i denna prompt.
+>
+> Manifest (`public/manifest.webmanifest`: `display: fullscreen`, `orientation: portrait`,
+> ikonerna från `docs/GRAFISKA_TILLGANGAR.md`) och ett handrullat `public/sw.js`
+> (cache-faller-tillbaka-på-nätverk för samma-ursprungs GET, `self.skipWaiting()`/
+> `clients.claim()`) i stället för ett byggverktygstillägg — samma princip som
+> `persistence.ts`/`sound.ts`. Registreras bara när `!import.meta.env.DEV`, så e2e-svepet (som
+> kör mot `vite dev`) aldrig ser en tidigare körnings cachade svar. Verifierat i en riktig
+> `npm run build && npm run preview`-körning: manifestet och `sw.js` svarar 200, och
+> `navigator.serviceWorker.getRegistrations()` visar en aktiv registrering efter sidladdning.
+> Ny `eslint.config.js`-regel (`globals.serviceworker`) skopad bara till `public/sw.js` — en
+> `.js`-fil, matchar inte `packages/app/**/*.{ts,tsx}`s `globals.browser`, och Service Worker-
+> globalerna (`self`/`caches`/`clients`/`skipWaiting`) hör inte till `globals.browser` ändå.
+>
+> **Två genuina fynd, båda fixade i samma commit, inte skjutna framför sig:**
+> 1. `useGame.ts`s autospar (körs vid varje hydrering, redan med ett helt nytt, oanvänt parti)
+>    gör att ett andra sidbesök alltid har `hasSave=true` — "New Game" visar då
+>    bekräftelsedialogen ("Overwrite and start new?"), byggd redan i P65 men aldrig körd av
+>    `scripts/shots.mjs`/e2e-svepet förrän skärmlistan växte till fler än en skärm i den här
+>    prompten. Inget fel i appen — samma gren en riktig spelares andra besök tar. `shots.mjs`
+>    och `text-overflow.spec.ts` hanterar den nu (väntar in och klickar
+>    `new-game-confirm-yes` om den visas).
+> 2. HUD:ens kassavärde (`£4,000,000`) klipptes av en `text-overflow: ellipsis` i
+>    `.ds-hud-value` — `grid-template-columns: repeat(4, 1fr)` gav för lite plats åt den längsta
+>    cellen. Hittat av regel 18:s eget CI-test sedan `e2e/text-overflow.spec.ts`s skärmlista
+>    utökades från bara komponentsidan till huvudmenyn och OPERATIONS (samma "hittat av testet
+>    självt, inte av mig"-mönster som P73:s `.ds-action-slot`). Fixat med en ojämn
+>    `grid-template-columns: 0.6fr 1.6fr 0.9fr 1.1fr` (kassan får mer plats) och `ellipsis`/
+>    `overflow: hidden` borttaget helt — en framtida överskridning ska synas och fångas av
+>    testet, inte gömmas. Samma utökade skärmlista fångade också två hit-target-brott i
+>    `MainMenu.tsx` (P65, byggd innan regel 11 fanns): "New Game" 280×43 och mute-togglen 93×32
+>    — fixade med `min-height: 44px` på `.menu-btn`/`.menu-mute`.
+>
+> `e2e/persist-mid-turn.spec.ts` och `e2e/play-20-turns.spec.ts` uppdaterade från
+> `getByRole('button', { name: /THE FLOOR/ })`/`/THE HOUSE/`/`/End Turn/` till
+> `getByTestId('tab-contracts')`/`'tab-company'`/`'end-quarter-button'` — `hud`/`datestamp`/
+> `credit-limit`/`hud-treasury` oförändrade, samma testid:n som innan. `scripts/shots.mjs`
+> utökad med huvudmenyn och OPERATIONS (klickar igenom "New Game"), `e2e/text-overflow.spec.ts`
+> likaså — regel 18 och regel 11 körs nu i CI mot tre skärmar i båda formaten, inte bara en.
+> Manuellt verifierat i en riktig Chromium-körning: ingen sidscroll, `env(safe-area-inset-*)`
+> tillämpad, `overflow: hidden` på `.ds-shell`, HUD-tal räknar vid mount, skärmbyten tonar in
+> (`ds-view-fade`, avstängd av `prefers-reduced-motion`), flikraden botten på telefon/vänster-
+> meny på skrivbord. Fem-sekunderstestet på `docs/ui/current/operations-phone.png`: läser som
+> ett spelbords-HUD (instrumentpanel, kvartalsband, handlingsplatser, flikrad) vid första
+> anblick, i linje med de godkända referensskisserna — bara själva kartan är fortfarande en
+> platshållare, vilket är exakt denna prompts avsedda gräns. Golden ORÖRD — allt i
+> `packages/app`. Fullt testsvep grönt: 527 tester, lint, typecheck, build, e2e (14 tester,
+> körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P75 — Stillhetsmått i härnessen.** Per tur och parti: antal sektorer som bytt sida, frontrörelse, förband som bytt status, faktioner som bytt alignment, tjänstemän som ersatts. Ingen ändring i `core`. *Klart när:* CSV med måtten för 500 partier; ägaren tar beslut 2F på underlaget.
 
 ### 7B — Den vertikala skivan (Sydvietnam, slutlig kvalitet)

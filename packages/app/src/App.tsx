@@ -1,22 +1,24 @@
-// THE SEVENTH FRONT — appskalet: HUD, navigation, turordning. De fyra vyerna
-// ligger i components/. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10.
+// THE SEVENTH FRONT — appskalet (P74, ETAPP7_TEKNISK_SPEC.md §5/§10/§13): fast
+// viewport, HUD, This Quarter-band, telexremsa, handlingsdocka och flikrad
+// (nya namn, §2G). Komponentfilerna för de fyra befintliga vyerna
+// (TheFloor.tsx m.fl.) rörs INTE av namnbytet — bara det spelaren ser här i
+// skalet. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10 för den ursprungliga
+// arkitekturen detta bygger vidare på.
 import { useEffect, useState } from 'react'
-import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
-import type { GameState } from '@seventh-front/core'
 import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
+import { ActionDock, HudBar, MapPlaceholder, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
+import type { ShellView } from './components/Shell.js'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
 import { TheWire } from './components/TheWire.js'
-import { TheWorld } from './components/TheWorld.js'
-import { formatMoney } from './components/ui.js'
 import { useGame } from './useGame.js'
 import { hasSavedGame, loadMuted, saveMuted } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
 import { playSound, setMuted as setSoundMuted } from './sound.js'
 
-type View = 'menu' | 'wire' | 'floor' | 'house' | 'world' | 'politics'
+type View = 'menu' | ShellView
 
 const ENDING_LABEL: Record<string, string> = {
   INSOLVENCY: 'Insolvent — the house is liquidated',
@@ -24,49 +26,6 @@ const ENDING_LABEL: Record<string, string> = {
   EXPOSURE: 'Exposed — licence revoked',
   NUCLEAR_EXCHANGE: 'Nuclear exchange',
   SCENARIO_COMPLETE: 'Scenario complete',
-}
-
-function doomsdayTone(doomsday: number): string {
-  if (doomsday >= DISPLAY_THRESHOLDS.doomsdayCrisisEvent) return 'is-danger'
-  if (doomsday >= DISPLAY_THRESHOLDS.doomsdayCrisisWatch) return 'is-amber'
-  return ''
-}
-
-function Hud({ state }: { state: GameState }) {
-  const house = state.house
-  const target = house.boardTarget
-  const progressPct = target.threshold > 0 ? (target.progressSnapshot / target.threshold) * 100 : 0
-
-  return (
-    <div className="hud" data-testid="hud">
-      <div className="hud-cell">
-        <span className="hud-label">Treasury</span>
-        <span className={house.treasury < 0 ? 'hud-value is-danger' : 'hud-value'} data-testid="hud-treasury">
-          {formatMoney(house.treasury)}
-        </span>
-      </div>
-      <div className="hud-cell">
-        <span className="hud-label">Debt</span>
-        <span className="hud-value">{formatMoney(house.debt)}</span>
-      </div>
-      <div className="hud-cell">
-        <span className="hud-label">Credit limit</span>
-        <span className="hud-value">{formatMoney(house.creditLimit)}</span>
-      </div>
-      <div className="hud-cell">
-        <span className="hud-label">Board target</span>
-        <span className="hud-value">{progressPct.toFixed(0)}%</span>
-      </div>
-      <div className="hud-cell">
-        <span className="hud-label">Action points</span>
-        <span className="hud-value">{house.actionPoints}</span>
-      </div>
-      <div className="hud-cell">
-        <span className="hud-label">Doomsday</span>
-        <span className={`hud-value ${doomsdayTone(state.doomsday)}`}>{state.doomsday.toFixed(0)}</span>
-      </div>
-    </div>
-  )
 }
 
 // P73 (ETAPP7_TEKNISK_SPEC.md §11.3): komponentsidan nås via ?screen=components,
@@ -167,10 +126,10 @@ export function App() {
       <MainMenu
         houseName={hasSave ? state.house.name : null}
         hasSave={hasSave}
-        onContinue={() => setView('wire')}
+        onContinue={() => setView('operations')}
         onNewGame={() => {
           restart()
-          setView('wire')
+          setView('operations')
         }}
         muted={muted}
         onToggleMuted={handleToggleMuted}
@@ -182,84 +141,67 @@ export function App() {
 
   function handleEndTurn() {
     endTurn()
-    setView('wire') // THE WIRE är startvyn varje tur (avsnitt 8)
+    setView('news') // NEWS DESK (f.d. THE WIRE) är startvyn varje tur (avsnitt 8)
   }
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <h1 className="brand">
-          The Seventh Front
-          <span className="brand-house">{state.house.name}</span>
-        </h1>
-        <span className="datestamp" data-testid="datestamp">
-          {state.meta.year} · Q{state.meta.quarter} · Turn {state.meta.turn}
-        </span>
-      </header>
+    <div className="ds-shell">
+      <HudBar state={state} />
+      <QuarterBand state={state} />
 
-      <Hud state={state} />
-
-      <nav className="tabs">
-        <button type="button" className="tab" onClick={() => setView('wire')} disabled={view === 'wire'}>
-          THE WIRE
-        </button>
-        <button type="button" className="tab" onClick={() => setView('floor')} disabled={view === 'floor'}>
-          THE FLOOR
-          <span className="tab-count">{state.market.openOrders.length}</span>
-        </button>
-        <button type="button" className="tab" onClick={() => setView('house')} disabled={view === 'house'}>
-          THE HOUSE
-        </button>
-        <button type="button" className="tab" onClick={() => setView('world')} disabled={view === 'world'}>
-          THE WORLD
-        </button>
-        <button type="button" className="tab" onClick={() => setView('politics')} disabled={view === 'politics'}>
-          THE POLITICS
-        </button>
-        <span className="tabs-spacer" />
-        <button type="button" className="btn btn-primary" onClick={handleEndTurn} disabled={ended}>
-          End Turn
-          {draft.bids.length > 0 ? ` · ${draft.bids.length} bids` : ''}
-        </button>
-      </nav>
-
-      {ended && state.status.kind === 'ended' && (
-        <div className="banner is-ended">
-          <div>
-            <div className="banner-title">{ENDING_LABEL[state.status.ending] ?? state.status.ending}</div>
-            <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
+      <main className="ds-shell-content">
+        {ended && state.status.kind === 'ended' && (
+          <div className="banner is-ended" data-testid="ended-banner">
+            <div>
+              <div className="banner-title">{ENDING_LABEL[state.status.ending] ?? state.status.ending}</div>
+              <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
+            </div>
+            <span className="tabs-spacer" />
+            <button type="button" className="btn" onClick={restart}>
+              New Game
+            </button>
           </div>
-          <span className="tabs-spacer" />
-          <button type="button" className="btn" onClick={restart}>
-            New Game
-          </button>
-        </div>
-      )}
-
-      {lastRejected.length > 0 && (
-        <div className="banner">
-          <div>
-            <div className="banner-title">Rejected last turn</div>
-            <ul>
-              {lastRejected.map((entry, i) => (
-                <li key={i}>{entry.reason}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      <main>
-        {view === 'wire' && (
-          <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} />
         )}
-        {view === 'floor' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
-        {view === 'house' && (
+
+        <RejectedBanner rejected={lastRejected} />
+
+        {/* P74 (§13): OPERATIONS är kartan, med platshållare tills P76 bygger den
+            riktiga teaterkartan. Den gamla THE WORLD-vyn (TheWorld.tsx — Doomsday,
+            Theatres, Fronts, Factions, Stations) döps inte om till OPERATIONS; dess
+            innehåll återkommer styckvis i senare prompter (kartan i P76, landets
+            bottenark i P79, dossiererna i CONTACTS) i stället för att flyttas hit i
+            sin helhet. TheWorld.tsx rörs inte och lämnas oanvänd så länge. */}
+        {view === 'operations' && <MapPlaceholder theatreName={Object.values(state.theatres)[0]?.name ?? 'Indochina'} />}
+        {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
+        {view === 'company' && (
           <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />
         )}
-        {view === 'world' && <TheWorld state={state} />}
-        {view === 'politics' && <ThePolitics state={state} />}
+        {view === 'contacts' && <ThePolitics state={state} />}
+        {view === 'news' && (
+          <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} />
+        )}
       </main>
+
+      {view === 'operations' && <ActionDock state={state} queuedCount={draft.actions.length} onRemoveAction={removeAction} onEndTurn={handleEndTurn} ended={ended} />}
+
+      <TabBar
+        active={view}
+        onSelect={setView}
+        contractsCount={state.market.openOrders.length}
+        newsCount={undefined}
+      />
+
+      {/* End Quarter måste nås oavsett vilken flik som är aktiv (samma
+          princip som den gamla, alltid synliga navigationsraden) — §5:s
+          mockup visar den bara i OPERATIONS-läget, men att bara kunna
+          avsluta kvartalet från en enda flik hade varit en regression mot
+          appens nuvarande beteende. En liten, sekundär knapp på övriga
+          flikar, i stället för att duplicera hela handlingsdockan. */}
+      {view !== 'operations' && (
+        <button type="button" className="ds-button is-primary ds-end-quarter-fallback" onClick={handleEndTurn} disabled={ended} data-testid="end-quarter-button">
+          End Quarter
+        </button>
+      )}
     </div>
   )
 }

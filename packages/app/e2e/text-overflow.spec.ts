@@ -4,22 +4,34 @@
 // textelement på varje skärm i båda formaten och underkänner om
 // scrollWidth > clientWidth." Körs i CI (npm run test:e2e).
 //
-// Skärmlistan delar samma princip som scripts/shots.mjs: avsiktligt kort i
-// P73 (bara komponentsidan, den enda NYA skärmen denna prompt bygger) —
-// växer i takt med att fler etapp 7-skärmar färdigställs (7B+).
+// Skärmlistan delar samma princip som scripts/shots.mjs: växer i takt med
+// att fler etapp 7-skärmar färdigställs. P73 lade bara komponentsidan; P74
+// lägger huvudmenyn och OPERATIONS-skalet (`setup` klickar igenom "New
+// Game" — varje Playwright-test får en egen, tom browserkontext, så
+// bekräftelsedialogen för att skriva över ett sparat parti aldrig visas här).
 //
 // Kartkollisionsdelen av regel 18 ("ett test över kartan underkänner om två
 // etiketters eller markörers avgränsningsrutor skär varandra") gäller
-// SECTOR_REGIONS/etiketterna som byggs i P76 — ingen karta finns än i P73,
-// så den delen av testet läggs till där, inte här.
+// SECTOR_REGIONS/etiketterna som byggs i P76 — ingen karta finns än, så den
+// delen av testet läggs till där, inte här.
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const FORMATS: { name: string; width: number; height: number }[] = [
   { name: 'phone', width: 390, height: 844 },
   { name: 'desktop', width: 1440, height: 900 },
 ]
 
-const SCREENS: { name: string; path: string }[] = [{ name: 'components', path: '/?screen=components' }]
+async function enterOperations(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('hud').waitFor()
+}
+
+const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
+  { name: 'components', path: '/?screen=components' },
+  { name: 'main-menu', path: '/' },
+  { name: 'operations', path: '/', setup: enterOperations },
+]
 
 for (const format of FORMATS) {
   for (const screen of SCREENS) {
@@ -28,6 +40,7 @@ for (const format of FORMATS) {
     }) => {
       await page.setViewportSize({ width: format.width, height: format.height })
       await page.goto(screen.path)
+      if (screen.setup) await screen.setup(page)
       await page.waitForTimeout(300)
 
       const offenders = await page.evaluate(() => {
@@ -67,6 +80,7 @@ for (const format of FORMATS) {
     test(`alla träffytor minst 44×44 px — ${screen.name}, ${format.name} (regel 11)`, async ({ page }) => {
       await page.setViewportSize({ width: format.width, height: format.height })
       await page.goto(screen.path)
+      if (screen.setup) await screen.setup(page)
       await page.waitForTimeout(300)
 
       const tooSmall = await page.evaluate(() => {

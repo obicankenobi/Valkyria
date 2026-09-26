@@ -97,11 +97,11 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
       crisisHandled = true
     }
 
-    const endTurnButton = page.getByRole('button', { name: /End Turn/ })
+    const endTurnButton = page.getByTestId('end-quarter-button')
     if (await endTurnButton.isDisabled()) break // partiet redan slut (en ending inträffade)
 
     // Bjud på varje öppen order till ett pris som garanterar en marginal.
-    await page.getByRole('button', { name: /THE FLOOR/ }).click()
+    await page.getByTestId('tab-contracts').click()
     let quoteCount = await page.getByRole('button', { name: 'quote' }).count()
     while (quoteCount > 0) {
       await page.getByRole('button', { name: 'quote' }).first().click()
@@ -118,7 +118,7 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
       quoteCount = await page.getByRole('button', { name: 'quote' }).count()
     }
 
-    await page.getByRole('button', { name: /THE HOUSE/ }).click()
+    await page.getByTestId('tab-company').click()
 
     // Säkerhetslån — håll partiet likvitt så INSOLVENCY inte hinner före krisen.
     const treasury = parseMoney(await page.getByTestId('hud-treasury').innerText())

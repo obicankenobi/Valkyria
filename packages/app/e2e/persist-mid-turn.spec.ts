@@ -22,10 +22,10 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   // scenariot fel konfigurerat.
   let hasOrder = false
   for (let i = 0; i < 10; i++) {
-    await page.getByRole('button', { name: /THE FLOOR/ }).click()
+    await page.getByTestId('tab-contracts').click()
     hasOrder = (await page.getByRole('button', { name: 'quote' }).count()) > 0
     if (hasOrder) break
-    await page.getByRole('button', { name: /End Turn/ }).click()
+    await page.getByTestId('end-quarter-button').click()
   }
   expect(hasOrder).toBe(true)
 
@@ -60,7 +60,7 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
 
   // Det ospardade budutkastet finns kvar: samma order visar "Update Bid"
   // (inte "Place Bid"), med samma pris och muta ifyllda.
-  await page.getByRole('button', { name: /THE FLOOR/ }).click()
+  await page.getByTestId('tab-contracts').click()
   await page.getByRole('button', { name: 'quote' }).first().click()
   await expect(page.getByLabel('Price').first()).toHaveValue('1234567')
   await expect(page.getByLabel('Bribe').first()).toHaveValue('999')

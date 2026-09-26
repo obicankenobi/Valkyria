@@ -91,6 +91,16 @@ export default tseslint.config(
     },
   },
   {
+    // P74 (ETAPP7_TEKNISK_SPEC.md §10): service workern körs i sitt eget
+    // globala scope (self/caches/clients/skipWaiting), inte i webbläsarens
+    // vanliga window-scope — en egen glob-uppsättning i stället för att
+    // felaktigt bredda packages/app/**/*.{ts,tsx}-regeln till .js-filer.
+    files: ['packages/app/public/sw.js'],
+    languageOptions: {
+      globals: { ...globals.serviceworker },
+    },
+  },
+  {
     files: ['**/*.js'],
     ...tseslint.configs.disableTypeChecked,
   },

@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover (P74, ETAPP7_TEKNISK_SPEC.md §10/regel 12): innehållet får rita
+         ÄNDA UT till skärmens kanter, så env(safe-area-inset-*) faktiskt har något att mäta
+         mot (utan cover ligger safe area-insets alla på 0 — webbläsaren har redan lagt in
+         marginalen åt oss då). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Riktig ikon (ETAPP6_TEKNISK_SPEC.md §7/§8, docs/GRAFISKA_TILLGANGAR.md) — ersätter
          den tidigare tomma data-URI-platshållaren (som fanns för att undvika det
          P11:s e2e-test upptäckte: en automatisk /favicon.ico-begäran som 404:ar och loggas
@@ -10,8 +14,15 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="64x64" href="/images/favicon-64.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/images/app-icon-180.png" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#090b0e" />
+    <!-- P74 (ETAPP7_TEKNISK_SPEC.md §2I/§10): installerbar helskärms-PWA. manifest.webmanifest
+         (display: fullscreen, orientation: portrait) — den PWA-plugin P12 aviserade men
+         aldrig lade till (§0.5:s fynd), handrullad i stället för ett nytt byggberoende. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ebe1c7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Seventh Front" />
     <title>THE SEVENTH FRONT</title>
   </head>
   <body>

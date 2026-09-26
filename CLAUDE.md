@@ -301,6 +301,17 @@ på en egen sida (`ComponentLibrary.tsx`, `?screen=components`). `npm run shots`
 `e2e/text-overflow.spec.ts` (regel 18 textklippning + regel 11 träffytor, båda i CI) byggda.
 Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P73-blockquote och `docs/ANDRINGSLOGG.md`
 för hela genomförandet, inklusive sex komponenter vars träffytor fick fixas till ≥44×44 px.
+**P74 BYGGD 2026-09-26**: skärmskalet (ny `Shell.tsx` — HudBar, QuarterBand, TelexTicker,
+ActionDock, TabBar, MapPlaceholder, RejectedBanner — `App.tsx` omskriven kring den), fast
+`100dvh`-viewport utan sidscroll, `env(safe-area-inset-*)`, flikrad botten på telefon/
+vänstermeny på skrivbord (≥1024px), en räknande HUD (`useCountUp`), och en installerbar
+helskärms-PWA (handrullat `manifest.webmanifest` + `sw.js`, registrerad bara utanför dev-läge).
+OPERATIONS renderar `MapPlaceholder` till P76 bygger den riktiga kartan. Regel 18/11:s CI-test
+(`e2e/text-overflow.spec.ts`) utökat från bara komponentsidan till huvudmenyn och OPERATIONS —
+fångade och fick fixat två genuina brott: HUD-kassans klippta text (`.ds-hud-value`s
+`text-overflow: ellipsis`, en för smal grid-kolumn) och två hit-target-brott i `MainMenu.tsx`
+(byggd i P65, innan regel 11 fanns). Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s
+P74-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
