@@ -412,6 +412,28 @@ visuellt mot referensskisserna — matchar. Fullt testsvep grönt: 627 tester, l
 typecheck (alla tre paket), build, e2e (17 tester, körd två gånger i rad). Se
 `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P79-blockquote och `docs/ANDRINGSLOGG.md` för hela
 genomförandet.
+**P80 BYGGD 2026-09-26**: `wireAnchor(state, event)` (`packages/app/src/wireAnchor.ts`,
+ren, testbar). Specen ger bara signaturen — byggd DATA-driven (kollar `state.fronts`/
+`state.factions`/`state.theatres`), inte `scope`-driven: **genuint fynd**,
+`adjustFrontOpponentRelations` (political.ts) emittar `scope: 'faction'` med
+`subjectId: front.id`, så `scope` ensamt räcker inte. **Ett andra genuint fynd, hittat
+vid mätningen mot ett riktigt parti:** `heat.ts`s HEAT-händelser har `subjectId:
+theatre.id` — en tredje id-rymd som KROCKAR med faktionen `laos` (`indochina-slice.json`s
+andra teater heter också `laos`) — löst genom att kolla faktioner FÖRE teatern
+(dokumenterad, avsiktlig prioritering). Mätningen (klart-när ordagrant): 85,6–90,4 %
+icke-`hud` per botpolicy, 88,8 % kombinerat över 2 125 händelser — komfortabelt över
+80 %-tröskeln. Ny `QuarterReplay.tsx` (överlager mellan End Quarter och NEWS DESK):
+rubrikhändelser som standard, `prefers-reduced-motion` gör sekvensen omedelbar. Scope-
+beslut: den fulla kartanimationen (§8:s "leveranser längs linjer, strider som blixtar")
+är utanför mandatet — löst textbaserat i stället. NEWS DESK (`TheWire.tsx`, namnbytet
+redan gjort i UI av P74): ny hero-ruta för senaste rubriken, `Panel`→`DsPanel`, anchor-
+badge per rad. **Genuint fynd, löst under research:** `packages/core/test/queries.test.ts`
+saknade P78:s `state`-fält i en `ResolveContext`-literal (missad i P78:s eget filsvep,
+låg utanför `resolve/steps/`) — bröt `npm run typecheck` redan INNAN P80, fixat med
+samma mönster som de femton andra filerna. Golden ORÖRD. Fullt testsvep grönt: 650
+tester, lint, `npm run typecheck` (alla tre paket), build, e2e (17 tester, körd två
+gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P80-blockquote och
+`docs/ANDRINGSLOGG.md` för hela genomförandet.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

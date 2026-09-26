@@ -970,6 +970,83 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P80 — Kvartalsuppspelningen och NEWS DESK.** `wireAnchor`, rubrikläge som standard, full uppspelning som val, förstasidan. *Klart när:* minst 80 % av händelserna i en 20-turers golden-körning får ett ankare som inte är `hud`; annars redovisas vilka typer som saknar `subjectId`.
 
+> **Klart 2026-09-26.** Ny `wireAnchor(state, event)` (`packages/app/src/wireAnchor.ts`,
+> ren och testbar per specens egen signatur). Specen ger bara signaturen, ingen
+> routningsregel — byggd DATA-driven i stället för `scope`-driven: **genuint fynd**,
+> `adjustFrontOpponentRelations` (political.ts, etapp 5) emittar `scope: 'faction'` med
+> `subjectId: front.id` (en FRONT, inte en faktion — relationen mellan två länder existerar
+> bara via deras gemensamma front), så `event.scope` ensamt räcker inte. Ordningen: (1)
+> `subjectId === null` → `hud`; (2) ett `FrontId` → `sector`; (3) ett `FactionId` → `station`
+> (om `scope === 'house'` och huset har en station där, annars `country`); (4) ett `TheatreId`
+> (kollat SIST) → `sector`. **Ett andra genuint fynd, hittat vid mätningen mot ett riktigt
+> 20-turersparti, inte i förväg gissat:** `heat.ts`/`doomsday.ts`s HEAT-händelser har
+> `subjectId: theatre.id` — en TREDJE id-rymd. `indochina-slice.json`s andra teater heter
+> `laos`, SAMMA sträng som faktionen `laos` (`front-laos` krockar aldrig, prefixet skiljer) —
+> en verklig, oundviklig kollision i scenariodatan. Löst genom att kolla faktioner FÖRE
+> teatern: Laos LANDETS betydligt vanligare köpar-/underrättelsehändelser (`country`) väger
+> tyngre än en enstaka HEAT-ticker för Laos TEATERN, som därmed (dokumenterat, avsiktligt)
+> klassas som `country` i stället för `sector` — fel finkornighet, men fortfarande inte `hud`,
+> så täckningsmåttet påverkas inte. En riktig fix kräver ett eget `theatreId`-fält på
+> `WireEvent`, utanför P80:s mandat. **Känd, dokumenterad lucka:** ett `RivalId` (rivals.ts:s
+> egna marknadshändelser) har ingen kind-variant i §8:s union → `hud`, tills en framtida
+> prompt (P86:s CONTACTS-dossierer för rivalhus) ger rivalhus en egen plats. Ny `anchorLabel`
+> i samma fil — en kort, läsbar etikett (`RVN`, `SAIGON`, teaterns namn) för badges i
+> QuarterReplay och NEWS DESK.
+>
+> **Mätningen** (klart-när, ordagrant): ett engångsskript, samma `playScript`-mekanik som
+> golden-testet, kört mot alla fyra botpolicyer (`passive`/`aggressive`/`balanced`/
+> `capacity`) över 21 turer (`TURNS`, samma som golden). Resultat: 85,6–90,4 % icke-`hud` per
+> policy, 88,8 % kombinerat över 2 125 händelser — komfortabelt över 80 %-tröskeln. De
+> återstående `hud`-händelserna är nästan uteslutande `subjectId: null` (ekonomi, produktion,
+> R&D, doomsday, styrelsegranskning — genuint husövergripande, ingen egen plats att peka på)
+> plus den dokumenterade rival-luckan ovan.
+>
+> **Kvartalsuppspelningen** (ny `QuarterReplay.tsx`, ett fullskärmsöverlager mellan End
+> Quarter och NEWS DESK, `App.tsx`s `handleEndTurn` uppdaterad till `endTurn() →
+> setReplaying(true)` i stället för direkt `setView('news')`): rubrikhändelser i
+> emissionsordning som standard (`severity === 'headline'`), en i taget, `REPLAY_INTERVAL_MS`
+> (700 ms). Skip-knapp. `prefers-reduced-motion` gör hela sekvensen omedelbar (ingen ruta
+> visas alls, `onDone()` anropas direkt vid montering) — samma tolkning som "Hoppa över med
+> en knapp. Omedelbar vid prefers-reduced-motion" ordagrant kräver. **Scope-beslut,
+> dokumenterat:** §8:s "leveranser längs linjer, strider som blixtar i sektorer, frontlinjen
+> som flyttar sig" beskriver en fullt animerad uppspelning ovanpå `TheatreMap` — utanför P80:s
+> mandat (kartan visar bara NULÄGET, ingen mekanik för att rita en HISTORISK händelse finns,
+> och att bygga den är en betydligt större insats). Löst med en läsbar, textbaserad sekvens i
+> stället: rubrik + var (`wireAnchor`/`anchorLabel`-badge) + vem (spelarmarkering) — samma
+> information utan att uppfinna en kartanimationsmotor ingen framtida prompt bett om än. **Ett
+> andra scope-beslut:** "ett val i inställningarna" förutsätter en inställningsskärm som inte
+> finns (P90, obyggd) — samma lucka P72 redan löste för mute-togglen genom att lägga den där
+> den faktiskt gick att nå. Samma mönster här: en `DsToggle` ("Full playback") i själva
+> uppspelningsöverlaget, sparad med samma nyckel-i-IndexedDB-teknik som mute
+> (`persistence.ts`s `loadFullReplay`/`saveFullReplay`, ny nyckel `settings:fullReplay`).
+>
+> **NEWS DESK** (`TheWire.tsx` döpt om i UI, filnamnet oförändrat per §2G:s egen regel — "bara
+> det spelaren ser"): en ny hero-ruta (`.news-hero`) ovanför telexlistan visar den SENAST
+> AVSLÖJADE rubrikhändelsen i stor stil — en riktig förstasida har en huvudrubrik, inte bara
+> en lista. Byggd mot `visible` (den redan avslöjade delmängden), aldrig `sorted`, så hjälten
+> aldrig spoilar en händelse reveal-sekvensen inte hunnit visa än. Varje telexrad fick en
+> `wireAnchor`/`anchorLabel`-badge (delad CSS-klass, `.wire-anchor`, med QuarterReplay). Yttre
+> `Panel` (ui.tsx, etapp 6-registret) bytt mot `DsPanel` (designSystem.tsx, P73) — samma
+> modernisering CountryFile.tsx redan fick i P79, nu NEWS DESK:s tur (`ui.tsx`s egen kommentar
+> förutsatte uttryckligen att de fyra kvarvarande vyerna byggs om "skärm för skärm"). Chain-
+> expansion (`causeChain`, `wireChain.ts`, oförändrad), spelarmarkering (`Tag`, ui.tsx) och
+> krismodalen rörda minimalt.
+>
+> **Genuint fynd, upptäckt och löst under research, inte i efterhand:** `packages/core/test/
+> queries.test.ts` byggde en `ResolveContext`-literal utan `state`-fältet P78 lade till
+> (`bidding()`-anropet på rad 212) — missad i P78:s egen "alla femton `resolve/steps/
+> *.test.ts`-filer"-genomgång eftersom `queries.test.ts` ligger utanför den katalogen. Bröt
+> `npm run typecheck` (den mandaterade fulla svepskommandon, skild från `tsc --noEmit` mot
+> bara `src/`) redan INNAN P80:s eget arbete påbörjades — verifierat med `git stash` mot P79:s
+> commit. Fixad med exakt samma `state, draft: state,`-mönster som de femton andra filerna.
+>
+> Golden ORÖRD (ingen `resolve/`-fil rörd av P80 självt — bara den redan trasiga
+> testfixturen ovan). Nya tester: `wireAnchor.test.ts` (16, inklusive teater-kollisionen och
+> `anchorLabel`), `QuarterReplay.test.ts` (7, täcker samtliga fyra klart-näts-krav ordagrant:
+> reducerad rörelse, rubrikläge, full uppspelning, skip). Fullt testsvep grönt: 650 tester,
+> lint, `npm run typecheck` (alla tre paket, inklusive testfilerna), build, e2e (17 tester,
+> körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P81 — Speltest av skivan. Ingen kod.** Ägaren spelar skivan, besvarar frågorna i §11.6 och godkänner eller underkänner stilen. Underkänd stil åtgärdas innan 7C.
 
 ### 7C — Bredda

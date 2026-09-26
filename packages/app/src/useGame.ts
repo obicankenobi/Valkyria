@@ -4,7 +4,7 @@
 // hanteringsbibliotek — bara useState, exakt som specen ber om.
 import { useCallback, useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS, createInitialState, resolveTurn } from '@seventh-front/core'
-import type { Bid, GameState, PlayerAction, TurnSubmission } from '@seventh-front/core'
+import type { Bid, GameState, PlayerAction, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
 import { crossedDoomsdayThreshold, playSound } from './sound.js'
@@ -28,6 +28,12 @@ export interface UseGameResult {
   state: GameState
   draft: TurnSubmission
   lastRejected: RejectedEntry[]
+  // P80 (ETAPP7_TEKNISK_SPEC.md §8): "händelserna i en 20-turers golden-
+  // körning" — kvartalsuppspelningen behöver DENNA turs färska händelser i
+  // PIPELINE-ordning, inte state.wire (det rullande fönstret, kan sträcka
+  // sig över flera turer och är redan omsorterat på andra ställen). Samma
+  // "senaste turens ORÖRDA resultat"-princip som lastRejected redan har.
+  lastTurnWire: WireEvent[]
   hydrated: boolean
   setBid: (bid: Bid) => void
   removeBid: (orderId: string) => void
@@ -42,6 +48,7 @@ export function useGame(): UseGameResult {
   const [state, setState] = useState<GameState>(() => createInitialState(SCENARIO_ID, newSeed()))
   const [draft, setDraft] = useState<TurnSubmission>(emptySubmission)
   const [lastRejected, setLastRejected] = useState<RejectedEntry[]>([])
+  const [lastTurnWire, setLastTurnWire] = useState<WireEvent[]>([])
   const [hydrated, setHydrated] = useState(false)
 
   // Läs ett sparat parti vid mount, en gång. Autosparningen nedan får INTE
@@ -128,13 +135,28 @@ export function useGame(): UseGameResult {
     setState(result.state)
     setDraft(emptySubmission())
     setLastRejected(result.rejected)
+    setLastTurnWire(result.wire)
   }, [state, draft])
 
   const restart = useCallback(() => {
     setState(createInitialState(SCENARIO_ID, newSeed()))
     setDraft(emptySubmission())
     setLastRejected([])
+    setLastTurnWire([])
   }, [])
 
-  return { state, draft, lastRejected, hydrated, setBid, removeBid, addAction, removeAction, setCrisisChoice, endTurn, restart }
+  return {
+    state,
+    draft,
+    lastRejected,
+    lastTurnWire,
+    hydrated,
+    setBid,
+    removeBid,
+    addAction,
+    removeAction,
+    setCrisisChoice,
+    endTurn,
+    restart,
+  }
 }

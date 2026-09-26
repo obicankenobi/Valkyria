@@ -210,6 +210,7 @@ describe('rivalscoring — bidEstimate och bidding.ts använder identiska rivalt
         const emitted: { headline: string }[] = []
         let seq = 0
         bidding({
+          state,
           draft: state,
           submission,
           rng: createRng(`consistency-${i}`, 0),

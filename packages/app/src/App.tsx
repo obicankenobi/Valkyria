@@ -16,8 +16,9 @@ import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
 import { TheWire } from './components/TheWire.js'
+import { QuarterReplay } from './components/QuarterReplay.js'
 import { useGame } from './useGame.js'
-import { hasSavedGame, loadMuted, saveMuted } from './persistence.js'
+import { hasSavedGame, loadFullReplay, loadMuted, saveFullReplay, saveMuted } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
 import { playSound, setMuted as setSoundMuted } from './sound.js'
 
@@ -44,8 +45,20 @@ function wantsComponentLibrary(): boolean {
 export function App() {
   if (wantsComponentLibrary()) return <ComponentLibrary />
 
-  const { state, draft, lastRejected, hydrated, setBid, removeBid, addAction, removeAction, setCrisisChoice, endTurn, restart } =
-    useGame()
+  const {
+    state,
+    draft,
+    lastRejected,
+    lastTurnWire,
+    hydrated,
+    setBid,
+    removeBid,
+    addAction,
+    removeAction,
+    setCrisisChoice,
+    endTurn,
+    restart,
+  } = useGame()
   const [view, setView] = useState<View>('menu') // P65 (ETAPP6_TEKNISK_SPEC.md §3): menyn grindar inträdet, inte spelet direkt
   const [hasSave, setHasSave] = useState(false)
   // P79 (ETAPP7_TEKNISK_SPEC.md §7.1/§13): valt land på kartan öppnar dess
@@ -53,6 +66,13 @@ export function App() {
   // stänger den implicit (renderas bara när view === 'operations').
   const [selectedFactionId, setSelectedFactionId] = useState<FactionId | null>(null)
   const [muted, setMuted] = useState(false) // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
+  // P80 (ETAPP7_TEKNISK_SPEC.md §8): kvartalsuppspelningen visas mellan End
+  // Quarter och NEWS DESK. `replaying` styr ÖVERLAGET, oberoende av `view` —
+  // NEWS DESK-navigeringen sker först efter att uppspelningen är klar
+  // (QuarterReplay.tsx:s onDone), samma sekvens som §5:s skärmarkitektur
+  // ("End Quarter → Quarter Replay → Front Page").
+  const [replaying, setReplaying] = useState(false)
+  const [fullReplay, setFullReplay] = useState(false)
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -88,6 +108,29 @@ export function App() {
       cancelled = true
     }
   }, [])
+
+  // P80: samma gräns som ovan — ett förkastat löfte (IndexedDB otillgängligt)
+  // tolkas som "standardläge, rubriker" (false), inte som ett fel.
+  useEffect(() => {
+    let cancelled = false
+    loadFullReplay()
+      .then((value) => {
+        if (!cancelled) setFullReplay(value)
+      })
+      .catch(() => {
+        if (!cancelled) setFullReplay(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function handleToggleFullReplay(next: boolean) {
+    setFullReplay(next)
+    saveFullReplay(next).catch(() => {
+      // Persistens är best-effort, samma princip som handleToggleMuted nedan.
+    })
+  }
 
   // Håller sound.ts:s modulnivå-flagga i synk med React-staten ovan — den
   // enda platsen som skriver till den, så playSound() (anropad från useGame.ts
@@ -148,7 +191,7 @@ export function App() {
 
   function handleEndTurn() {
     endTurn()
-    setView('news') // NEWS DESK (f.d. THE WIRE) är startvyn varje tur (avsnitt 8)
+    setReplaying(true) // §5: End Quarter → Quarter Replay → Front Page (NEWS DESK)
   }
 
   return (
@@ -224,6 +267,19 @@ export function App() {
         <button type="button" className="ds-button is-primary ds-end-quarter-fallback" onClick={handleEndTurn} disabled={ended} data-testid="end-quarter-button">
           End Quarter
         </button>
+      )}
+
+      {replaying && (
+        <QuarterReplay
+          wire={lastTurnWire}
+          state={state}
+          fullReplay={fullReplay}
+          onToggleFullReplay={handleToggleFullReplay}
+          onDone={() => {
+            setReplaying(false)
+            setView('news') // NEWS DESK (f.d. THE WIRE) är startvyn varje tur (avsnitt 8)
+          }}
+        />
       )}
     </div>
   )

@@ -138,3 +138,41 @@ export async function saveMuted(muted: boolean): Promise<void> {
     db.close()
   }
 }
+
+// P80 (ETAPP7_TEKNISK_SPEC.md §8): "Full uppspelning av alla händelser är
+// ett val i inställningarna." Samma nyckel-i-samma-objektlager-mönster som
+// SOUND_SETTINGS_KEY ovan (P72) — ingen egen inställningsskärm finns än
+// (P90, "Paus, inställningar, sparplatser", obyggd), så togglen exponeras i
+// stället i QuarterReplay.tsx självt, precis som mute-togglen fick bo i
+// MainMenu.tsx innan en riktig inställningsskärm fanns. Samma
+// förkastat-löfte-är-standardvärde-gräns som loadMuted ovan.
+const REPLAY_SETTINGS_KEY = 'settings:fullReplay'
+
+export async function loadFullReplay(): Promise<boolean> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<boolean | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(REPLAY_SETTINGS_KEY)
+      request.onsuccess = () => resolve(request.result as boolean | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? false
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveFullReplay(full: boolean): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(full, REPLAY_SETTINGS_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}

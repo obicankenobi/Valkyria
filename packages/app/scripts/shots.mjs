@@ -101,6 +101,53 @@ const APP_SCREENS = [
       await page.getByTestId('cf-influence-preview').waitFor()
     },
   },
+  {
+    // P80: kvartalsuppspelningen, mitt i sekvensen (ingen egen referensskiss
+    // finns — §11.6:s referensskisser täcker bara OPERATIONS).
+    name: 'quarter-replay',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('end-quarter-button').click()
+      await page.getByTestId('quarter-replay').waitFor()
+    },
+  },
+  {
+    // P80: NEWS DESK:s förstasida (f.d. THE WIRE) — Skip stänger uppspelningen
+    // direkt, samma genväg spelaren själv har (§8: "Hoppa över med en knapp").
+    // reducedMotion satt HÄR (inte på hela kontexten, som skulle påverka alla
+    // andra skärmars animationer) så att telexets reveal-sekvens (TheWire.tsx,
+    // P70) visar ALLA händelser synkront, inklusive rubriken — annars kan
+    // hjälteboxen (.news-hero) hinna missas i en enda 300 ms skärmdump.
+    name: 'news-desk',
+    path: '/',
+    async afterGoto(page) {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      // reducedMotion gör QuarterReplay.tsx omedelbar (§8: "Omedelbar vid
+      // prefers-reduced-motion") — överlaget hinner aldrig monteras, appen
+      // går rakt till NEWS DESK, precis som en riktig spelare med den
+      // systeminställningen skulle uppleva det.
+      await page.getByTestId('end-quarter-button').click()
+      await page.getByTestId('tab-news').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

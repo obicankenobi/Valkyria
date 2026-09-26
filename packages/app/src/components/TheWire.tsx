@@ -1,19 +1,33 @@
-// THE WIRE — startvyn varje tur. Telexflöde med utfällbar kausalkedja, max tre
-// led bakåt via causeId. Spelarens egna spår markeras. Se
-// ETAPP1_TEKNISK_SPEC.md avsnitt 8.
+// NEWS DESK (f.d. THE WIRE, §2G) — startvyn varje tur, telexremsan och
+// tidningens förstasida (P80, ETAPP7_TEKNISK_SPEC.md §8). Telexflöde med
+// utfällbar kausalkedja, max tre led bakåt via causeId. Spelarens egna spår
+// markeras. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8 för den ursprungliga
+// arkitekturen.
 //
-// P21 (spec 9.4): krismodalen bor här, eftersom THE WIRE redan är den vy
-// handleEndTurn (App.tsx) alltid navigerar till efter en avslutad tur — samma
-// tur doomsday.ts (om den flaggar en kris) precis hann skriva pendingCrisis.
-// Modalen har medvetet ingen stäng-/X-knapp: "inte går att stänga utan att
-// välja" (9.4). Den blockerar INTE att spelaren byter flik eller avslutar
-// turen ändå — 9.3 dokumenterar uttryckligen att en utebliven CRISIS-handling
-// bara ger automatiskt BACK_DOWN, inte ett fel.
+// P80: "Efteråt: NEWS DESK:s förstasida med rubriker och kausalkedjor,
+// spelarens egna spår i telexgult" — den delen fanns redan (chain-expansion,
+// .is-player). Nytt här: en hero-ruta för den SENASTE avslöjade
+// rubrikhändelsen (en riktig förstasida har EN stor rubrik, inte bara en
+// lista) och en `wireAnchor`/`anchorLabel`-badge per rad (P80s egen
+// leverans) som visar VAR händelsen hör hemma — samma information
+// QuarterReplay.tsx redan visar under själva uppspelningen, kvar synlig här
+// efteråt.
+//
+// P21 (spec 9.4): krismodalen bor här, eftersom NEWS DESK redan är den vy
+// handleEndTurn (App.tsx) alltid navigerar till efter en avslutad tur (nu
+// via QuarterReplay.tsx, P80) — samma tur doomsday.ts (om den flaggar en
+// kris) precis hann skriva pendingCrisis. Modalen har medvetet ingen stäng-/
+// X-knapp: "inte går att stänga utan att välja" (9.4). Den blockerar INTE
+// att spelaren byter flik eller avslutar turen ändå — 9.3 dokumenterar
+// uttryckligen att en utebliven CRISIS-handling bara ger automatiskt
+// BACK_DOWN, inte ett fel.
 import { useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { causeChain } from '../wireChain.js'
-import { Panel, Tag } from './ui.js'
+import { anchorLabel, wireAnchor } from '../wireAnchor.js'
+import { Tag } from './ui.js'
+import { DsPanel } from './designSystem.js'
 
 // P70 (ETAPP6_TEKNISK_SPEC.md §5): "Ny sekvens: WireEvent-listan avslöjas en
 // händelse i taget med kort fördröjning, avstängd vid prefers-reduced-
@@ -66,10 +80,11 @@ function formatDelta(key: string, value: number): string {
   return `${key} ${sign}${rounded}`
 }
 
-function EventRow({ event, wire }: { event: WireEvent; wire: readonly WireEvent[] }) {
+function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly WireEvent[]; state: GameState }) {
   const [expanded, setExpanded] = useState(false)
   const chain = causeChain(wire, event)
   const deltas = Object.entries(event.delta)
+  const anchor = anchorLabel(state, wireAnchor(state, event))
 
   const classes = ['wire-item']
   if (event.actorIsPlayer) classes.push('is-player')
@@ -81,6 +96,7 @@ function EventRow({ event, wire }: { event: WireEvent; wire: readonly WireEvent[
         <span className="wire-stamp">T{String(event.turn).padStart(2, '0')}</span>
         <span className={`wire-glyph is-${event.severity}`} aria-hidden="true" />
         <span className="wire-text">{event.headline}</span>
+        {anchor && <span className="wire-anchor">{anchor}</span>}
         {event.actorIsPlayer && <Tag tone="amber">YOU</Tag>}
         {chain.length > 0 && (
           <button type="button" className="btn btn-ghost" onClick={() => setExpanded((v) => !v)}>
@@ -187,14 +203,26 @@ export function TheWire({
   // ändrats (en ny tur), inte vid varje omrendering.
   const revealedCount = useRevealedCount(sorted.length, wire)
   const visible = sorted.slice(0, revealedCount)
+  // Förstasidan (P80, §8): den SENASTE avslöjade rubrikhändelsen får en egen,
+  // stor ruta ovanför telexlistan — en riktig förstasida har en huvudrubrik,
+  // inte bara en löpande lista. `visible` (inte `sorted`) så hjälten aldrig
+  // spoilar en händelse som reveal-sekvensen inte hunnit visa än.
+  const heroEvent = visible.find((e) => e.severity === 'headline') ?? null
+  const heroAnchor = heroEvent ? anchorLabel(state, wireAnchor(state, heroEvent)) : null
 
   return (
     <>
-      <h2 className="view-title">The Wire</h2>
+      <h2 className="view-title">News Desk</h2>
       {state.pendingCrisis && !crisisChosen && <CrisisModal state={state} onChoose={onChooseCrisis} />}
-      <Panel
+      {heroEvent && (
+        <div className="news-hero" data-testid="news-hero">
+          <span className="news-hero-kicker">Today&apos;s Headline · T{String(heroEvent.turn).padStart(2, '0')}</span>
+          <p className="news-hero-text">{heroEvent.headline}</p>
+          {heroAnchor && <span className="wire-anchor">{heroAnchor}</span>}
+        </div>
+      )}
+      <DsPanel
         title="Telex"
-        flush
         right={
           <span className="meter-label">
             {sorted.length} events · {headlines} headlines
@@ -202,17 +230,15 @@ export function TheWire({
         }
       >
         {sorted.length === 0 ? (
-          <p className="empty" style={{ padding: '14px 16px' }}>
-            Quiet on the line. End the turn to set the world in motion.
-          </p>
+          <p className="empty">Quiet on the line. End the turn to set the world in motion.</p>
         ) : (
           <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="wire-list">
             {visible.map((event) => (
-              <EventRow key={event.id} event={event} wire={wire} />
+              <EventRow key={event.id} event={event} wire={wire} state={state} />
             ))}
           </ul>
         )}
-      </Panel>
+      </DsPanel>
     </>
   )
 }
