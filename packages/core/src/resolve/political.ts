@@ -315,16 +315,25 @@ function applyOfficialTargetedPolitical(
 // exponera en station) lyckas INFLUENCE alltid: "förnekbart" betyder här att
 // det inte finns något att bli avslöjad FÖR. `direction` gör den
 // dubbelriktad — specen säger "flytta", aldrig bara "sänka"/"höja".
+//
+// P79 (ETAPP7_TEKNISK_SPEC.md §7.4/§13): exporterad så previewAction.ts kan
+// visa "nuvarande → nytt värde" (referensskissens "PUBLIC SUPPORT 52 → ~67")
+// med EXAKT samma formel som den faktiska avgörandet nedan — samma "en
+// formel, en källa"-princip som fundCoupSuccessPct/intelOpSuccessPct (P78).
+export function computeInfluenceAfter(kind: 'publicSupport' | 'relations', before: number, spend: number, direction: 'up' | 'down'): number {
+  const sign = direction === 'up' ? 1 : -1
+  const costPerPoint = kind === 'publicSupport' ? BALANCE.influencePublicSupportCostPerPoint : BALANCE.influenceRelationsCostPerPoint
+  return clamp(before + (spend / costPerPoint) * sign, 0, 100)
+}
 function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'INFLUENCE' }>): void {
   const { draft, emit } = ctx
   const house = draft.house
 
   const target = draft.factions[action.targetFactionId]!
-  const sign = action.direction === 'up' ? 1 : -1
 
   if (action.effect.kind === 'publicSupport') {
     const before = target.publicSupport
-    const after = clamp(before + (action.spend / BALANCE.influencePublicSupportCostPerPoint) * sign, 0, 100)
+    const after = computeInfluenceAfter('publicSupport', before, action.spend, action.direction)
     house.treasury -= action.spend
     target.publicSupport = after
     if (after === before) return
@@ -345,7 +354,7 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
   const toward = draft.factions[towardId]!
 
   const before = target.relations[towardId] ?? 0
-  const after = clamp(before + (action.spend / BALANCE.influenceRelationsCostPerPoint) * sign, 0, 100)
+  const after = computeInfluenceAfter('relations', before, action.spend, action.direction)
   house.treasury -= action.spend
   target.relations[towardId] = after
   if (after === before) return

@@ -6,11 +6,73 @@
 // INTE av namnbytet, bara det som visas här i skalet runt dem (§2G:s egen
 // mening, ordagrant).
 import { useEffect, useRef, useState } from 'react'
-import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
-import type { GameState } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, previewAction } from '@seventh-front/core'
+import type { GameState, PlayerAction } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
 import { ActionSlot } from './designSystem.js'
 import type { RejectedEntry } from '../useGame.js'
+
+// P79 (ETAPP7_TEKNISK_SPEC.md §7.2, "Handlingsplatserna"): varje köat kort
+// visar ett riktigt ikon/mål/kostnad, inte en generisk "Action N" — samma
+// referensskiss som CountryFile.tsx bygger mot (operations-2-country-
+// selected.html:s bottendocka: "RECRUIT LAOS £300K"). Kostnaden läses via
+// previewAction (P78) — en delad sanningskälla, aldrig en egen gissning.
+// Målnamnen slås upp direkt ur state (aldrig gated — en handling i KÖN är
+// redan spelarens eget val, ingen dold information att läcka).
+const VERB_ICON: Record<string, string> = {
+  EXPAND: '⬈',
+  WITHDRAW: '⬋',
+  LEAK: '✉',
+  SABOTAGE: '⚡',
+  TURN: '↻',
+  RECRUIT: '✛',
+  INFLUENCE: '⇄',
+  STAGE_INCIDENT: '✷',
+  BACK_CHANNEL: '☏',
+  BRIBE: '✎',
+  FUND_CAMPAIGN: '✎',
+  FAVOUR: '✎',
+  FUND_COUP: '☠',
+  ASSASSINATE: '☠',
+  BUY_FORWARD: '⇩',
+  RELEASE: '⇧',
+  TAKE_LOAN: '£',
+  REPAY: '£',
+  BUILD_LINE: '⚒',
+  HIRE: '⚒',
+  REPRIORITISE_RND: '⚙',
+}
+
+function targetLabel(state: GameState, action: PlayerAction): string {
+  switch (action.type) {
+    case 'INTEL': {
+      const station = state.house.stations.find((s) => s.id === action.stationId)
+      if (action.op === 'RECRUIT') return state.factions[action.targetId ?? '']?.name ?? action.targetId ?? ''
+      if (action.op === 'TURN') return state.officials[action.targetId ?? '']?.name ?? station?.city ?? ''
+      if (action.op === 'LEAK' || action.op === 'SABOTAGE') return state.rivals[action.targetId ?? '']?.name ?? station?.city ?? ''
+      return station?.city ?? ''
+    }
+    case 'POLITICAL':
+      if ('officialId' in action) return state.officials[action.officialId]?.name ?? action.officialId
+      return state.factions[action.targetFactionId]?.name ?? action.targetFactionId
+    case 'BROKER':
+      return state.factions[action.buyerId]?.name ?? action.buyerId
+    case 'MARKET':
+      return action.commodity.toUpperCase()
+    case 'CRISIS':
+      return action.choice
+    default:
+      return ''
+  }
+}
+
+export function actionSummary(state: GameState, action: PlayerAction): { icon: string; label: string; cost: string | undefined } {
+  const op = action.type === 'INTERNAL' || action.type === 'INTEL' || action.type === 'POLITICAL' || action.type === 'MARKET' ? action.op : action.type
+  const preview = previewAction(state, action)
+  const cost = preview.cost === null ? undefined : formatMoney(preview.cost)
+  const target = targetLabel(state, action)
+  return { icon: VERB_ICON[op] ?? '⌁', label: target ? `${op} ${target}` : op, cost }
+}
 
 export type ShellView = 'operations' | 'contracts' | 'company' | 'contacts' | 'news'
 
@@ -217,30 +279,31 @@ export function TelexTicker({ state }: { state: GameState }) {
 // som riktiga ActionSlot-kort (redan riktig data — draft.actions). ──
 export function ActionDock({
   state,
-  queuedCount,
+  actions,
   onRemoveAction,
   onEndTurn,
   ended,
   testId = 'action-dock',
 }: {
   state: GameState
-  queuedCount: number
+  actions: PlayerAction[]
   onRemoveAction: (index: number) => void
   onEndTurn: () => void
   ended: boolean
   testId?: string
 }) {
-  const slots = Math.max(state.house.actionPoints, queuedCount)
+  const slots = Math.max(state.house.actionPoints, actions.length)
   return (
     <div className="ds-actiondock" data-testid={testId}>
       <div className="ds-actiondock-slots">
-        {Array.from({ length: slots }, (_, i) =>
-          i < queuedCount ? (
-            <ActionSlot key={i} icon="⌁" label={`Action ${i + 1}`} onRemove={() => onRemoveAction(i)} testId={`action-slot-${i}`} />
-          ) : (
-            <ActionSlot key={i} empty testId={`action-slot-${i}-empty`} />
-          ),
-        )}
+        {Array.from({ length: slots }, (_, i) => {
+          const action = actions[i]
+          if (!action) return <ActionSlot key={i} empty testId={`action-slot-${i}-empty`} />
+          const { icon, label, cost } = actionSummary(state, action)
+          return (
+            <ActionSlot key={i} icon={icon} label={label} cost={cost} onRemove={() => onRemoveAction(i)} testId={`action-slot-${i}`} />
+          )
+        })}
       </div>
       <button
         type="button"

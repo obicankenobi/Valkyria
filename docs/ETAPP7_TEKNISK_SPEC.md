@@ -914,6 +914,60 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P79 — Val, landets bottenark och handlingsplatserna.** Sydvietnam och dess huvudstad, station, tjänstemän och ordrar går att välja. Landets bottenark med underrättelseverben (alla sex) och `TierPicker`. Handlingsplatserna. *Klart när:* alla sex underrättelseverb går att köa från kartan och avgörs korrekt i en e2e-tur.
 
+> **Klart 2026-09-26.** Ny `CountryFile.tsx` (ny `BottomSheet`-skärm, lager 10/11 på
+> kartan — §6.3:s "selection highlight"/"labels" — fylls i av samma komponent) öppnas av
+> ett klick på huvudstadsmarkören (ny `<circle class="map-capital-marker">` per faktion
+> med egen geografi, `capitals.ts`, ny fil), med en tydlig kontur (§ regel 9) runt landets
+> path samtidigt (`TheatreMap.tsx`, ny `is-selectable`/`map-country-selected`-CSS). Bara
+> RVN (station, Saigon) och Laos (ingen station) har egen kartgeografi — NLF delar RVN:s
+> landmassa, en redan existerande, dokumenterad lucka från P76/P77:s `COUNTRY_TO_FACTION`,
+> inte löst här och inte i vägen för klart-villkoret (LEAK/SABOTAGE/TURN kräver ingen NLF-
+> specifik måltavla).
+>
+> **Scope, grundat i specens egen text:** §7.1 säger uttryckligen "Alla 22 verb nåbara är
+> 7C:s viktigaste klart-villkor" — P79 äger alltså bara de sex INTEL-verben (EXPAND,
+> WITHDRAW, LEAK, SABOTAGE, TURN, RECRUIT) plus ETT POLITICAL-exempel för att bevisa
+> mönstret inför P86: INFLUENCE, det verb den tredje godkända referensskissen
+> (`operations-3-configure-action.html`) faktiskt visar. Övriga 15 verb är P86:s.
+> COVERT-sektionen visar EXPAND/WITHDRAW/LEAK/SABOTAGE/TURN när landet har en aktiv
+> station, annars bara RECRUIT ("NO COVERAGE", ingen exponeringsmätare) — samma
+> `effectiveDepth`-grind `formationDisplay`/`officialDisplay`/`previewAction` (P78) redan
+> använder. EXPAND/WITHDRAW köas direkt (inget mål att välja); LEAK/SABOTAGE/TURN öppnar
+> en målväljare (rivalhus respektive landets aktiva tjänstemän).
+>
+> **INFLUENCE-formuläret** (Effect/Direction/Spend, ordagrant §7.4:s `TierPicker`-mönster):
+> ny `computeInfluenceAfter` (`political.ts`, exporterad) och en ny `INFLUENCE_BALANCE`
+> (`queries.ts`, tre spend-nivåer — modest/serious/lavish — samma "en formel, en källa"-
+> disciplin som P78:s `intelOpSuccessPct`/`fundCoupSuccessPct`). `ActionPreview` (core,
+> `types.ts`) fick ett nytt fält, `effect: { label, before, after } | null` — en avsiktlig
+> utvidgning av P78:s medvetet smalare version, motiverad av att INFLUENCE är just det
+> verb P78:s egen scope-kommentar pekade på ("P79 avgör vilka verb som behöver mer").
+> `previewAction.ts` fick en ny INFLUENCE-gren som fyller fältet; alla andra verb har
+> fortfarande `effect: null`, oförändrat.
+>
+> **Genuint fynd, hittat av e2e-testet självt, inte gissat:** Playwrights standardklick
+> (boundingbox-mittpunkt) på Sydvietnams konkava kustlinje missade landmassan helt —
+> Kambodja, ritad SENARE i SVG-paint-ordningen, låg faktiskt överst på den pixeln
+> ("map-country-cambodia intercepts pointer events", 536 omförsök, 280 s timeout).
+> Löst genom att låta e2e-testet klicka den lilla, isolerade huvudstadscirkeln i stället
+> för landmassan — samma tappmål kartan själv redan erbjuder (§7.1), bara mer robust i ett
+> automatiserat test. Ingen produktionskod ändrad för fyndet; dokumenterat i
+> `operations-intel.spec.ts`s egen kommentar och här enligt "stanna, beskriv, föreslå"-
+> regeln.
+>
+> Golden ORÖRD (`INTEL`/`POLITICAL`-actionerna och deras avgörande fanns redan sedan
+> tidigare etapper — P79 lägger bara UI ovanpå, rör ingen `resolve/`-fil). Nya tester:
+> `CountryFile.test.tsx` (9), `TheatreMap.test.tsx` (+5, nu 20 totalt), `previewAction.test.ts`
+> (+3). Ny e2e `operations-intel.spec.ts` — klart-näts egen verifiering, ordagrant: köar
+> alla sex INTEL-verb över två kvartal (RVN:s tre station-krävande verb plus TURN i det
+> andra, WITHDRAW sist eftersom den gör stationen `'dormant'` vid AVGÖRANDET, inte vid
+> köningen), kontrollerar att ingen avvisades. `npm run shots` utökat med två nya skärmar
+> (`country-file`, `country-file-influence`) och jämfört visuellt mot
+> `operations-2-country-selected.html`/`operations-3-configure-action.html` — layout,
+> typografi, TierPicker-markering och före/efter-siffror matchar referensskisserna i båda
+> formaten. Fullt testsvep grönt: 627 tester, lint, typecheck (alla tre paket), build, e2e
+> (17 tester, körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P80 — Kvartalsuppspelningen och NEWS DESK.** `wireAnchor`, rubrikläge som standard, full uppspelning som val, förstasidan. *Klart när:* minst 80 % av händelserna i en 20-turers golden-körning får ett ankare som inte är `hud`; annars redovisas vilka typer som saknar `subjectId`.
 
 **P81 — Speltest av skivan. Ingen kod.** Ägaren spelar skivan, besvarar frågorna i §11.6 och godkänner eller underkänner stilen. Underkänd stil åtgärdas innan 7C.

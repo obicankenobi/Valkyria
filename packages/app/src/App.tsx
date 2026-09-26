@@ -10,6 +10,8 @@ import { MainMenu } from './components/MainMenu.js'
 import { ActionDock, HudBar, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
 import type { ShellView } from './components/Shell.js'
 import { TheatreMap } from './components/TheatreMap.js'
+import { CountryFile } from './components/CountryFile.js'
+import type { FactionId } from '@seventh-front/core'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
@@ -46,6 +48,10 @@ export function App() {
     useGame()
   const [view, setView] = useState<View>('menu') // P65 (ETAPP6_TEKNISK_SPEC.md §3): menyn grindar inträdet, inte spelet direkt
   const [hasSave, setHasSave] = useState(false)
+  // P79 (ETAPP7_TEKNISK_SPEC.md §7.1/§13): valt land på kartan öppnar dess
+  // bottenark (CountryFile.tsx). Bara relevant på OPERATIONS — ett tabbyte
+  // stänger den implicit (renderas bara när view === 'operations').
+  const [selectedFactionId, setSelectedFactionId] = useState<FactionId | null>(null)
   const [muted, setMuted] = useState(false) // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
@@ -174,7 +180,21 @@ export function App() {
             återkommer styckvis i senare prompter (landets bottenark i P79,
             dossiererna i CONTACTS) i stället för att flyttas hit i sin
             helhet. TheWorld.tsx rörs inte och lämnas oanvänd så länge. */}
-        {view === 'operations' && <TheatreMap state={state} />}
+        {view === 'operations' && (
+          <TheatreMap state={state} selectedFactionId={selectedFactionId} onSelectCountry={setSelectedFactionId} />
+        )}
+        {view === 'operations' && selectedFactionId && (
+          <CountryFile
+            state={state}
+            factionId={selectedFactionId}
+            onAddAction={addAction}
+            onClose={() => setSelectedFactionId(null)}
+            onOpenContacts={() => {
+              setSelectedFactionId(null)
+              setView('contacts')
+            }}
+          />
+        )}
         {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
         {view === 'company' && (
           <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />
@@ -185,7 +205,7 @@ export function App() {
         )}
       </main>
 
-      {view === 'operations' && <ActionDock state={state} queuedCount={draft.actions.length} onRemoveAction={removeAction} onEndTurn={handleEndTurn} ended={ended} />}
+      {view === 'operations' && <ActionDock state={state} actions={draft.actions} onRemoveAction={removeAction} onEndTurn={handleEndTurn} ended={ended} />}
 
       <TabBar
         active={view}

@@ -2668,6 +2668,22 @@ td.is-key {
   stroke: var(--line-strong);
   stroke-width: 0.6;
 }
+/* P79 (§7.1): en landmassa med en spelbar FactionId öppnar landets
+   bottenark. cursor: pointer är den enda hover-antydan (regel 13 — aldrig
+   den ENDA vägen in, bara ett skrivbordsextra ovanpå ett riktigt tryck). */
+.map-country.is-selectable {
+  cursor: pointer;
+}
+/* P79 (§6.3 lager 10, regel 9): "valt föremål på kartan har en tydlig
+   kontur." Samma landpath, ritad ovanpå med bara en tjock kontur (ingen
+   egen fyllning, pointer-events: none så den inte stjäl klicket från
+   landmassan/sektorerna under). */
+.map-country-selected {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 3.5;
+  pointer-events: none;
+}
 
 .map-dmz-line {
   fill: none;
@@ -2838,6 +2854,268 @@ td.is-key {
   50% {
     transform: scale(1.12);
   }
+}
+
+/* ── Huvudstadsmarkörer (P79, §6.3 lager 8, §7.1) ──────────────────────── */
+
+.map-capital-marker {
+  fill: var(--amber);
+  stroke: var(--ink);
+  stroke-width: 1;
+  cursor: pointer;
+}
+.map-capital-marker.is-selected {
+  fill: var(--red);
+}
+.map-capital-badge {
+  fill: var(--red);
+  stroke: var(--panel);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.map-capital-badge-text {
+  fill: var(--panel);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.map-capital-label {
+  fill: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+/* ── CountryFile — landets bottenark (P79, §7.1/§13) ───────────────────── */
+
+.cf-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cf-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cf-tag {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  border: 1.5px solid var(--ink-dim);
+  white-space: nowrap;
+}
+.cf-tag.is-blue {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+.cf-tag.is-amber {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.cf-tag.is-red {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.cf-meters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.cf-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px solid var(--ink-dim);
+  padding-bottom: 4px;
+}
+.cf-meter-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+}
+.cf-meter-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cf-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+.cf-section-rule {
+  flex-grow: 1;
+  border-top: 1px dashed var(--ink-dim);
+}
+
+.cf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cf-verb {
+  min-height: 60px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background: var(--panel);
+  border: none;
+  border-top: 3px solid var(--red);
+  border-radius: 1px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 2px 5px rgba(60, 40, 10, 0.25);
+  font-family: var(--font-mono);
+}
+.cf-verb:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cf-verb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cf-verb-icon {
+  font-size: 16px;
+  color: var(--ink);
+}
+.cf-verb-cost {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+}
+.cf-verb-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cf-officials {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1.5px dashed var(--ink-dim);
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--ink);
+}
+.cf-officials-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.cf-officials-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cf-officials-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.cf-back {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1.5px solid var(--ink-dim);
+  background: rgba(255, 255, 255, 0.25);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.cf-hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink-dim);
+  line-height: 1.3;
+}
+
+.cf-target-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.cf-form-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cf-field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+
+.cf-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--panel);
+  box-shadow: 0 1px 3px rgba(60, 40, 10, 0.3);
+}
+.cf-preview-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.cf-preview-row .is-amber {
+  color: var(--amber);
 }
 
 /* ── Skrivbordsvarianten (≥1024 px): flikraden blir en vänstermeny ────── */

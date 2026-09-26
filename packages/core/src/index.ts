@@ -17,6 +17,7 @@ export {
   bidEstimate,
   DISPLAY_THRESHOLDS,
   BOT_BALANCE,
+  INFLUENCE_BALANCE,
   effectiveDepth,
   formationDisplay,
   officialDisplay,

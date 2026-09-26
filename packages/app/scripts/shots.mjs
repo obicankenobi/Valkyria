@@ -63,6 +63,44 @@ const APP_SCREENS = [
       await page.getByTestId('hud').waitFor()
     },
   },
+  {
+    // P79: landets bottenark, jämförs mot operations-2-country-selected.
+    name: 'country-file',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('country-file').waitFor()
+    },
+  },
+  {
+    // P79: INFLUENCE-formuläret, jämförs mot operations-3-configure-action.
+    name: 'country-file-influence',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('country-file').waitFor()
+      await page.getByTestId('cf-verb-INFLUENCE').click()
+      await page.getByTestId('cf-influence-preview').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

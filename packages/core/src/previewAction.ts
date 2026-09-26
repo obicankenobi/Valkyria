@@ -4,24 +4,26 @@
 // underrättelsen räcker. Motståndarens counterIntelligence utan station
 // visas som Unknown."
 //
-// SCOPE-BESLUT (dokumenterat, inte tyst): den här första versionen täcker
-// `cost`/`successPct`/`successPctKnown` — de två fält (kostnad, sannolikhet)
-// som gäller FLEST av de 22 verben. Ett balansintervall PER VERB (t.ex.
-// STAGE_INCIDENTs heat-spann, BACK_CHANNELs doomsday-spann) är UTTRYCKLIGEN
-// inte med — se types.ts:s ActionPreview-kommentar och docs/ANDRINGSLOGG.md:
-// P79 (som faktiskt bygger TierPicker-gränssnittet mot det här) avgör vilka
-// verb som behöver mer, i stället för att den detaljen uppfinns här utan en
-// konsument som kan bekräfta formen.
+// P78 byggde en första version med bara `cost`/`successPct`/`successPctKnown`
+// (de två fält som gäller FLEST av de 22 verben) — ett balansintervall PER
+// VERB (t.ex. STAGE_INCIDENTs heat-spann) sköts UTTRYCKLIGEN upp: "P79 avgör
+// vilka verb som behöver mer, i stället för att den detaljen uppfinns utan en
+// konsument." P79 är den konsumenten: `effect` (types.ts) ger INFLUENCE en
+// beräknad före/efter-siffra, referensskissens "PUBLIC SUPPORT 52 → ~67"
+// (operations-3-configure-action.html) — det enda verbet som faktiskt bygger
+// mot en godkänd skiss i den här prompten. Övriga verb får `effect: null`
+// oförändrat; nästa verb som behöver mer än cost/successPct/effect avgörs av
+// SIN egen prompt, samma "ingen detalj utan konsument"-princip.
 //
 // Ren funktion, samma "en formel, en källa"-princip som bidEstimate: alla
-// sannolikhetsformler ÅTERANVÄNDS från applyActions.ts/political.ts
-// (exporterade därifrån i P78) i stället för handkopierade — en duplicerad
-// formel hade varit exakt den tysta driftrisk ANDRINGSLOGG.md 2026-09-13
-// redan varnar för (bidEstimate/bidding.ts).
+// formler ÅTERANVÄNDS från applyActions.ts/political.ts (exporterade
+// därifrån i P78/P79) i stället för handkopierade — en duplicerad formel
+// hade varit exakt den tysta driftrisk ANDRINGSLOGG.md 2026-09-13 redan
+// varnar för (bidEstimate/bidding.ts).
 import balanceData from './data/balance.json' with { type: 'json' }
 import { effectiveDepth } from './queries.js'
 import { intelOpSuccessPct } from './resolve/steps/applyActions.js'
-import { fundCoupSuccessPct } from './resolve/political.js'
+import { computeInfluenceAfter, fundCoupSuccessPct } from './resolve/political.js'
 import { isRepayPayload } from './validateAction.js'
 import type { ActionPreview, GameState, Money, PlayerAction, Pct } from './types.js'
 
@@ -39,8 +41,13 @@ function finiteOrNull(value: number): Money | null {
   return Number.isFinite(value) ? value : null
 }
 
-function preview(cost: Money | null, successPct: Pct | null, successPctKnown = true): ActionPreview {
-  return { cost, successPct, successPctKnown }
+function preview(
+  cost: Money | null,
+  successPct: Pct | null,
+  successPctKnown = true,
+  effect: ActionPreview['effect'] = null,
+): ActionPreview {
+  return { cost, successPct, successPctKnown, effect }
 }
 
 export function previewAction(state: Readonly<GameState>, action: PlayerAction): ActionPreview {
@@ -78,8 +85,22 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
           return preview(finiteOrNull(action.spend), null) // avvisas aldrig av rng, bara klippt vinst
         case 'FAVOUR':
           return preview(null, null) // "kostar inga pengar" (avsnitt 3.3)
-        case 'INFLUENCE':
-          return preview(finiteOrNull(action.spend), null) // "lyckas alltid" (avsnitt 4.3)
+        case 'INFLUENCE': {
+          // "lyckas alltid" (avsnitt 4.3) — successPct null, men det ENDA
+          // verbet i P79 som visar en beräknad effekt (se filens huvudkommentar).
+          const spend = finiteOrNull(action.spend)
+          if (spend === null) return preview(null, null)
+          const target = state.factions[action.targetFactionId]
+          if (!target) return preview(spend, null)
+          if (action.effect.kind === 'publicSupport') {
+            const before = target.publicSupport
+            const after = computeInfluenceAfter('publicSupport', before, spend, action.direction)
+            return preview(spend, null, true, { label: 'PUBLIC SUPPORT', before, after })
+          }
+          const before = target.relations[action.effect.towardFactionId] ?? 0
+          const after = computeInfluenceAfter('relations', before, spend, action.direction)
+          return preview(spend, null, true, { label: 'RELATIONS', before, after })
+        }
         case 'FUND_COUP': {
           const target = state.factions[action.targetFactionId]
           const known = effectiveDepth(state, action.targetFactionId) > 0

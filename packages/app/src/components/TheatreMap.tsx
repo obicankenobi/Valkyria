@@ -34,6 +34,7 @@ import type { Doctrine, FactionId, FormationDisplay, GameState } from '@seventh-
 import { interpolateFrontGeoPosition, tokenOffset } from '../geoMath.js'
 import { SECTOR_REGIONS } from '../sectorRegions.js'
 import type { SectorRegion } from '../sectorRegions.js'
+import { CAPITALS } from '../capitals.js'
 import { MapPlaceholder } from './Shell.js'
 
 // §6.5, ordagrant: "Sektorer i länder utan aktiv station." Ett lands
@@ -245,7 +246,15 @@ function useLabelCollisionHiding(labelRefs: React.RefObject<Map<string, SVGTextE
   return hidden
 }
 
-export function TheatreMap({ state }: { state: GameState }) {
+export function TheatreMap({
+  state,
+  selectedFactionId = null,
+  onSelectCountry,
+}: {
+  state: GameState
+  selectedFactionId?: FactionId | null
+  onSelectCountry?: (factionId: FactionId) => void
+}) {
   const geo = useGeoData()
   const svgRef = useRef<SVGSVGElement>(null)
   const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity)
@@ -389,16 +398,44 @@ export function TheatreMap({ state }: { state: GameState }) {
         data-zoom-level={zoomLevel}
       >
         <g transform={transform.toString()}>
+          {/* P79 (§6.3 lager 8, §7.1): en landmassa med en FactionId i
+              COUNTRY_TO_FACTION öppnar landets bottenark (CountryFile.tsx) —
+              samma tap-mål som huvudstadsmarkören nedan. Övriga länder
+              (sammanhang: north-vietnam, kambodja, thailand, kina) förblir
+              oklickbara, exakt som dimlagrets egen filtrering ovan. */}
           <g className="map-countries">
-            {geo.countries.features.map((feature) => (
-              <path
-                key={String(feature.id)}
-                d={path(feature as GeoPermissibleObjects) ?? ''}
-                className="map-country"
-                data-testid={`map-country-${feature.id}`}
-              />
-            ))}
+            {geo.countries.features.map((feature) => {
+              const factionId = COUNTRY_TO_FACTION[String(feature.id)]
+              return (
+                <path
+                  key={String(feature.id)}
+                  d={path(feature as GeoPermissibleObjects) ?? ''}
+                  className={factionId ? 'map-country is-selectable' : 'map-country'}
+                  data-testid={`map-country-${feature.id}`}
+                  onClick={factionId && onSelectCountry ? () => onSelectCountry(factionId) : undefined}
+                />
+              )
+            })}
           </g>
+
+          {/* P79 (§6.3 lager 10): valt föremål på kartan har en tydlig
+              kontur (regel 9) — samma landpath, ritad en gång till ovanpå
+              allt annat land-/gräns-innehåll men UNDER sektorfyllning/
+              förbandslager, en ren outline utan egen fyllning. */}
+          {selectedFactionId && (
+            <g className="map-selection">
+              {geo.countries.features
+                .filter((feature) => COUNTRY_TO_FACTION[String(feature.id)] === selectedFactionId)
+                .map((feature) => (
+                  <path
+                    key={`sel-${String(feature.id)}`}
+                    d={path(feature as GeoPermissibleObjects) ?? ''}
+                    className="map-country-selected"
+                    data-testid={`map-country-selected-${feature.id}`}
+                  />
+                ))}
+            </g>
+          )}
 
           <g className="map-dmz">
             {geo.dmz.features.map((feature) => (
@@ -509,6 +546,54 @@ export function TheatreMap({ state }: { state: GameState }) {
               )}
             </g>
           )}
+
+          {/* P79 (§6.3 lager 8, §7.1): huvudstadsmarkörer — ett andra tapp-
+              mål in i landets bottenark (samma onSelectCountry som
+              landmassan ovan), plus en badge med antal öppna ordrar hos den
+              köparen ("Order (markör vid köparen) | lägg bud" — §7.1:s
+              tabell; badgen ÄR ordermarkören, ett bud läggs fortfarande på
+              CONTRACTS, App.tsx byter flik dit vid tryck). */}
+          <g className="map-capitals">
+            {CAPITALS.map((capital) => {
+              const [x, y] = project([capital.anchor[1], capital.anchor[0]]) ?? [0, 0]
+              const openOrders = state.market.openOrders.filter((o) => o.buyerId === capital.factionId).length
+              const labelId = `capital-${capital.factionId}`
+              return (
+                <g key={capital.factionId} data-testid={`map-capital-${capital.factionId}`}>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={6}
+                    className={capital.factionId === selectedFactionId ? 'map-capital-marker is-selected' : 'map-capital-marker'}
+                    onClick={onSelectCountry ? () => onSelectCountry(capital.factionId) : undefined}
+                  />
+                  {openOrders > 0 && (
+                    <g transform={`translate(${x + 7},${y - 7})`} data-testid={`map-capital-orders-${capital.factionId}`}>
+                      <circle r={5} className="map-capital-badge" />
+                      <text className="map-capital-badge-text" textAnchor="middle" dominantBaseline="central">
+                        {openOrders}
+                      </text>
+                    </g>
+                  )}
+                  {zoomLevel >= 2 && !hiddenLabels.has(labelId) && (
+                    <text
+                      ref={(el) => {
+                        if (el) labelRefs.current.set(labelId, el)
+                        else labelRefs.current.delete(labelId)
+                      }}
+                      x={x}
+                      y={y + 14}
+                      className="map-capital-label"
+                      textAnchor="middle"
+                      data-testid={`map-capital-label-${capital.factionId}`}
+                    >
+                      {capital.name}
+                    </text>
+                  )}
+                </g>
+              )
+            })}
+          </g>
 
           {/* P77 (§6.3 lager 9, §6.6): heat-glöd — andas långsamt
               (omgivningsrörelse, CSS-animation, avstängd av

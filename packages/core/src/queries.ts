@@ -62,6 +62,22 @@ export const DISPLAY_THRESHOLDS = {
   exposureBurnThreshold: THRESHOLD_BALANCE.exposureBurnThreshold,
 } as const
 
+// P79 (ETAPP7_TEKNISK_SPEC.md §7.3/§13): landets bottenark (CountryFile.tsx)
+// bygger INFLUENCE:s TierPicker-nivåer från runda POÄNGtal (5/15/30, en
+// presentationskonstant i appen — se CountryFile.tsx:s egen kommentar) times
+// kronor-per-poäng — samma "läs kostnaden härifrån, upprepa den aldrig i
+// appen"-motivering som DISPLAY_THRESHOLDS ovan.
+interface InfluenceBalance {
+  influencePublicSupportCostPerPoint: number
+  influenceRelationsCostPerPoint: number
+}
+const INFLUENCE_COST_BALANCE = balanceData as unknown as InfluenceBalance
+
+export const INFLUENCE_BALANCE = {
+  publicSupportCostPerPoint: INFLUENCE_COST_BALANCE.influencePublicSupportCostPerPoint,
+  relationsCostPerPoint: INFLUENCE_COST_BALANCE.influenceRelationsCostPerPoint,
+} as const
+
 // Samma motivering som DISPLAY_THRESHOLDS ovan, bara riktad mot en annan extern
 // konsument: härnessens botpolicyer (packages/harness, ETAPP1_5_TEKNISK_SPEC.md
 // avsnitt 10.2) behöver två balanstal för att respektera kapacitet/kassaläge utan

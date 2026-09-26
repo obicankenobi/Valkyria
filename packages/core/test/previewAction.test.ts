@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { previewAction } from '../src/previewAction.js'
 import { createInitialState } from '../src/state.js'
 import { officialId } from '../src/officials.js'
+import { computeInfluenceAfter } from '../src/resolve/political.js'
 import balanceData from '../src/data/balance.json' with { type: 'json' }
 
 const BALANCE = balanceData as unknown as {
@@ -96,6 +97,43 @@ describe('previewAction — sannolikhet', () => {
     ).toBeNull()
   })
 
+  // P79 (ETAPP7_TEKNISK_SPEC.md §7.4/§13, referensskissens "PUBLIC SUPPORT
+  // 52 → ~67", operations-3-configure-action.html): EXAKT samma formel som
+  // political.ts:s computeInfluenceAfter, inte en handkopierad kopia.
+  it('INFLUENCE (publicSupport): effect ger before/after med samma formel som applyInfluence faktiskt använder', () => {
+    const state = createInitialState('indochina-slice', 'pa-seed')
+    const before = state.factions.rvn!.publicSupport
+    const p = previewAction(state, {
+      type: 'POLITICAL',
+      op: 'INFLUENCE',
+      targetFactionId: 'rvn',
+      spend: 15000,
+      direction: 'up',
+      effect: { kind: 'publicSupport' },
+    })
+    expect(p.effect).toEqual({ label: 'PUBLIC SUPPORT', before, after: computeInfluenceAfter('publicSupport', before, 15000, 'up') })
+  })
+
+  it('INFLUENCE (relations): effect läser relations mot towardFactionId, riktningen "down" sänker', () => {
+    const state = createInitialState('indochina-slice', 'pa-seed')
+    const before = state.factions.rvn!.relations.nlf ?? 0
+    const p = previewAction(state, {
+      type: 'POLITICAL',
+      op: 'INFLUENCE',
+      targetFactionId: 'rvn',
+      spend: 15000,
+      direction: 'down',
+      effect: { kind: 'relations', towardFactionId: 'nlf' },
+    })
+    expect(p.effect).toEqual({ label: 'RELATIONS', before, after: computeInfluenceAfter('relations', before, 15000, 'down') })
+    expect(p.effect!.after).toBeLessThanOrEqual(before)
+  })
+
+  it('andra POLITICAL-verb (t.ex. BACK_CHANNEL) har effect: null', () => {
+    const state = createInitialState('indochina-slice', 'pa-seed')
+    expect(previewAction(state, { type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 10000 }).effect).toBeNull()
+  })
+
   // §7.4, ordagrant: "Motståndarens counterIntelligence utan station visas
   // som Unknown." nlf/laos saknar en aktiv station vid partistart (bara
   // Saigon/rvn finns, se indochina-slice.json) — samma effectiveDepth-grind
@@ -148,6 +186,6 @@ describe('previewAction — CRISIS', () => {
   it('ingen kostnad, ingen sannolikhet — avgörs av resolvePendingCrisis, inte av handlingen själv', () => {
     const state = createInitialState('indochina-slice', 'pa-seed')
     const p = previewAction(state, { type: 'CRISIS', choice: 'PUSH' })
-    expect(p).toEqual({ cost: null, successPct: null, successPctKnown: true })
+    expect(p).toEqual({ cost: null, successPct: null, successPctKnown: true, effect: null })
   })
 })

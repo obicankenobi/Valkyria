@@ -744,12 +744,14 @@ export interface BidEstimate {
 
 // P78 (ETAPP7_TEKNISK_SPEC.md §7.4), byggd av previewAction(). Ordagrant:
 // "kostnad, intervall ur balansfilen, sannolikheter där underrättelsen
-// räcker" — den här första versionen täcker de två fält som gäller FLEST av
-// de 22 verben (kostnad och sannolikhet). Ett balansintervall per verb (t.ex.
-// STAGE_INCIDENTs heat-spann) är UTTRYCKLIGEN inte med än — P79 (som faktiskt
-// bygger TierPicker-gränssnittet mot detta) avgör vilka verb som behöver mer
-// än kostnad/sannolikhet, i stället för att den detaljen uppfinns i blindo
-// utan en konsument. Se ANDRINGSLOGG.md.
+// räcker" — P78:s första version täckte bara cost/successPct (de två fält
+// som gäller FLEST av de 22 verben). P79 lägger `effect` — referensskissens
+// "PUBLIC SUPPORT 52 → ~67" (INFLUENCE, operations-3-configure-action.html)
+// — det första verbet vars förhandsvisning faktiskt konsumerar den
+// tredje sortens data §7.4 nämner (en beräknad före/efter-siffra, inte bara
+// kostnad/sannolikhet). Fortfarande INTE med: ett fast balansintervall per
+// verb (STAGE_INCIDENTs heat-spann) — inget i 7B behöver det än. Se
+// ANDRINGSLOGG.md.
 export interface ActionPreview {
   cost: Money | null // treasury-effekten handlingen självdeklarerar. null = ingen (FAVOUR, TAKE_LOAN, WITHDRAW, BROKER m.fl. — se previewAction.ts)
   successPct: Pct | null // null = inte slumpavgjord (t.ex. INFLUENCE, ASSASSINATE lyckas alltid) ELLER dold (successPctKnown === false)
@@ -758,6 +760,10 @@ export interface ActionPreview {
   // "Motståndarens counterIntelligence utan station visas som Unknown" (§7.4,
   // ordagrant) — gated av effectiveDepth(state, den berörda nationen) > 0.
   successPctKnown: boolean
+  // P79: en beräknad före/efter-siffra för handlingar vars huvudeffekt är en
+  // enda, direkt läsbar mätarrörelse (i dag bara INFLUENCE — label är
+  // "PUBLIC SUPPORT" eller "RELATIONS", inte ett gated fält).
+  effect: { label: string; before: number; after: number } | null
 }
 
 // P41 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 7, skyddsräcke 3), byggd av

@@ -1,0 +1,468 @@
+// CountryFile — P79 (ETAPP7_TEKNISK_SPEC.md §7.1/§13): "landets bottenark",
+// öppnad genom att trycka på en landmassa eller huvudstadsmarkör på kartan
+// (TheatreMap.tsx). Bygger mot den godkända referensskissen
+// docs/ui/reference/operations-2-country-selected.html (översikten) och
+// operations-3-configure-action.html (INFLUENCE, det enda POLITICAL-verbet
+// den här prompten kopplar in — se nedan).
+//
+// Skyddsräcke 3 (§12): "Ingen handling förbi applyActions. UI:t anropar
+// samma validateAction." Varje knapp här kör candidateAction genom
+// validateAction(state, state, action) INNAN den erbjuds/köas — samma
+// funktion applyActions.ts faktiskt avgör turen med (P78). `state` används
+// som BÅDA argumenten: den här skärmen bygger inte en egen lokal draft-
+// simulering av redan köade kort (det är en framtida förfining, inte ett
+// krav den här prompten ställer) — se docs/ANDRINGSLOGG.md.
+//
+// SCOPE-BESLUT (dokumenterat, inte tyst): §7.1:s tabell listar INFLUENCE,
+// STAGE_INCIDENT, BACK_CHANNEL, FUND_COUP och BROKER som nåbara från en
+// faktion/huvudstad. "Alla 22 verb nåbara är 7C:s viktigaste klart-villkor"
+// (§7.1, ordagrant) — INTE P79:s. Den här prompten bygger COVERT-sektionen
+// (alla sex underrättelseverb, P79:s egen klart-när) fullt ut, plus EN
+// POLITICAL-exempel (INFLUENCE) eftersom det är den handling den tredje
+// godkända referensskissen faktiskt visar konfigurationsflödet för — att
+// gissa ihop TierPicker-nivåer för STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP
+// (vars spend-belopp, till skillnad från INFLUENCE/BRIBE, INTE skalar någon
+// effekt alls i political.ts — se den filens applyFactionTargetedPolitical/
+// applyFundCoup) utan en godkänd skiss eller ett balanstal att utgå från
+// hade varit att uppfinna en detalj i blindo. 7C bygger resten.
+import { useState } from 'react'
+import { INFLUENCE_BALANCE, previewAction, validateAction } from '@seventh-front/core'
+import type { FactionId, GameState, Official, PlayerAction, RivalId } from '@seventh-front/core'
+import { BottomSheet, Button, Card, Segmented, TierPicker } from './designSystem.js'
+import type { Tier } from './designSystem.js'
+import { formatMoney } from './ui.js'
+
+type SubView = { kind: 'overview' } | { kind: 'target'; op: 'LEAK' | 'SABOTAGE' | 'TURN' } | { kind: 'influence' }
+
+// Referensskissens exakta nivåer (operations-3-configure-action.html,
+// INFLUENCE): £15K/45K/90K vid influencePublicSupportCostPerPoint (3000) är
+// EXAKT 5/15/30 poäng — tre runda, läsbara poängnivåer, inte tre gissade
+// kronbelopp. Samma poängnivåer används för relations-läget (då till ett
+// annat pris, influenceRelationsCostPerPoint) — presentationsval i appen,
+// inte ett nytt balanstal (formeln som räknar om poäng → kronor ligger i
+// och läses uteslutande ur core, se computeInfluenceAfter/previewAction).
+const INFLUENCE_TIER_POINTS: Record<Tier['key'], number> = { modest: 5, serious: 15, lavish: 30 }
+
+function costLabel(cost: number | null): string {
+  if (cost === null) return 'FREE'
+  return formatMoney(cost)
+}
+
+export function CountryFile({
+  state,
+  factionId,
+  onAddAction,
+  onClose,
+  onOpenContacts,
+  testId = 'country-file',
+}: {
+  state: GameState
+  factionId: FactionId
+  onAddAction: (action: PlayerAction) => void
+  onClose: () => void
+  onOpenContacts: () => void
+  testId?: string
+}) {
+  const [view, setView] = useState<SubView>({ kind: 'overview' })
+  const faction = state.factions[factionId]
+  const station = state.house.stations.find((s) => s.nation === factionId && s.status === 'active')
+  const front = Object.values(state.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
+  const officials = Object.values(state.officials).filter((o) => o.factionId === factionId && o.status === 'active')
+  const rivals = Object.values(state.rivals)
+
+  if (!faction) return null
+
+  function queue(action: PlayerAction) {
+    const result = validateAction(state, state, action)
+    if (!result.ok) return
+    onAddAction(action)
+    setView({ kind: 'overview' })
+    onClose()
+  }
+
+  function alignmentTag(): string {
+    if (faction!.alignment > 15) return 'WEST-ALIGNED'
+    if (faction!.alignment < -15) return 'EAST-ALIGNED'
+    return 'NEUTRAL'
+  }
+
+  function warTag(): string | null {
+    if (!front) return null
+    if (front.status === 'war') return 'AT WAR'
+    if (front.status === 'ceasefire') return 'CEASEFIRE'
+    return null
+  }
+
+  const title = `COUNTRY FILE · ${factionId.toUpperCase()}`
+
+  return (
+    <BottomSheet open title={faction.name} subtitle={title} onClose={onClose} testId={testId}>
+      {view.kind === 'overview' && (
+        <div className="cf-body">
+          <div className="cf-tags">
+            <span className="cf-tag is-blue">{alignmentTag()}</span>
+            <span className="cf-tag is-amber">BUYER</span>
+            {warTag() && <span className="cf-tag is-red">{warTag()}</span>}
+          </div>
+
+          <div className="cf-meters">
+            <div className="cf-meter">
+              <span className="cf-meter-label">RELATION</span>
+              <span className="cf-meter-value" data-testid="cf-relation">
+                {Math.round(faction.relationToPlayer)} / 100
+              </span>
+            </div>
+            <div className="cf-meter">
+              <span className="cf-meter-label">STATION</span>
+              <span className="cf-meter-value" data-testid="cf-station">
+                {station ? `${station.city} D${station.depth}` : 'NO COVERAGE'}
+              </span>
+            </div>
+            {station && (
+              <div className="cf-meter">
+                <span className="cf-meter-label">EXPOSURE</span>
+                <span className="cf-meter-value" data-testid="cf-exposure">
+                  {Math.round(station.exposure)}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          {station ? (
+            <CovertSection state={state} station={station} queue={queue} setView={setView} />
+          ) : (
+            <RecruitSection state={state} factionId={factionId} queue={queue} />
+          )}
+
+          <button type="button" className="cf-officials" onClick={onOpenContacts} data-testid="cf-officials-link">
+            <span className="cf-officials-text">
+              <span className="cf-officials-title">OFFICIALS</span>
+              <span className="cf-officials-count">{officials.length} ON FILE</span>
+            </span>
+            <span aria-hidden="true">›</span>
+          </button>
+
+          <div className="cf-section-head">
+            <span>POLITICAL</span>
+            <span className="cf-section-rule" />
+          </div>
+          <div className="cf-grid">
+            <VerbButton
+              icon="⇄"
+              label="INFLUENCE"
+              cost="£15K+"
+              onClick={() => setView({ kind: 'influence' })}
+              testId="cf-verb-INFLUENCE"
+            />
+          </div>
+        </div>
+      )}
+
+      {view.kind === 'target' && (
+        <TargetPicker
+          op={view.op}
+          station={station!}
+          officials={officials}
+          rivals={rivals}
+          onBack={() => setView({ kind: 'overview' })}
+          onPick={(targetId) => queue({ type: 'INTEL', op: view.op, stationId: station!.id, targetId })}
+        />
+      )}
+
+      {view.kind === 'influence' && (
+        <InfluenceForm
+          state={state}
+          factionId={factionId}
+          onBack={() => setView({ kind: 'overview' })}
+          onFile={queue}
+        />
+      )}
+    </BottomSheet>
+  )
+}
+
+function VerbButton({
+  icon,
+  label,
+  cost,
+  onClick,
+  disabled,
+  testId,
+}: {
+  icon: string
+  label: string
+  cost: string
+  onClick: () => void
+  disabled?: boolean
+  testId?: string
+}) {
+  return (
+    <button type="button" className="cf-verb" onClick={onClick} disabled={disabled} data-testid={testId}>
+      <span className="cf-verb-head">
+        <span className="cf-verb-icon" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="cf-verb-cost">{cost}</span>
+      </span>
+      <span className="cf-verb-label">{label}</span>
+    </button>
+  )
+}
+
+// COVERT — EXPAND/WITHDRAW köas direkt (inget mål att välja); LEAK/SABOTAGE/
+// TURN öppnar en målväljare (§7.1: "Mål väljs ur" rivalhus resp. tjänstemän
+// i landet).
+function CovertSection({
+  state,
+  station,
+  queue,
+  setView,
+}: {
+  state: GameState
+  station: NonNullable<GameState['house']['stations'][number]>
+  queue: (action: PlayerAction) => void
+  setView: (v: SubView) => void
+}) {
+  const expand: PlayerAction = { type: 'INTEL', op: 'EXPAND', stationId: station.id }
+  const withdraw: PlayerAction = { type: 'INTEL', op: 'WITHDRAW', stationId: station.id }
+  const leakPreview = previewAction(state, { type: 'INTEL', op: 'LEAK', stationId: station.id })
+  const sabotagePreview = previewAction(state, { type: 'INTEL', op: 'SABOTAGE', stationId: station.id })
+  const turnPreview = previewAction(state, { type: 'INTEL', op: 'TURN', stationId: station.id })
+
+  return (
+    <>
+      <div className="cf-section-head">
+        <span>COVERT — {station.city} STATION</span>
+        <span className="cf-section-rule" />
+      </div>
+      <div className="cf-grid">
+        <VerbButton
+          icon="⬈"
+          label="EXPAND"
+          cost={costLabel(previewAction(state, expand).cost)}
+          onClick={() => queue(expand)}
+          disabled={!validateAction(state, state, expand).ok}
+          testId="cf-verb-EXPAND"
+        />
+        <VerbButton
+          icon="⬋"
+          label="WITHDRAW"
+          cost={costLabel(previewAction(state, withdraw).cost)}
+          onClick={() => queue(withdraw)}
+          disabled={!validateAction(state, state, withdraw).ok}
+          testId="cf-verb-WITHDRAW"
+        />
+        <VerbButton
+          icon="✉"
+          label="LEAK"
+          cost={costLabel(leakPreview.cost)}
+          onClick={() => setView({ kind: 'target', op: 'LEAK' })}
+          testId="cf-verb-LEAK"
+        />
+        <VerbButton
+          icon="⚡"
+          label="SABOTAGE"
+          cost={costLabel(sabotagePreview.cost)}
+          onClick={() => setView({ kind: 'target', op: 'SABOTAGE' })}
+          testId="cf-verb-SABOTAGE"
+        />
+        <VerbButton
+          icon="↻"
+          label="TURN"
+          cost={costLabel(turnPreview.cost)}
+          onClick={() => setView({ kind: 'target', op: 'TURN' })}
+          testId="cf-verb-TURN"
+        />
+      </div>
+    </>
+  )
+}
+
+// §7.1: "Land utan station | RECRUIT | —" — inget mål att välja (targetId
+// ÄR landet, se applyActions.ts:s huvudkommentar om varför RECRUIT
+// återanvänder targetId som nationen).
+function RecruitSection({
+  state,
+  factionId,
+  queue,
+}: {
+  state: GameState
+  factionId: FactionId
+  queue: (action: PlayerAction) => void
+}) {
+  const recruit: PlayerAction = { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: factionId }
+  return (
+    <>
+      <div className="cf-section-head">
+        <span>NO COVERAGE</span>
+        <span className="cf-section-rule" />
+      </div>
+      <div className="cf-grid">
+        <VerbButton
+          icon="✛"
+          label="RECRUIT"
+          cost={costLabel(previewAction(state, recruit).cost)}
+          onClick={() => queue(recruit)}
+          disabled={!validateAction(state, state, recruit).ok}
+          testId="cf-verb-RECRUIT"
+        />
+      </div>
+    </>
+  )
+}
+
+function TargetPicker({
+  op,
+  station,
+  officials,
+  rivals,
+  onBack,
+  onPick,
+}: {
+  op: 'LEAK' | 'SABOTAGE' | 'TURN'
+  station: { id: string }
+  officials: Official[]
+  rivals: { id: RivalId; name: string }[]
+  onBack: () => void
+  onPick: (targetId: string) => void
+}) {
+  const targets = op === 'TURN' ? officials.map((o) => ({ id: o.id, label: o.name })) : rivals.map((r) => ({ id: r.id, label: r.name }))
+  return (
+    <div className="cf-body" data-testid={`cf-target-picker-${op}`}>
+      <button type="button" className="cf-back" onClick={onBack}>
+        ‹ BACK
+      </button>
+      <p className="cf-hint">{op === 'TURN' ? 'Choose an official to turn.' : `Choose a rival house active near ${station.id}.`}</p>
+      <div className="cf-target-list">
+        {targets.map((t) => (
+          <Card key={t.id} onClick={() => onPick(t.id)} testId={`cf-target-${t.id}`}>
+            {t.label}
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// INFLUENCE — det enda POLITICAL-verbet P79 kopplar in, byggt mot
+// operations-3-configure-action.html: EFFECT/DIRECTION (Segmented),
+// SPEND (TierPicker), en beräknad förhandsvisning (ActionPreview.effect,
+// P79:s egen utökning av previewAction — se previewAction.ts:s
+// huvudkommentar), och FILE.
+function InfluenceForm({
+  state,
+  factionId,
+  onBack,
+  onFile,
+}: {
+  state: GameState
+  factionId: FactionId
+  onBack: () => void
+  onFile: (action: PlayerAction) => void
+}) {
+  const [effectKind, setEffectKind] = useState<'publicSupport' | 'relations'>('publicSupport')
+  const [direction, setDirection] = useState<'up' | 'down'>('up')
+  const [tier, setTier] = useState<Tier['key']>('serious')
+  const others = Object.values(state.factions).filter((f) => f.id !== factionId)
+  const [towardFactionId, setTowardFactionId] = useState<FactionId>(others[0]?.id ?? factionId)
+
+  const costPerPoint = effectKind === 'publicSupport' ? INFLUENCE_BALANCE.publicSupportCostPerPoint : INFLUENCE_BALANCE.relationsCostPerPoint
+
+  const action: PlayerAction =
+    effectKind === 'publicSupport'
+      ? {
+          type: 'POLITICAL',
+          op: 'INFLUENCE',
+          targetFactionId: factionId,
+          spend: INFLUENCE_TIER_POINTS[tier] * costPerPoint,
+          direction,
+          effect: { kind: 'publicSupport' },
+        }
+      : {
+          type: 'POLITICAL',
+          op: 'INFLUENCE',
+          targetFactionId: factionId,
+          spend: INFLUENCE_TIER_POINTS[tier] * costPerPoint,
+          direction,
+          effect: { kind: 'relations', towardFactionId },
+        }
+
+  const preview = previewAction(state, action)
+  const tiers: Tier[] = (['modest', 'serious', 'lavish'] as const).map((key) => {
+    const points = INFLUENCE_TIER_POINTS[key]
+    const cost = points * costPerPoint
+    return { key, label: key.toUpperCase(), amount: formatMoney(cost), effect: `~ ${direction === 'up' ? '+' : '−'}${points}` }
+  })
+
+  return (
+    <div className="cf-body">
+      <button type="button" className="cf-back" onClick={onBack} data-testid="cf-influence-back">
+        ‹ BACK
+      </button>
+      <h3 className="cf-form-title">INFLUENCE</h3>
+      <p className="cf-hint">Pay to move the public mood, or relations with another country.</p>
+
+      <div className="cf-field">
+        <span className="cf-field-label">1. EFFECT</span>
+        <Segmented
+          options={[
+            { value: 'publicSupport', label: 'PUBLIC SUPPORT' },
+            { value: 'relations', label: 'RELATIONS' },
+          ]}
+          value={effectKind}
+          onChange={setEffectKind}
+          testId="cf-influence-effect"
+        />
+      </div>
+
+      {effectKind === 'relations' && others.length > 0 && (
+        <div className="cf-field">
+          <span className="cf-field-label">TOWARD</span>
+          <Segmented
+            options={others.map((f) => ({ value: f.id, label: f.name.toUpperCase() }))}
+            value={towardFactionId}
+            onChange={setTowardFactionId}
+            testId="cf-influence-toward"
+          />
+        </div>
+      )}
+
+      <div className="cf-field">
+        <span className="cf-field-label">2. DIRECTION</span>
+        <Segmented
+          options={[
+            { value: 'up', label: 'RAISE' },
+            { value: 'down', label: 'LOWER' },
+          ]}
+          value={direction}
+          onChange={setDirection}
+          testId="cf-influence-direction"
+        />
+      </div>
+
+      <div className="cf-field">
+        <span className="cf-field-label">3. SPEND</span>
+        <TierPicker tiers={tiers} value={tier} onChange={setTier} testId="cf-influence-spend" />
+      </div>
+
+      <div className="cf-preview" data-testid="cf-influence-preview">
+        {preview.effect && (
+          <div className="cf-preview-row">
+            <span>{preview.effect.label}</span>
+            <span>
+              {Math.round(preview.effect.before)} → ~{Math.round(preview.effect.after)}
+            </span>
+          </div>
+        )}
+        <div className="cf-preview-row">
+          <span>COST</span>
+          <span className="is-amber">{formatMoney(preview.cost ?? 0)}</span>
+        </div>
+      </div>
+
+      <Button variant="primary" onClick={() => onFile(action)} testId="cf-influence-file">
+        FILE
+      </Button>
+    </div>
+  )
+}

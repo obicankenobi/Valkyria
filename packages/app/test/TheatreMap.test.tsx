@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
 import { TheatreMap } from '../src/components/TheatreMap.js'
 
@@ -241,5 +241,82 @@ describe('TheatreMap (P77) — heat-glöd', () => {
 
     const el = document.querySelector('[data-testid="map-heat-glow-indochina"]')!
     expect(el.getAttribute('class')).toContain('is-hot')
+  })
+})
+
+describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
+  it('att trycka på en mappad landmassa anropar onSelectCountry med rätt FactionId', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-select-seed')
+    const onSelectCountry = vi.fn()
+    render(<TheatreMap state={state} onSelectCountry={onSelectCountry} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    fireEvent.click(document.querySelector('[data-testid="map-country-south-vietnam"]')!)
+    expect(onSelectCountry).toHaveBeenCalledWith('rvn')
+
+    fireEvent.click(document.querySelector('[data-testid="map-country-laos"]')!)
+    expect(onSelectCountry).toHaveBeenCalledWith('laos')
+  })
+
+  it('ett osammanhangslöst land (t.ex. Thailand) saknar is-selectable-klassen och onClick', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-select-seed')
+    render(<TheatreMap state={state} onSelectCountry={() => {}} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const thailand = document.querySelector('[data-testid="map-country-thailand"]')
+    expect(thailand).toBeTruthy()
+    expect(thailand!.getAttribute('class')).not.toContain('is-selectable')
+  })
+
+  it('huvudstadsmarkörer finns för båda huvudstäderna och kan väljas', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-capital-seed')
+    const onSelectCountry = vi.fn()
+    render(<TheatreMap state={state} onSelectCountry={onSelectCountry} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('[data-testid="map-capital-rvn"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="map-capital-laos"]')).toBeTruthy()
+    fireEvent.click(document.querySelector('[data-testid="map-capital-rvn"] .map-capital-marker')!)
+    expect(onSelectCountry).toHaveBeenCalledWith('rvn')
+  })
+
+  it('valt land ritar en kontur (§6.3 lager 10), oval land inte', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-selected-seed')
+    render(<TheatreMap state={state} selectedFactionId="rvn" />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('[data-testid="map-country-selected-south-vietnam"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="map-country-selected-laos"]')).toBeNull()
+  })
+
+  it('en huvudstad med öppna ordrar visar en räknarbadge, utan inga ordrar visas ingen', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-orders-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    // indochina-slice har inga öppna ordrar vid tur 0 (orders.ts genererar
+    // dem senare) — badgen ska alltså inte finnas för någon huvudstad än.
+    expect(document.querySelector('[data-testid="map-capital-orders-rvn"]')).toBeNull()
+
+    state.market.openOrders.push({
+      id: 'order-test',
+      buyerId: 'rvn',
+      productId: 'm1_rifle',
+      quantity: 10,
+      statedBudget: 1000,
+      trueBudget: 1000,
+      referencePrice: 1000,
+      requiredDeliveryTurns: 4,
+      expiresTurn: 4,
+      competingRivals: [],
+      weights: { price: 0.5, delivery: 0.3, relationship: 0.2 },
+      officialId: 'official-rvn-procurement',
+      reason: { kind: 'SCRIPTED' },
+      frontId: null,
+    })
+    cleanup()
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    expect(document.querySelector('[data-testid="map-capital-orders-rvn"]')!.textContent).toBe('1')
   })
 })

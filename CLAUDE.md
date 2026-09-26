@@ -392,6 +392,26 @@ UTTRYCKLIGEN inte med — P79 avgör vilka verb som behöver mer än kostnad/san
 Golden ORÖRD. Fullt testsvep grönt: 610 tester (555→610), lint, typecheck (alla tre
 paket), build. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P78-blockquote och
 `docs/ANDRINGSLOGG.md` för hela genomförandet.
+**P79 BYGGD 2026-09-26**: `CountryFile.tsx` (ny `BottomSheet`-skärm) öppnas av ett klick
+på en ny huvudstadsmarkör (`capitals.ts`) med en tydlig kontur runt landets path
+samtidigt (`TheatreMap.tsx`). Bara RVN (station, Saigon) och Laos (ingen station) har
+egen kartgeografi — NLF delar RVN:s landmassa, en redan dokumenterad lucka, inte löst
+här. Scope grundat i §7.1:s egen text ("Alla 22 verb nåbara är 7C:s klart-villkor"):
+P79 äger de sex INTEL-verben (EXPAND/WITHDRAW/LEAK/SABOTAGE/TURN/RECRUIT, gated av
+samma `effectiveDepth`-grind som P78) plus ETT POLITICAL-exempel, INFLUENCE (matchar
+tredje referensskissen) — resten är P86:s. Ny `computeInfluenceAfter` (`political.ts`)
+och `INFLUENCE_BALANCE` (`queries.ts`, tre spend-nivåer). `ActionPreview` fick ett nytt
+fält, `effect: {label, before, after} | null`, en avsiktlig utvidgning av P78:s smalare
+version för just det verb P78 pekade ut. **Genuint fynd, hittat av e2e-testet:**
+Playwrights standardklick på Sydvietnams konkava kustlinje missade landmassan —
+Kambodja, ritad senare i SVG-paint-ordningen, låg överst på den pixeln — löst genom att
+klicka den isolerade huvudstadsmarkören i stället, ingen produktionskod ändrad. Golden
+ORÖRD. Ny e2e `operations-intel.spec.ts` (P79:s klart-när: alla sex INTEL-verb köade
+över två kvartal, inget avvisat). `npm run shots` utökat med två nya skärmar, jämförda
+visuellt mot referensskisserna — matchar. Fullt testsvep grönt: 627 tester, lint,
+typecheck (alla tre paket), build, e2e (17 tester, körd två gånger i rad). Se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P79-blockquote och `docs/ANDRINGSLOGG.md` för hela
+genomförandet.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
