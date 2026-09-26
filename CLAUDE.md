@@ -324,8 +324,28 @@ dokumenterade fynd (`aggressive` skickar `FUND_COUP`/`ASSASSINATE` varje tur men
 alltså inte konkurrera med en redan livlig sektorkarta — den vore den FÖRSTA mekaniken som får
 sektorkontroll att röra sig alls i märkbar utsträckning. Rådatan skickad till ägaren separat
 (gitignorad, samma konvention som P58/P64). Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md`
-§13:s P75-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet. **Beslut 2F väntar nu
-på ägaren.**
+§13:s P75-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
+**Beslut 2F fattat 2026-09-26** (`docs/ETAPP7_TEKNISK_SPEC.md` §2F): redeploy-mekaniken byggs,
+på P75:s underlag — i specens egen ordning (P82, egen commit med omfryst golden, körd mot
+hela kartan) i stället för att flyttas fram till P76.
+**P76 BYGGD 2026-09-26**: den riktiga geografiska teaterkartan (`TheatreMap.tsx`), ersätter
+`Shell.tsx`s `MapPlaceholder` på OPERATIONS. `scripts/build-geo.mjs` bygger
+`public/geo/indochina.topo.json` (83,7 kB) från Natural Earth 1:50m (`world-atlas`) — Vietnam
+delat i `north-vietnam`/`south-vietnam` vid 17°N ("tillagd för hand", ingen 1964-gräns finns
+i källdatan). Ny `SECTOR_REGIONS` (`sectorRegions.ts`, §6.2:s ankarkoordinater) och
+`interpolateFrontGeoPosition` (`geoMath.ts`, exakt P68:s algoritm, bara målet bytt från
+skärmkoordinater till `[lat, lng]` — `test/geoMath.test.ts` kör SAMMA trace-sekvens som
+`SectorBoard.frontline.test.tsx`, P76:s eget klart-når ordagrant). `d3-geo`/`d3-zoom` för
+projektion och interaktiv pan/zoom, tre zoomnivåer (§6.9). `deriveSectorControl` (P66)
+helt orörd — bara projicerad på riktig geografi. Tre genuina fynd fixade i samma commit,
+detaljerade i spec-blockquoten: en CSS-bugg (`.map-svg`s `height:100%` behövde en definit
+förälderhöjd), en React-effektbugg (etikettkollision och d3-zoom-koppling körde båda bara en
+gång, före geo-datans async `fetch` svarat — samma rotorsak, samma `geoLoaded`-fix), och en
+självkolliderande frontlinjemarkör vid tur 0 (`front.trace` seedas till `[position]`).
+Prestandabudgeten (§12 punkt 5) kan inte mätas mot en riktig telefon i sandlådan — en
+syntetisk Chromium-proxy (4x CPU-throttling) gav 59,7 bilder/s, flaggat som en kvarstående
+punkt för ägaren, inte gissat som klart. Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s
+P76-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

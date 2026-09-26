@@ -693,6 +693,87 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P76 — Baskartan och sektorerna.** Geografiskriptet, TopoJSON, projektion, panorering och zoom, `SECTOR_REGIONS` för Sydvietnams teater, kontrollfärgning, frontlinje med spår. *Klart när:* prestandabudgeten mätt och hållen; samma trace-sekvens som P68:s test ger känd kartkoordinat.
 
+> **Klart 2026-09-26.** `scripts/build-geo.mjs` (nytt): `world-atlas`s `countries-50m.json`
+> (Natural Earth 1:50m, redan TopoJSON) → GeoJSON (`topojson-client`) → filtrerat till Vietnam
+> (`704`), Laos (`418`), Kambodja (`116`), Thailand (`764`), Kina (`156`) → klippt till en
+> bounding box runt Indokina (`@turf/bbox-clip`) → Vietnam DELAT i `north-vietnam`/
+> `south-vietnam` vid 17°N (§6.1: "tillagd för hand", Natural Earth har ingen 1964-gräns —
+> samma bbox-klipp-teknik, en gång per halva) → ombyggd till en delad topologi
+> (`topojson-server`, dedupar gemensamma landgränser så Vietnams delning och grannländernas
+> gränser matchar exakt) → förenklad (`topojson-simplify`) tills filen ligger under 300 kB-
+> budgeten (§12 punkt 5). Resultat: `public/geo/indochina.topo.json`, **83,7 kB** — ingen
+> förenkling ens behövdes. En egen DMZ-linje (17°N) som en tredje TopoJSON-`object`, inte
+> bara Vietnam-delningens kant. Manuellt verifierat med ett SVG-utkast (Node, `d3-geo` utan
+> DOM) innan komponenten byggdes — kartan såg geografiskt korrekt ut (Vietnam delat vid rätt
+> breddgrad, alla sex sektorankare landade i rimliga lägen) innan resten av arbetet fortsatte.
+>
+> `sectorRegions.ts` (nytt, ersätter INTE `sectorLayout.ts` — den schematiska tavlan
+> `SectorBoard.tsx`/`TheWorld.tsx` retirerar A drog ingen kod med sig, se filens egen
+> kommentar): `SECTOR_REGIONS`, sex sektorer med §6.2:s ankarkoordinater ordagrant. Fem
+> punktankrade sektorer får en åttkantig "handritad" blob (`blob()`, ~0,3° radie, longitud
+> skalad med `cos(lat)` så den inte blir avlång); `ho-chi-minh-trail` — §6.2, ordagrant "ritas
+> som band" — är ett eget, avlångt bandpolygon i stället. `geoMath.ts` (nytt):
+> `interpolateFrontGeoPosition`, EXAKT samma algoritm som `SectorBoard.tsx`s
+> `interpolateFrontPosition` (P68) — bara målet bytt från 0–100-skärmkoordinater till
+> `[lat, lng]`. `test/geoMath.test.ts`: samma indata som `SectorBoard.frontline.test.tsx`
+> (position -100/0/100, trace `[-100,-50,0]`) — ordagrant P76:s eget klart-når, "samma
+> trace-sekvens som P68:s test ger känd kartkoordinat."
+>
+> Ny `TheatreMap.tsx` — ersätter `Shell.tsx`s `MapPlaceholder` på OPERATIONS (behåller den
+> som fallback vid en misslyckad geo-fetch eller under laddning, i stället för att kasta bort
+> den). `d3-geo` (`geoMercator`/`geoPath`, `viewBox="0 0 600 800"`, en fast designrymd —
+> `d3-zoom` sköter interaktiv pan/zoom via en `<g transform>` ovanpå, orört av SVG:ns egen
+> responsiva skalning). Sektorfärgning läser `deriveSectorControl` (queries.ts, P66,
+> **rörd av ingen rad** i denna prompt — bara projicerad på riktig geografi i stället för
+> `SECTOR_LAYOUTS`s fasta koordinater). Frontlinje + tre bleknande spår, en `<g>` per front
+> med en `SECTOR_REGIONS`-post. Tre zoomnivåer (§6.9) styrda av `d3-zoom`s skala `k` — bara
+> sektoretiketterna är zoomnivå-gated i denna prompt (förbandsbrickor/försörjningslinjer/
+> stationer/ordermarkörer är P77/P79:s data, finns inte än). Etikettkollisionsdöljning
+> (regel 18) mäter riktiga `getBBox()`-avgränsningsrutor i en `useLayoutEffect` och döljer
+> lägre prioriterade etiketter vid en kollision — krymper aldrig.
+>
+> **Tre genuina fynd, alla fixade i samma commit:**
+> 1. `.map-svg { height: 100% }` behöver en DEFINIT förälderhöjd — `.map-container` hade bara
+>    `min-height`, vilket CSS-specen räknar som obestämt för procentberäkning. SVG:n föll
+>    tillbaka till sitt eget `viewBox`-bildförhållande i stället för behållarens, fylld på
+>    bredden och avklippt nedåt av `overflow: hidden`. Hittat VISUELLT i `npm run shots`
+>    (skrivbordsbilden visade bara en beskuren nordöstra flik av kartan) — fixat med
+>    `height: calc(100% - 4px)` (inte bara `min-height`).
+> 2. Etikettkollisionens `useLayoutEffect` och d3-zoom-kopplingens `useEffect` körde BÅDA bara
+>    en gång, på det första render-varvet innan geo-datans async `fetch` svarat (då fanns noll
+>    `<text>`-element och `svgRef.current` var `null`) — och aldrig om när elementen väl fanns,
+>    eftersom deras deps-listor (`transform.k`/`zoomLevel`/tomma `[]`) inte ändrades av att
+>    geo-datan laddades klart. Två separata symptom (etiketter som löpte ihop; panorering och
+>    zoom svarade inte alls på musen), samma rotorsak, samma fix — en `geoLoaded`-flagga
+>    tillagd i båda effekternas deps. Andra hittat VISUELLT (`npm run shots`), andra genom
+>    manuell interaktionstestning (musdrag + mushjul mot en riktig Chromium-körning) — ingen
+>    av de två testades av `jsdom`-sviten, som mockar `fetch` och därför aldrig ser ett
+>    "laddar"-render-varv.
+> 3. `state.ts` seedar `front.trace = [f.position]` vid partistart — vid tur 0 är alltså
+>    NUVARANDE markör och den ENDA spårpunkten på exakt samma koordinat, en garanterad
+>    kollision med sig själv. Regel 18:s eget CI-test (kartkollisionsdelen, byggd i denna
+>    prompt) fångade det direkt. Fixat genom att filtrera bort en spårpunkt vars värde är
+>    identiskt med `front.position` — "ingen rörelse än" ska se ut som EN markör.
+>
+> **Prestandabudgeten (§12 punkt 5):** kan INTE mätas mot en riktig telefon i den här
+> sandlådan — flaggat, inte gissat. En syntetisk proxy kördes i stället: headless Chromium,
+> `Emulation.setCPUThrottlingRate(4)` (samma sorts grova nedsaktning DevTools egen
+> "Low-end mobile"-preset använder, inte en riktig enhet), 20 simulerade dragrörelser över
+> kartan, `requestAnimationFrame`-tidtagning. Resultat: 59,7 bilder/s i snitt, sämsta enskilda
+> bildruta 44,2 ms (~23 bilder/s, en kort topp, inte ihållande) — över budgetens 30/50-krav
+> under den här grova nedsaktningen, men **inte samma sak som en mätning på en riktig iPhone
+> eller Android i mellanklass**, som §12 punkt 5 ordagrant kräver. Kvarstår som en punkt
+> ägaren behöver verifiera på riktig maskinvara. TopoJSON-filen (83,7 kB) och den första
+> inläsningens tillgångar ligger gott under 300 kB/3 s-kraven.
+>
+> Golden ORÖRD — allt i `packages/app`, `deriveSectorControl`/`queries.ts` orörda. Nio nya
+> npm-paket: `d3-geo`/`d3-zoom`/`d3-selection`/`topojson-client` (runtime),
+> `world-atlas`/`topojson-server`/`topojson-simplify`/`@turf/bbox-clip`/`@turf/simplify`
+> (bara `build-geo.mjs`, inte i appens bunt). `e2e/text-overflow.spec.ts` fick regel 18:s
+> kartkollisionsdel (egen testloop, `.map-sector-label`/`.map-frontline-marker*`,
+> `getBoundingClientRect()`-par). Fullt testsvep grönt: 543 tester, lint, typecheck, build,
+> e2e (16 tester, körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P77 — Brickor, dimma och omgivningsrörelse.** APP-6-brickor, underrättelsedimma, allt i §6.6 under *omgivningsrörelse*. *Klart när:* förband utan station renderas streckat och namnlöst; reducerad rörelse stänger av allt utom tillståndsbyten.
 
 **P78 — `validateAction` och `previewAction`.** Utbrutna ur `applyActions.ts`. *Klart när:* golden bitvis identisk; varje avvisningsorsak har ett test som visar samma svar från båda.

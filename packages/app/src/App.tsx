@@ -7,8 +7,9 @@
 import { useEffect, useState } from 'react'
 import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
-import { ActionDock, HudBar, MapPlaceholder, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
+import { ActionDock, HudBar, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
 import type { ShellView } from './components/Shell.js'
+import { TheatreMap } from './components/TheatreMap.js'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
@@ -165,13 +166,15 @@ export function App() {
 
         <RejectedBanner rejected={lastRejected} />
 
-        {/* P74 (§13): OPERATIONS är kartan, med platshållare tills P76 bygger den
-            riktiga teaterkartan. Den gamla THE WORLD-vyn (TheWorld.tsx — Doomsday,
-            Theatres, Fronts, Factions, Stations) döps inte om till OPERATIONS; dess
-            innehåll återkommer styckvis i senare prompter (kartan i P76, landets
-            bottenark i P79, dossiererna i CONTACTS) i stället för att flyttas hit i
-            sin helhet. TheWorld.tsx rörs inte och lämnas oanvänd så länge. */}
-        {view === 'operations' && <MapPlaceholder theatreName={Object.values(state.theatres)[0]?.name ?? 'Indochina'} />}
+        {/* P74/P76 (§13): OPERATIONS är kartan. P74 byggde skalet med en
+            platshållare; P76 ersätter den med TheatreMap, den riktiga
+            geografiska kartan (TopoJSON, d3-geo, d3-zoom, SECTOR_REGIONS).
+            Den gamla THE WORLD-vyn (TheWorld.tsx — Doomsday, Theatres,
+            Factions, Stations) döps inte om till OPERATIONS; dess innehåll
+            återkommer styckvis i senare prompter (landets bottenark i P79,
+            dossiererna i CONTACTS) i stället för att flyttas hit i sin
+            helhet. TheWorld.tsx rörs inte och lämnas oanvänd så länge. */}
+        {view === 'operations' && <TheatreMap state={state} />}
         {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
         {view === 'company' && (
           <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />

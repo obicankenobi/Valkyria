@@ -11,9 +11,10 @@
 // bekräftelsedialogen för att skriva över ett sparat parti aldrig visas här).
 //
 // Kartkollisionsdelen av regel 18 ("ett test över kartan underkänner om två
-// etiketters eller markörers avgränsningsrutor skär varandra") gäller
-// SECTOR_REGIONS/etiketterna som byggs i P76 — ingen karta finns än, så den
-// delen av testet läggs till där, inte här.
+// etiketters eller markörers avgränsningsrutor skär varandra") läggs till i
+// P76 (nedan, egen testloop) — TheatreMap.tsx:s sektoretiketter och
+// frontlinjemarkörer är de enda element den delen av regeln gäller ännu
+// (förbandsbrickor, stationer, ordermarkörer m.m. är senare prompter).
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
@@ -104,4 +105,43 @@ for (const format of FORMATS) {
       expect(tooSmall, `Träffytor under 44×44 px:\n${tooSmall.join('\n')}`).toEqual([])
     })
   }
+}
+
+// P76 (ETAPP7_TEKNISK_SPEC.md §13): kartkollisionsdelen av regel 18, ordagrant
+// "ett test över kartan underkänner om två etiketters eller markörers
+// avgränsningsrutor skär varandra." Bara OPERATIONS har en karta — egen loop,
+// inte SCREENS ovan, eftersom de andra skärmarna saknar .map-sector-label/
+// .map-frontline-marker* helt (ett tomt NodeList ger noll par att jämföra,
+// men vore missvisande att köra i samma loop som testar ett annat påstående).
+for (const format of FORMATS) {
+  test(`kartan — inga etiketter eller markörer kolliderar, ${format.name} (regel 18)`, async ({ page }) => {
+    await page.setViewportSize({ width: format.width, height: format.height })
+    await page.goto('/')
+    await enterOperations(page)
+    await page.getByTestId('theatre-map-svg').waitFor()
+    await page.waitForTimeout(300)
+
+    const collisions = await page.evaluate(() => {
+      const elements = [
+        ...document.querySelectorAll('.map-sector-label, .map-frontline-marker, .map-frontline-marker-trace'),
+      ] as SVGGraphicsElement[]
+      const boxes = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }))
+      const found: string[] = []
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i]!.rect
+          const b = boxes[j]!.rect
+          const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+          if (overlaps) {
+            const describe = (el: SVGGraphicsElement) =>
+              `${el.tagName}.${el.getAttribute('class')}${el.getAttribute('data-testid') ? `[${el.getAttribute('data-testid')}]` : ''}`
+            found.push(`${describe(boxes[i]!.el)} × ${describe(boxes[j]!.el)}`)
+          }
+        }
+      }
+      return found
+    })
+
+    expect(collisions, `Etikett-/markörkollisioner på kartan:\n${collisions.join('\n')}`).toEqual([])
+  })
 }
