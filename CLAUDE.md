@@ -293,8 +293,16 @@ skrivmaskin, bakelit, Dymo-etiketter) som ersätter etapp 6:s mörka telexgula p
 vertikal skiva (Sydvietnam, slutlig kvalitet, 7B) innan den breddas (7C–7E). Tre referensskisser
 för OPERATIONS (kartans huvudvy) ligger godkända i `docs/ui/reference/`. Premisskontrollen (§0)
 verifierad ordagrant mot koden vid antagandet — se `docs/ANDRINGSLOGG.md` för hela protokollet
-(besluten A–J, F uppskjutet till efter P75). **Läs specens egna avsnitt för den prompt du kör
-innan du börjar** — den är skriven för att följas ordagrant, inte för att tolkas.
+(besluten A–J, F uppskjutet till efter P75). **P73 BYGGD 2026-09-26** (7A:s första prompt):
+UI-regler, fyra paketerade typsnitt (@fontsource), paletten ur §10 (krämvitt papper, ockra,
+fettkrita) ersätter etapp 6:s mörka telexgula i `styles.css`s `:root`-token — samma tokennamn,
+nya värden. Nytt komponentbibliotek (`designSystem.tsx`, samtliga femton komponenter ur §11.3)
+på en egen sida (`ComponentLibrary.tsx`, `?screen=components`). `npm run shots` (nytt) och
+`e2e/text-overflow.spec.ts` (regel 18 textklippning + regel 11 träffytor, båda i CI) byggda.
+Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P73-blockquote och `docs/ANDRINGSLOGG.md`
+för hela genomförandet, inklusive sex komponenter vars träffytor fick fixas till ≥44×44 px.
+**Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
+följas ordagrant, inte för att tolkas.
 
 ## Spelgränssnitt — regler (etapp 7)
 

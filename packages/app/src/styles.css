@@ -1710,9 +1710,12 @@ td.is-key {
 /* ── ActionSlot (§7.2) ─────────────────────────────────────────────── */
 
 .ds-action-slot {
+  /* Regel 11: de STRÄCKTA barnen (huvudknappen, ×-knappen) är de faktiska
+     träffytorna — 46 px yttre höjd ger 44 px netto sedan den 1 px breda
+     kanten (border-box) räknats bort på varje sida. */
   display: flex;
   align-items: stretch;
-  min-height: 44px;
+  min-height: 46px;
   background: var(--panel);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
@@ -1768,9 +1771,10 @@ td.is-key {
   color: var(--amber);
 }
 .ds-action-slot-remove {
+  /* Regel 11: träffytor minst 44×44 px. */
   appearance: none;
-  width: 32px;
-  min-width: 32px;
+  width: 44px;
+  min-width: 44px;
   background: var(--panel-sunken);
   border: none;
   border-left: 1px solid var(--line);
@@ -1810,14 +1814,17 @@ td.is-key {
   max-height: 92vh;
 }
 .ds-sheet-handle {
+  /* Regel 11: träffytan är 44 px hög (greppstapeln ritas smal, 4 px, centrerad
+     i den — samma "liten synlig, stor klickyta"-princip som slider-greppet). */
   appearance: none;
+  width: 100%;
+  min-height: 44px;
   background: transparent;
   border: none;
-  padding: 8px 0 4px;
   display: flex;
+  align-items: center;
   justify-content: center;
   cursor: pointer;
-  min-height: 24px;
 }
 .ds-sheet-grip {
   width: 40px;
@@ -1910,10 +1917,24 @@ td.is-key {
   pointer-events: none;
 }
 .ds-slider-thumb {
+  /* §7.3: "ett greppområde på minst 44 px" — den KLICKBARA rutan är 44×44
+     (regel 11), den synliga knappen ritas mindre via ::before så den inte
+     ser överdimensionerad ut mot det tunna spåret. */
   position: absolute;
-  width: 28px;
-  height: 28px;
-  margin-left: -14px;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+}
+.ds-slider-thumb::before {
+  content: '';
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: linear-gradient(180deg, #fff8ea, var(--amber));
   border: 2px solid var(--ink);
@@ -1945,10 +1966,12 @@ td.is-key {
   gap: 6px;
 }
 .ds-stepper-btn {
+  /* Regel 11: träffytor minst 44×44 px. */
   appearance: none;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 6px;
   background: linear-gradient(180deg, var(--steel-light), var(--steel));
   color: var(--steel-ink);
@@ -2107,10 +2130,23 @@ td.is-key {
   display: inline-block;
 }
 .ds-tooltip-trigger {
+  /* Regel 11: träffytan är 44×44, den synliga "i"-cirkeln (.ds-tooltip-dot)
+     ritas mindre inuti — samma princip som slider-greppet/bottenarkets handtag. */
   appearance: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.ds-tooltip-dot {
   width: 20px;
   height: 20px;
-  min-width: 20px;
   border-radius: 50%;
   background: var(--panel-sunken);
   border: 1px solid var(--line-strong);
@@ -2119,7 +2155,9 @@ td.is-key {
   font-style: italic;
   font-size: 12px;
   line-height: 1;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .ds-tooltip-bubble {
   position: absolute;

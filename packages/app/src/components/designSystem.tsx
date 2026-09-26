@@ -526,7 +526,9 @@ export function InfoTooltip({ text }: { text: string }) {
         onClick={() => setOpen((v) => !v)}
         onBlur={() => setOpen(false)}
       >
-        i
+        <span className="ds-tooltip-dot" aria-hidden="true">
+          i
+        </span>
       </button>
       {open && (
         <span className="ds-tooltip-bubble" role="tooltip" id={id}>

@@ -515,6 +515,53 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P73 — UI-regler, typsnitt och designsystem.** §3 in i `CLAUDE.md`. Paketerade typsnitt. Komponentbiblioteket ur §11.3 på en egen komponentsida, byggt för tryck först. `npm run shots` i båda formaten; skriptet renderar även `docs/ui/reference/*.html` till PNG i telefonformat, så att referens och bygge kan jämföras sida vid sida. *Klart när:* komponentsidan fotograferad på telefon och skrivbord, varje komponent visad i alla tillstånd, alla träffytor minst 44 px; testet för överlappande och klippt text (regel 18) finns och körs i CI; paletten och typsnitten ur §10 har ersatt de gamla.
 
+> **Klart 2026-09-26.** Fyra typsnitt (`@fontsource/archivo-narrow` 500/600/700,
+> `courier-prime` 400/700, `stardos-stencil` 400/700, `libre-baskerville` 400/400-italic)
+> installerade och importerade i `main.tsx` — ersätter systemstackarna helt (§0.5:s eget fynd:
+> "ingen service worker fanns" gjorde den gamla offline-motiveringen grundlös). `styles.css`s
+> `:root`-token omskrivna till paletten ur §10 — hexvärden hämtade direkt ur de tre godkända
+> referensskissernas inline-SVG (grep, inte gissat): krämvitt papper `#ebe1c7`, manilla
+> `#f6f1e3`, sepiabläck `#241f18`, ockra `#b0700f` (telexgults arvtagare), fettkrita röd
+> `#b3302a`/blå `#2d5a8c`, lackerad stål `#11140e`–`#8b917f`. Tokennamnen AVSIKTLIGT
+> oförändrade sedan etapp 6 (`--bg`, `--amber`, `--west` m.fl.) — bara värdena bytta, för att
+> undvika att röra varenda `var(--amber)`/`tone="amber"`-anropsplats i de fyra befintliga
+> vyerna utan att något klart-när-villkor kräver det.
+>
+> Ny fil `designSystem.tsx` — samtliga femton komponenter ur §11.3 (Panel, Button, IconButton,
+> DsTab, Card, ActionSlot, BottomSheet, Slider, Stepper, Segmented, TierPicker, Toggle,
+> InfoTooltip, FormationToken), egen `.ds-*`-namnrymd skild från de äldre `.panel`/`.btn`/`.tab`-
+> klasserna (som de fyra befintliga vyerna fortsätter använda oförändrat till P76+). Ny
+> `ComponentLibrary.tsx`, nådd via `?screen=components` (`App.tsx`, avgjort INNAN `useGame()`
+> anropas — stabilt över en session, aldrig en reaktiv växling). Fem komponenter hade
+> ursprungligen för små träffytor (tooltip-cirkeln 20×20, stepper-knapparna 36×36, bottenarkets
+> grepphandtag, handlingsplatsens ×-knapp 32 px bred, sliderns grepp 28×28 — §7.3 kräver
+> uttryckligen "minst 44 px") — lösta med samma princip genomgående: den KLICKBARA rutan blir
+> 44×44, den SYNLIGA markören ritas mindre inuti via ett nested element eller `::before`, så
+> inget ser överdimensionerat ut. Ett sjätte, subtilare fall hittades av det egna CI-testet:
+> `.ds-action-slot`s `min-height: 44px` gav bara 42 px NETTO åt de sträckta barnen eftersom
+> `border-box` räknar bort den 1 px breda kanten på varje sida — höjt till 46px.
+>
+> `npm run shots` (`scripts/shots.mjs`, nytt) startar appens devserver + en egen liten statisk
+> server för `docs/ui/reference/`, renderar komponentsidan i telefon- (390×844, pekskärm
+> emulerad) och skrivbordsformat (1440×900) samt de tre referensskisserna till PNG i
+> telefonformat, allt till `docs/ui/current/`. Node 22:s inbyggda `fetch` (undici) avvisade
+> flera av de först valda utvecklingsportarna rakt av ("bad port", samma spärrlista webbläsare
+> använder) — väntan på att devservern startat gjordes om med `node:http` i stället, som saknar
+> den spärren.
+>
+> `e2e/text-overflow.spec.ts` (nytt): regel 18 (textklippning, `scrollWidth > clientWidth` på
+> varje block-liknande element med egen direkt textnod) och regel 11 (träffytor, samtliga
+> `button`/`a[href]`/`[role=slider|switch|radio|tab]` ≥44×44 px) — båda i båda formaten, körda i
+> CI. Kartkollisionsdelen av regel 18 (etikett-/markörkollisioner) hör till P76, ingen karta
+> finns än. Skärmlistan är avsiktligt kort (bara komponentsidan) — växer i takt med fler
+> etapp 7-skärmar.
+>
+> Manuellt verifierat i en riktig Chromium-körning (skärmdumpar, telefon och skrivbord):
+> samtliga femton komponenter läsbara i alla tillstånd, typsnitten laddar, paletten matchar
+> referensskisserna. Golden ORÖRD — `packages/core` orört, ren `packages/app`-presentation.
+> Fullt testsvep grönt: 527 tester, lint, typecheck, build×3, e2e (sex tester, körd två gånger
+> i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P74 — Skärmskalet och helskärms-PWA.** Fast viewport, ingen sidscroll, säkra områden. OPERATIONS-layouten för telefon ur §5 med platshållare, skrivbordsvarianten ovanpå. Flikrad med ikoner och nya namn (§2G). Bottenark. Övergångar mellan skärmar. HUD som instrumentpanel med räknande tal. Manifest och service worker enligt §10. *Klart när:* e2e grönt i telefonformat; spelet kan läggas på hemskärmen och startar i helskärm i stående läge; ingen `<select>` eller sifferfält synligt på de skärmar som byggts om; fem-sekunderstestet på en telefonbild.
 
 **P75 — Stillhetsmått i härnessen.** Per tur och parti: antal sektorer som bytt sida, frontrörelse, förband som bytt status, faktioner som bytt alignment, tjänstemän som ersatts. Ingen ändring i `core`. *Klart när:* CSV med måtten för 500 partier; ägaren tar beslut 2F på underlaget.
