@@ -2719,6 +2719,127 @@ td.is-key {
   pointer-events: none;
 }
 
+/* P77 (§6.6): "frontlinjen har ett svagt skimmer" — omgivningsrörelse,
+   ren CSS-animation (avstängd av prefers-reduced-motion via den globala
+   `* { animation: none !important }`-regeln längre upp i filen, samma
+   mekanism resten av appen redan förlitar sig på). */
+.map-frontline-marker {
+  animation: map-frontline-shimmer 2.6s ease-in-out infinite;
+}
+@keyframes map-frontline-shimmer {
+  0%,
+  100% {
+    r: 4;
+    opacity: 1;
+  }
+  50% {
+    r: 4.8;
+    opacity: 0.75;
+  }
+}
+
+/* ── Underrättelsedimma (P77, §6.3 lager 3, §6.5) ──────────────────────── */
+
+.map-fog-hatch-line {
+  stroke: var(--sepia-ink);
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+.map-fog-overlay {
+  fill: url(#map-fog-hatch);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ── Förbandsbrickor (P77, §6.3 lager 7, §6.4) ─────────────────────────── */
+
+.map-token-frame {
+  stroke: var(--ink);
+  stroke-width: 0.8;
+}
+.map-formation-a .map-token-frame {
+  fill: var(--west);
+}
+.map-formation-b .map-token-frame {
+  fill: var(--east);
+}
+/* "refitting som dämpad." */
+.map-token-frame.is-refitting {
+  opacity: 0.45;
+}
+/* "utan station är ramen streckad." known===false, se map-token-unknown-mark
+   nedan för frågetecknet. */
+.map-token-frame.is-unknown {
+  stroke-dasharray: 1.6 1.2;
+  fill-opacity: 0.55;
+}
+
+.map-token-glyph {
+  stroke: var(--panel);
+  stroke-width: 0.9;
+  fill: none;
+  pointer-events: none;
+}
+.map-token-glyph-filled {
+  fill: var(--panel);
+}
+.map-token-glyph-outline {
+  fill: none;
+}
+
+/* "mauled som sprucken ram" — en sicksacklinje tvärs över brickan, ovanpå
+   ramen och glyfen. */
+.map-token-crack {
+  stroke: var(--ink);
+  stroke-width: 0.9;
+  fill: none;
+  pointer-events: none;
+}
+
+.map-token-dot {
+  fill: var(--ink);
+  pointer-events: none;
+}
+
+.map-formation-label {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 2.5px;
+  pointer-events: none;
+}
+
+/* ── Heat-glöd (P77, §6.3 lager 9, §6.6) ───────────────────────────────── */
+
+.map-heat-glow-circle {
+  fill: var(--amber-glow);
+  pointer-events: none;
+  filter: blur(6px);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-heat-breathe 5s ease-in-out infinite;
+}
+.map-heat-glow-circle.is-hot {
+  fill: var(--red);
+}
+/* Skalar (transform), rör aldrig opacity — opacity sätts inline efter
+   Theatre.heat (Math.min(0.35, heat/300)), och en CSS-animation på SAMMA
+   property hade helt ersatt det inline-värdet, inte multiplicerat med det
+   (upptäckt innan det hann bli en bugg: en tidigare version animerade
+   opacity direkt, vilket hade gjort heat-baserad intensitet verkningslös). */
+@keyframes map-heat-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
 /* ── Skrivbordsvarianten (≥1024 px): flikraden blir en vänstermeny ────── */
 
 @media (min-width: 1024px) {

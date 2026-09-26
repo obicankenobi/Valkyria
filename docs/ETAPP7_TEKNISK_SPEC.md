@@ -776,6 +776,63 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P77 — Brickor, dimma och omgivningsrörelse.** APP-6-brickor, underrättelsedimma, allt i §6.6 under *omgivningsrörelse*. *Klart när:* förband utan station renderas streckat och namnlöst; reducerad rörelse stänger av allt utom tillståndsbyten.
 
+> **Klart 2026-09-26.** Tre tillägg i `TheatreMap.tsx`, alla lager 3/7/9 i §6.3:s
+> lagerordning, sektoretiketterna flyttade till lager 11 för att stämma (låg tidigare mellan
+> sektorer och frontlinje, en kvarleva från P76 innan lager 8–10 existerade som begrepp).
+>
+> **Förbandsbrickor (§6.4, lager 7).** `FormationToken` — ramens FORM visar sida (rektangel
+> för `side: 'a'`, romb för `'b'`; "kvadrat för neutral" är strukturellt onåbar med dagens
+> binära `Formation['side']`-typ, samma "skyddsräcke utan nuvarande källa"-linje som
+> `OldFrontCard`/`UnlayoutedSectors` redan har, inte en lucka att bygga runt). `DoctrineGlyph`
+> — fem vektorformer, en per `Doctrine`. Styrka som 1–3 prickar (`strengthBand`). `mauled` en
+> sprucken bana ovanpå ramen, `refitting` en dämpad opacitet. Allt läst genom `formationDisplay`
+> (P41, orörd) — `known === false` ger en streckad ram (`is-unknown`) och ETT genuint fynd:
+> frågetecknet byggdes FÖRST som ett `<text>?</text>`, men SVG:s `scrollWidth`/`clientWidth`
+> för ett enda, oplacerat `textAnchor="middle"`-tecken visade sig ge olika avrundning
+> specifikt på skrivbordsformatet (`scrollWidth 4 > clientWidth 2`, 8 identiska instanser) och
+> trippade regel 18:s klippningstest — trots att inget klipptes visuellt (bekräftat med ett
+> riktat diagnosskript mot en riktig Chromium-körning: `display: block`, `rectWidth ≈3.7px`,
+> samma mönster upprepades INTE för flerteckensetiketter som "HUE"). Fixat genom att ersätta
+> texten med en ren bana (en krok + en prick), samma "form, inte textmätning"-princip
+> `DoctrineGlyph` redan använder — inte en textstorleks- eller positioneringsfix, en
+> arkitekturfix. `tokenOffset` (nytt, `geoMath.ts`) sprider flera `Formation` som delar samma
+> `sectorId` i ett rutnät (`TOKENS_PER_ROW=3`) runt sektorns projicerade ankare, rent
+> pixelmässigt — ingen geografi inblandad, till skillnad från `interpolateFrontGeoPosition`.
+> Namnetiketter renderas SEPARAT, i det samlade etikettlagret (lager 11) med ABSOLUTA
+> koordinater — ett genuint fynd hittat vid kodgranskning INNAN något kördes: en etikett
+> nästlad i brickans egen `<g transform>` hade mätts i fel koordinatrymd av regel 18:s
+> `getBBox()`-kollisionsdöljning jämfört med sektoretiketterna (redan absolutpositionerade),
+> se `TheatreMap.tsx`s egen kommentar. Namn syns först vid zoomnivå 3 (§6.9); vid nivå 2 syns
+> bara brickan.
+>
+> **Underrättelsedimma (§6.5, lager 3).** Per LAND, inte per sektor — `COUNTRY_TO_FACTION`
+> mappar en TopoJSON-landfeature till dess `FactionId`, `effectiveDepth(state, factionId) === 0`
+> ger snedstreck (`<pattern>`, 45°) och sänkt kontrast. Sektorns KONTROLLFÄRG (lager 4,
+> `deriveSectorControl`) förblir alltid synlig oavsett dimma — samma distinktion
+> `deriveSectorControl`s egen kod-kommentar redan gör ("kontrollstatus är grov/synlig oavsett
+> underrättelsedjup"), buren vidare hit i stället för uppfunnen på nytt.
+>
+> **Omgivningsrörelse (§6.6, lager 9 + frontlinjen).** `heat`-glöd per teater — en suddig
+> cirkel centrerad på teaterns sektorankares medelpunkt, radie och opacitet skalade mot
+> `Theatre.heat` (`DISPLAY_THRESHOLDS.heatEscalation`, P29, ÅTERANVÄND — inget nytt balanstal
+> uppfunnet), "andas" via en CSS `transform: scale()`-animation. ETT genuint fynd, hittat vid
+> kodgranskning INNAN något kördes: en `opacity`-baserad CSS-animation hade helt ERSATT (inte
+> kombinerat med) JSX:ens `style={{opacity: ...}}`-baserade heat-intensitet — CSS `animation`
+> på en egenskap vinner alltid över en inline `style` för SAMMA egenskap medan den är aktiv.
+> Löst genom att andas på `transform` i stället, `opacity` kvar helt under Reacts kontroll.
+> Frontlinjemarkören (redan `<circle>` sedan P76) fick ett svagt skimmer, samma sorts CSS
+> `animation` på `r`/`opacity`. Den globala `prefers-reduced-motion`-regeln (`* { animation:
+> none !important }`, redan i `styles.css` sedan tidigare etapper) stänger av båda utan någon
+> ny kod — precis §6.6:s "omgivningsrörelse, alltid på, billig" plus klart-näts reducerad-
+> rörelse-krav, uppfyllt av en redan existerande global regel.
+>
+> Golden ORÖRD — allt i `packages/app`, ingen `core`-fil rörd. 10 nya komponenttester
+> (`TheatreMap.test.tsx`, 15 totalt i filen) + 4 nya i `geoMath.test.ts` (`tokenOffset`).
+> `npm run shots` (telefon + skrivbord) verifierade visuellt: brickor, dimhatchning över Laos
+> och norra Vietnam (ingen station där vid partistart), två `heat`-glödfläckar, frontlinjens
+> DMZ-band — allt läsbart i båda formaten. Fullt testsvep grönt: 555 tester, lint, typecheck,
+> build, e2e (16 tester, körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P78 — `validateAction` och `previewAction`.** Utbrutna ur `applyActions.ts`. *Klart när:* golden bitvis identisk; varje avvisningsorsak har ett test som visar samma svar från båda.
 
 **P79 — Val, landets bottenark och handlingsplatserna.** Sydvietnam och dess huvudstad, station, tjänstemän och ordrar går att välja. Landets bottenark med underrättelseverben (alla sex) och `TierPicker`. Handlingsplatserna. *Klart när:* alla sex underrättelseverb går att köa från kartan och avgörs korrekt i en e2e-tur.

@@ -5,7 +5,7 @@
 // trace [-100, -50, 0]) — bara målet bytt från 0–100-skärmkoordinater till
 // SECTOR_REGIONS lat/lng-ankare.
 import { describe, expect, it } from 'vitest'
-import { interpolateFrontGeoPosition } from '../src/geoMath.js'
+import { interpolateFrontGeoPosition, tokenOffset } from '../src/geoMath.js'
 import { SECTOR_REGIONS } from '../src/sectorRegions.js'
 
 const INDOCHINA = SECTOR_REGIONS.indochina!
@@ -65,5 +65,37 @@ describe('interpolateFrontGeoPosition (P76 klart-när — känd sekvens, känd k
     const trace2 = interpolateFrontGeoPosition(INDOCHINA, trace[2]!) // -100
     expect(trace2[0]).toBeCloseTo(16.46, 6) // hue
     expect(trace2[1]).toBeCloseTo(107.59, 6)
+  })
+})
+
+// P77 (ETAPP7_TEKNISK_SPEC.md §6.4/§13): förbandsbrickornas placering inom en
+// sektor — flera Formation kan dela samma sectorId (t.ex. HUE har både 1st
+// Infantry Division och 18th Artillery Group), en ren pixel-rutnät-förskjutning
+// runt sektorns projicerade ankarpunkt, ingen geografi inblandad (skiljer sig
+// från interpolateFrontGeoPosition, som arbetar i lat/lng).
+describe('tokenOffset (P77 — förbandsbrickornas rutnätsplacering inom en sektor)', () => {
+  it('ett enda förband centreras exakt på ankaret', () => {
+    expect(tokenOffset(0, 1)).toEqual([0, 0])
+  })
+
+  it('två förband placeras symmetriskt kring ankaret på samma rad', () => {
+    const [x0, y0] = tokenOffset(0, 2)
+    const [x1, y1] = tokenOffset(1, 2)
+    expect(y0).toBe(0)
+    expect(y1).toBe(0)
+    expect(x0).toBeCloseTo(-x1, 6)
+    expect(x0).toBeLessThan(x1)
+  })
+
+  it('fyra förband (tokensPerRow=3) bildar två rader, tre på första och en på andra', () => {
+    const offsets = [0, 1, 2, 3].map((i) => tokenOffset(i, 4))
+    const rows = new Set(offsets.map(([, y]) => y))
+    expect(rows.size).toBe(2) // två distinkta rad-y-värden
+    // Det ensamma fjärde förbandet (index 3, ensamt på rad 2) centreras på x=0.
+    expect(offsets[3]![0]).toBeCloseTo(0, 6)
+  })
+
+  it('är deterministiskt: samma index/total ger alltid samma förskjutning', () => {
+    expect(tokenOffset(2, 5)).toEqual(tokenOffset(2, 5))
   })
 })

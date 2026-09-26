@@ -346,6 +346,29 @@ Prestandabudgeten (§12 punkt 5) kan inte mätas mot en riktig telefon i sandlå
 syntetisk Chromium-proxy (4x CPU-throttling) gav 59,7 bilder/s, flaggat som en kvarstående
 punkt för ägaren, inte gissat som klart. Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s
 P76-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
+**P77 BYGGD 2026-09-26**: APP-6-brickor (`FormationToken`/`DoctrineGlyph`, lager 7), sida som
+ramform, styrka som prickar, `mauled`/`refitting`, allt läst genom `formationDisplay` (P41,
+orört) — utan station en streckad ram och en ren SVG-bana som frågetecken (inte text, se
+nedan). `tokenOffset` (`geoMath.ts`, nytt) sprider flera förband i samma sektor i ett rutnät.
+Namnetiketter flyttade till det samlade etikettlagret (lager 11) med absoluta koordinater —
+ett fynd hittat vid kodgranskning INNAN körning: nästlade i brickans egen `transform` hade de
+mätts i fel koordinatrymd av regel 18:s `getBBox()`-kollisionsdöljning. Underrättelsedimma
+(lager 3) per LAND (`COUNTRY_TO_FACTION`, `effectiveDepth === 0`) — sektorns kontrollfärg
+(lager 4) förblir alltid synlig, samma distinktion `deriveSectorControl`s egen kommentar redan
+gör. `heat`-glöd per teater (lager 9, `DISPLAY_THRESHOLDS.heatEscalation` återanvänt) och
+frontlinjeskimmer, båda CSS-animationer avstängda automatiskt av den redan existerande globala
+`prefers-reduced-motion`-regeln. Två genuina fynd: (1) en `opacity`-baserad CSS-animation för
+heat-glödens andning hade helt ERSATT JSX:ens `style`-baserade intensitet — CSS `animation`
+vinner alltid över inline `style` för samma egenskap — löst genom att andas på `transform:
+scale()` i stället, hittat vid granskning innan körning; (2) frågetecknet byggdes först som
+`<text>?</text>`, men SVG:s `scrollWidth`/`clientWidth` för ett enda oplacerat
+`textAnchor="middle"`-tecken gav olika avrundning specifikt på skrivbordsformatet
+(`scrollWidth 4 > clientWidth 2`) och trippade regel 18:s klippningstest trots att inget
+klipptes visuellt — bekräftat med ett riktat diagnosskript mot en riktig Chromium-körning,
+fixat genom att ersätta texten med en ren bana, samma "form, inte textmätning"-princip
+`DoctrineGlyph` redan använder. Golden ORÖRD. Fullt testsvep grönt: 555 tester, lint,
+typecheck, build, e2e (16 tester, körd två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md`
+§13:s P77-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

@@ -27,3 +27,24 @@ export function interpolateFrontGeoPosition(regions: SectorRegion[], position: n
     from.anchor[1] + (to.anchor[1] - from.anchor[1]) * localT,
   ]
 }
+
+// P77 (ETAPP7_TEKNISK_SPEC.md §6.4/§13): förbandsbrickornas placering. Flera
+// Formation kan dela samma sectorId — en ren pixel-rutnätsförskjutning runt
+// sektorns REDAN PROJICERADE ankarpunkt (viewBox-enheter, inte lat/lng, till
+// skillnad från interpolateFrontGeoPosition ovan — ren kosmetisk utspridning,
+// ingen geografi). Deterministiskt (index/total → samma förskjutning varje
+// gång), samma "ren funktion, ingen rng" som resten av filen.
+const TOKENS_PER_ROW = 3
+const TOKEN_SPACING = 12
+
+export function tokenOffset(index: number, total: number): [number, number] {
+  const row = Math.floor(index / TOKENS_PER_ROW)
+  const col = index % TOKENS_PER_ROW
+  const rowCount = Math.ceil(total / TOKENS_PER_ROW)
+  const colsInRow = Math.min(TOKENS_PER_ROW, total - row * TOKENS_PER_ROW)
+
+  const rowWidth = (colsInRow - 1) * TOKEN_SPACING
+  const colsHeight = (rowCount - 1) * TOKEN_SPACING
+
+  return [col * TOKEN_SPACING - rowWidth / 2, row * TOKEN_SPACING - colsHeight / 2]
+}
