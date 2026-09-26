@@ -77,4 +77,51 @@ describe('runGame (packages/harness)', () => {
       expect(Number.isFinite(metrics.grossMarginPct)).toBe(true)
     }
   })
+
+  // P75 (ETAPP7_TEKNISK_SPEC.md §2F/§13): stillhetsmåtten — jämförs turvis
+  // (state före/efter varje resolveTurn), summerade över hela partiet. Ingen
+  // ny räknare i core: sectorsChangedSide läser queries.ts:s redan
+  // existerande deriveSectorControl, resten jämför redan bokförda fält
+  // (front.position, Formation.status, Faction.alignment, Official.name).
+  it('(P75) de fem stillhetsmåtten är välformade, icke-negativa tal', () => {
+    for (const [name, policy] of Object.entries(POLICIES)) {
+      const metrics = runGame('indochina-slice', `p75-columns-seed-${name}`, name, policy)
+      expect(metrics.sectorsChangedSide).toBeGreaterThanOrEqual(0)
+      expect(metrics.frontMovementTotal).toBeGreaterThanOrEqual(0)
+      expect(metrics.formationsChangedStatus).toBeGreaterThanOrEqual(0)
+      expect(metrics.factionsChangedAlignment).toBeGreaterThanOrEqual(0)
+      expect(metrics.officialsReplaced).toBeGreaterThanOrEqual(0)
+      expect(Number.isInteger(metrics.sectorsChangedSide)).toBe(true)
+      expect(Number.isInteger(metrics.formationsChangedStatus)).toBe(true)
+      expect(Number.isInteger(metrics.factionsChangedAlignment)).toBe(true)
+      expect(Number.isInteger(metrics.officialsReplaced)).toBe(true)
+    }
+  })
+
+  it('(P75) frontMovementTotal rör sig över noll över flera partier — fronterna är inte helt stilla', () => {
+    let anyMovement = false
+    for (let i = 0; i < 30; i++) {
+      const metrics = runGame('indochina-slice', `p75-movement-seed-${i}`, 'aggressive', aggressive)
+      if (metrics.frontMovementTotal > 0) anyMovement = true
+    }
+    expect(anyMovement).toBe(true)
+  })
+
+  // Ingen "rör sig över noll"-test för factionsChangedAlignment (som för de
+  // andra fyra måtten ovan/nedan): P64:s härnessmätning (CLAUDE.md, 2026-09-17,
+  // n=200 aggressive) visade redan att lyckade FUND_COUP-flippar är ~0 —
+  // aggressive skickar in FUND_COUP varje möjlig tur men avvisas nästan alltid
+  // av house.actionPoints (3/tur). Att kräva > 0 här hade varit att bygga ett
+  // test mot en premiss som redan mätts falsk, inte en riktig regression-vakt.
+  // Mätt igen: 60 partier här, samma resultat (0/60) — konsekvent med P64.
+  // "de fem stillhetsmåtten är välformade"-testet ovan täcker fältet ändå.
+
+  it('(P75) officialsReplaced rör sig över noll över flera aggressiva partier (ASSASSINATE ersätter tjänstemän)', () => {
+    let anyReplaced = false
+    for (let i = 0; i < 60; i++) {
+      const metrics = runGame('indochina-slice', `p75-official-seed-${i}`, 'aggressive', aggressive)
+      if (metrics.officialsReplaced > 0) anyReplaced = true
+    }
+    expect(anyReplaced).toBe(true)
+  })
 })

@@ -31,7 +31,7 @@
 // exakt så många rivalbud bidding.ts försöker pröva den turen. En rival som
 // saknas ur draft.rivals (finns inte i etapp 1,5) skulle göra denna nämnare en
 // aning för hög; ingen sådan borttagning existerar ännu.
-import { createInitialState, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
+import { createInitialState, deriveSectorControl, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
 import type { GameState, TurnResult } from '@seventh-front/core'
 import type { Policy } from './policies.js'
 
@@ -55,6 +55,16 @@ export interface GameMetrics {
   voidedContracts: number
   retoolingTurns: number
   stationsBurned: number
+  // P75 (ETAPP7_TEKNISK_SPEC.md §2F/§13) — stillhetsmåtten beslut 2F väntar
+  // på: hur mycket rör sig världen av sig själv, utan en förbandsförflyttnings-
+  // mekanik? Jämförda turvis (state före/efter varje resolveTurn) och
+  // summerade över hela partiet, ingen ny räknare i core — bara redan
+  // existerande fält och queries.ts:s deriveSectorControl.
+  sectorsChangedSide: number
+  frontMovementTotal: number
+  formationsChangedStatus: number
+  factionsChangedAlignment: number
+  officialsReplaced: number
 }
 
 const MAX_TURNS = 21
@@ -68,14 +78,56 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let turnsWithHighHeat = 0
   let turnsPlayed = 0
   let retoolingLineTurns = 0
+  // P75 — de fem stillhetsmåtten, ackumulerade en tur i taget.
+  let sectorsChangedSide = 0
+  let frontMovementTotal = 0
+  let formationsChangedStatus = 0
+  let factionsChangedAlignment = 0
+  let officialsReplaced = 0
 
   for (let t = 0; t < MAX_TURNS; t++) {
     const decidingThisTurn = state.market.openOrders.filter((o) => o.expiresTurn <= state.meta.turn)
     for (const order of decidingThisTurn) rivalBidsAttempted += order.competingRivals.length
 
+    const prevState = state
     const result: TurnResult = resolveTurn(state, policy(state))
     state = result.state
     turnsPlayed++
+
+    // P75 — jämför prevState (före denna resolveTurn) mot state (efter).
+    // Fronter/förband matchas på id; en front eller ett förband som bara
+    // finns på ena sidan (uppstod/försvann denna tur) räknas inte — bara
+    // FAKTISKA ändringar hos något som fanns kvar mäts.
+    for (const [frontId, nextFront] of Object.entries(state.fronts)) {
+      const prevFront = prevState.fronts[frontId]
+      if (!prevFront) continue
+      frontMovementTotal += Math.abs(nextFront.position - prevFront.position)
+
+      const prevControl = new Map(deriveSectorControl(prevState, prevFront).map((c) => [c.sectorId, c.side]))
+      for (const control of deriveSectorControl(state, nextFront)) {
+        const prevSide = prevControl.get(control.sectorId)
+        if (prevSide !== undefined && prevSide !== control.side) sectorsChangedSide++
+      }
+
+      const prevFormationStatus = new Map(prevFront.formations.map((f) => [f.id, f.status]))
+      for (const formation of nextFront.formations) {
+        const prevStatus = prevFormationStatus.get(formation.id)
+        if (prevStatus !== undefined && prevStatus !== formation.status) formationsChangedStatus++
+      }
+    }
+
+    for (const [factionId, nextFaction] of Object.entries(state.factions)) {
+      const prevFaction = prevState.factions[factionId]
+      if (prevFaction && prevFaction.alignment !== nextFaction.alignment) factionsChangedAlignment++
+    }
+
+    // officialsReplaced: replaceOfficial (officials.ts) håller id/factionId/post
+    // oförändrade och byter bara namn (+ integrity/agenda/standing m.m.) — ett
+    // namnbyte på samma id ÄR en ersättning, den enda skrivaren till fältet.
+    for (const [officialId, nextOfficial] of Object.entries(state.officials)) {
+      const prevOfficial = prevState.officials[officialId]
+      if (prevOfficial && prevOfficial.name !== nextOfficial.name) officialsReplaced++
+    }
 
     for (const event of result.wire) {
       if (event.headline.includes('WINS CONTRACT')) {
@@ -133,5 +185,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     voidedContracts,
     retoolingTurns: retoolingLineTurns,
     stationsBurned,
+    sectorsChangedSide,
+    frontMovementTotal,
+    formationsChangedStatus,
+    factionsChangedAlignment,
+    officialsReplaced,
   }
 }

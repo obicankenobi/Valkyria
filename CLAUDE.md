@@ -312,6 +312,20 @@ fångade och fick fixat två genuina brott: HUD-kassans klippta text (`.ds-hud-v
 `text-overflow: ellipsis`, en för smal grid-kolumn) och två hit-target-brott i `MainMenu.tsx`
 (byggd i P65, innan regel 11 fanns). Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s
 P74-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet.
+**P75 MÄTT 2026-09-26** (härnesset — fem nya `GameMetrics`-kolumner, ingen ändring i `core`):
+`npm run harness -- --runs 125 --policy aggressive,balanced,passive,capacity`, 500 partier mot
+`indochina-slice`. Fyndet som avgör beslut 2F: fronten rör sig (`frontMovementTotal` ≈4,5/tur)
+och förbanden växlar status ofta (`formationsChangedStatus` ≈0,77/tur) — men det syns nästan
+aldrig som ändrad SEKTORKONTROLL (`sectorsChangedSide`): 93,6 % av 500 partier har noll
+sektorer som byter sida under hela partiet, de 6,4 % som har någon gör det exakt en gång.
+`factionsChangedAlignment`/`officialsReplaced` 0 % i denna seedserie — bekräftar P64:s redan
+dokumenterade fynd (`aggressive` skickar `FUND_COUP`/`ASSASSINATE` varje tur men avvisas av
+`actionPoints`-budgeten), inget nytt. En redeploy-efter-genombrott-mekanik (beslut 2F) skulle
+alltså inte konkurrera med en redan livlig sektorkarta — den vore den FÖRSTA mekaniken som får
+sektorkontroll att röra sig alls i märkbar utsträckning. Rådatan skickad till ägaren separat
+(gitignorad, samma konvention som P58/P64). Golden ORÖRD. Se `docs/ETAPP7_TEKNISK_SPEC.md`
+§13:s P75-blockquote och `docs/ANDRINGSLOGG.md` för hela genomförandet. **Beslut 2F väntar nu
+på ägaren.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

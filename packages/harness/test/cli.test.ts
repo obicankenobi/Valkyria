@@ -45,7 +45,7 @@ describe('main (packages/harness) — end till slut', () => {
       const lines = content.trim().split('\n')
 
       expect(lines[0]).toBe(
-        'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned',
+        'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced',
       )
       expect(lines.length).toBe(1 + 2 * 2) // header + (2 policies × 2 runs)
     } finally {

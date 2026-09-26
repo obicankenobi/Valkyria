@@ -626,6 +626,60 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P75 — Stillhetsmått i härnessen.** Per tur och parti: antal sektorer som bytt sida, frontrörelse, förband som bytt status, faktioner som bytt alignment, tjänstemän som ersatts. Ingen ändring i `core`. *Klart när:* CSV med måtten för 500 partier; ägaren tar beslut 2F på underlaget.
 
+> **Klart 2026-09-26.** Fem nya kolumner i `GameMetrics`/CSV:n (`sectorsChangedSide`,
+> `frontMovementTotal`, `formationsChangedStatus`, `factionsChangedAlignment`,
+> `officialsReplaced`) — beräknade i `runGame.ts`s befintliga turloop, en tur i taget:
+> `state` jämförs mot `prevState` (samma referens som redan fanns implicit, bara sparad innan
+> `resolveTurn`-anropet) efter VARJE `resolveTurn`, ackumulerat till en enda summa per parti.
+> Ingen ny räknare i `core` — `sectorsChangedSide` läser `queries.ts`s redan existerande
+> `deriveSectorControl` (byggd för P66:s sektortavla), resten jämför fält som redan skrivs av
+> etablerade mekaniker (`Front.position`, `Formation.status`, `Faction.alignment` — bara
+> `FUND_COUP` skriver det, P61 — och `Official.name`, den enda platsen `replaceOfficial`
+> ändrar på ett annars stabilt id/post-par).
+>
+> **Mätningen:** `npm run harness -- --runs 125 --policy aggressive,balanced,passive,capacity`
+> — 500 partier (bokstavligt 500, inte 500 per policy) mot `indochina-slice`. Resultatet:
+>
+> | Mått | Snitt/parti | Andel partier med minst en ändring |
+> |---|---|---|
+> | `frontMovementTotal` | 45,6 (≈4,5/tur) | 100 % |
+> | `formationsChangedStatus` | 7,79 (≈0,77/tur) | 100 % |
+> | `sectorsChangedSide` | 0,06 | 6,4 % — och ALDRIG mer än en enda sektor i de partier det händer |
+> | `factionsChangedAlignment` | 0 | 0 % |
+> | `officialsReplaced` | 0 | 0 % (denna specifika 125-seedserie — se nedan) |
+>
+> De sista två raderna är INGET nytt fynd — de bekräftar bara P64:s redan dokumenterade
+> mätning (`CLAUDE.md`, 2026-09-17: `aggressive` skickar in `FUND_COUP`/`ASSASSINATE` varje
+> möjlig tur men avvisas nästan alltid av `house.actionPoints`) på en annan, oberoende
+> seedserie. `officialsReplaced` registrerade faktiskt utfall > 0 i ett fristående
+> 60-partiers styckprov under testutvecklingen (`runGame.test.ts`, andra seedsträngar) — samma
+> sällsynta händelse, bara inte i just DESSA 500 partiers specifika slumpdragning. Ingen
+> `factionsChangedAlignment`-"rör sig över noll"-test skrevs av samma skäl (se testfilens egen
+> kommentar) — att kräva det hade varit att testa mot en premiss P64 redan mätt falsk.
+>
+> **Det faktiska, nya fyndet för beslut 2F** är kontrasten mellan de tre första raderna:
+> fronten RÖR SIG (`front.position`, ≈4,5 enheter/tur) och förbanden VÄXLAR STATUS ofta
+> (≈0,77/tur — active/mauled/refitting-cykeln lever) — men detta syns nästan ALDRIG som en
+> ändrad SEKTORKONTROLL (`deriveSectorControl`s `side`-fält, det spelaren faktiskt ser på
+> sektortavlan/den kommande kartan). 93,6 % av 500 partier har NOLL sektorer som byter sida
+> under hela partiet, och de 6,4 % som har någon gör det EXAKT en gång. Läst mot §2F:s fråga
+> ("kan förband byta sektor efter genombrott") — det finns rörelse och churn under ytan, men
+> praktiskt taget ingen av den slår igenom till vad kartan visar som "vem kontrollerar var".
+> En redeploy-efter-genombrott-mekanik skulle alltså inte konkurrera med en redan livlig
+> sektorkarta — den skulle vara den FÖRSTA mekaniken som får sektorkontroll att röra sig alls
+> i någon märkbar utsträckning. Ägaren avgör beslut 2F på detta underlag.
+>
+> Rådatan (500 rader, `policy,seed,...,sectorsChangedSide,frontMovementTotal,
+> formationsChangedStatus,factionsChangedAlignment,officialsReplaced`) skickad till ägaren
+> separat — `harness-results.csv` är gitignorat (repo-konventionen sedan `.gitignore` skrevs,
+> P58/P64:s mätningar checkades inte heller in som filer, bara som prosa här).
+>
+> Fem nya tester i `runGame.test.ts` (välformade tal, `frontMovementTotal`/
+> `officialsReplaced` rör sig över noll i egna stickprov), `csv.test.ts`/`cli.test.ts`
+> uppdaterade med de fem nya kolumnerna. Golden ORÖRD (härnesset läser `resolveTurn`, skriver
+> ingenstans i `state`). Fullt testsvep grönt: 530 tester, lint, typecheck, build. Se
+> `docs/ANDRINGSLOGG.md`.
+
 ### 7B — Den vertikala skivan (Sydvietnam, slutlig kvalitet)
 
 **P76 — Baskartan och sektorerna.** Geografiskriptet, TopoJSON, projektion, panorering och zoom, `SECTOR_REGIONS` för Sydvietnams teater, kontrollfärgning, frontlinje med spår. *Klart när:* prestandabudgeten mätt och hållen; samma trace-sekvens som P68:s test ger känd kartkoordinat.
