@@ -132,6 +132,15 @@ Känslan av dokument kommer från fyra saker i den här ordningen: sidan beter s
 
 **F. Förbandsförflyttning avgörs på data.** P75 lägger ett stillhetsmått i härnessen. Beslutet om att förband kan byta sektor efter genombrott tas när måttet finns, före bredningen i 7C.
 
+> **Beslut 2F fattat 2026-09-26, på P75:s underlag (§13:s P75-blockquote):** redeploy-mekaniken
+> byggs — 93,6 % av 500 partier hade noll sektorer som bytte sida under hela partiet, trots
+> betydande churn under ytan (`frontMovementTotal` ≈4,5/tur, `formationsChangedStatus`
+> ≈0,77/tur). Ägaren valde ATT FÖLJA SPECENS EGEN ORDNING i stället för att flytta fram
+> mekaniken till P76: P76 förblir ren frontend (baskartan/sektorerna, Sydvietnam) och rör
+> aldrig `resolve/`/golden; själva redeploy-regeln byggs i P82 som redan planerat — en egen
+> commit med omfryst golden, körd mot hela kartan (Sydvietnam + Laos) i stället för bara halva
+> teatern. Se `docs/ANDRINGSLOGG.md`.
+
 **G. Flikarna döps om.**
 
 | Gammalt namn | Nytt namn | Vad sidan är |
