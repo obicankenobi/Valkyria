@@ -5,6 +5,13 @@
 // glömmer multiplicera med quantity, eller läser fel unitCost, faktiskt fångas
 // här och inte bara i den rena core-koden (som redan testas i
 // packages/core/test/queries.test.ts).
+//
+// P84 (ETAPP7_TEKNISK_SPEC.md §7.5, regel 2): priset flyttades från ett fritt
+// <input type="number"> till DsSlider, bundet till playerWinCurve:s eget
+// [min, max]-intervall. Testet kan därför inte längre fylla in ett godtyckligt
+// pris — det styr reglaget med tangentbordet (samma interaktion en riktig
+// spelare har, se DsSlider:s handleKeyDown) och räknar sina förväntade värden
+// mot vilket pris reglaget FAKTISKT landar på, i stället för ett hårdkodat tal.
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
@@ -37,7 +44,7 @@ function makeOrder(state: GameState): Order {
   }
 }
 
-describe('BidForm — P21 klart-när: bruttomarginalen stämmer mot price − unitCost × quantity', () => {
+describe('BidForm — P21 klart-når: bruttomarginalen stämmer mot price − unitCost × quantity', () => {
   it('visar en bruttomarginal (£ och %) som räknats mot samma yourUnitCost och quantity som resten av formuläret', () => {
     const state = createInitialState('indochina-slice', 'bidform-margin-seed')
     const order = makeOrder(state)
@@ -45,8 +52,11 @@ describe('BidForm — P21 klart-när: bruttomarginalen stämmer mot price − un
 
     render(<BidForm state={state} order={order} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
 
-    const price = 3_000_000
-    fireEvent.change(screen.getByLabelText('Price'), { target: { value: String(price) } })
+    // Reglaget till sitt tak (End) — ett deterministiskt, känt pris (playerWinCurve:s
+    // eget sista punkt), utan att behöva gissa stegstorleken.
+    const slider = screen.getByLabelText('Price')
+    fireEvent.keyDown(slider, { key: 'End' })
+    const price = Number(slider.getAttribute('aria-valuenow'))
 
     const expectedCost = estimate.yourUnitCost * order.quantity
     const expectedProfit = price - expectedCost
@@ -61,19 +71,28 @@ describe('BidForm — P21 klart-när: bruttomarginalen stämmer mot price − un
     )
   })
 
-  it('visar en förlust (rött, negativ marginal) när priset ligger under unitCost × quantity', () => {
-    const state = createInitialState('indochina-slice', 'bidform-margin-loss-seed')
+  it('visar brytpunkten (0 %, "is-loss"-stil) vid reglagets golv — priset kan aldrig sättas under självkostnaden', () => {
+    // Genuint fynd (P84): playerWinCurve:s lägsta punkt ÄR yourUnitCost × quantity
+    // (queries.ts:s costFloor) — samma tal bidEstimate räknar fram. Reglagets golv
+    // är alltså alltid exakt brytpunkten, aldrig en förlust. En riktig förlust är
+    // därför strukturellt onåbar via UI:t (samma linje som P52:s
+    // supplyIndexMaxStep-fynd, dokumenterat i ANDRINGSLOGG.md) — kvar att testa är
+    // att golvet visas som 0 % och fortfarande får varningsstilen.
+    const state = createInitialState('indochina-slice', 'bidform-margin-floor-seed')
     const order = makeOrder(state)
     const estimate = bidEstimate(state, order, 'A')
 
     render(<BidForm state={state} order={order} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
 
-    // Garanterat under kostnad, oavsett scenariots faktiska unitCost.
-    const price = 1
-    fireEvent.change(screen.getByLabelText('Price'), { target: { value: String(price) } })
+    const slider = screen.getByLabelText('Price')
+    fireEvent.keyDown(slider, { key: 'Home' })
+    const price = Number(slider.getAttribute('aria-valuenow'))
 
-    const expectedMarginPct = ((price - estimate.yourUnitCost * order.quantity) / price) * 100
-    expect(expectedMarginPct).toBeLessThan(0)
-    screen.getByText(`${expectedMarginPct.toFixed(1)}%`)
+    const expectedCost = estimate.yourUnitCost * order.quantity
+    expect(price).toBe(expectedCost)
+
+    const marginReadout = document.querySelector('.margin-readout')!
+    expect(marginReadout.className).toContain('is-loss')
+    screen.getByText('0.0%')
   })
 })

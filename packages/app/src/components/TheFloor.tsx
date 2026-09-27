@@ -1,14 +1,17 @@
-// THE FLOOR — listar openOrders med bidEstimate och ett budformulär. Mest tid
-// spenderas här (spec avsnitt 8). Order.trueBudget/inspectorIntegrity/weights
-// visas ALDRIG — de är spelarens dolda information, hela poängen med
-// bidEstimate/winBand (avsnitt 4.3).
+// THE FLOOR — CONTRACTS (P84, ETAPP7_TEKNISK_SPEC.md §7.5): "En stämplad
+// mapp per order: köpare, produkt, kvantitet, frist, och ett prisreglage
+// över winBand som kurva, med marginal och vinstchans som följer reglaget.
+// Inga dolda fält (trueBudget, weights, integrity)." Order.trueBudget/
+// inspectorIntegrity/weights visas ALDRIG (avsnitt 4.3) — BidForm.tsx äger
+// själva reglaget, den här filen äger bara mappen den öppnas ur.
 import { useState } from 'react'
 import { getProduct } from '@seventh-front/core'
 import type { Bid, GameState, Order, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
+import { Button } from './designSystem.js'
 import { Panel, Tag, formatMoney } from './ui.js'
 
-function OrderRow({
+function OrderFolder({
   state,
   order,
   existingBid,
@@ -28,11 +31,13 @@ function OrderRow({
   // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "en order utan frontId ska
   // inte krascha vyn" — SCRIPTED-ordrar och krisköp har frontId: null.
   const frontLabel = order.frontId ?? 'No front'
+  const deadlineLabel = turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`
 
   return (
-    <div className="order">
+    <div className="order-folder" data-testid="order-folder">
+      <div className="order-folder-tab">{buyer ? buyer.name : order.buyerId}</div>
+
       <div className="order-head">
-        <span className="order-buyer">{buyer ? buyer.name : order.buyerId}</span>
         <span className="order-product">{product.name}</span>
         <span className="order-qty" data-testid="order-quantity">
           × {order.quantity}
@@ -42,16 +47,18 @@ function OrderRow({
         <span className="order-meta">
           <span className="meter-label">Stated budget {formatMoney(order.statedBudget)}</span>
           <Tag>{frontLabel}</Tag>
-          <Tag tone={turnsLeft <= 0 ? 'red' : 'neutral'}>
-            {turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`}
-          </Tag>
+          <span className={`order-stamp${turnsLeft <= 1 ? ' is-urgent' : ''}`} data-testid="order-deadline-stamp">
+            {deadlineLabel}
+          </span>
           {existingBid && <Tag tone="green">Bid {formatMoney(existingBid.price)}</Tag>}
           {/* "quote"/"close", not "bid" — "bid" is a substring of "Place Bid"/"Update Bid"/
               "Remove Bid" below, which broke e2e locators scoped to an exact 'bid' name
-              (Playwright's role-name match is case-insensitive substring by default). */}
-          <button type="button" className="btn" onClick={() => setOpen((v) => !v)}>
+              (Playwright's role-name match is case-insensitive substring by default).
+              DS Button (regel 11: min-height 44px baked into .ds-button) instead of the
+              old bespoke <button className="btn">, which never met the 44×44 px floor. */}
+          <Button variant="secondary" onClick={() => setOpen((v) => !v)}>
             {open ? 'close' : 'quote'}
-          </button>
+          </Button>
         </span>
       </div>
 
@@ -78,7 +85,7 @@ export function TheFloor({
 
   return (
     <>
-      <h2 className="view-title">The Floor</h2>
+      <h2 className="view-title">Contracts</h2>
 
       <Panel
         title="Open Orders"
@@ -91,7 +98,7 @@ export function TheFloor({
           </p>
         ) : (
           state.market.openOrders.map((order) => (
-            <OrderRow
+            <OrderFolder
               key={order.id}
               state={state}
               order={order}

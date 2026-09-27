@@ -39,10 +39,38 @@
 // IndexedDB, nytt frö) upp till fem gånger om inte en kris hunnit dyka upp,
 // i stället för att acceptera en flackig enstaka-försök-design.
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 function parseMoney(text: string): number {
   return Number(text.replace(/[£,−-]/g, '').trim())
+}
+
+// P84 (ETAPP7_TEKNISK_SPEC.md §7.5, regel 2): priset är nu DsSlider, inte ett
+// <input type="number"> — Playwrights .fill() kräver ett riktigt input/
+// textarea/[contenteditable] och kastar på en div[role="slider"]. Sätter
+// reglaget genom att klicka på spåret vid den position DsSlider:s egen
+// handlePointer räknar ut ratio från (samma formel, se designSystem.tsx),
+// exakt den interaktion en riktig spelare har på skrivbord/pekskärm.
+//
+// Genuint fynd (P84): orderns mapp stängs aldrig efter ett lagt bud (samma
+// beteende som den gamla OrderRow redan hade) — flera mappar kan alltså stå
+// öppna samtidigt när fler än en order finns samma tur. Ett `.first()`-sökt
+// reglage över HELA sidan siktar då kvar på den FÖRSTA (äldsta) mappen, som
+// kan ha skrollat utanför synligt läge (negativt y) när en senare mapp
+// öppnades — ett klick på de koordinaterna kan träffa vad som helst,
+// inklusive HUD:ens expanderingsknapp (observerat: ett sådant felträff
+// öppnade HUD:en och dubblerade credit-limit-testid:t, se ANDRINGSLOGG.md).
+// Root scoperas därför till precis DEN mapp som just öppnades, aldrig sidan.
+async function setPriceSlider(page: Page, scope: Locator, testId: string, targetValue: number): Promise<void> {
+  const slider = scope.locator(`[data-testid="${testId}"] [role="slider"]`)
+  const min = Number(await slider.getAttribute('aria-valuemin'))
+  const max = Number(await slider.getAttribute('aria-valuemax'))
+  const clamped = Math.min(max, Math.max(min, targetValue))
+  const ratio = max > min ? (clamped - min) / (max - min) : 0
+  const track = scope.locator(`[data-testid="${testId}"] .ds-slider-track`)
+  const box = await track.boundingBox()
+  if (!box) throw new Error(`reglaget ${testId} hittades inte`)
+  await page.mouse.click(box.x + box.width * ratio, box.y + box.height / 2)
 }
 
 async function startFreshGame(page: Page): Promise<void> {
@@ -101,21 +129,34 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     if (await endTurnButton.isDisabled()) break // partiet redan slut (en ending inträffade)
 
     // Bjud på varje öppen order till ett pris som garanterar en marginal.
+    // Mappen stängs aldrig efter ett lagt bud (§7.5) — flera kan alltså stå
+    // öppna samma tur. Varje mapp scopeas till EN specifik `[data-testid=
+    // "order-folder"]`, aldrig till sidan i stort — se setPriceSlider:s egen
+    // kommentar för det ursprungliga fyndet.
+    //
+    // GENUINT FYND (P84, andra rundan): en `.filter({ has: quote-knappen })`
+    // -baserad locator är INTE en stabil referens till "mappen jag just
+    // öppnade" — Playwright-lokatorer är lata och körs om vid VARJE nytt
+    // anrop. Så fort quote-knappen klickats visar just DEN mappen "close" i
+    // stället, filtret slutar matcha DEN mappen och `.first()` glider tyst
+    // vidare till NÄSTA mapp som fortfarande har en quote-knapp (om någon
+    // order till finns samma tur) — kvantiteten lästes då av en helt annan
+    // mapp än den vars formulär faktiskt öppnades, vars `your-unit-cost`
+    // aldrig fanns (formuläret var aldrig öppnat) och testet hängde tills
+    // timeouten slog till. Löst med ett stabilt INDEX (`.nth(i)`) i stället
+    // — mappar varken tas bort eller byter ordning under en tur, så index i
+    // förblir samma mapp genom hela varvet.
     await page.getByTestId('tab-contracts').click()
-    let quoteCount = await page.getByRole('button', { name: 'quote' }).count()
-    while (quoteCount > 0) {
-      await page.getByRole('button', { name: 'quote' }).first().click()
-      const quantity = Number((await page.getByTestId('order-quantity').first().innerText()).replace('×', '').trim())
-      const unitCost = parseMoney(await page.getByTestId('your-unit-cost').first().innerText())
-      await page
-        .getByLabel('Price')
-        .first()
-        .fill(String(Math.round(unitCost * quantity * 1.5)))
-      await page
-        .getByRole('button', { name: /Place Bid/ })
-        .first()
-        .click()
-      quoteCount = await page.getByRole('button', { name: 'quote' }).count()
+    const folderCount = await page.getByTestId('order-folder').count()
+    for (let i = 0; i < folderCount; i++) {
+      const folder = page.getByTestId('order-folder').nth(i)
+      const quoteButton = folder.getByRole('button', { name: 'quote' })
+      if ((await quoteButton.count()) === 0) continue // redan bjudet (t.ex. en tidigare tur)
+      await quoteButton.click()
+      const quantity = Number((await folder.getByTestId('order-quantity').innerText()).replace('×', '').trim())
+      const unitCost = parseMoney(await folder.getByTestId('your-unit-cost').innerText())
+      await setPriceSlider(page, folder, 'bid-price', Math.round(unitCost * quantity * 1.5))
+      await folder.getByRole('button', { name: /Place Bid/ }).click()
     }
 
     await page.getByTestId('tab-company').click()

@@ -205,6 +205,33 @@ const APP_SCREENS = [
       await page.getByTestId('action-catalog').waitFor()
     },
   },
+  {
+    // P84: CONTRACTS med en stämplad mapp utfälld och prisreglaget synligt
+    // (ingen egen referensskiss). Ordergenerering är sannolikhetsbaserad per
+    // faktion och tur (samma skäl e2e-specerna har en egen väntloop) — spelar
+    // därför fram högst 10 turer tills en order faktiskt finns.
+    name: 'contracts-bid-open',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      for (let i = 0; i < 10; i++) {
+        await page.getByTestId('tab-contracts').click()
+        const quoteCount = await page.getByRole('button', { name: 'quote' }).count()
+        if (quoteCount > 0) break
+        await page.getByTestId('end-quarter-button').click()
+      }
+      await page.getByRole('button', { name: 'quote' }).first().click()
+      await page.getByTestId('bid-form').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

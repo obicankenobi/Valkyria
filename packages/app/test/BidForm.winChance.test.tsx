@@ -4,12 +4,23 @@
 // rivalPriceLow..rivalPriceHigh och missar helt de lägre priser spelaren
 // faktiskt kan vinna med. "Win chance at this price" läser playerWinCurve
 // för det pris spelaren skrivit in, inte bara den närmaste bandpunkten.
+//
+// P84 (ETAPP7_TEKNISK_SPEC.md §7.5, regel 2): priset styrs nu av DsSlider,
+// bundet till playerWinCurve:s eget [min, max] — spelaren kan alltså inte
+// längre lämna fältet tomt (price === 0 finns inte som tillstånd, reglaget
+// startar alltid på golvet). Den gamla "ingen avläsning innan ett pris
+// skrivits in"-branchen är därför obsolet: readouten visas nu alltid, live,
+// från första render. interpolateConfidence exporteras separat från
+// BidForm.tsx och testas här också som en ren funktion, för att täcka
+// interpolationsloopens inre punkter utan att behöva landa reglaget exakt på
+// en godtycklig kurvpunkt via tangentbordet (vilket bara Home/End gör
+// pålitligt, se de två integrationstesten nedan).
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { bidEstimate, createInitialState, officialId, playerWinCurve } from '@seventh-front/core'
-import type { GameState, Order } from '@seventh-front/core'
-import { BidForm } from '../src/components/BidForm.js'
+import type { GameState, Order, PlayerWinCurvePoint } from '@seventh-front/core'
+import { BidForm, interpolateConfidence } from '../src/components/BidForm.js'
 
 afterEach(cleanup)
 
@@ -33,27 +44,56 @@ function makeOrder(state: GameState): Order {
   }
 }
 
-describe('BidForm (P81c) — vinstchansen för spelarens eget pris', () => {
-  it('visar ingen avläsning innan ett pris skrivits in (price === 0)', () => {
-    const state = createInitialState('indochina-slice', 'bidform-winchance-empty-seed')
-    const order = makeOrder(state)
-    render(<BidForm state={state} order={order} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
-    expect(screen.queryByTestId('your-win-chance')).toBeNull()
+describe('interpolateConfidence (ren funktion) — interpolerar mellan playerWinCurve:s punkter', () => {
+  const curve: PlayerWinCurvePoint[] = [
+    { price: 100, confidence: 0 },
+    { price: 200, confidence: 40 },
+    { price: 300, confidence: 90 },
+  ]
+
+  it('returnerar exakt kurvans värde vid en känd punkt', () => {
+    expect(interpolateConfidence(curve, 200)).toBe(40)
   })
 
-  it('visar en avläsning som matchar playerWinCurve vid ett pris som redan är en av kurvans punkter', () => {
-    const state = createInitialState('indochina-slice', 'bidform-winchance-exact-seed')
+  it('interpolerar linjärt mellan två punkter', () => {
+    expect(interpolateConfidence(curve, 150)).toBe(20) // mitt emellan 0 och 40
+    expect(interpolateConfidence(curve, 250)).toBe(65) // mitt emellan 40 och 90
+  })
+
+  it('klampar utanför kurvans intervall i stället för att extrapolera', () => {
+    expect(interpolateConfidence(curve, 0)).toBe(0)
+    expect(interpolateConfidence(curve, 1000)).toBe(90)
+  })
+
+  it('en tom kurva ger 0 utan att krascha', () => {
+    expect(interpolateConfidence([], 150)).toBe(0)
+  })
+})
+
+describe('BidForm (P81c/P84) — vinstchansen för spelarens eget pris', () => {
+  it('visar en avläsning redan vid första render, vid reglagets golv (playerWinCurve:s första punkt)', () => {
+    const state = createInitialState('indochina-slice', 'bidform-winchance-floor-seed')
     const order = makeOrder(state)
     const curve = playerWinCurve(state, order, 'A')
-    const point = curve[2]!
 
     render(<BidForm state={state} order={order} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
-    fireEvent.change(screen.getByLabelText('Price'), { target: { value: String(point.price) } })
 
-    expect(screen.getByTestId('your-win-chance').textContent).toContain(`${point.confidence}%`)
+    expect(screen.getByTestId('your-win-chance').textContent).toContain(`${curve[0]!.confidence}%`)
   })
 
-  it('vid ett lågt pris (nära självkostnaden) visar avläsningen en chans mätbart över 0 %, till skillnad från winBand som kan visa 0 % överallt', () => {
+  it('reglaget till taket (End) visar playerWinCurve:s sista punkt exakt', () => {
+    const state = createInitialState('indochina-slice', 'bidform-winchance-ceiling-seed')
+    const order = makeOrder(state)
+    const curve = playerWinCurve(state, order, 'A')
+    const last = curve[curve.length - 1]!
+
+    render(<BidForm state={state} order={order} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
+    fireEvent.keyDown(screen.getByLabelText('Price'), { key: 'End' })
+
+    expect(screen.getByTestId('your-win-chance').textContent).toContain(`${last.confidence}%`)
+  })
+
+  it('vid golvpriset (nära självkostnaden) visar avläsningen en chans mätbart över 0 % när winBand visar 0 % överallt', () => {
     const state = createInitialState('indochina-slice', 'bidform-winchance-low-seed')
     const order = makeOrder(state)
     const estimate = bidEstimate(state, order, 'A')
@@ -61,9 +101,9 @@ describe('BidForm (P81c) — vinstchansen för spelarens eget pris', () => {
 
     const curve = playerWinCurve(state, order, 'A')
     render(<BidForm state={state} order={order} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
-    fireEvent.change(screen.getByLabelText('Price'), { target: { value: String(curve[0]!.price) } })
 
     const shown = Number(screen.getByTestId('your-win-chance').textContent!.match(/(\d+)%/)![1])
+    expect(shown).toBe(curve[0]!.confidence)
     if (allZeroInBand) {
       // Just den situation P81-7 beskrev: winBand missvisande visar 0 % i alla
       // fem punkter, men det billigaste priset på curven vinner ändå riktigt.

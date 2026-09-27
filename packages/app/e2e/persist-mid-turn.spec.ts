@@ -6,6 +6,31 @@
 // om sidan, och kontrollera att både partiets tillstånd och det lagda-men-
 // oskickade budet i draften överlevde IndexedDB-tur-och-retur.
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+// P84 (ETAPP7_TEKNISK_SPEC.md §7.5, regel 2): pris och muta är nu DsSlider,
+// inte <input type="number"> — Playwrights .fill()/.toHaveValue() gäller bara
+// riktiga input-element. Sätter reglaget genom att klicka på spåret (samma
+// formel som DsSlider:s egen handlePointer, se designSystem.tsx) och läser
+// tillbaka det FAKTISKT landade värdet ur aria-valuenow — turen-och-retur-
+// testet jämför alltså "vad reglaget visade före" mot "vad det visar efter",
+// inte mot ett förutbestämt tal som kanske inte går att landa exakt på.
+async function setSlider(page: Page, testId: string, targetValue: number): Promise<number> {
+  const slider = page.locator(`[data-testid="${testId}"] [role="slider"]`).first()
+  const min = Number(await slider.getAttribute('aria-valuemin'))
+  const max = Number(await slider.getAttribute('aria-valuemax'))
+  const clamped = Math.min(max, Math.max(min, targetValue))
+  const ratio = max > min ? (clamped - min) / (max - min) : 0
+  const track = page.locator(`[data-testid="${testId}"] .ds-slider-track`).first()
+  const box = await track.boundingBox()
+  if (!box) throw new Error(`reglaget ${testId} hittades inte`)
+  await page.mouse.click(box.x + box.width * ratio, box.y + box.height / 2)
+  return Number(await slider.getAttribute('aria-valuenow'))
+}
+
+async function readSlider(page: Page, testId: string): Promise<number> {
+  return Number(await page.locator(`[data-testid="${testId}"] [role="slider"]`).first().getAttribute('aria-valuenow'))
+}
 
 test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async ({ page }) => {
   await page.goto('/')
@@ -34,8 +59,8 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   // Mitt i en tur: lägg ett bud (skickar det till draften), men avsluta ALDRIG
   // turen — resolveTurn har alltså inte körts, precis som "mitt i en tur" kräver.
   await page.getByRole('button', { name: 'quote' }).first().click()
-  await page.getByLabel('Price').first().fill('1234567')
-  await page.getByLabel('Bribe').first().fill('999')
+  const setPrice = await setSlider(page, 'bid-price', 1_234_567)
+  const setBribe = await setSlider(page, 'bid-bribe', 999)
   await page
     .getByRole('button', { name: /Place Bid/ })
     .first()
@@ -59,10 +84,11 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   expect(headerAfter).toBe(headerBefore)
 
   // Det ospardade budutkastet finns kvar: samma order visar "Update Bid"
-  // (inte "Place Bid"), med samma pris och muta ifyllda.
+  // (inte "Place Bid"), med samma pris och muta som reglagen landade på före
+  // omladdningen.
   await page.getByTestId('tab-contracts').click()
   await page.getByRole('button', { name: 'quote' }).first().click()
-  await expect(page.getByLabel('Price').first()).toHaveValue('1234567')
-  await expect(page.getByLabel('Bribe').first()).toHaveValue('999')
+  expect(await readSlider(page, 'bid-price')).toBe(setPrice)
+  expect(await readSlider(page, 'bid-bribe')).toBe(setBribe)
   await expect(page.getByRole('button', { name: /Update Bid/ })).toBeVisible()
 })

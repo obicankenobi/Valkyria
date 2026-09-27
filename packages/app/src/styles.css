@@ -854,14 +854,37 @@ td.is-key {
   background: var(--line-strong);
 }
 
-/* ── THE FLOOR ─────────────────────────────────────────────────────── */
+/* ── CONTRACTS — stämplade mappar (P84, ETAPP7_TEKNISK_SPEC.md §7.5) ──────
+   Varje öppen order är en egen manillamapp: en flik med köparens namn högst
+   upp (samma register som .cf-field/.wire-stamp — regel 8), en stämpel för
+   fristen i stället för en vanlig Tag. Allt i normalt flöde (ingen absolut
+   positionering) med flit — regel 18:s kollisionstest går igenom varenda
+   textelement på skärmen, och en stämpel som roterar över en granne skulle
+   falla på just den kontrollen. */
 
-.order {
-  border-bottom: 1px solid var(--line);
+.order-folder {
+  margin: 14px 16px 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
 }
 
-.order:last-child {
-  border-bottom: none;
+.order-folder:last-child {
+  margin-bottom: 14px;
+}
+
+.order-folder-tab {
+  padding: 4px 14px;
+  background: var(--panel-raised);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }
 
 .order-head {
@@ -870,13 +893,6 @@ td.is-key {
   gap: 12px;
   padding: 12px 16px;
   flex-wrap: wrap;
-}
-
-.order-buyer {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
 }
 
 .order-product {
@@ -896,6 +912,30 @@ td.is-key {
   align-items: center;
   margin-left: auto;
   flex-wrap: wrap;
+}
+
+/* order-stamp — fristen, stämplad snarare än en vanlig Tag (regel 8). En
+   liten, medveten rotation (inte den fria kollisionsrisk en absolut
+   positionerad stämpel hade gett, se blockkommentaren ovan) — elementet
+   ligger fortfarande kvar i .order-meta:s normala flödesordning. */
+.order-stamp {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 2px solid var(--ink-faint);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  transform: rotate(-3deg);
+}
+
+.order-stamp.is-urgent {
+  border-color: var(--red);
+  color: var(--red);
 }
 
 .bid-panel {

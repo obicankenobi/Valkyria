@@ -508,7 +508,29 @@ lista över de 15 verb som faktiskt har en byggd form (`CountryFile.tsx` + `TheH
 öppnad från en nu tryckbar tom handlingsplats (`ActionSlot`s nya `onOpen`-gren). Golden ORÖRD.
 Fullt testsvep grönt: 774 tester (749→774), lint, typecheck, build, e2e (22 tester, körd två
 gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P83-blockquote och
-`docs/ANDRINGSLOGG.md`. **Nästa steg är P84, CONTRACTS.**
+`docs/ANDRINGSLOGG.md`.
+
+**P84 BYGGD 2026-09-27** — **CONTRACTS.** `BidForm.tsx` skriven om helt (regel 2): `<input
+type="number">` (pris/leveranstid/muta) och `<select>` (grade) ersatta med `DsSlider`/
+`Stepper`/`Segmented`. Prisreglagets `[min, max]` är `playerWinCurve`s egna första/sista punkt
+(P81c:s delade källa, ingen egen omräkning) — vinstchans (ny, exporterad
+`interpolateConfidence`) och marginal räknas om live vid varje reglagerörelse (P81-7). GENUINT
+FYND: `playerWinCurve`s golv ÄR bokstavligen `yourUnitCost × quantity`, exakt formulärets egen
+kostnadssiffra — reglagets lägsta pris är alltså alltid brytpunkten (0 % marginal), en
+förlustaffär är strukturellt onåbar via gränssnittet, samma linje som P52:s
+`supplyIndexMaxStep`/P58:s `EMBARGO`-fynd. `TheFloor.tsx`: `OrderRow` omdöpt `OrderFolder`, en
+stämplad mapp per order (§7.5) — flik med köparens namn, fristen som en roterad,
+i-normalt-flöde stämpel (regel 8/18). quote/close-knappen bytt till DS `Button` (regel 11:
+`.ds-button` har `min-height: 44px` inbyggt). GENUINT FYND, e2e: en mapp stängs aldrig efter
+ett lagt bud, så flera kan stå öppna samma tur — och Playwright-lokatorer är LATA (körs om vid
+varje anrop), så en `.filter({has: quote-knappen})`-baserad "mappen jag just öppnade" gled tyst
+vidare till NÄSTA mapp så fort den första bytte knapptext till "close", vilket krockade med en
+äldre bugg (blank `.first()` över hela sidan) på ett sätt som fick ett klick landa på HUD:ens
+expanderingsknapp och krascha en `strict mode`-läsning. Löst med ett stabilt INDEX (`.nth(i)`)
+i stället för ett innehållsberoende filter. Golden ORÖRD. Fullt testsvep grönt: 778 tester
+(774→778), lint, typecheck, build, e2e (22 tester, körd två gånger i rad). Se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P84-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa steg är
+P85, THE COMPANY.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

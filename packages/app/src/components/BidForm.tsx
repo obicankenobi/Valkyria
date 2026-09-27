@@ -1,11 +1,15 @@
-// BidForm — budformuläret för en order. Visar winBand störst (som ett
-// sannolikhetsdiagram, inte en tabellrad), yourUnitCost, och BERÄKNAD
-// BRUTTOMARGINAL vid det valda priset och den valda graden — spelaren kan inte
-// fatta prisbeslut utan att se sin kostnad. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8.
+// BidForm — budformuläret för en order (P84, ETAPP7_TEKNISK_SPEC.md §7.5,
+// §13). "Ett prisreglage över winBand som kurva, med marginal och
+// vinstchans som följer reglaget över spelarens hela prisintervall"
+// (P81-7). Order.trueBudget/inspectorIntegrity/weights visas ALDRIG — de är
+// spelarens dolda information, hela poängen med bidEstimate/winBand
+// (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
+// DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useMemo, useState } from 'react'
 import { bidEstimate, playerWinCurve } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
+import { Button, DsSlider, Segmented, Stepper } from './designSystem.js'
 
 const GRADES: Grade[] = ['A', 'B', 'C']
 
@@ -15,7 +19,7 @@ const GRADES: Grade[] = ['A', 'B', 'C']
 // interpolation mellan de två närmaste punkterna i playerWinCurve (som redan
 // TÄCKER hela intervallet ner till självkostnaden, se queries.ts) i stället
 // för att bara läsa av den närmaste punkten.
-function interpolateConfidence(curve: PlayerWinCurvePoint[], price: number): number {
+export function interpolateConfidence(curve: PlayerWinCurvePoint[], price: number): number {
   if (curve.length === 0) return 0
   if (price <= curve[0]!.price) return curve[0]!.confidence
   const last = curve[curve.length - 1]!
@@ -38,6 +42,12 @@ function marginClass(marginPct: number | null): string {
   return 'margin-readout is-good'
 }
 
+// PROVISORISKA reglageintervall — §7.3/§7.5 ger ingen exakt gräns för
+// leveranstid eller muta (till skillnad från priset, vars intervall ÄR
+// playerWinCurve:s eget span, en delad källa). Dokumenterat, kalibrerbart.
+const DELIVERY_SLACK_TURNS = 6 // hur många turer över köparens krav reglaget tillåter
+const BRIBE_MAX_PCT_OF_REFERENCE = 0.2 // muta, som andel av referencePrice
+
 export function BidForm({
   state,
   order,
@@ -51,138 +61,104 @@ export function BidForm({
   onSubmit: (bid: Bid) => void
   onRemove: () => void
 }) {
-  const [price, setPrice] = useState<number>(existingBid?.price ?? 0)
-  const [deliveryTurns, setDeliveryTurns] = useState<number>(existingBid?.deliveryTurns ?? order.requiredDeliveryTurns)
   const [grade, setGrade] = useState<Grade>(existingBid?.grade ?? 'A')
-  const [bribe, setBribe] = useState<number>(existingBid?.bribe ?? 0)
 
   // bidEstimate/playerWinCurve drar aldrig ur huvud-Rng:n (hash-seedade, se
   // queries.ts) — säkert att räkna om vid varje grade-byte utan att röra
   // rngCursor.
   const estimate = useMemo(() => bidEstimate(state, order, grade), [state, order, grade])
   const winCurve = useMemo(() => playerWinCurve(state, order, grade), [state, order, grade])
-  const yourWinChance = price > 0 ? interpolateConfidence(winCurve, price) : null
+  const priceMin = winCurve[0]?.price ?? 0
+  const priceMax = winCurve[winCurve.length - 1]?.price ?? priceMin
+
+  const [price, setPrice] = useState<number>(existingBid?.price ?? priceMin)
+  const [deliveryTurns, setDeliveryTurns] = useState<number>(existingBid?.deliveryTurns ?? order.requiredDeliveryTurns)
+  const [bribe, setBribe] = useState<number>(existingBid?.bribe ?? 0)
+
+  const yourWinChance = interpolateConfidence(winCurve, price)
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
   // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste därför skalas med
   // orderns kvantitet. Utan multiplikationen visade formuläret ~100 % marginal
   // på i stort sett varje bud.
   const totalCost = estimate.yourUnitCost * order.quantity
-  const grossProfit = price > 0 ? price - totalCost : null
-  const marginPct = price > 0 ? ((price - totalCost) / price) * 100 : null
+  const grossProfit = price - totalCost
+  const marginPct = price > 0 ? (grossProfit / price) * 100 : null
+
+  const bribeMax = Math.max(1, Math.round(order.referencePrice * BRIBE_MAX_PCT_OF_REFERENCE))
+  const bribeStep = Math.max(1, Math.round(bribeMax / 20))
 
   return (
-    <div className="bid-panel">
-      <div>
-        <p className="subhead">Intelligence</p>
-        <dl className="kv">
-          <dt>Your unit cost (grade {grade})</dt>
-          <dd data-testid="your-unit-cost">{formatMoney(estimate.yourUnitCost)}</dd>
-          <dt>Estimated rival price</dt>
-          <dd>
-            {formatMoney(estimate.rivalPriceLow)} – {formatMoney(estimate.rivalPriceHigh)}
-          </dd>
-          {estimate.lowestRivalHouse && (
-            <>
-              <dt>Lowest bid expected from</dt>
-              <dd>{state.rivals[estimate.lowestRivalHouse]?.name ?? estimate.lowestRivalHouse}</dd>
-            </>
-          )}
-        </dl>
-
-        <p className="subhead">Win chance per price</p>
-        <div className="winband">
-          {estimate.winBand.map((point) => (
-            <div key={point.price} className="winband-row">
-              <span>{formatMoney(point.price)}</span>
-              <span className="winband-bar">
-                <span style={{ width: `${point.confidence}%` }} />
-              </span>
-              <span className="winband-pct">{point.confidence}%</span>
-            </div>
-          ))}
-        </div>
+    <div className="bid-panel" data-testid="bid-form">
+      <div className="cf-field">
+        <span className="cf-field-label">GRADE</span>
+        <Segmented options={GRADES.map((g) => ({ value: g, label: g }))} value={grade} onChange={setGrade} testId="bid-grade" />
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          onSubmit({ orderId: order.id, price, deliveryTurns, grade, bribe })
-        }}
-      >
-        <p className="subhead">Your bid</p>
+      <div className="cf-field">
+        <DsSlider
+          label="Price"
+          value={price}
+          min={priceMin}
+          max={priceMax}
+          step={Math.max(1, Math.round((priceMax - priceMin) / 100))}
+          onChange={setPrice}
+          format={formatMoney}
+          testId="bid-price"
+        />
+        <p className="cf-hint" data-testid="your-win-chance">
+          Win chance at this price: <strong>{yourWinChance}%</strong>
+        </p>
+      </div>
 
-        <label className="field">
-          Price
-          <input type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} required />
-        </label>
-        {/* P81c (§13, P81-7): den faktiska vinstchansen för DET pris spelaren
-            just skrev in, inte bara de fem generiska bandpunkterna ovan —
-            speltestets fynd var att bandet ofta visade 0 % överallt medan
-            spelaren egentligen kunde vinna på ett lägre bud. */}
-        {yourWinChance !== null && (
-          <p className="hint" data-testid="your-win-chance">
-            Win chance at this price: <strong>{yourWinChance}%</strong>
-          </p>
-        )}
-        <label className="field">
-          Delivery time
-          <input
-            type="number"
-            min={1}
-            value={deliveryTurns}
-            onChange={(e) => setDeliveryTurns(Number(e.target.value))}
-            required
-          />
-        </label>
-        <label className="field">
-          Grade
-          <select value={grade} onChange={(e) => setGrade(e.target.value as Grade)}>
-            {GRADES.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Bribe
-          <input type="number" min={0} value={bribe} onChange={(e) => setBribe(Number(e.target.value))} />
-        </label>
+      <div className="cf-field">
+        <Stepper
+          label="Delivery time"
+          value={deliveryTurns}
+          min={1}
+          max={order.requiredDeliveryTurns + DELIVERY_SLACK_TURNS}
+          onChange={setDeliveryTurns}
+          format={(v) => `${v}t`}
+          testId="bid-delivery"
+        />
+      </div>
 
-        {price > estimate.rivalPriceHigh && (
-          // Rena avläsningen av spelarens EGEN uppskattning — ingen dold
-          // information röjs (trueBudget visas aldrig). Utan den kan
-          // formuläret visa en lockande marginal på ett bud som enligt
-          // winBand har noll vinstchans.
-          <p className="hint is-warn">
-            The price is above the entire estimated rival range. Win chance is assessed as zero.
-          </p>
-        )}
+      <div className="cf-field">
+        <DsSlider label="Bribe" value={bribe} min={0} max={bribeMax} step={bribeStep} onChange={setBribe} format={formatMoney} testId="bid-bribe" />
+      </div>
 
+      <div className="cf-preview" data-testid="bid-preview">
+        <div className="cf-preview-row">
+          <span>Your unit cost (grade {grade})</span>
+          <span data-testid="your-unit-cost">{formatMoney(estimate.yourUnitCost)}</span>
+        </div>
+        <div className="cf-preview-row">
+          <span>Estimated rival price</span>
+          <span>
+            {formatMoney(estimate.rivalPriceLow)} – {formatMoney(estimate.rivalPriceHigh)}
+          </span>
+        </div>
         <div className={marginClass(marginPct)}>
           <div>
             <div className="margin-label">Gross margin</div>
-            {grossProfit !== null && (
-              <div className="meter-label" style={{ marginTop: 2 }}>
-                {formatMoney(grossProfit)} after {formatMoney(totalCost)} in unit cost ({order.quantity} units)
-              </div>
-            )}
+            <div className="meter-label" style={{ marginTop: 2 }}>
+              {formatMoney(grossProfit)} after {formatMoney(totalCost)} in unit cost ({order.quantity} units)
+            </div>
           </div>
           <div className="margin-value">{marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}</div>
         </div>
+      </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary">
-            {existingBid ? 'Update Bid' : 'Place Bid'}
-          </button>
-          {existingBid && (
-            <button type="button" className="btn" onClick={onRemove}>
-              Remove Bid
-            </button>
-          )}
-        </div>
-      </form>
+      <div className="form-actions">
+        <Button variant="primary" onClick={() => onSubmit({ orderId: order.id, price, deliveryTurns, grade, bribe })} testId="bid-submit">
+          {existingBid ? 'Update Bid' : 'Place Bid'}
+        </Button>
+        {existingBid && (
+          <Button variant="secondary" onClick={onRemove} testId="bid-remove">
+            Remove Bid
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
