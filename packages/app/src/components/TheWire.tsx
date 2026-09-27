@@ -26,8 +26,15 @@ import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { causeChain } from '../wireChain.js'
 import { anchorLabel, wireAnchor } from '../wireAnchor.js'
+import {
+  groupTickers,
+  isFlashEvent,
+  newsDepartment,
+  NEWS_DEPARTMENTS,
+} from '../newsClassification.js'
+import type { NewsDepartment, TickerGroup } from '../newsClassification.js'
 import { Tag } from './ui.js'
-import { DsPanel } from './designSystem.js'
+import { DsPanel, DsToggle, Segmented } from './designSystem.js'
 
 // P70 (ETAPP6_TEKNISK_SPEC.md §5): "Ny sekvens: WireEvent-listan avslöjas en
 // händelse i taget med kort fördröjning, avstängd vid prefers-reduced-
@@ -89,6 +96,10 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
   const classes = ['wire-item']
   if (event.actorIsPlayer) classes.push('is-player')
   if (event.severity === 'headline') classes.push('is-headline')
+  // P81d (§13, P81-blockquoten): blixt-tier händelser får mer visuell vikt
+  // (samma register som QuarterReplay.tsx:s egen blixt-rad — en riktig
+  // telexoperatör slår en stämpel på de brådskande meddelandena).
+  if (isFlashEvent(event)) classes.push('is-flash')
 
   return (
     <li className={classes.join(' ')}>
@@ -125,6 +136,86 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
         </ol>
       )}
     </li>
+  )
+}
+
+// P81d (§13, P81-blockquoten): "Rutinhändelser (ränta, underhåll,
+// avsvalning) slås ihop till en sammanfattningsrad per typ" — arkivets
+// motsvarighet till EventRow för en grupp ticker-händelser med samma
+// normaliserade mall (newsClassification.ts). Visar den SENASTE instansen
+// som huvudtext, ett tryck fäller ut alla, nyast överst.
+function TickerGroupRow({ group, state }: { group: TickerGroup; state: GameState }) {
+  const [expanded, setExpanded] = useState(false)
+  const latest = group.events[group.events.length - 1]!
+  const anchor = anchorLabel(state, wireAnchor(state, latest))
+
+  return (
+    <li className="wire-item is-ticker-group" data-testid="ticker-group-row">
+      <div className="wire-row">
+        <span className="wire-stamp">×{group.events.length}</span>
+        <span className="wire-glyph is-ticker" aria-hidden="true" />
+        <span className="wire-text">{latest.headline}</span>
+        {anchor && <span className="wire-anchor">{anchor}</span>}
+        <button type="button" className="btn btn-ghost" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? 'hide' : `all ${group.events.length}`}
+        </button>
+      </div>
+      {expanded && (
+        <ol className="wire-chain">
+          {[...group.events].reverse().map((event) => (
+            <li key={event.id}>
+              <span className="mono">T{String(event.turn).padStart(2, '0')}</span> — {event.headline}
+            </li>
+          ))}
+        </ol>
+      )}
+    </li>
+  )
+}
+
+// P81d: förstasidans avdelningssektion — högst fem rader (blixt-händelser
+// prioriterade, aldrig bortklippta av femtaket), resten bakom en länk till
+// arkivet, redan filtrerat på samma avdelning (regel 7, "Resten bakom
+// 'More'").
+function DepartmentSection({
+  department,
+  events,
+  wire,
+  state,
+  onMore,
+}: {
+  department: { id: NewsDepartment; label: string }
+  events: WireEvent[]
+  wire: readonly WireEvent[]
+  state: GameState
+  onMore: () => void
+}) {
+  if (events.length === 0) return null
+  const flash = events.filter(isFlashEvent)
+  const rest = events.filter((e) => !isFlashEvent(e))
+  const shown = [...flash, ...rest].slice(0, 5)
+  const hiddenCount = events.length - shown.length
+
+  return (
+    <div data-testid={`news-department-${department.id}`}>
+      <DsPanel title={department.label}>
+        <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {shown.map((event) => (
+            <EventRow key={event.id} event={event} wire={wire} state={state} />
+          ))}
+        </ul>
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            className="btn btn-ghost news-more"
+            onClick={onMore}
+            data-testid={`news-more-${department.id}`}
+          >
+            {hiddenCount} more in {department.label} →
+          </button>
+        )}
+      </DsPanel>
+    </div>
   )
 }
 
@@ -183,6 +274,56 @@ function CrisisModal({
   )
 }
 
+// P81d (§13, P81-blockquoten): förstasidan + arkivet — två nivåer ovanpå
+// hjälterubriken. "Front Page" är standardvyn (samma landningsupplevelse
+// som innan); "Archive" är en explicit flik, filtrerbar per avdelning och
+// på "bara mina".
+type NewsView = 'front' | 'archive'
+
+// P81d, ordagrant: "Telexarkivet: alla händelser, filtrerbara per avdelning
+// och på 'bara mina'." Ticker-händelser (rutin) grupperas separat, se
+// TickerGroupRow ovan.
+function ArchiveList({
+  wire,
+  state,
+  department,
+  onlyMine,
+}: {
+  wire: readonly WireEvent[]
+  state: GameState
+  department: NewsDepartment | 'all'
+  onlyMine: boolean
+}) {
+  const filtered = wire.filter((event) => {
+    if (onlyMine && !event.actorIsPlayer) return false
+    if (department !== 'all' && newsDepartment(state, event) !== department) return false
+    return true
+  })
+
+  if (filtered.length === 0) {
+    return <p className="empty">No events match this filter.</p>
+  }
+
+  const individual = filtered.filter((e) => e.severity !== 'ticker').sort((a, b) => b.turn - a.turn)
+  const tickerGroups = groupTickers(filtered.filter((e) => e.severity === 'ticker'))
+
+  return (
+    <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="archive-list">
+      {individual.map((event) => (
+        <EventRow key={event.id} event={event} wire={wire} state={state} />
+      ))}
+      {tickerGroups.length > 0 && (
+        <>
+          <li className="wire-section-label">Routine</li>
+          {tickerGroups.map((group) => (
+            <TickerGroupRow key={group.template} group={group} state={state} />
+          ))}
+        </>
+      )}
+    </ul>
+  )
+}
+
 export function TheWire({
   wire,
   state,
@@ -194,6 +335,10 @@ export function TheWire({
   draft: TurnSubmission
   onChooseCrisis: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
 }) {
+  const [newsView, setNewsView] = useState<NewsView>('front')
+  const [department, setDepartment] = useState<NewsDepartment | 'all'>('all')
+  const [onlyMine, setOnlyMine] = useState(false)
+
   const sorted = [...wire].sort((a, b) => b.turn - a.turn)
   const headlines = sorted.filter((e) => e.severity === 'headline').length
   const crisisChosen = draft.actions.some((a) => a.type === 'CRISIS')
@@ -210,6 +355,23 @@ export function TheWire({
   const heroEvent = visible.find((e) => e.severity === 'headline') ?? null
   const heroAnchor = heroEvent ? anchorLabel(state, wireAnchor(state, heroEvent)) : null
 
+  // P81d: "Förstasidan: kvartalets rubriker" — bara den SENASTE turens
+  // rubrikhändelser, inte hela det rullande wire-fönstret (flera turer bak).
+  // Det senare är arkivets jobb. `latestTurn` läses ur den faktiska datan,
+  // inte state.meta.turn (som redan hunnit räknas upp när NEWS DESK visas).
+  const latestTurn = wire.length > 0 ? Math.max(...wire.map((e) => e.turn)) : null
+  // heroEvent utesluts — den redan visas stort i news-hero ovan, en dubblett
+  // i avdelningslistan direkt under vore bara brus (genuint fynd, fångat av
+  // TheWire.reveal.test.tsx när fixturerna blev rubrikhändelser).
+  const thisQuarterHeadlines = visible.filter(
+    (e) => e.severity === 'headline' && e.turn === latestTurn && e.id !== heroEvent?.id,
+  )
+
+  function openDepartment(dept: NewsDepartment) {
+    setDepartment(dept)
+    setNewsView('archive')
+  }
+
   return (
     <>
       <h2 className="view-title">News Desk</h2>
@@ -221,24 +383,55 @@ export function TheWire({
           {heroAnchor && <span className="wire-anchor">{heroAnchor}</span>}
         </div>
       )}
-      <DsPanel
-        title="Telex"
-        right={
-          <span className="meter-label">
-            {sorted.length} events · {headlines} headlines
-          </span>
-        }
-      >
-        {sorted.length === 0 ? (
-          <p className="empty">Quiet on the line. End the turn to set the world in motion.</p>
-        ) : (
-          <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="wire-list">
-            {visible.map((event) => (
-              <EventRow key={event.id} event={event} wire={wire} state={state} />
-            ))}
-          </ul>
-        )}
-      </DsPanel>
+
+      <Segmented
+        options={[
+          { value: 'front', label: 'Front Page' },
+          { value: 'archive', label: `Archive · ${sorted.length}` },
+        ]}
+        value={newsView}
+        onChange={setNewsView}
+        testId="news-view-tabs"
+      />
+
+      {newsView === 'front' ? (
+        <div data-testid="news-front-page">
+          {sorted.length === 0 ? (
+            <p className="empty">Quiet on the line. End the turn to set the world in motion.</p>
+          ) : (
+            NEWS_DEPARTMENTS.map((dept) => (
+              <DepartmentSection
+                key={dept.id}
+                department={dept}
+                events={thisQuarterHeadlines.filter((e) => newsDepartment(state, e) === dept.id)}
+                wire={wire}
+                state={state}
+                onMore={() => openDepartment(dept.id)}
+              />
+            ))
+          )}
+        </div>
+      ) : (
+        <DsPanel
+          title="Archive"
+          right={
+            <span className="meter-label">
+              {sorted.length} events · {headlines} headlines
+            </span>
+          }
+        >
+          <div className="news-filters">
+            <Segmented
+              options={[{ value: 'all', label: 'All' }, ...NEWS_DEPARTMENTS.map((d) => ({ value: d.id, label: d.label }))]}
+              value={department}
+              onChange={setDepartment}
+              testId="news-department-filter"
+            />
+            <DsToggle label="Only mine" checked={onlyMine} onChange={setOnlyMine} testId="news-only-mine-toggle" />
+          </div>
+          <ArchiveList wire={visible} state={state} department={department} onlyMine={onlyMine} />
+        </DsPanel>
+      )}
     </>
   )
 }

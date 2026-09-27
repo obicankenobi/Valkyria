@@ -1,0 +1,113 @@
+// newsClassification.ts — P81d (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten).
+// "Allt är presentation: vilken händelsetyp som hör till vilken nivå och
+// avdelning är en tabell i packages/app" — ren, testbar, rör aldrig
+// packages/core eller WireEvent självt.
+import type { GameState, WireEvent } from '@seventh-front/core'
+import { wireAnchor } from './wireAnchor.js'
+
+// P81-blockquoten, ordagrant: "front byter status, sektor byter sida, kupp,
+// lönnmord, embargo, kris och styrelsens dom." Ingen strukturerad `kind`
+// finns på WireEvent (bara fri text) — mönstren är hämtade direkt ur de
+// faktiska emit()-anropen (factions.ts, political.ts, politics.ts, board.ts,
+// doomsday.ts, fronts.ts, endings.ts), verifierade mot ett riktigt
+// 20-tursparti (`resolveTurn`, seed `flash-probe-1`), inte gissade.
+//
+// Tre genuina fynd vid den verifieringen, utanför den ordagranna listan men
+// inom dess ANDA ("stanna, beskriv, föreslå" — CLAUDE.md):
+// 1. "Sektor byter sida" har ingen egen händelse (P82s redeploy-mekanik, se
+//    P81a:s kommentar) — men fronts.ts:s BREAKTHROUGH-rubrik ("POSITION
+//    SHIFTS TOWARD SIDE") är den närmaste befintliga motsvarigheten: en
+//    TRÖSKELhändelse ("bara när obalansen passerar tröskeln, inte varje
+//    tur", fronts.ts:s egen kommentar), inte en rutinhändelse — provet
+//    triggade den EN gång på 20 turer. Tillagd.
+// 2. "Styrelsens dom" är tvetydigt mellan granskningskontrollerna (redan
+//    med, BOARD REVIEW) och det FAKTISKA slutgiltiga utfallet — endings.ts:s
+//    fem slutrubriker (NUCLEAR EXCHANGE, EXPOSED, LIQUIDATED, SOLD, SCENARIO
+//    COMPLETE) är rimligare läst som "domen" i den meningen ordet oftast
+//    används (spelet TAR SLUT). Alla fem tillagda.
+// 3. En faktions konkurs ("BANKRUPT — ALL CONTRACTS VOIDED", factions.ts)
+//    dök upp i samma 20-tursprov — en lika stor lägesändring som embargo,
+//    bara inte namngiven i den ursprungliga listan. Tillagd.
+const FLASH_PATTERNS: RegExp[] = [
+  /^CEASEFIRE ON THE/, // front byter status: krig → vapenvila
+  /^WAR RESUMES ON THE/, // front byter status: vapenvila → krig
+  /^BREAKTHROUGH ON THE .+ FRONT — POSITION SHIFTS/, // sektor/front byter läge (genuint fynd 1)
+  /FUNDS A SUCCESSFUL COUP IN/, // kupp, lyckad
+  /COUP ATTEMPT IN .+ FAILS/, // kupp, misslyckad
+  /HAS .+ ASSASSINATED/, // lönnmord
+  /ISSUES EMBARGO/, // embargo (politics.ts:s PolicyDecision-headline)
+  /BANKRUPT — ALL CONTRACTS VOIDED/, // faktionskonkurs (genuint fynd 3)
+  /^CRISIS —/, // kris, spelarens val krävs
+  /^CRISIS WATCH —/, // kris, förvarning
+  /BOARD REVIEW \(TURN \d+\): ON TRACK/, // granskning godkänd
+  /BOARD REVIEW FAILED \(TURN \d+\)/, // granskning underkänd
+  // Styrelsens FAKTISKA dom — spelets fem slutrubriker (endingHeadline,
+  // endings.ts), genuint fynd 2:
+  /^NUCLEAR EXCHANGE$/,
+  /EXPOSED — LICENCE REVOKED$/,
+  /LIQUIDATED — INSOLVENT$/,
+  /SOLD — BOARD TARGET MISSED$/,
+  /: SCENARIO COMPLETE$/,
+]
+
+export function isFlashEvent(event: WireEvent): boolean {
+  if (event.severity !== 'headline') return false
+  return FLASH_PATTERNS.some((pattern) => pattern.test(event.headline))
+}
+
+// P81d, ordagrant: "grupperade under fasta avdelningar (Dina affärer,
+// Fronten, Politik, Marknaden)." wireAnchor (P80) avgör redan sector/hud
+// tillförlitligt (strukturerad, inte textbaserad); country/station är
+// tvetydigt (political.ts OCH rivals.ts:s incidenter delar scope:'faction'
+// med bidding.ts/deliveries.ts) — men `event.scope === 'market'` är en
+// redan strukturerad, konsekvent markering för just handelshändelser
+// (bidding.ts/orders.ts/deliveries.ts/rivals.ts:s marknadsgrenar, verifierat
+// mot koden). Allt annat riktat mot ett land är politik/underrättelse.
+export type NewsDepartment = 'business' | 'front' | 'politics' | 'market'
+
+export const NEWS_DEPARTMENTS: { id: NewsDepartment; label: string }[] = [
+  { id: 'business', label: 'Your Business' },
+  { id: 'front', label: 'The Front' },
+  { id: 'politics', label: 'Politics' },
+  { id: 'market', label: 'The Market' },
+]
+
+export function newsDepartment(state: GameState, event: WireEvent): NewsDepartment {
+  const anchor = wireAnchor(state, event)
+  if (anchor.kind === 'sector') return 'front'
+  if (anchor.kind === 'hud') return 'business'
+  return event.scope === 'market' ? 'market' : 'politics'
+}
+
+// P81-9 (speltestet): "340 events och 26 headlines bara ett par turer in är
+// alldeles för mycket." De flesta av de 340 är rutin-tickers (ränta,
+// underhåll, avsvalning) som upprepas nästan varje tur med bara siffrorna
+// ändrade. En normaliserad mall (siffror/belopp maskade) grupperar samma
+// TYP av rad, oavsett vilket tal den råkade visa den turen.
+export function normalizeHeadlineTemplate(headline: string): string {
+  return headline.replace(/£[\d,]+(\.\d+)?/g, '£#').replace(/\d+(\.\d+)?/g, '#')
+}
+
+export interface TickerGroup {
+  template: string
+  events: WireEvent[]
+}
+
+// Grupperar TICKER-händelser (bara ticker — headline/report visas
+// individuellt, se TheWire.tsx) efter normaliserad mall, nyaste händelse
+// per grupp sist i `events`.
+export function groupTickers(events: readonly WireEvent[]): TickerGroup[] {
+  const order: string[] = []
+  const map = new Map<string, WireEvent[]>()
+  for (const event of events) {
+    const key = normalizeHeadlineTemplate(event.headline)
+    const bucket = map.get(key)
+    if (bucket) {
+      bucket.push(event)
+    } else {
+      map.set(key, [event])
+      order.push(key)
+    }
+  }
+  return order.map((template) => ({ template, events: map.get(template)! }))
+}

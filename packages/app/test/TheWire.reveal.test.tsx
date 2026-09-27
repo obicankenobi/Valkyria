@@ -7,6 +7,13 @@
 // prefers-reduced-motion-beroende kod i jsdom. Sekventiell-grenen kräver
 // riktiga timers (vi.useFakeTimers, `TheWire.tsx`s REVEAL_INTERVAL_MS) — ingen
 // tidigare fil i repot gjorde det, så tekniken införs här första gången.
+//
+// P81d (ETAPP7_TEKNISK_SPEC.md §13): förstasidan visar numera bara
+// RUBRIKhändelser från den SENASTE turen, grupperade per avdelning — fixturerna
+// ändrades därför från severity:'ticker' (aldrig synliga på förstasidan) till
+// severity:'headline' (subjectId: null ger alla samma avdelning, "business"),
+// annars mäter testet en avslöjningsräkning mot rader som aldrig renderas.
+// Själva mekanismen (useRevealedCount/REVEAL_INTERVAL_MS) är oförändrad.
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen } from '@testing-library/react'
@@ -29,7 +36,7 @@ function makeWire(count: number): WireEvent[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `event-${i}`,
     turn: 3,
-    severity: 'ticker',
+    severity: 'headline',
     scope: 'house',
     headline: `TEST EVENT ${i}`,
     causeId: null,
@@ -64,26 +71,31 @@ describe('TheWire — turövergången dramatiseras (P70 klart-når)', () => {
       // Ingen händelse ännu i det allra första rendret.
       expect(screen.queryByText(/TEST EVENT/)).toBeNull()
 
+      // P81d: den FÖRSTA avslöjade händelsen blir hjälterubriken
+      // (news-hero) i stället för en rad i avdelningslistan (TheWire.tsx:s
+      // egen kommentar — en dubblett av samma text direkt under vore bara
+      // brus). Räknar därför den TOTALA texttäckningen (hero + rader),
+      // inte bara .wire-item, som är robust mot den omfördelningen.
       act(() => {
         vi.advanceTimersByTime(REVEAL_INTERVAL_MS)
       })
-      expect(document.querySelectorAll('.wire-item').length).toBe(1)
+      expect(screen.getAllByText(/TEST EVENT/).length).toBe(1)
 
       act(() => {
         vi.advanceTimersByTime(REVEAL_INTERVAL_MS)
       })
-      expect(document.querySelectorAll('.wire-item').length).toBe(2)
+      expect(screen.getAllByText(/TEST EVENT/).length).toBe(2)
 
       act(() => {
         vi.advanceTimersByTime(REVEAL_INTERVAL_MS * 2)
       })
-      expect(document.querySelectorAll('.wire-item').length).toBe(4)
+      expect(screen.getAllByText(/TEST EVENT/).length).toBe(4)
 
       // Ingen ytterligare timer springer iväg efter att alla avslöjats.
       act(() => {
         vi.advanceTimersByTime(REVEAL_INTERVAL_MS * 3)
       })
-      expect(document.querySelectorAll('.wire-item').length).toBe(4)
+      expect(screen.getAllByText(/TEST EVENT/).length).toBe(4)
     } finally {
       vi.useRealTimers()
     }

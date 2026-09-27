@@ -165,4 +165,38 @@ describe('QuarterReplay', () => {
     fireEvent.click(screen.getByTestId('replay-full-toggle'))
     expect(onToggleFullReplay).toHaveBeenCalledWith(true)
   })
+
+  // P81d (§13, P81-blockquoten): "ett helskärmstelex för de fåtal
+  // händelsetyper som ändrar läget" — en blixthändelse får .is-flash och en
+  // egen testid, en vanlig rubrikhändelse får ingetdera.
+  it('en blixthändelse (isFlashEvent) får is-flash-klassen och replay-item-flash-testid', () => {
+    mockMatchMedia(false)
+    vi.useFakeTimers()
+    try {
+      const wire = [
+        makeEvent({ severity: 'headline', headline: 'NUCLEAR EXCHANGE' }),
+        makeEvent({ severity: 'headline', headline: 'MERIDIAN ARMS WINS THE CONTRACT FOR 105MM FIELD GUNS' }),
+      ]
+      render(
+        <QuarterReplay wire={wire} state={state} fullReplay={false} onToggleFullReplay={() => {}} onDone={() => {}} />,
+      )
+
+      act(() => {
+        vi.advanceTimersByTime(REPLAY_INTERVAL_MS)
+      })
+      const flashItems = screen.getAllByTestId('replay-item-flash')
+      expect(flashItems.length).toBe(1)
+      expect(flashItems[0]!.className).toContain('is-flash')
+      expect(flashItems[0]!.textContent).toContain('NUCLEAR EXCHANGE')
+
+      act(() => {
+        vi.advanceTimersByTime(REPLAY_INTERVAL_MS)
+      })
+      // Den vanliga rubriken lägger INTE till en ny replay-item-flash-post.
+      expect(screen.getAllByTestId('replay-item-flash').length).toBe(1)
+      expect(screen.queryByTestId('replay-item-flash')?.textContent).not.toContain('105MM')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

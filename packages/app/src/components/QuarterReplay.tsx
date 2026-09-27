@@ -24,6 +24,7 @@
 import { useEffect, useState } from 'react'
 import type { GameState, WireEvent } from '@seventh-front/core'
 import { anchorLabel, wireAnchor } from '../wireAnchor.js'
+import { isFlashEvent } from '../newsClassification.js'
 import { DsToggle } from './designSystem.js'
 import { Tag } from './ui.js'
 
@@ -90,8 +91,14 @@ export function QuarterReplay({
           {visible.map((event) => {
             const anchor = wireAnchor(state, event)
             const label = anchorLabel(state, anchor)
+            // P81d (§13, P81-blockquoten): "ett helskärmstelex för de fåtal
+            // händelsetyper som ändrar läget" — samma stämplade register som
+            // TheWire.tsx:s .is-flash-rader, inte en ny helskärmsmekanism
+            // (overlayet ÄR redan fullskärm; blixt-händelser tar bara mer
+            // visuell plats i samma lista, se newsClassification.ts).
+            const flash = isFlashEvent(event)
             return (
-              <li key={event.id} className="replay-item">
+              <li key={event.id} className={flash ? 'replay-item is-flash' : 'replay-item'} data-testid={flash ? 'replay-item-flash' : undefined}>
                 <span className={`wire-glyph is-${event.severity}`} aria-hidden="true" />
                 <span className="replay-text">{event.headline}</span>
                 {label && <span className="replay-anchor">{label}</span>}

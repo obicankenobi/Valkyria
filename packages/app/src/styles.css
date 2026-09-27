@@ -716,6 +716,49 @@ td.is-key {
   letter-spacing: 0.04em;
 }
 
+/* P81d (§13, P81-blockquoten): blixt-tier händelser (front byter status,
+   kupp, lönnmord, embargo, kris, styrelsens dom) — mer visuell vikt än en
+   vanlig rubrik, en stämpel på det brådskande meddelandet i stället för en
+   ny helskärmsmekanism (se newsClassification.ts:s egen kommentar). */
+.wire-item.is-flash {
+  border-left: 3px solid var(--red);
+  padding-left: 8px;
+  background: var(--red-soft);
+}
+.wire-item.is-flash .wire-text {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.wire-item.is-ticker-group .wire-text {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.wire-section-label {
+  margin: 10px 0 4px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+}
+
+.news-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.news-more {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
 /* wire-anchor — P80: var en händelse hör hemma (wireAnchor/anchorLabel),
    delad mellan TheWire.tsx:s telexrader och QuarterReplay.tsx:s sekvens. */
 .wire-anchor {
@@ -1323,6 +1366,18 @@ td.is-key {
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--ink);
+}
+
+/* P81d — samma stämplade register som .wire-item.is-flash (TheWire.tsx). */
+.replay-item.is-flash {
+  border-left: 3px solid var(--red);
+  padding-left: 8px;
+  background: var(--red-soft);
+}
+
+.replay-item.is-flash .replay-text {
+  color: var(--red);
+  font-weight: 700;
 }
 
 .replay-text {

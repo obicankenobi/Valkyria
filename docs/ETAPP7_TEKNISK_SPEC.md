@@ -1169,10 +1169,10 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 > cellernas `padding-left` halverad (8px → 4px), och Board-etiketten kortad
 > ("Board" → "Bd").
 >
-> Fem-sekunderstestet är INTE gjort — kräver ägarens eget omdöme på
-> telefonbilden, inget en kodsession kan avgöra (samma gräns som P74/P80 redan
-> höll). Golden ORÖRD. Fullt testsvep grönt, se P81a:s blockquote för de delade
-> siffrorna. Se `docs/ANDRINGSLOGG.md`.
+> **Fem-sekunderstestet godkänt av ägaren 2026-09-27** (`docs/ui/current/operations-phone.png`,
+> skickad separat) — P81b:s eget klart-när är därmed helt uppfyllt. Golden
+> ORÖRD. Fullt testsvep grönt, se P81a:s blockquote för de delade siffrorna.
+> Se `docs/ANDRINGSLOGG.md`.
 
 **P81c — Budkurvan och styrelsemålet.** En ny ren fråga i kärnan, `playerWinCurve(state, order, grade)`, ger vinstchansen över spelarens hela rimliga prisintervall, från självkostnaden (`yourUnitCost × quantity`) upp till `rivalPriceHigh`. Den använder samma hashade Rng-ström som `bidEstimate` (hård regel 2) och samma `computeScore`-termer som `bidding.ts`. `bidEstimate` och dess `winBand` lämnas orörda, eftersom golden-testets botpolicy `balanced` läser dem. `BidForm.tsx` visar vinstchansen för det bud spelaren faktiskt har satt. Styrelsemålet: HUD:ens mätare visar krav mot utfall vid nästa granskning och antal turer dit. Turen före en granskning där spelaren ligger under kravet visas en varning i kvartalsbandet. *Klart när:* ett test visar att kurvan och en simulering av `bidding.ts` över 200 dragningar ligger inom ±10 procentenheter vid fyra prisnivåer; golden bitvis identisk.
 
@@ -1213,6 +1213,81 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 > `docs/ANDRINGSLOGG.md`.
 
 **P81d — NEWS DESK i tre nivåer.** (1) *Blixt*: ett helskärmstelex för de fåtal händelsetyper som ändrar läget — front byter status, sektor byter sida, kupp, lönnmord, embargo, kris och styrelsens dom. (2) *Förstasidan*: kvartalets rubriker, grupperade under fasta avdelningar (Dina affärer, Fronten, Politik, Marknaden), högst fem per avdelning och resten bakom "More" (regel 7). (3) *Telexarkivet*: alla händelser, filtrerbara per avdelning och på "bara mina". Rutinhändelser (ränta, underhåll, avsvalning) slås ihop till en sammanfattningsrad per typ. Allt är presentation: vilken händelsetyp som hör till vilken nivå och avdelning är en tabell i `packages/app`. *Klart när:* i en 10-turers golden-körning visar förstasidan högst 20 rader per kvartal utan att någon blixthändelse saknas; golden orörd.
+
+> **P81d BYGGD 2026-09-27.** Ny `newsClassification.ts` (`packages/app`, ren,
+> testbar — rör aldrig `packages/core` eller `WireEvent` självt):
+> `isFlashEvent`, `newsDepartment`, `normalizeHeadlineTemplate`/`groupTickers`.
+> Headlinemönstren är grep:ade ORDAGRANT ur de faktiska `emit()`-anropen i
+> `packages/core/src/resolve/` (`factions.ts`, `political.ts`, `politics.ts`,
+> `doomsday.ts`, `board.ts`, `fronts.ts`, `endings.ts`), inte gissade — se
+> `test/newsClassification.test.ts`.
+>
+> **Dokumenterad avvikelse från specens bokstav:** listan "front byter status,
+> sektor byter sida, kupp, lönnmord, embargo, kris och styrelsens dom" är sju
+> händelsetyper. `isFlashEvent` täcker de sju men utökades med tre till,
+> upptäckta vid grep:et av faktiska rubriker: `BREAKTHROUGH ON THE ... FRONT —
+> POSITION SHIFTS` (`fronts.ts`, ett genombrott ÄR en lägesändring i precis
+> den mening resten av listan beskriver — utan den hade en av de mekaniskt
+> viktigaste händelserna i spelet saknat blixt-nivå), `... BANKRUPT — ALL
+> CONTRACTS VOIDED` (`factions.ts`, en köpares konkurs annullerar spelarens
+> egna kontrakt — direkt spelarrelevant på samma nivå som embargo) och
+> samtliga fem scenarioslut (`endings.ts`: `NUCLEAR EXCHANGE`, `EXPOSED —
+> LICENCE REVOKED`, `LIQUIDATED — INSOLVENT`, `SOLD — BOARD TARGET MISSED`,
+> `: SCENARIO COMPLETE` — partiets slut är per definition den yttersta
+> lägesändringen). Stannat och beskrivet här enligt "stanna, beskriv, föreslå"
+> i stället för att tyst utöka listan i koden. `MAULED`/`DESTROYED`
+> (`fronts.ts`/`attrition.ts`) är headline-severity men UTESLUTNA, medvetet:
+> för frekventa för blixt-nivån (varje förlorat förband, flera per tur i ett
+> aktivt parti) — negativa test i `newsClassification.test.ts`.
+>
+> `newsDepartment` grupperar via `wireAnchor` (P80, orört): `kind: 'sector'` →
+> Fronten, `kind: 'hud'` → Dina affärer, annars Marknaden om `scope ===
+> 'market'`, annars Politik — samma distinktion `wireAnchor.ts`s egen
+> kommentar redan gör mellan land/station-ankrade händelser.
+>
+> `TheWire.tsx` fick två nya vytyper (`front`/`archive`, `Segmented`-flikar)
+> ovanpå den redan befintliga hjälterubriken (P80). `DepartmentSection`
+> (förstasidan): blixthändelser prioriteras främst i femtaket
+> (`[...flash, ...rest].slice(0, 5)`), resten bakom en "N more in {avdelning}
+> →"-knapp som växlar till arkivet, redan filtrerat på samma avdelning.
+> `ArchiveList` (telexarkivet): alla händelser, filtrerbara per avdelning och
+> "bara mina" (`Segmented`/`DsToggle`), rutinhändelser grupperade av
+> `groupTickers` under en egen "Routine"-rubrik (`TickerGroupRow`, expanderbar
+> till alla instanser). `QuarterReplay.tsx` (blixt-NIVÅN i uppspelningen, inte
+> en ny helskärmsmekanism — overlayet ÄR redan fullskärm sedan P80) fick
+> samma `.is-flash`-stämpel på sina rader.
+>
+> **Genuint fynd, fångat av `TheWire.reveal.test.tsx` när dess fixturer
+> ändrades från ticker- till rubrikhändelser:** hjälterubriken (P80, den
+> senast avslöjade rubrikhändelsen, visad stort i `news-hero`) visades ÄVEN
+> som en vanlig rad i sin egen avdelningssektion direkt under — en dubblett,
+> ren brus. Löst genom att utesluta `heroEvent.id` ur
+> `thisQuarterHeadlines`.
+>
+> **Två mindre implementationsfynd:** (1) `DsPanel` (designSystem.tsx) tar
+> inget `testId`-prop — löst genom att linda `DepartmentSection`s `<DsPanel>`
+> i en vanlig `<div data-testid={...}>` i stället för att utöka den delade
+> komponenten för ett enda anropsställe. (2) Front Page/Archive-flikarna
+> byggdes först som handrullade knappar utan `.ds-segmented`-omslaget (som ger
+> hela pill-stylingen) — bytt mot den riktiga `Segmented`-komponenten.
+>
+> **Mätningen (klart-när ordagrant):** ett engångsskript (samma konvention
+> som P58/P64/P75/P80 — rådata gitignorad, facit här), 10 turer × alla fyra
+> härness-botpolicyer (`passive`/`aggressive`/`balanced`/`capacity`) mot
+> `indochina-slice`, 40 uppmätta kvartal totalt. Femtaket (`NEWS_DEPARTMENTS.
+> length === 4 × 5/avdelning`) garanterar strukturellt att förstasidan aldrig
+> visar fler än 20 rader per kvartal — uppmätt högsta faktiska värde var 10.
+> Ingen blixthändelse klipptes bort i någon avdelning i något av de 40
+> kvartalen (värsta uppmätta överflöde: 0). Klart-när uppfyllt.
+>
+> Golden ORÖRD (bara läsning av `state`/`wire`, ingen `resolve/`-fil rörd).
+> Fullt testsvep grönt: 727 tester (691→727, se P81a/b/c:s blockquote för
+> basvärdet), lint, typecheck (alla tre paket), build, e2e (22 tester, körd
+> två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+>
+> **Hela åtgärdspasset P81a–P81d är därmed klart** — samtliga fyra punkter i
+> "körs före 7C"-listan (P81, ovan) är byggda. Nästa steg är 7C, som börjar
+> med P82.
 
 ### 7C — Bredda
 
