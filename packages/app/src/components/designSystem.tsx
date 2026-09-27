@@ -203,12 +203,27 @@ export function ActionSlot({
   testId?: string
 }) {
   if (empty) {
+    // P81-12 (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten): "En tom
+    // handlingsplats går att trycka på och öppnar en handlingskatalog" —
+    // onOpen dubblar här som "öppna katalogen" (samma prop, en fylld plats
+    // använder den för "öppna kortet"). Utan onOpen (t.ex. äldre
+    // anropsställen som ännu inte skickar den) förblir den en ren div, inte
+    // en knapp utan funktion.
+    if (!onOpen) {
+      return (
+        <div className="ds-action-slot is-empty" data-testid={testId}>
+          <span className="ds-action-slot-plus" aria-hidden="true">
+            +
+          </span>
+        </div>
+      )
+    }
     return (
-      <div className="ds-action-slot is-empty" data-testid={testId}>
+      <button type="button" className="ds-action-slot is-empty" onClick={onOpen} data-testid={testId}>
         <span className="ds-action-slot-plus" aria-hidden="true">
           +
         </span>
-      </div>
+      </button>
     )
   }
   return (

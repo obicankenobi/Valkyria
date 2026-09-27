@@ -5,12 +5,14 @@
 // Komponentfilerna för de fyra befintliga vyerna (TheFloor.tsx m.fl.) rörs
 // INTE av namnbytet, bara det som visas här i skalet runt dem (§2G:s egen
 // mening, ordagrant).
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { boardReviewOutlook, DISPLAY_THRESHOLDS, previewAction } from '@seventh-front/core'
 import type { GameState, PlayerAction } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
 import { ActionSlot } from './designSystem.js'
 import type { RejectedEntry } from '../useGame.js'
+import { deriveQuarterlyNotice, deriveThisQuarter } from '../thisQuarter.js'
+import type { ThisQuarterTarget } from '../thisQuarter.js'
 
 // P79 (ETAPP7_TEKNISK_SPEC.md §7.2, "Handlingsplatserna"): varje köat kort
 // visar ett riktigt ikon/mål/kostnad, inte en generisk "Action N" — samma
@@ -19,7 +21,7 @@ import type { RejectedEntry } from '../useGame.js'
 // previewAction (P78) — en delad sanningskälla, aldrig en egen gissning.
 // Målnamnen slås upp direkt ur state (aldrig gated — en handling i KÖN är
 // redan spelarens eget val, ingen dold information att läcka).
-const VERB_ICON: Record<string, string> = {
+export const VERB_ICON: Record<string, string> = {
   EXPAND: '⬈',
   WITHDRAW: '⬋',
   LEAK: '✉',
@@ -274,12 +276,10 @@ export function HudBar({
   )
 }
 
-// ── This Quarter-bandet (§7.7). Fullständig härledning (nya ordrar,
-// exponerade stationer, kontrakt som riskerar bli sena osv.) är P83:s egna
-// klart-när — här byggs bara CHROMET: ett alltid synligt, utfällbart band.
-// Räknar det enda fält som redan finns billigt tillgängligt utan att
-// föregripa P83:s härledningsfunktion: öppna ordrar + en aktiv kris. ──
-export function QuarterBand({ state }: { state: GameState }) {
+// ── This Quarter-bandet (§7.7). "Listan är en vägvisare, inte ett
+// formulär": ett alltid synligt, utfällbart band vars rader hoppar till
+// föremålet (P83). Kvartalsbeskedet (P81-11) ligger överst, statiskt. ──
+export function QuarterBand({ state, onNavigate }: { state: GameState; onNavigate: (target: ThisQuarterTarget) => void }) {
   const [expanded, setExpanded] = useState(false)
   // P81c (§13, P81-blockquoten, P81-8): "en varning i kvartalsbandet" turen
   // före en granskning spelaren ligger under kravet inför — samma
@@ -289,7 +289,9 @@ export function QuarterBand({ state }: { state: GameState }) {
   const target = state.house.boardTarget
   const requiredPct = target.threshold > 0 ? (outlook.required / target.threshold) * 100 : 0
   const currentPct = target.threshold > 0 ? (outlook.current / target.threshold) * 100 : 0
-  const count = state.market.openOrders.length + (state.pendingCrisis ? 1 : 0) + (boardWarning ? 1 : 0)
+  const items = useMemo(() => deriveThisQuarter(state), [state])
+  const notice = useMemo(() => deriveQuarterlyNotice(state), [state])
+  const count = items.length + (boardWarning ? 1 : 0)
 
   return (
     <div className="ds-quarterband">
@@ -317,16 +319,35 @@ export function QuarterBand({ state }: { state: GameState }) {
       </button>
       {expanded && (
         <div className="ds-quarterband-body" data-testid="quarterband-body">
+          {notice.length > 0 && (
+            <div className="ds-quarterband-notice" data-testid="quarterband-notice">
+              {notice.map((n) => (
+                <p key={n.id} className="ds-quarterband-item" data-testid={`quarterband-notice-${n.id}`}>
+                  <span aria-hidden="true">{n.icon}</span> {n.text}
+                </p>
+              ))}
+            </div>
+          )}
           {boardWarning && (
             <p className="ds-quarterband-item is-warn" data-testid="quarterband-board-warning-item">
               Board review next turn — at {currentPct.toFixed(0)}%, need {requiredPct.toFixed(0)}% to stay on track.
             </p>
           )}
-          {state.pendingCrisis && <p className="ds-quarterband-item">A crisis awaits a decision.</p>}
-          {state.market.openOrders.length > 0 && (
-            <p className="ds-quarterband-item">{state.market.openOrders.length} open order(s) on CONTRACTS.</p>
-          )}
-          {count === 0 && <p className="ds-quarterband-item is-quiet">Nothing needs your attention.</p>}
+          {items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="ds-quarterband-item-button"
+              onClick={() => onNavigate(item.target)}
+              data-testid={`quarterband-item-${item.id}`}
+            >
+              <span className="ds-quarterband-item-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              {item.label}
+            </button>
+          ))}
+          {count === 0 && notice.length === 0 && <p className="ds-quarterband-item is-quiet">Nothing needs your attention.</p>}
         </div>
       )}
     </div>
@@ -375,6 +396,7 @@ export function ActionDock({
   actions,
   onRemoveAction,
   onEndTurn,
+  onOpenCatalog,
   ended,
   testId = 'action-dock',
 }: {
@@ -382,6 +404,7 @@ export function ActionDock({
   actions: PlayerAction[]
   onRemoveAction: (index: number) => void
   onEndTurn: () => void
+  onOpenCatalog?: () => void
   ended: boolean
   testId?: string
 }) {
@@ -391,7 +414,7 @@ export function ActionDock({
       <div className="ds-actiondock-slots">
         {Array.from({ length: slots }, (_, i) => {
           const action = actions[i]
-          if (!action) return <ActionSlot key={i} empty testId={`action-slot-${i}-empty`} />
+          if (!action) return <ActionSlot key={i} empty onOpen={onOpenCatalog} testId={`action-slot-${i}-empty`} />
           const { icon, label, cost } = actionSummary(state, action)
           return (
             <ActionSlot key={i} icon={icon} label={label} cost={cost} onRemove={() => onRemoveAction(i)} testId={`action-slot-${i}`} />

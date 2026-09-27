@@ -18,6 +18,8 @@ import { ThePolitics } from './components/ThePolitics.js'
 import { TheWire } from './components/TheWire.js'
 import { QuarterReplay } from './components/QuarterReplay.js'
 import { PauseOverlay } from './components/PauseOverlay.js'
+import { ActionCatalog } from './components/ActionCatalog.js'
+import type { ThisQuarterTarget } from './thisQuarter.js'
 import { useGame } from './useGame.js'
 import { hasSavedGame, loadFullReplay, loadMuted, saveFullReplay, saveMuted } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
@@ -66,6 +68,7 @@ export function App() {
   // bottenark (CountryFile.tsx). Bara relevant på OPERATIONS — ett tabbyte
   // stänger den implicit (renderas bara när view === 'operations').
   const [selectedFactionId, setSelectedFactionId] = useState<FactionId | null>(null)
+  const [catalogOpen, setCatalogOpen] = useState(false)
   const [muted, setMuted] = useState(false) // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
   // P80 (ETAPP7_TEKNISK_SPEC.md §8): kvartalsuppspelningen visas mellan End
   // Quarter och NEWS DESK. `replaying` styr ÖVERLAGET, oberoende av `view` —
@@ -215,7 +218,13 @@ export function App() {
   return (
     <div className="ds-shell">
       <HudBar state={state} onOpenMenu={() => setPaused(true)} />
-      <QuarterBand state={state} />
+      <QuarterBand
+        state={state}
+        onNavigate={(target: ThisQuarterTarget) => {
+          if (target.view === 'operations') setSelectedFactionId(target.factionId)
+          setView(target.view)
+        }}
+      />
 
       <main className="ds-shell-content">
         {ended && state.status.kind === 'ended' && (
@@ -266,7 +275,22 @@ export function App() {
         )}
       </main>
 
-      {view === 'operations' && <ActionDock state={state} actions={draft.actions} onRemoveAction={removeAction} onEndTurn={handleEndTurn} ended={ended} />}
+      {view === 'operations' && (
+        <ActionDock
+          state={state}
+          actions={draft.actions}
+          onRemoveAction={removeAction}
+          onEndTurn={handleEndTurn}
+          onOpenCatalog={() => setCatalogOpen(true)}
+          ended={ended}
+        />
+      )}
+
+      <ActionCatalog
+        open={catalogOpen}
+        onClose={() => setCatalogOpen(false)}
+        onNavigate={(catalogView) => setView(catalogView)}
+      />
 
       <TabBar
         active={view}

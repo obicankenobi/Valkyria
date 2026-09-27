@@ -167,6 +167,44 @@ const APP_SCREENS = [
       await page.getByTestId('map-legend').waitFor()
     },
   },
+  {
+    // P83: This Quarter-bandet utfällt, med kvartalsbeskedet (P81-11) och
+    // lägena (§7.7) synliga (ingen egen referensskiss).
+    name: 'quarterband-expanded',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('quarterband-toggle').click()
+      await page.getByTestId('quarterband-body').waitFor()
+    },
+  },
+  {
+    // P81-12: handlingskatalogen, öppnad från en tom handlingsplats (ingen
+    // egen referensskiss).
+    name: 'action-catalog',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('action-slot-0-empty').click()
+      await page.getByTestId('action-catalog').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

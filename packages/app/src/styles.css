@@ -2774,6 +2774,46 @@ td.is-key {
   font-size: 14px;
 }
 
+/* P83 (§7.7): "Varje rad har en ikon och hoppar till föremålet" — en
+   tryckbar rad, till skillnad från .ds-quarterband-item (statisk text, t.ex.
+   kvartalsbeskedet nedan). Regel 11: minst 44 px träffyta. */
+.ds-quarterband-item-button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 4px;
+  padding: 4px 6px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  text-align: left;
+  cursor: pointer;
+}
+.ds-quarterband-item-button:hover {
+  border-color: var(--amber);
+  color: var(--ink);
+}
+.ds-quarterband-item-icon {
+  flex-shrink: 0;
+  color: var(--amber);
+  font-size: 13px;
+}
+
+/* P81-11 (§13, P81-blockquoten): kvartalsbeskedet — statisk lista, ingen
+   egen navigering (varje rad hör redan till en händelse som redan hänt,
+   inte ett läge att agera på). */
+.ds-quarterband-notice {
+  margin: 0 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
 /* ── Telexremsan ───────────────────────────────────────────────────────── */
 
 .ds-telex {
@@ -3012,6 +3052,53 @@ td.is-key {
 .map-legend-meaning {
   color: var(--ink);
   margin-top: 2px;
+}
+
+/* P81-12 (§13, P81-blockquoten): handlingskatalogen. Samma BottomSheet-skal
+   som teckenförklaringen, egen namnrymd eftersom raderna är TRYCKBARA
+   (hoppar till ett föremål) i stället för rent informativa. Regel 11: minst
+   44 px träffyta per rad. */
+.action-catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.action-catalog-group-title {
+  margin: 0 0 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.action-catalog-entry {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 6px;
+  padding: 6px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.action-catalog-entry:hover {
+  border-color: var(--amber);
+}
+.action-catalog-entry-icon {
+  flex-shrink: 0;
+  color: var(--amber);
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
 }
 
 .map-svg {

@@ -2,10 +2,12 @@
 // P81-blockquoten, P81-8). HudBar visar turer till nästa granskning;
 // QuarterBand varnar turen innan en granskning spelaren ligger under kravet.
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
 import { HudBar, QuarterBand } from '../src/components/Shell.js'
+
+const NOOP_NAVIGATE = vi.fn()
 
 afterEach(cleanup)
 
@@ -39,7 +41,7 @@ describe('QuarterBand (P81c) — förvarning inför en granskning', () => {
     const state = createInitialState('indochina-slice', 'quarterband-ok-seed')
     state.meta.turn = 5
     state.house.boardTarget.progressSnapshot = state.house.boardTarget.threshold
-    render(<QuarterBand state={state} />)
+    render(<QuarterBand state={state} onNavigate={NOOP_NAVIGATE} />)
     expect(document.querySelector('[data-testid="quarterband-board-warning"]')).toBeNull()
   })
 
@@ -47,7 +49,7 @@ describe('QuarterBand (P81c) — förvarning inför en granskning', () => {
     const state = createInitialState('indochina-slice', 'quarterband-warn-seed')
     state.meta.turn = 5
     state.house.boardTarget.progressSnapshot = 0
-    render(<QuarterBand state={state} />)
+    render(<QuarterBand state={state} onNavigate={NOOP_NAVIGATE} />)
     expect(document.querySelector('[data-testid="quarterband-board-warning"]')).toBeTruthy()
   })
 
@@ -55,7 +57,7 @@ describe('QuarterBand (P81c) — förvarning inför en granskning', () => {
     const state = createInitialState('indochina-slice', 'quarterband-count-seed')
     state.meta.turn = 5
     state.house.boardTarget.progressSnapshot = 0
-    render(<QuarterBand state={state} />)
+    render(<QuarterBand state={state} onNavigate={NOOP_NAVIGATE} />)
 
     expect(document.querySelector('[data-testid="quarterband-toggle"] .ds-quarterband-count')!.textContent).toBe('1')
 

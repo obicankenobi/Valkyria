@@ -491,7 +491,24 @@ fyrkant vid huvudstaden med en pulserande ring vid hög exponering (§6.6, `DISP
 exposureBurnThreshold`, redan existerande tal). Teckenförklaringen fick tre nya rader. Golden
 orörd i UI-lagret. Fullt testsvep grönt: 749 tester (727→749), lint, typecheck, build, e2e (22
 tester, körd två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P82-blockquote och
-`docs/ANDRINGSLOGG.md`. **Nästa steg är P83, This Quarter.**
+`docs/ANDRINGSLOGG.md`.
+
+**P83 BYGGD 2026-09-27** — **This Quarter.** Ny `thisQuarter.ts` (`packages/app`, ren):
+`deriveThisQuarter` härleder §7.7:s sex radtyper (nya ordrar, exponerade stationer, tjänstemän
+i riskzonen, kontrakt nära förfall, kredit nära gränsen, pågående kris), var och en med ett
+hopp till rätt föremål (`view`/`selectedFactionId`, samma navigationsprimitiver appen redan
+har). Exponeringströskeln återanvänder `DISPLAY_THRESHOLDS.exposureBurnThreshold` (samma tal
+P82:s karta redan läser); tre trösklar utan motsvarighet i `balance.json` är PROVISORISKA,
+dokumenterade app-egna konstanter. **P81-11**: ny `deriveQuarterlyNotice` visar senaste turens
+vunna/förlorade bud och leveranser överst i den utfällda listan, läst ur `state.wire`s
+`scope:'market'`-händelser. Dokumenterat avsteg: "vinnare och pris när underrättelsen räcker"
+skulle kräva en dimningsmekanism för `WireEvent.headline` som inte finns NÅGONSTANS i
+kodbasen — headlinen visas därför oavkortad. **P81-12**: ny `actionCatalog.ts`, en handhållen
+lista över de 15 verb som faktiskt har en byggd form (`CountryFile.tsx` + `TheHouse.tsx`),
+öppnad från en nu tryckbar tom handlingsplats (`ActionSlot`s nya `onOpen`-gren). Golden ORÖRD.
+Fullt testsvep grönt: 774 tester (749→774), lint, typecheck, build, e2e (22 tester, körd två
+gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P83-blockquote och
+`docs/ANDRINGSLOGG.md`. **Nästa steg är P84, CONTRACTS.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

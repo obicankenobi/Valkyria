@@ -1369,6 +1369,63 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P83 — This Quarter.** *Klart när:* varje radtyp i §7.7 hoppar till rätt föremål. *Utökad efter P81:* (1) Kvartalsbeskedet (P81-11) ligger överst i listan efter kvartalsuppspelningen: vunna och förlorade bud (med vinnare och pris när underrättelsen räcker), levererade kontrakt och inbetalningar. (2) En tom handlingsplats går att trycka på och öppnar en handlingskatalog (P81-12): alla verb som kostar en plats, grupperade per föremål, var och en med ett hopp till föremålet där den utförs. Verb som ännu inte går att nå visas inte, så katalogen växer i P84–P86.
 
+> **P83 BYGGD 2026-09-27.** Ny `thisQuarter.ts` (`packages/app`, ren,
+> testbar — §7.7 säger uttryckligen "i appen", rör aldrig `packages/core`):
+> `deriveThisQuarter(state)` härleder de sex radtyperna ordagrant ur §7.7
+> (nya ordrar, exponerade stationer, tjänstemän i riskzonen, kontrakt som
+> riskerar bli sena, kreditgränsen nära, pågående kris), var och en med ett
+> `target` (`view` + ev. `factionId`) som `App.tsx`s nya `onNavigate` läser
+> för att sätta `view`/`selectedFactionId` — samma två primitiver som redan
+> styr all navigation i appen, inget nytt tillstånd. Exponerings- och
+> stationströskeln är `DISPLAY_THRESHOLDS.exposureBurnThreshold`, samma tal
+> P82:s pulserande karta-ring redan läser (en tredje läsare). "Låg
+> standing"/"kontrakt nära förfall"/"kredit nära gränsen" har inga
+> motsvarande tal i `balance.json` — tre PROVISORISKA, dokumenterade
+> app-egna konstanter (samma anda som `mapLegend.ts`s odelade konstanter),
+> kalibrerbara utan att röra core.
+>
+> **P81-11 (kvartalsbeskedet):** ny `deriveQuarterlyNotice(state)` läser
+> `scope:'market'`-händelser (samma strukturerade markering
+> `newsClassification.ts`s egen kommentar redan etablerade) från den SENASTE
+> turen i `state.wire`. Dokumenterat avsteg: "vinnare och pris när
+> underrättelsen räcker" antyder att en förlorad budgivnings vinnare ska
+> dimmas utan tillräcklig `effectiveDepth` — men `WireEvent.headline` är
+> redan FÄRDIGSKRIVEN text utan någon dimningsmekanism NÅGONSTANS i
+> kodbasen (`formationDisplay`/`officialDisplay` dimmar STRUKTURERADE fält,
+> aldrig en rubriks fritext). En ny textredigeringsmekanism bara för den
+> här listan hade varit unik i hela appen — headlinen visas därför
+> oavkortad, som varje annan skärm redan gör.
+>
+> **P81-12 (handlingskatalogen):** ny `actionCatalog.ts` — en HANDHÅLLEN,
+> statisk lista (inte härledd ur state: "går att nå" betyder "en riktig
+> form finns byggd någonstans i appen", något `validateAction` inte kan
+> uttrycka) över de 15 verb som FAKTISKT har en byggd form idag
+> (`CountryFile.tsx`: EXPAND/WITHDRAW/LEAK/SABOTAGE/TURN/RECRUIT/INFLUENCE;
+> `TheHouse.tsx`: TAKE_LOAN/REPAY/BUILD_LINE/HIRE/REPRIORITISE_RND/BRIBE/
+> STAGE_INCIDENT/BACK_CHANNEL), grupperade efter §7.1:s tabell. Ny
+> `ActionCatalog.tsx` (BottomSheet, samma mönster som `MapLegend.tsx`,
+> P81a) renderar den, ikonerna delade med `Shell.tsx`s redan existerande
+> `VERB_ICON` (nu exporterad — en källa, upprepas aldrig). `ActionSlot`
+> (designSystem.tsx) fick en `onOpen`-gren för `empty`-läget — en tom plats
+> är nu en RIKTIG knapp när `onOpenCatalog` skickas in, annars oförändrad
+> (bakåtkompatibel för de anropsställen som inte gör det ännu). Dokumenterat
+> avsteg: STAGE_INCIDENT/BACK_CHANNEL hör enligt §7.1:s tabell hemma under
+> "Faktion / huvudstad" (samma objekt som INFLUENCE), men hoppar hit till
+> `company` eftersom det är där de FAKTISKT utförs idag (`TheHouse.tsx`s
+> hårdkodade genväg, P63:s egen not) — "hopp till föremålet där den
+> UTFÖRS", inte till tabellens idealbild. Flyttas till `operations`/
+> `contacts` när P86 flyttar in dem där.
+>
+> Golden ORÖRD (ren `packages/app`-presentation, ingen `resolve/`-fil rörd).
+> Nya tester: `thisQuarter.test.ts` (11), `Shell.thisQuarter.test.tsx` (5),
+> `actionCatalog.test.ts` (4), `ActionCatalog.test.tsx` (3),
+> `ActionDock.catalog.test.tsx` (2). `Shell.boardOutlook.test.tsx`
+> uppdaterad (ny obligatorisk `onNavigate`-prop). Fullt testsvep grönt: 774
+> tester (749→774), lint, typecheck, build, e2e (22 tester, körd två
+> gånger i rad). `npm run shots` utökat med två nya skärmar
+> (`quarterband-expanded`, `action-catalog`), verifierade visuellt. Se
+> `docs/ANDRINGSLOGG.md`.
+
 **P84 — CONTRACTS.** Stämplade mappar och prisreglaget över `winBand`. *Klart när:* inga dolda fält renderas. *Utökad efter P81 (P81-7):* reglaget läser P81c:s `playerWinCurve`, så att vinstchans och marginal följer reglaget över spelarens hela prisintervall.
 
 **P85 — THE COMPANY.** Produktionslinjer som visuella band, `INTERNAL` och råvarupanelen med `BUY_FORWARD`, `RELEASE`. *Utökad efter P81:* (1) Produktionslinjer (P81-16): per linje vilka produkter den kan tillverka, takt per kvartal, beläggning mot kapacitet och när pågående kontrakt blir klara. (2) Ekonomipanelen (P81-14/15): innevarande kvartals intäkter och kostnader per post, en prognos för nästa kvartal ur accepterade kontrakt och fasta kostnader (ny ren fråga `projectedQuarter(state)` i `queries.ts`), samt lån och återbetalning med `TierPicker`. Historik över hela partiet kräver ett nytt `GameState`-fält och hör till etapp 8. (3) R&D (P81-17): nuläget visas ärligt, med vad varje område låser upp och när. Ingen ny mekanik; det nya forskningssystemet är etapp 9.
