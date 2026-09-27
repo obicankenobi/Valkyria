@@ -33,6 +33,18 @@ function LegendIcon({ kind }: { kind: MapLegendIconKind }) {
           <line x1={2} y1={14} x2={26} y2={14} className="map-dmz-line" />
         </svg>
       )
+    case 'supply-line-player':
+      return (
+        <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
+          <line x1={2} y1={24} x2={26} y2={4} className="map-supply-line is-player" />
+        </svg>
+      )
+    case 'supply-line-rival':
+      return (
+        <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
+          <line x1={2} y1={24} x2={26} y2={4} className="map-supply-line is-rival" />
+        </svg>
+      )
     case 'frontline':
       return (
         <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
@@ -87,6 +99,14 @@ function LegendIcon({ kind }: { kind: MapLegendIconKind }) {
               2
             </text>
           </g>
+        </svg>
+      )
+    case 'station':
+      return (
+        <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
+          <circle cx={17} cy={11} r={7} className="map-capital-marker" />
+          <circle cx={9} cy={19} r={7} className="map-station-exposure-ring" />
+          <rect x={5} y={15} width={8} height={8} className="map-station-badge" />
         </svg>
       )
   }

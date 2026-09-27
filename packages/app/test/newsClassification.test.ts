@@ -40,6 +40,7 @@ describe('isFlashEvent (P81d)', () => {
     'MERIDIAN ARMS BOARD REVIEW (TURN 6): ON TRACK FOR "DOUBLING"', // board.ts
     'MERIDIAN ARMS BOARD REVIEW FAILED (TURN 10) — "DOUBLING" BEHIND SCHEDULE (1/2), LOAN TERMS TIGHTENED', // board.ts
     'BREAKTHROUGH ON THE FRONT-1 FRONT — POSITION SHIFTS TOWARD SIDE A', // fronts.ts, genuint fynd 1
+    '18TH ARTILLERY GROUP REDEPLOYS HUE → AN-LOC AFTER THE BREAKTHROUGH', // fronts.ts, P82 (beslut 2F, genuint fynd 4)
     'NATIONAL LIBERATION FRONT BANKRUPT — ALL CONTRACTS VOIDED', // factions.ts, genuint fynd 3
     'NUCLEAR EXCHANGE', // endings.ts, genuint fynd 2
     'MERIDIAN ARMS EXPOSED — LICENCE REVOKED', // endings.ts

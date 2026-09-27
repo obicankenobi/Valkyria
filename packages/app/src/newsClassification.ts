@@ -28,10 +28,17 @@ import { wireAnchor } from './wireAnchor.js'
 // 3. En faktions konkurs ("BANKRUPT — ALL CONTRACTS VOIDED", factions.ts)
 //    dök upp i samma 20-tursprov — en lika stor lägesändring som embargo,
 //    bara inte namngiven i den ursprungliga listan. Tillagd.
+// 4. P82 (beslut 2F, ETAPP7_TEKNISK_SPEC.md §2F): "sektor byter sida" fick
+//    sin FÖRSTA riktiga mekanik — REDEPLOYS-rubriken (fronts.ts, emitterad
+//    på samma genombrottströskel som redan finns i fynd 1 ovan) är den
+//    bokstavliga händelsen listan redan namngav, tillagd här i samma commit
+//    som mekaniken (CLAUDE.md: "en ändrad spec utan loggrad är samma sak som
+//    ingen ändring" — samma princip för en ny händelsetyp i den här tabellen).
 const FLASH_PATTERNS: RegExp[] = [
   /^CEASEFIRE ON THE/, // front byter status: krig → vapenvila
   /^WAR RESUMES ON THE/, // front byter status: vapenvila → krig
   /^BREAKTHROUGH ON THE .+ FRONT — POSITION SHIFTS/, // sektor/front byter läge (genuint fynd 1)
+  /REDEPLOYS .+ AFTER THE BREAKTHROUGH$/, // förband byter SEKTOR (P82, beslut 2F — sektor byter sida, ordagrant)
   /FUNDS A SUCCESSFUL COUP IN/, // kupp, lyckad
   /COUP ATTEMPT IN .+ FAILS/, // kupp, misslyckad
   /HAS .+ ASSASSINATED/, // lönnmord

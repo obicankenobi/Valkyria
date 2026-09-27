@@ -35,6 +35,7 @@ import { interpolateFrontGeoPosition, tokenOffset } from '../geoMath.js'
 import { SECTOR_REGIONS } from '../sectorRegions.js'
 import type { SectorRegion } from '../sectorRegions.js'
 import { CAPITALS } from '../capitals.js'
+import { playerSupplyLines, rivalSupplyLines, snapshotAttribution } from '../supplyLines.js'
 import { MapPlaceholder } from './Shell.js'
 import { MapLegend } from './MapLegend.js'
 
@@ -357,6 +358,21 @@ export function TheatreMap({
 
   const allRegions = useMemo(() => Object.entries(SECTOR_REGIONS).flatMap(([theatreId, regions]) => regions.map((r) => ({ ...r, theatreId }))), [])
 
+  // P82 (§6.3 lager 8): stationsmarkören — grupperad per NATION (huvudstadens
+  // FactionId), inte per station, eftersom flera stationer i samma land
+  // (inget mekanik-hinder i RECRUIT mot det) ska visas som EN markör med
+  // den högsta exponeringen bland dem, inte en per station.
+  const stationsByFaction = useMemo(() => {
+    const map = new Map<FactionId, typeof state.house.stations>()
+    for (const station of state.house.stations) {
+      if (station.status !== 'active') continue
+      const list = map.get(station.nation)
+      if (list) list.push(station)
+      else map.set(station.nation, [station])
+    }
+    return map
+  }, [state])
+
   // P77 (§6.4): förbandsbrickor grupperade per sektor (flera Formation kan
   // dela samma sectorId, tokenOffset ovan sprider dem). status==='destroyed'
   // filtreras bort — inget kvar att visa, samma linje som P76:s beslut att
@@ -400,6 +416,20 @@ export function TheatreMap({
         return { theatreId, anchor: [avgLat, avgLng] as [number, number], heat: state.theatres[theatreId]?.heat ?? 0 }
       })
       .filter((t): t is { theatreId: string; anchor: [number, number]; heat: number } => t !== null)
+  }, [state])
+
+  // P82 (§6.3 lager 6, §6.7): försörjningslinjer. Rivalernas linjer läses ur
+  // Front.attribution:s FÖRÄNDRING mellan två renderingar — sparad i en ref
+  // (inte state, ingen ny rendering ska triggas av att spara den) och
+  // uppdaterad i ett useEffect EFTER varje render, så nästa jämförelse alltid
+  // sker mot FÖREGÅENDE tursögonblicksbild, aldrig den nuvarande turens
+  // egna, redan uppdaterade tal (supplyLines.ts:s egen kommentar för hela
+  // resonemanget).
+  const prevAttributionRef = useRef(snapshotAttribution(state))
+  const playerLines = useMemo(() => playerSupplyLines(state, SECTOR_REGIONS), [state])
+  const rivalLines = useMemo(() => rivalSupplyLines(state, prevAttributionRef.current, SECTOR_REGIONS), [state])
+  useEffect(() => {
+    prevAttributionRef.current = snapshotAttribution(state)
   }, [state])
 
   // geoLoaded i deps (se kommentaren vid dess definition ovan) — annars
@@ -597,6 +627,30 @@ export function TheatreMap({
             })}
           </g>
 
+          {/* P82 (§6.3 lager 6, §6.7): försörjningslinjer — spelarens från
+              Shipment/Contract.frontId, rivalernas härledda ur
+              Front.attribution:s ändring sedan förra renderingen
+              (supplyLines.ts). Synliga från zoomnivå 1 (§6.9:s tabell), ingen
+              zoomgrind som förbandsbrickorna nedan. */}
+          <g className="map-supply-lines">
+            {[...playerLines, ...rivalLines].map((line) => {
+              const from = project([line.fromAnchor[1], line.fromAnchor[0]])
+              const to = project([line.toAnchor[1], line.toAnchor[0]])
+              if (!from || !to) return null
+              return (
+                <line
+                  key={line.id}
+                  x1={from[0]}
+                  y1={from[1]}
+                  x2={to[0]}
+                  y2={to[1]}
+                  className={line.kind === 'player' ? 'map-supply-line is-player' : 'map-supply-line is-rival'}
+                  data-testid={`map-supply-line-${line.id}`}
+                />
+              )
+            })}
+          </g>
+
           {/* P77 (§6.3 lager 7, §6.9): förbandsbrickor — synliga från
               zoomnivå 2 (§6.9:s tabell: "2 · Teater ... plus förbandsbrickor"),
               namn+styrka i klartext bara från nivå 3 ("Sektor ... plus
@@ -627,6 +681,8 @@ export function TheatreMap({
               const [x, y] = project([capital.anchor[1], capital.anchor[0]]) ?? [0, 0]
               const openOrders = state.market.openOrders.filter((o) => o.buyerId === capital.factionId).length
               const labelId = `capital-${capital.factionId}`
+              const stations = stationsByFaction.get(capital.factionId) ?? []
+              const maxExposure = stations.reduce((max, s) => Math.max(max, s.exposure), 0)
               return (
                 <g key={capital.factionId} data-testid={`map-capital-${capital.factionId}`}>
                   <circle
@@ -642,6 +698,14 @@ export function TheatreMap({
                       <text className="map-capital-badge-text" textAnchor="middle" dominantBaseline="central">
                         {openOrders}
                       </text>
+                    </g>
+                  )}
+                  {stations.length > 0 && (
+                    <g transform={`translate(${x - 8},${y + 8})`} data-testid={`map-capital-station-${capital.factionId}`}>
+                      {maxExposure >= DISPLAY_THRESHOLDS.exposureBurnThreshold && (
+                        <circle r={7} className="map-station-exposure-ring" />
+                      )}
+                      <rect x={-4} y={-4} width={8} height={8} className="map-station-badge" />
                     </g>
                   )}
                   {zoomLevel >= 2 && (

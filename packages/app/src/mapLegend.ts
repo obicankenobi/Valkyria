@@ -20,6 +20,9 @@ export type MapLegendIconKind =
   | 'formation-mauled'
   | 'fog'
   | 'dmz'
+  | 'supply-line-player'
+  | 'supply-line-rival'
+  | 'station'
 
 export interface MapLegendEntry {
   id: string
@@ -75,6 +78,20 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
     whatItMeans: 'Gränsen mellan Nord- och Sydvietnam. Ren geografi, inget att trycka på.',
   },
   {
+    id: 'supply-line-player',
+    icon: 'supply-line-player',
+    title: 'Din försörjningslinje',
+    whatItIs: 'En strömmande, streckad ockragul linje från en ingångshamn till en front.',
+    whatItMeans: 'Ett eget kontrakt har materiel under transport dit just nu.',
+  },
+  {
+    id: 'supply-line-rival',
+    icon: 'supply-line-rival',
+    title: 'Rivalens försörjningslinje',
+    whatItIs: 'Samma strömmande linje, i en rivals egen färg.',
+    whatItMeans: 'En rival levererade materiel till den fronten förra kvartalet.',
+  },
+  {
     id: 'frontline',
     icon: 'frontline',
     title: 'Frontlinje',
@@ -122,5 +139,12 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
     title: 'Öppna ordrar',
     whatItIs: 'En liten siffermärkning bredvid en huvudstad.',
     whatItMeans: 'Antal öppna upphandlingar hos den köparen just nu. Lägg bud på CONTRACTS.',
+  },
+  {
+    id: 'station',
+    icon: 'station',
+    title: 'Din station',
+    whatItIs: 'En liten fyrkantig markering bredvid en huvudstad, med en pulserande ring om den är starkt exponerad.',
+    whatItMeans: 'Du har en aktiv underrättelsestation i landet. Ringen betyder att exponeringen är hög — stationen riskerar att brännas.',
   },
 ] as const

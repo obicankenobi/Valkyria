@@ -469,7 +469,29 @@ sina rader. Mätningen (klart-när ordagrant): 10 turer × alla fyra botpolicyer
 högsta faktiska radantal 10 (strukturellt tak 20), noll blixthändelser någonsin bortklippta.
 Golden ORÖRD. Fullt testsvep grönt (efter alla fyra P81a–d): 727 tester, lint, typecheck,
 build, e2e (22 tester, körd två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s
-P81d-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa steg är 7C, som börjar med P82.**
+P81d-blockquote och `docs/ANDRINGSLOGG.md`.
+
+**P82 BYGGD 2026-09-27** — **7C:s första prompt, "Hela kartan".** Premisskontroll visade att
+Laos-teatern och alla sex länder redan fanns (P76, generisk kod) — den faktiskt saknade biten
+var försörjningslinjer (lager 6) och stationer (lager 8). **Förbandsförflyttningen (beslut
+2F)**: ny `redeployAfterBreakthrough` i `fronts.ts`, samma genombrottströskel som redan flyttar
+`front.position`. Genuint fynd (härnessmätning, 200 partier): en första design lät den
+FÖRLORANDE sidan omgruppera mellan sina egna sektorer — 0 av 1 827 genombrott utlöste den
+någonsin (förlorarens svagaste formationer dör redan i samma `engagement()`-anrop som föregår
+genombrottskontrollen). Omdesignad: den VINNANDE sidan pressar i stället in ett förband i den
+sektor förloraren själv håller och står svagast i. Ny mätning: 32,8 % av genombrotten ger en
+omgruppering, och sektorkontroll (`deriveSectorControl`) byter faktiskt sida i 100 % av
+partierna (mot P75:s uppmätta 6,4 %). Golden refryst — förhandsauktoriserat av beslut 2F,
+`balance.frozen.json` bitvis identiskt (ingen balanssiffra rörd). **Försörjningslinjer**: ny
+`supplyLines.ts` — spelarens från `state.market.shipments` (en linje per front, inte per
+försändelse), rivalernas härledda ur `Front.attribution`s förändring mellan två renderingar.
+Dokumenterat avsteg: varken `Contract` eller `Shipment` har ett `sectorId`, så linjen går till
+frontens egen ankarpunkt i stället för en specifik sektor. **Stationsmarkörer**: en egen
+fyrkant vid huvudstaden med en pulserande ring vid hög exponering (§6.6, `DISPLAY_THRESHOLDS.
+exposureBurnThreshold`, redan existerande tal). Teckenförklaringen fick tre nya rader. Golden
+orörd i UI-lagret. Fullt testsvep grönt: 749 tester (727→749), lint, typecheck, build, e2e (22
+tester, körd två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P82-blockquote och
+`docs/ANDRINGSLOGG.md`. **Nästa steg är P83, This Quarter.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

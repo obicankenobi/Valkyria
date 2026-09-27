@@ -12,7 +12,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
-import { createInitialState } from '@seventh-front/core'
+import { createInitialState, DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import { TheatreMap } from '../src/components/TheatreMap.js'
 
 afterEach(cleanup)
@@ -318,6 +318,95 @@ describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
     render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
     expect(document.querySelector('[data-testid="map-capital-orders-rvn"]')!.textContent).toBe('1')
+  })
+})
+
+// P82 (ETAPP7_TEKNISK_SPEC.md §13, §6.3 lager 8): stationsmarkören.
+describe('TheatreMap (P82) — stationsmarkören', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response),
+    )
+  })
+
+  it('en aktiv station vid en huvudstad visar en badge, utan station visas ingen', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-station-seed')
+    // indochina-slice.json seedar en aktiv station i RVN (Saigon), ingen i Laos.
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('[data-testid="map-capital-station-rvn"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="map-capital-station-laos"]')).toBeNull()
+  })
+
+  it('exponering under gränsen visar ingen puls-ring, över den gör det', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-station-exposure-seed')
+    const station = state.house.stations.find((s) => s.nation === 'rvn')!
+    station.exposure = DISPLAY_THRESHOLDS.exposureBurnThreshold - 1
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    expect(document.querySelector('[data-testid="map-capital-station-rvn"] .map-station-exposure-ring')).toBeNull()
+
+    cleanup()
+    station.exposure = DISPLAY_THRESHOLDS.exposureBurnThreshold
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    expect(document.querySelector('[data-testid="map-capital-station-rvn"] .map-station-exposure-ring')).toBeTruthy()
+  })
+
+  it('en burnad (icke-aktiv) station visas inte som markör', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-station-burned-seed')
+    const station = state.house.stations.find((s) => s.nation === 'rvn')!
+    station.status = 'burned'
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('[data-testid="map-capital-station-rvn"]')).toBeNull()
+  })
+})
+
+// P82 (ETAPP7_TEKNISK_SPEC.md §13, §6.3 lager 6): försörjningslinjer.
+describe('TheatreMap (P82) — försörjningslinjer', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response),
+    )
+  })
+
+  it('en försändelse under transport till en front ritar spelarens försörjningslinje', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-supply-seed')
+    state.market.contracts.push({
+      id: 'c1',
+      buyerId: 'rvn',
+      productId: 'm1_rifle',
+      quantity: 10,
+      unitsDelivered: 0,
+      price: 1000,
+      unitCostAtSigning: 500,
+      grade: 'B',
+      dueTurn: 5,
+      status: 'active',
+      lateEventId: null,
+      frontId: 'front-1',
+    })
+    state.market.shipments.push({ id: 's1', contractId: 'c1', units: 5, arrivalTurn: 3 })
+
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const line = document.querySelector('[data-testid="map-supply-line-player-front-1"]')
+    expect(line).toBeTruthy()
+    expect(line!.classList.contains('is-player')).toBe(true)
+  })
+
+  it('utan aktiva försändelser eller rivalleveranser ritas ingen försörjningslinje', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-supply-empty-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('.map-supply-line')).toBeNull()
   })
 })
 

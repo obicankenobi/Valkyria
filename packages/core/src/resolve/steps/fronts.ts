@@ -196,7 +196,7 @@ function resolveFront(
     const positionDelta = winner === 'a' ? -BALANCE.frontBreakthroughMagnitude : BALANCE.frontBreakthroughMagnitude
     front.position = clamp(front.position + positionDelta, -100, 100)
 
-    emit({
+    const breakthroughEventId = emit({
       severity: 'headline',
       scope: 'front',
       headline: `BREAKTHROUGH ON THE ${front.id.toUpperCase()} FRONT — POSITION SHIFTS TOWARD SIDE ${winner.toUpperCase()}`,
@@ -205,5 +205,89 @@ function resolveFront(
       actorIsPlayer: false,
       subjectId: front.id,
     })
+
+    // Beslut 2F (ETAPP7_TEKNISK_SPEC.md §2F/P82): "Förbandsförflyttning
+    // avgörs på data" — P75:s stillhetsmått visade att sektorkontroll nästan
+    // aldrig ändras (sectorsChangedSide 93,6 % noll i 500 partier) trots
+    // livlig churn under ytan; ägaren beslöt att bygga mekaniken uttryckligen
+    // för att sektorkontroll ska röra sig. Genombrottströskeln (redan ovan)
+    // är den enda utlösaren — inget nytt balanstal krävs.
+    redeployAfterBreakthrough(front, winner, otherSide(winner), breakthroughEventId, emit)
   }
+}
+
+// GENUINT FYND, upptäckt via en riktad härnessmätning (200 partier, alla
+// fyra botpolicyer, 20 turer): en första version av den här funktionen lät
+// den FÖRLORANDE sidan omgruppera mellan sina EGNA sektorer (kräver att den
+// sidan håller minst två) — 0 av 1 827 genombrott gav någonsin en
+// omgruppering. Rotorsaken: den förlorande sidans svagast bemannade
+// formationer (redan nära destroyThreshold i scenariodatan) slås ut i SAMMA
+// engagement()-anrop som föregår genombrottskontrollen, samma tur, innan
+// obalansen ens hinner passera tröskeln — den sidan har praktiskt taget
+// ALLTID konsoliderats till EN sektor redan när ett genombrott inträffar.
+// `front-laos` (en sektor per sida totalt) kunde dessutom ALDRIG kvalificera
+// sig, oavsett kombat. Löst med en annan, mer träffsäker tolkning av
+// "genombrott leder till omgruppering": i stället för att den förlorande
+// sidan sluter sina egna led, PRESSAR den VINNANDE sidan sitt övertag —
+// ett förband redeployerar till den sektor DEN FÖRLORANDE SIDAN SJÄLV HÅLLER
+// (eller höll) och står svagast i, draget från den vinnande sidans STARKASTE
+// sektor. ETT ANDRA GENUINT FYND under samma omdesign: målet måste begränsas
+// till sektorer förloraren FAKTISKT bemannar — annars blir den vinnande
+// sidans egen, orörda hemmasektor (trivialt "svagast" för förloraren: noll
+// där) alltid målet, vilket för en front med bara EN sektor per sida
+// (`front-laos`) alltid landar på den vinnande sidans EGEN sektor, där den
+// redan står — noll vinnande kandidater kvar att flytta. Omätt: se
+// docs/ANDRINGSLOGG.md för mätningen (0 % → 32,8 % av genombrott, 100 % av
+// partier med minst en sektor som byter kontrollerande sida). Ingen slump
+// inblandad: stabil sortering på formationernas egen deterministiska
+// ordning (hård regel 2/3).
+function redeployAfterBreakthrough(
+  front: Front,
+  winningSide: 'a' | 'b',
+  losingSide: 'a' | 'b',
+  causeId: string,
+  emit: ResolveContext['emit'],
+): void {
+  // Sektorer den förlorande sidan FAKTISKT håller (eller höll innan den här
+  // turens förluster) — inte vilken sektor som helst på fronten. GENUINT
+  // FYND: en tidigare version tog med ALLA sektorer (även den vinnande
+  // sidans egen, orörda hemmamark, där förloraren trivialt alltid har noll
+  // närvaro) som mål — `front-laos` (bara EN sektor per sida) fick då ALLTID
+  // sin egen hemsektor som "mål", vilket aldrig ger några vinnande kandidater
+  // (den vinnande sidan är redan DÄR). Löst genom att bara mäta bland
+  // sektorer förloraren själv en gång bemannade.
+  const losingOwnedSectors = new Set(front.formations.filter((f) => f.side === losingSide).map((f) => f.sectorId))
+  if (losingOwnedSectors.size === 0) return
+
+  // Den förlorande sidans STYRKA per HÅLLEN sektor (0 om formationen där
+  // redan slagits ut) — sektorn med lägst värde är den som faktiskt riskerar
+  // att falla helt.
+  const losingPresence = new Map<string, number>()
+  for (const sectorId of losingOwnedSectors) losingPresence.set(sectorId, 0)
+  for (const formation of front.formations) {
+    if (formation.side !== losingSide || formation.status === 'destroyed') continue
+    losingPresence.set(formation.sectorId, (losingPresence.get(formation.sectorId) ?? 0) + formation.strength)
+  }
+  const [target] = [...losingPresence.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))[0]!
+
+  // Ett förband från den VINNANDE sidan, INTE redan i målsektorn — inget att
+  // "erövra" en sektor man redan bemannar. Det starkaste tillgängliga skickas
+  // fram (pressar övertaget med sin bästa enhet).
+  const winningCandidates = front.formations.filter(
+    (f) => f.side === winningSide && f.status !== 'destroyed' && f.sectorId !== target,
+  )
+  if (winningCandidates.length === 0) return
+  const moving = [...winningCandidates].sort((a, b) => b.strength - a.strength || a.id.localeCompare(b.id))[0]!
+  const fromSectorId = moving.sectorId
+  moving.sectorId = target
+
+  emit({
+    severity: 'headline',
+    scope: 'front',
+    headline: `${moving.name.toUpperCase()} REDEPLOYS ${fromSectorId.toUpperCase()} → ${target.toUpperCase()} AFTER THE BREAKTHROUGH`,
+    causeId,
+    delta: {},
+    actorIsPlayer: false,
+    subjectId: front.id,
+  })
 }

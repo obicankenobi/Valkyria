@@ -3054,6 +3054,31 @@ td.is-key {
   pointer-events: none;
 }
 
+/* P82 (§6.3 lager 6, §6.7): försörjningslinjer. §6.6, ordagrant:
+   "försörjningslinjernas streck flyter mot målet" — omgivningsrörelse,
+   avstängd av den globala prefers-reduced-motion-regeln ovan (animation:
+   none !important). pointer-events: none, samma princip som DMZ-linjen:
+   dekor/information, inget eget verb. */
+.map-supply-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+  animation: map-supply-flow 1.2s linear infinite;
+}
+.map-supply-line.is-player {
+  stroke: var(--amber);
+}
+.map-supply-line.is-rival {
+  stroke: var(--rival);
+}
+
+@keyframes map-supply-flow {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
 .map-sector-fill {
   stroke: var(--panel);
   stroke-width: 1;
@@ -3259,6 +3284,45 @@ td.is-key {
   stroke: var(--bg);
   stroke-width: 3px;
   pointer-events: none;
+}
+
+/* P82 (§6.3 lager 8): stationsmarkören — en fyrkant, skild från
+   huvudstadens cirkel och ordrarnas röda badge, så alla tre kan samexistera
+   vid samma ankare utan att bli olästbara. pointer-events: none — samma
+   principyta som §7.1 redan ger (tryck på huvudstadscirkeln under öppnar
+   akten, stationen bakar bara in en extra, tyst signal). */
+.map-station-badge {
+  fill: var(--steel-mid);
+  stroke: var(--panel);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+/* §6.6, ordagrant: "stationer med hög exponering har en ring som blinkar" —
+   omgivningsrörelse, avstängd av den globala prefers-reduced-motion-regeln.
+   Skalar (transform) i stället för att animera r direkt — samma "rör aldrig
+   en geometriegenskap via CSS när transform räcker"-princip som
+   map-heat-breathe (P77) redan etablerade, se dess egen kommentar ovan. */
+.map-station-exposure-ring {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 1.5;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-station-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes map-station-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.25);
+  }
 }
 
 /* ── CountryFile — landets bottenark (P79, §7.1/§13) ───────────────────── */

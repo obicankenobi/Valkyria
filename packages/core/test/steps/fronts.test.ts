@@ -214,6 +214,138 @@ describe('fronts (isolerat steg, spec avsnitt 5 "Front")', () => {
     })
   })
 
+  describe('förbandsförflyttning vid genombrott (beslut 2F, ETAPP7_TEKNISK_SPEC.md §2F/P82)', () => {
+    // front-1: sida a (rvn) i hue (2 förband, 40+20)/da-nang (30)/an-loc (10),
+    // sida b (nlf) i cu-chi (2 förband, 35+30)/da-nang (10)/an-loc (5)
+    // (indochina-slice.json). giveEquipment(front, 'a', ...) ger A övertaget
+    // — A vinner. Den VINNANDE sidan (A) pressar övertaget: ett förband
+    // redeployerar till den sektor där den FÖRLORANDE sidan (B) står
+    // svagast — an-loc, där B:s enda formation (styrka 5, under
+    // destroyThreshold) slås ut redan av baslinjens attritionPct oavsett
+    // pairAdvantage (genuint fynd, verifierat med ett riktat debugskript).
+    // Första versionen av mekaniken lät i stället den FÖRLORANDE sidan
+    // omgruppera mellan sina EGNA sektorer — en härnessmätning (200 partier)
+    // visade att den ALDRIG triggade (den förlorande sidans svaga
+    // formationer dör i SAMMA engagement()-anrop som föregår
+    // genombrottskontrollen, innan de hinner vara två sektorer att flytta
+    // mellan). Se docs/ANDRINGSLOGG.md för hela fyndet och omdesignen.
+    it('flyttar ett förband från den VINNANDE sidans STARKASTE sektor till den sektor där FÖRLORAREN står svagast', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      giveEquipment(front, 'a', 'artillery', 100)
+      // Momentbild av DATA, inte objektreferenser — front.formations muteras
+      // på plats av fronts() nedan, så en referenslista hade "sett" flytten
+      // redan innan den jämförs mot sig själv (genuint fynd, fångat av just
+      // det här testet innan det fixades).
+      const aFormationsBefore = front.formations
+        .filter((f) => f.side === 'a')
+        .map((f) => ({ id: f.id, sectorId: f.sectorId, strength: f.strength }))
+      const totalStrengthBefore = aFormationsBefore.reduce((sum, f) => sum + f.strength, 0)
+
+      fronts(makeCtx(state, 'front-seed').ctx)
+
+      // Minst ETT förband bytte sektor jämfört med sin ursprungliga — och det
+      // hamnade i en sektor an-loc (B:s svagaste hållna sektor, se ovan).
+      const moved = aFormationsBefore.filter((before) => {
+        const after = front.formations.find((f) => f.id === before.id)
+        return after && after.sectorId !== before.sectorId
+      })
+      expect(moved.length).toBe(1)
+      const movedAfter = front.formations.find((f) => f.id === moved[0]!.id)!
+      expect(movedAfter.sectorId).toBe('an-loc')
+      expect(moved[0]!.sectorId).toBe('hue') // A:s starkaste sektor (40+20)
+      // Ingen styrka försvinner eller uppstår av flytten själv (samma
+      // förlustberäkning som innan, oförändrad — bara sectorId flyttat).
+      const totalStrengthAfter = front.formations.filter((f) => f.side === 'a').reduce((sum, f) => sum + f.strength, 0)
+      expect(totalStrengthAfter).toBeLessThanOrEqual(totalStrengthBefore) // förluster kan ha inträffat, aldrig en ökning
+    })
+
+    it('emittar en REDEPLOYS-rubrikhändelse kedjad till genombrottshändelsen via causeId', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      giveEquipment(front, 'a', 'artillery', 100)
+
+      const { ctx, emitted } = makeCtx(state, 'front-seed')
+      fronts(ctx)
+
+      const breakthrough = emitted.find((e) => e.headline.startsWith('BREAKTHROUGH'))
+      expect(breakthrough).toBeTruthy()
+      const redeploy = emitted.find((e) => e.headline.includes('REDEPLOYS'))
+      expect(redeploy).toBeTruthy()
+      expect(redeploy!.severity).toBe('headline')
+      expect(redeploy!.scope).toBe('front')
+      expect(redeploy!.subjectId).toBe(front.id)
+    })
+
+    it('REDEPLOYS-händelsens causeId pekar exakt på BREAKTHROUGH-händelsens EGNA id (kedjad orsak, hård regel 4)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      giveEquipment(front, 'a', 'artillery', 100)
+
+      let seq = 0
+      let breakthroughId: string | null = null
+      let redeployCauseId: string | null = null
+      const ctx: ResolveContext = {
+        state,
+        draft: state,
+        submission: EMPTY_SUBMISSION,
+        rng: createRng('front-seed', 0),
+        emit: (e) => {
+          const id = `test-${seq++}`
+          if (e.headline.startsWith('BREAKTHROUGH')) breakthroughId = id
+          if (e.headline.includes('REDEPLOYS')) redeployCauseId = e.causeId
+          return id
+        },
+        rejected: [],
+      }
+      fronts(ctx)
+
+      expect(breakthroughId).not.toBeNull()
+      expect(redeployCauseId).toBe(breakthroughId)
+    })
+
+    it('ingen omgruppering, inget emitterat, om fronten bara har EN sektor totalt', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-laos']!
+      // front-laos: sida a i plain-of-jars, sida b i ho-chi-minh-trail — TVÅ
+      // sektorer normalt. Samlar hit ALLA formationer i en enda för att
+      // isolera "bara en sektor totalt"-grenen (allSectorIds.size < 2).
+      for (const formation of front.formations) formation.sectorId = 'plain-of-jars'
+      giveEquipment(front, 'a', 'artillery', 100)
+
+      const { ctx, emitted } = makeCtx(state, 'front-seed')
+      fronts(ctx)
+
+      for (const formation of front.formations) expect(formation.sectorId).toBe('plain-of-jars')
+      expect(emitted.some((e) => e.headline.includes('REDEPLOYS'))).toBe(false)
+    })
+
+    it('front-laos (en sektor per sida, två totalt) KAN omgruppera — det ursprungliga designfelet gällde specifikt', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-laos']!
+      giveEquipment(front, 'a', 'artillery', 100)
+
+      const { ctx, emitted } = makeCtx(state, 'front-seed')
+      fronts(ctx)
+
+      const redeploy = emitted.find((e) => e.headline.includes('REDEPLOYS'))
+      if (emitted.some((e) => e.headline.startsWith('BREAKTHROUGH'))) {
+        expect(redeploy).toBeTruthy()
+        expect(redeploy!.headline).toContain('HO-CHI-MINH-TRAIL') // A:s enda förband redeployerar in i B:s sektor
+      }
+    })
+
+    it('ingen omgruppering när fronten stagnerar eller inget genombrott sker (ingen tröskel passerad)', () => {
+      const state = createInitialState('indochina-slice', 'seed')
+      const front = state.fronts['front-1']!
+      const before = front.formations.map((f) => f.sectorId)
+
+      fronts(makeCtx(state, 'front-seed').ctx) // ingen materiel — stagnerar helt
+
+      expect(front.formations.map((f) => f.sectorId)).toEqual(before)
+    })
+  })
+
   describe('trace (P36, ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3)', () => {
     it('växer med ett värde per tur och hålls kort — de fyra senaste positionerna, äldst först', () => {
       const state = createInitialState('indochina-slice', 'seed')

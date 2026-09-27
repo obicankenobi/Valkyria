@@ -179,10 +179,25 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // fyra nu faktiskt skickade av aggressive/balanced (GK-A). EXPAND:s
   // exposure-roll skalas dessutom om av counterIntelligence. headlines > 8
   // höll oförändrat.
+  //
+  // Omfryst IGEN i P82 (ETAPP7_TEKNISK_SPEC.md §2F, beslut 2F — uttryckligen
+  // förhandsauktoriserat: "redeploy-mekaniken byggs ... som egen commit med
+  // omfryst golden"). Formation.sectorId kan nu ändras mitt i partiet:
+  // fronts.ts's nya redeployAfterBreakthrough() låter den VINNANDE sidan i
+  // ett genombrott flytta ett förband in i den sektor där motståndaren står
+  // svagast, samma genombrottströskel som redan flyttar front.position (inget
+  // nytt balanstal -- balance.frozen.json oförändrat, verifierat). Ingen ny
+  // form på GameState, bara ett fälts VÄRDE som kan ändras oftare -- en
+  // härnessmätning (200 partier, alla fyra botpolicyer) visar 32,8 % av
+  // genombrotten ger en omgruppering och att sektorkontroll (deriveSectorControl)
+  // nu faktiskt byter sida i 100 % av partierna (mot P75s uppmätta 6,4 %) --
+  // se docs/ANDRINGSLOGG.md för hela mätningen och den tidigare, strukturellt
+  // ALDRIG utlösande designen (0 % av 1 827 genombrott) den ersätter.
+  // headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'acfa7566a66b5' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '93e21c8983ccd' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1e068c56fdd46a' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c50537e1bd6ad' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'efb3cf78f70be' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '13b7563921cb9' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

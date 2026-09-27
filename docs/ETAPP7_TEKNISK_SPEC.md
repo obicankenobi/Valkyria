@@ -1293,6 +1293,80 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P82 — Hela kartan.** Laos-teatern, alla länder, huvudstäder, stationer och ordermarkörer, försörjningslinjer (§6.7). Förbandsförflyttning om 2F antagits, som egen commit med omfryst golden. *Utökad efter P81 (P81-10):* ett genombrott som leder till omgruppering emittar en egen rubrikhändelse som P81d:s blixtnivå fångar. Den ryms i samma omfrysning av golden.
 
+> **P82 BYGGD 2026-09-27.** *Premisskontroll:* Laos-teatern (`SECTOR_REGIONS.
+> laos`, geodatan i `indochina.topo.json`) och samtliga sex länder
+> (Vietnam nord/syd, Laos, Kambodja, Thailand, Kina) fanns redan från P76 —
+> `TheatreMap.tsx` itererar redan generiskt över `Object.values(state.
+> fronts)`/`SECTOR_REGIONS`, aldrig hårdkodat till en enda teater. "Hela
+> kartan" var alltså redan sant vid P82:s start (verifierat med en
+> skärmdump innan något kodades, inte antaget) — den återstående, FAKTISKT
+> saknade delen av §6.3:s lagerlista var lager 6 (försörjningslinjer) och
+> stationsdelen av lager 8 (huvudstäder och ordermarkörer fanns redan sedan
+> P79).
+>
+> **Förbandsförflyttningen (2F), core:** `fronts.ts`s nya
+> `redeployAfterBreakthrough`, anropad på SAMMA genombrottströskel som redan
+> flyttar `front.position` — inget nytt balanstal. GENUINT FYND, upptäckt via
+> en riktad härnessmätning (200 partier, alla fyra botpolicyer, 20 turer):
+> den FÖRSTA versionen lät den FÖRLORANDE sidan omgruppera mellan sina EGNA
+> sektorer (kräver minst två) — 0 AV 1 827 genombrott gav någonsin en
+> omgruppering, eftersom den förlorande sidans svagast bemannade formationer
+> redan slås ut i SAMMA `engagement()`-anrop som föregår
+> genombrottskontrollen (`front-laos`, en sektor per sida, kunde dessutom
+> ALDRIG kvalificera sig). Omdesignad: den VINNANDE sidan pressar i stället
+> in ett förband i den sektor där FÖRLORAREN står svagast (bland sektorer
+> förloraren faktiskt håller/höll — ett andra genuint fynd, se `fronts.ts`s
+> egen kommentar). Ny mätning: 32,8 % av genombrotten gav en omgruppering,
+> 100 % av partierna hade minst en, och (den egentliga måttstocken)
+> sektorkontroll (`deriveSectorControl`) bytte faktiskt sida i 100 % av
+> partierna — mot P75:s uppmätta 6,4 %. Golden refryst (beslut 2F
+> förhandsauktoriserade uttryckligen exakt den här omfrysningen);
+> `balance.frozen.json` bitvis identiskt med `balance.json`, verifierat — ny
+> trajektoria, inga nya tal. 19 nya tester i `fronts.test.ts`.
+> `newsClassification.ts`s `isFlashEvent` fick REDEPLOYS-mönstret (P81-10:s
+> egen instruktion).
+>
+> **Försörjningslinjer (lager 6), app:** ny `supplyLines.ts` (ren, testbar).
+> AVSTEG, dokumenterat: varken `Contract` eller `Shipment` har ett
+> `sectorId`-fält (bara `Contract.frontId`, en hel front) — linjen ritas till
+> frontens EGNA ankarpunkt (medelvärdet av dess teaters
+> `SECTOR_REGIONS`-ankare, samma beräkning `heatGlowByTheatre` redan
+> använder) i stället för en specifik sektor, samma "dokumenterad
+> approximation, inget nytt core-fält för en presentationsdetalj"-princip som
+> P41:s `SUPPLY_ARRIVAL`/`REDEPLOY` redan etablerade. Ingångshamnar (§6.7,
+> presentationsdata): Da Nang för Indokina (redan en `SECTOR_REGIONS`-anchor,
+> en verklig amerikansk logistikhamn), Vientiane för Laos (redan en
+> `CAPITALS`-anchor). Spelarens linjer läses ur `state.market.shipments`
+> (en `Shipment` KVARSTÅR i listan ända tills den anländer, `types.ts`s egen
+> kommentar — ingen extra `arrivalTurn`-filtrering behövs), en linje per
+> FRONT (inte per försändelse, annars identiskt överlappande dubbletter).
+> Rivalernas läses ur `Front.attribution`s FÖRÄNDRING mellan två
+> renderingar — en `useRef`-ögonblicksbild uppdaterad i ett `useEffect` EFTER
+> varje render (`supplyLines.ts`s och `TheatreMap.tsx`s egna kommentarer för
+> hela resonemanget). Amber (`--amber`, husets egen ockra) för spelaren,
+> `--rival` för motståndare, strömmande streck (`stroke-dashoffset`,
+> avstängt av den globala `prefers-reduced-motion`-regeln).
+>
+> **Stationsmarkörer (lager 8), app:** en fyrkant vid huvudstaden, skild
+> från kapitalcirkeln och orderbadgen så alla tre kan samexistera. §6.6,
+> ordagrant: "stationer med hög exponering har en ring som blinkar" —
+> byggd nu (stationer renderades inte alls förrän den här prompten) och
+> gated på `DISPLAY_THRESHOLDS.exposureBurnThreshold` (redan existerande,
+> inget nytt tal). Skalar via `transform: scale()`, inte `r` direkt — samma
+> redan etablerade princip som `map-heat-breathe` (P77).
+>
+> Teckenförklaringen (`MapLegend`/`mapLegend.ts`, P81a) fick tre nya rader
+> (`supply-line-player`, `supply-line-rival`, `station`) — dess egen,
+> redan generiska test ("en rad per MAP_LEGEND-entry") täckte dem utan
+> ändring. Golden ORÖRD i UI-lagret (bara `resolve/fronts.ts` rörde
+> golden, dokumenterat ovan). Nya tester: `supplyLines.test.ts` (10),
+> `fronts.test.ts` (+13, redeploy), fem nya i `TheatreMap.test.tsx`
+> (stationer/försörjningslinjer). Fullt testsvep grönt: 749 tester, lint,
+> typecheck (alla tre paket), build, e2e (22 tester, körd två gånger i
+> rad). `npm run shots` verifierade visuellt (stationsmarkören syns vid
+> Saigon; inga försörjningslinjer vid tur 0, väntat — inga försändelser
+> finns än). Se `docs/ANDRINGSLOGG.md`.
+
 **P83 — This Quarter.** *Klart när:* varje radtyp i §7.7 hoppar till rätt föremål. *Utökad efter P81:* (1) Kvartalsbeskedet (P81-11) ligger överst i listan efter kvartalsuppspelningen: vunna och förlorade bud (med vinnare och pris när underrättelsen räcker), levererade kontrakt och inbetalningar. (2) En tom handlingsplats går att trycka på och öppnar en handlingskatalog (P81-12): alla verb som kostar en plats, grupperade per föremål, var och en med ett hopp till föremålet där den utförs. Verb som ännu inte går att nå visas inte, så katalogen växer i P84–P86.
 
 **P84 — CONTRACTS.** Stämplade mappar och prisreglaget över `winBand`. *Klart när:* inga dolda fält renderas. *Utökad efter P81 (P81-7):* reglaget läser P81c:s `playerWinCurve`, så att vinstchans och marginal följer reglaget över spelarens hela prisintervall.
