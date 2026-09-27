@@ -443,6 +443,20 @@ NEWS DESK i tre nivåer), P82–P91 utökade, och två nya föreslagna etapper i
 "utkastad tur 10" är `BUYOUT` vid andra granskningen, och kartans kollisionstest körs bara vid
 startzoomen. `bidEstimate`/`winBand` får inte ändras — golden-testets `balanced`-bot läser dem.
 Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P81-blockquote och `docs/ANDRINGSLOGG.md`.
+**P81a/P81b/P81c BYGGDA 2026-09-27** (P81d, NEWS DESK i tre nivåer, återstår): kartans
+teckenförklaring (`MapLegend.tsx`, tryck på heat-glöd/frontlinje/förbandsbricka/sektor öppnar
+samma förklaring, den röda "pilen" identifierad som `ho-chi-minh-trail`s sektorfärgning) och
+etikettkollisionerna fixade på alla tre zoomnivåer (genuint fynd: döljningsmekanismen avmonterade
+dolda etiketter i stället för att bara dölja dem med CSS, vilket gjorde att de kunde återuppstå
+odetekterade — fixat). HUD:ens doomsday blev en visarinstrument-gauge, en synlig cellgräns löste
+"Doomsday Treasury"-sammanläsningen, en menyknapp öppnar ett nytt pausöverlag (ljud/huvudmeny/
+fortsätt), Esc gör detsamma (regel 16). Ny `playerWinCurve` (queries.ts) löser "0 % vinstchans
+oavsett bud" genom att visa spelarens vinstchans från egen självkostnad i stället för bara
+rivalernas smala band; ny `boardReviewOutlook` visar turer till nästa styrelsegranskning och en
+förvarning i kvartalsbandet turen innan. Golden ORÖRD i alla tre (`bidEstimate`/`winBand`
+oförändrade, verifierat). Fullt testsvep grönt: 691 tester, lint, typecheck, build, e2e (22
+tester i hela `e2e/`, körd två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P81a/P81b/
+P81c-blockquoter och `docs/ANDRINGSLOGG.md`.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

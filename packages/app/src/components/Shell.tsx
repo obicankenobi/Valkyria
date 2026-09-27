@@ -6,7 +6,7 @@
 // INTE av namnbytet, bara det som visas här i skalet runt dem (§2G:s egen
 // mening, ordagrant).
 import { useEffect, useRef, useState } from 'react'
-import { DISPLAY_THRESHOLDS, previewAction } from '@seventh-front/core'
+import { boardReviewOutlook, DISPLAY_THRESHOLDS, previewAction } from '@seventh-front/core'
 import type { GameState, PlayerAction } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
 import { ActionSlot } from './designSystem.js'
@@ -126,21 +126,76 @@ function doomsdayTone(value: number): string {
   return ''
 }
 
+// P81b (§13, P81-blockquoten, P81-4): "Doomsday-siffran ... bör vara
+// tydligare, mer som en skala tex termometer/tryckmätare." doomsdayGate.ts
+// klampar fältet 0–100 (§resolve/doomsdayGate.ts, ordagrant), samma skala
+// gaugen ritas mot. En halvcirkel, tre färgzoner efter EXAKT
+// DISPLAY_THRESHOLDS.doomsdayCrisisWatch/doomsdayCrisisEvent (inga nya
+// balanstal), en visare som roterar från vänster (0) via toppen (50) till
+// höger (100) — samma "visarinstrument"-register regel 8 kräver.
+const GAUGE_R = 26
+const GAUGE_CX = 32
+const GAUGE_CY = 32
+
+function gaugePoint(fraction: number): [number, number] {
+  const angle = fraction * Math.PI // 0 → vänster, 1 → höger, via toppen
+  return [GAUGE_CX - GAUGE_R * Math.cos(angle), GAUGE_CY - GAUGE_R * Math.sin(angle)]
+}
+
+function gaugeArc(fromFraction: number, toFraction: number): string {
+  const [x1, y1] = gaugePoint(fromFraction)
+  const [x2, y2] = gaugePoint(toFraction)
+  // large-arc-flag avgör bara vid spann > 180°; en halvcirkel (fraction 0..1)
+  // sträcker sig aldrig längre än exakt 180° — flaggan är alltså ALLTID 0,
+  // aldrig villkorad på spannets storlek.
+  return `M${x1.toFixed(2)},${y1.toFixed(2)} A${GAUGE_R},${GAUGE_R} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)}`
+}
+
+function DoomsdayGauge({ value }: { value: number }) {
+  const fraction = Math.max(0, Math.min(100, value)) / 100
+  const watchFraction = DISPLAY_THRESHOLDS.doomsdayCrisisWatch / 100
+  const eventFraction = DISPLAY_THRESHOLDS.doomsdayCrisisEvent / 100
+  const [needleX, needleY] = gaugePoint(fraction)
+
+  return (
+    <svg className="ds-hud-gauge" viewBox="0 0 64 36" aria-hidden="true">
+      <path d={gaugeArc(0, watchFraction)} className="ds-hud-gauge-zone is-safe" />
+      <path d={gaugeArc(watchFraction, eventFraction)} className="ds-hud-gauge-zone is-amber" />
+      <path d={gaugeArc(eventFraction, 1)} className="ds-hud-gauge-zone is-danger" />
+      <line x1={GAUGE_CX} y1={GAUGE_CY} x2={needleX} y2={needleY} className="ds-hud-gauge-needle" />
+      <circle cx={GAUGE_CX} cy={GAUGE_CY} r={2.5} className="ds-hud-gauge-pivot" />
+    </svg>
+  )
+}
+
 // ── HUD — lackerad stålpanel med räknande tal (regel 8, regel 4). Ett tryck
 // visar den fulla statusraden (skuld, kredit m.m.) — §5:s egen anteckning
 // "(tryck för full HUD)". Full-HUD-innehållet är samma platshållarnivå som
 // resten av P74: de faktiska fälten finns redan i state, bara den utfällda
 // vyn är ny här. ──
-export function HudBar({ state, testId = 'hud' }: { state: GameState; testId?: string }) {
+export function HudBar({
+  state,
+  testId = 'hud',
+  onOpenMenu,
+}: {
+  state: GameState
+  testId?: string
+  onOpenMenu?: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const doomsday = useCountUp(state.doomsday)
   const treasury = useCountUp(state.house.treasury)
   const target = state.house.boardTarget
   const progressPct = target.threshold > 0 ? (target.progressSnapshot / target.threshold) * 100 : 0
   const progress = useCountUp(progressPct)
+  // P81c (§13, P81-blockquoten, P81-8): "utkastad tur 10 utan tydlig
+  // förvarning" — Board-cellen visade bara procent mot det SLUTLIGA målet,
+  // aldrig när nästa granskning är eller om spelaren ligger under kravet dit.
+  const outlook = boardReviewOutlook(state)
 
   return (
     <div className="ds-hud" data-testid={testId}>
+      <div className="ds-hud-top">
       <button
         type="button"
         className="ds-hud-row"
@@ -148,7 +203,12 @@ export function HudBar({ state, testId = 'hud' }: { state: GameState; testId?: s
         aria-expanded={expanded}
         aria-label="Show full status"
       >
-        <span className="ds-hud-cell">
+        {/* P81b (§13, P81-4/P81-5): doomsday som ett visarinstrument i
+            stället för bara en siffra, och en synlig cellram (ds-hud-cell,
+            border-left nedan) mellan den och Treasury — de två lästes
+            tidigare som ETT värde ("Doomsday Treasury") utan en avgränsning. */}
+        <span className="ds-hud-cell ds-hud-cell-doomsday">
+          <DoomsdayGauge value={state.doomsday} />
           <span className={`ds-hud-value ${doomsdayTone(state.doomsday)}`} data-testid="hud-doomsday">
             {doomsday.toFixed(0)}
           </span>
@@ -167,7 +227,12 @@ export function HudBar({ state, testId = 'hud' }: { state: GameState; testId?: s
           <span className="ds-hud-bar">
             <span className="ds-hud-bar-fill" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
           </span>
-          <span className="ds-hud-label">Board {progress.toFixed(0)}%</span>
+          {/* P81c (§13, P81-8): "Board" kortades till "Bd" — den fulla
+              etiketten pluss "· Nt" klipptes (regel 18) sedan menyknappen
+              (P81b) tog utrymme från raden. */}
+          <span className={outlook.isLastTurnBeforeReview ? 'ds-hud-label is-danger' : 'ds-hud-label'} data-testid="hud-board-outlook">
+            Bd {progress.toFixed(0)}% {outlook.turnsUntil !== null ? `· ${outlook.turnsUntil}t` : ''}
+          </span>
         </span>
         <span className="ds-hud-cell ds-hud-cell-date">
           <span className="ds-hud-value" data-testid="datestamp">
@@ -176,6 +241,16 @@ export function HudBar({ state, testId = 'hud' }: { state: GameState; testId?: s
           <span className="ds-hud-label">Turn {state.meta.turn}</span>
         </span>
       </button>
+
+      {/* P81b (§13, P81-6): menyknappen, utanför ds-hud-row eftersom en
+          <button> inte kan nästlas i en annan — en flexsyskon i stället för
+          en kolumn i den inre grid:en, se .ds-hud-top. */}
+      {onOpenMenu && (
+        <button type="button" className="ds-hud-menu-button" onClick={onOpenMenu} aria-label="Menu" data-testid="hud-menu-button">
+          ☰
+        </button>
+      )}
+      </div>
 
       {expanded && (
         <div className="ds-hud-expanded" data-testid="hud-expanded">
@@ -206,7 +281,15 @@ export function HudBar({ state, testId = 'hud' }: { state: GameState; testId?: s
 // föregripa P83:s härledningsfunktion: öppna ordrar + en aktiv kris. ──
 export function QuarterBand({ state }: { state: GameState }) {
   const [expanded, setExpanded] = useState(false)
-  const count = state.market.openOrders.length + (state.pendingCrisis ? 1 : 0)
+  // P81c (§13, P81-blockquoten, P81-8): "en varning i kvartalsbandet" turen
+  // före en granskning spelaren ligger under kravet inför — samma
+  // boardReviewOutlook HUD:ens Board-cell redan läser.
+  const outlook = boardReviewOutlook(state)
+  const boardWarning = outlook.isLastTurnBeforeReview
+  const target = state.house.boardTarget
+  const requiredPct = target.threshold > 0 ? (outlook.required / target.threshold) * 100 : 0
+  const currentPct = target.threshold > 0 ? (outlook.current / target.threshold) * 100 : 0
+  const count = state.market.openOrders.length + (state.pendingCrisis ? 1 : 0) + (boardWarning ? 1 : 0)
 
   return (
     <div className="ds-quarterband">
@@ -222,6 +305,11 @@ export function QuarterBand({ state }: { state: GameState }) {
         </span>
         <span className="ds-quarterband-label">This Quarter</span>
         <span className="ds-quarterband-count">{count}</span>
+        {boardWarning && (
+          <span className="ds-quarterband-warning" aria-hidden="true" data-testid="quarterband-board-warning">
+            ⚠
+          </span>
+        )}
         <span className="ds-quarterband-spacer" />
         <span className="ds-quarterband-chevron" aria-hidden="true">
           {expanded ? '▴' : '▾'}
@@ -229,6 +317,11 @@ export function QuarterBand({ state }: { state: GameState }) {
       </button>
       {expanded && (
         <div className="ds-quarterband-body" data-testid="quarterband-body">
+          {boardWarning && (
+            <p className="ds-quarterband-item is-warn" data-testid="quarterband-board-warning-item">
+              Board review next turn — at {currentPct.toFixed(0)}%, need {requiredPct.toFixed(0)}% to stay on track.
+            </p>
+          )}
           {state.pendingCrisis && <p className="ds-quarterband-item">A crisis awaits a decision.</p>}
           {state.market.openOrders.length > 0 && (
             <p className="ds-quarterband-item">{state.market.openOrders.length} open order(s) on CONTRACTS.</p>

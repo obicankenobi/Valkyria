@@ -148,6 +148,25 @@ const APP_SCREENS = [
       await page.getByTestId('tab-news').waitFor()
     },
   },
+  {
+    // P81a: teckenförklaringen, öppnad över OPERATIONS (ingen egen
+    // referensskiss — samma linje som quarter-replay ovan).
+    name: 'map-legend',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('map-legend-button').click()
+      await page.getByTestId('map-legend').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

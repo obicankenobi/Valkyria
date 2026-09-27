@@ -36,6 +36,7 @@ import { SECTOR_REGIONS } from '../sectorRegions.js'
 import type { SectorRegion } from '../sectorRegions.js'
 import { CAPITALS } from '../capitals.js'
 import { MapPlaceholder } from './Shell.js'
+import { MapLegend } from './MapLegend.js'
 
 // §6.5, ordagrant: "Sektorer i länder utan aktiv station." Ett lands
 // "aktiv station"-koppling är samma effectiveDepth(state, buyerId) som
@@ -167,7 +168,22 @@ function DoctrineGlyph({ doctrine }: { doctrine: Doctrine }) {
 // jämfört med sektoretiketterna, som redan är absolutpositionerade direkt
 // under den delade <g transform>. Genuint fynd, hittat under granskning
 // innan koden ens kördes — inte en bugg som smög sig in i produktion.
-function FormationToken({ display, x, y }: { display: FormationDisplay; x: number; y: number }) {
+// P81a (§13, P81-blockquoten): "Tryck på en symbol utan egna verb (heat-glöd,
+// frontlinje, förbandsbricka) öppnar samma förklaring för just den symbolen"
+// (regel 13). `onExplain` väljer legend-entryn utifrån brickans faktiska
+// tillstånd — okänd/sargad/känd, samma tre lägen §7.2:s teckenförklaring
+// beskriver.
+function FormationToken({
+  display,
+  x,
+  y,
+  onExplain,
+}: {
+  display: FormationDisplay
+  x: number
+  y: number
+  onExplain?: () => void
+}) {
   const dotCount = display.strengthBand === 'stark' ? 3 : display.strengthBand === 'medel' ? 2 : 1
   const frameClass = [
     'map-token-frame',
@@ -179,7 +195,12 @@ function FormationToken({ display, x, y }: { display: FormationDisplay; x: numbe
     .join(' ')
 
   return (
-    <g transform={`translate(${x},${y})`} data-testid={`map-formation-${display.id}`} className={`map-formation-${display.side}`}>
+    <g
+      transform={`translate(${x},${y})`}
+      data-testid={`map-formation-${display.id}`}
+      className={`map-formation-${display.side}`}
+      onClick={onExplain}
+    >
       {display.side === 'a' ? (
         <rect x={-5} y={-5} width={10} height={10} className={frameClass} />
       ) : (
@@ -213,6 +234,20 @@ function FormationToken({ display, x, y }: { display: FormationDisplay; x: numbe
 // listordning), krymps aldrig. getBBox saknas i jsdom (samma miljölucka som
 // matchMedia/indexedDB på andra ställen i den här appen) — utan den visas
 // alla etiketter, aldrig en krasch.
+//
+// P81a, genuint fynd, hittat av kollisionstestets egna zoomnivå 3-fall
+// (e2e/text-overflow.spec.ts): renderarna nedan döljer tidigare en
+// kolliderande etikett genom att låta den `return null` — elementet
+// avmonteras då helt och tar bort sin egen ref ur labelRefs. Nästa
+// deps-ändring (en ny zoomnivå) ser då INTE den dolda etiketten alls, kan
+// alltså aldrig avgöra om den fortfarande kolliderar, och den återkommer
+// odetekterad så fort dess ID saknas i nästa nextHidden-beräkning — precis
+// det som hände: ho-chi-minh-trail-etiketten återuppstod vid zoomnivå 3 och
+// kolliderade både med da-nang och ett förbandsnamn, utan att någonsin
+// prövas mot dem. Fixat genom att ALDRIG avmontera en etikett — döljningen
+// är nu en ren CSS-klass (.map-label-hidden, visibility: hidden, geometrin
+// kvar för getBBox), så varje deps-ändring alltid mäter HELA den aktuella
+// kandidatmängden, aldrig en krympt delmängd av den föregående gissningen.
 function useLabelCollisionHiding(labelRefs: React.RefObject<Map<string, SVGTextElement>>, deps: readonly unknown[]) {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
 
@@ -259,6 +294,13 @@ export function TheatreMap({
   const svgRef = useRef<SVGSVGElement>(null)
   const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity)
   const labelRefs = useRef<Map<string, SVGTextElement>>(new Map())
+
+  // P81a: teckenförklaringen. `focusId` styr vilken rad MapLegend scrollar
+  // till och markerar — null öppnar hela listan (legend-knappen), en id
+  // öppnar direkt på just den symbolens förklaring (tryck på kartan).
+  const [legend, setLegend] = useState<{ open: boolean; focusId: string | null }>({ open: false, focusId: null })
+  const openLegend = (focusId: string | null) => setLegend({ open: true, focusId })
+  const closeLegend = () => setLegend({ open: false, focusId: null })
 
   // Fångar övergången "geodatan hämtad, <svg ref={svgRef}> finns äntligen i
   // DOM:en" (fetch är async — det FÖRSTA render-varvet visar MapPlaceholder,
@@ -471,14 +513,24 @@ export function TheatreMap({
           </g>
 
           <g className="map-sectors">
-            {allRegions.map((region) => (
-              <path
-                key={region.sectorId}
-                d={regionPathD(region, project)}
-                className={`map-sector-fill ${sectorFillClass(sectorControlBySector.get(region.sectorId))}`}
-                data-testid={`map-sector-${region.sectorId}`}
-              />
-            ))}
+            {allRegions.map((region) => {
+              const side = sectorControlBySector.get(region.sectorId)
+              return (
+                <path
+                  key={region.sectorId}
+                  d={regionPathD(region, project)}
+                  className={`map-sector-fill ${sectorFillClass(side)}`}
+                  data-testid={`map-sector-${region.sectorId}`}
+                  // P81a: sektorfyllningen ligger ovanpå landmassan i
+                  // ritordning och har ingen pointer-events:none — ett tryck
+                  // här nådde tidigare varken landklicket eller något annat
+                  // (en tyst dödzon). Öppnar nu samma förklaring som
+                  // teckenförklaringens sektor-rader i stället för att
+                  // fortsätta vara ett dött tryck.
+                  onClick={() => openLegend(`sector-${side ?? 'empty'}`)}
+                />
+              )
+            })}
           </g>
 
           <g className="map-frontlines">
@@ -518,13 +570,27 @@ export function TheatreMap({
                     )
                   })}
                   {currentXY && (
-                    <circle
-                      cx={currentXY[0]}
-                      cy={currentXY[1]}
-                      r={4}
-                      className="map-frontline-marker"
-                      data-testid={`map-frontline-marker-${front.id}`}
-                    />
+                    <>
+                      <circle
+                        cx={currentXY[0]}
+                        cy={currentXY[1]}
+                        r={4}
+                        className="map-frontline-marker"
+                        data-testid={`map-frontline-marker-${front.id}`}
+                      />
+                      {/* P81a: markören själv har pointer-events: none (den
+                          animerade shimmer-cirkeln, orörd) — en egen,
+                          osynlig tryckyta ovanpå ger regel 11:s 44 px utan
+                          att röra markörens egen storlek eller stil. */}
+                      <circle
+                        cx={currentXY[0]}
+                        cy={currentXY[1]}
+                        r={14}
+                        fill="transparent"
+                        onClick={() => openLegend('frontline')}
+                        data-testid={`map-frontline-tap-${front.id}`}
+                      />
+                    </>
                   )}
                 </g>
               )
@@ -541,7 +607,10 @@ export function TheatreMap({
                 formations.map((display, i) => {
                   const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
                   const [dx, dy] = tokenOffset(i, formations.length)
-                  return <FormationToken key={display.id} display={display} x={x + dx} y={y + dy} />
+                  const focusId = !display.known ? 'formation-unknown' : display.status === 'mauled' ? 'formation-mauled' : 'formation-known'
+                  return (
+                    <FormationToken key={display.id} display={display} x={x + dx} y={y + dy} onExplain={() => openLegend(focusId)} />
+                  )
                 }),
               )}
             </g>
@@ -575,7 +644,7 @@ export function TheatreMap({
                       </text>
                     </g>
                   )}
-                  {zoomLevel >= 2 && !hiddenLabels.has(labelId) && (
+                  {zoomLevel >= 2 && (
                     <text
                       ref={(el) => {
                         if (el) labelRefs.current.set(labelId, el)
@@ -583,7 +652,7 @@ export function TheatreMap({
                       }}
                       x={x}
                       y={y + 14}
-                      className="map-capital-label"
+                      className={hiddenLabels.has(labelId) ? 'map-capital-label map-label-hidden' : 'map-capital-label'}
                       textAnchor="middle"
                       data-testid={`map-capital-label-${capital.factionId}`}
                     >
@@ -605,15 +674,30 @@ export function TheatreMap({
               const [x, y] = project([anchor[1], anchor[0]]) ?? [0, 0]
               const hot = heat >= DISPLAY_THRESHOLDS.heatEscalation
               return (
-                <circle
-                  key={theatreId}
-                  cx={x}
-                  cy={y}
-                  r={40 + heat * 0.6}
-                  className={`map-heat-glow-circle ${hot ? 'is-hot' : ''}`}
-                  style={{ opacity: Math.min(0.35, heat / 300) }}
-                  data-testid={`map-heat-glow-${theatreId}`}
-                />
+                <g key={theatreId}>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={40 + heat * 0.6}
+                    className={`map-heat-glow-circle ${hot ? 'is-hot' : ''}`}
+                    style={{ opacity: Math.min(0.35, heat / 300) }}
+                    data-testid={`map-heat-glow-${theatreId}`}
+                  />
+                  {/* P81a: den blurrade glödcirkeln har pointer-events: none
+                      sedan P77 (rent dekorativ, ska inte stjäla tryck från
+                      sektorer/förband under den brett spridda blur-radien).
+                      En egen, mindre tryckyta i stället för att öppna
+                      pointer-events på hela glöden — samma mönster som
+                      map-frontline-tap ovan. */}
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={16}
+                    fill="transparent"
+                    onClick={() => openLegend('heat')}
+                    data-testid={`map-heat-glow-tap-${theatreId}`}
+                  />
+                </g>
               )
             })}
           </g>
@@ -626,7 +710,6 @@ export function TheatreMap({
             <g className="map-sector-labels">
               {allRegions.map((region) => {
                 const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
-                if (hiddenLabels.has(region.sectorId)) return null
                 return (
                   <text
                     key={region.sectorId}
@@ -636,7 +719,7 @@ export function TheatreMap({
                     }}
                     x={x}
                     y={y - 8}
-                    className="map-sector-label"
+                    className={hiddenLabels.has(region.sectorId) ? 'map-sector-label map-label-hidden' : 'map-sector-label'}
                     textAnchor="middle"
                     data-testid={`map-sector-label-${region.sectorId}`}
                   >
@@ -657,7 +740,6 @@ export function TheatreMap({
                   const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
                   const [dx, dy] = tokenOffset(i, formations.length)
                   const labelId = `formation-${display.id}`
-                  if (hiddenLabels.has(labelId)) return null
                   return (
                     <text
                       key={display.id}
@@ -667,7 +749,7 @@ export function TheatreMap({
                       }}
                       x={x + dx}
                       y={y + dy - 9}
-                      className="map-formation-label"
+                      className={hiddenLabels.has(labelId) ? 'map-formation-label map-label-hidden' : 'map-formation-label'}
                       textAnchor="middle"
                       data-testid={`map-formation-label-${display.id}`}
                     >
@@ -680,6 +762,21 @@ export function TheatreMap({
           )}
         </g>
       </svg>
+
+      {/* P81a (§13, P81-2/P81-3): en ikonknapp, alltid nåbar, öppnar hela
+          teckenförklaringen — samma tryck-i-stället-för-hovring-princip
+          (regel 13) som varje enskild symbols eget onExplain ovan. */}
+      <button
+        type="button"
+        className="map-legend-button"
+        onClick={() => openLegend(null)}
+        aria-label="Teckenförklaring"
+        data-testid="map-legend-button"
+      >
+        ?
+      </button>
+
+      <MapLegend open={legend.open} focusId={legend.focusId} onClose={closeLegend} />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
+import { computeExpectedProgress } from './resolve/steps/board.js'
 import type {
   BidEstimate,
   Formation,
@@ -43,6 +44,7 @@ interface ThresholdBalance {
   supplyIndexMax: number
   crisisPushExchangePct: number
   exposureBurnThreshold: number
+  boardReviewTolerance: number
 }
 const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
 
@@ -60,7 +62,49 @@ export const DISPLAY_THRESHOLDS = {
   crisisPushExchangePct: THRESHOLD_BALANCE.crisisPushExchangePct,
   // P29 (avsnitt 4.2): THE WORLD ritar varningsnivån en station brinner ovanför.
   exposureBurnThreshold: THRESHOLD_BALANCE.exposureBurnThreshold,
+  // P81c (§13, P81-blockquoten): boardReviewOutlook nedan behöver EXAKT samma
+  // tolerans board.ts:s runReview() faktiskt dömer efter, inte en gissning.
+  boardReviewTolerance: THRESHOLD_BALANCE.boardReviewTolerance,
 } as const
+
+// P81c (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten, P81-8): "utkastad tur 10
+// utan tydlig förvarning" — HUD:ens Board-mätare visade bara en enda,
+// odaterad procentandel mot det SLUTLIGA målet, aldrig vad som krävs vid
+// NÄSTA granskning eller hur få turer som är kvar dit. Ordagrant samma
+// pass mark-beräkning som board.ts:s runReview() (computeExpectedProgress,
+// exporterad därifrån, plus boardReviewTolerance ovan) — "en formel, en
+// källa", aldrig en egen gissning i appen.
+export interface BoardReviewOutlook {
+  nextReviewTurn: number | null // null: inga granskningar kvar (alla avklarade)
+  turnsUntil: number | null
+  required: number // pass mark vid nästa granskning, samma skala som progressSnapshot
+  current: number
+  onTrack: boolean
+  isLastTurnBeforeReview: boolean // P81-8: "en varning i kvartalsbandet" turen INNAN en granskning spelaren ligger under
+}
+
+export function boardReviewOutlook(state: GameState): BoardReviewOutlook {
+  const target = state.house.boardTarget
+  const nextReviewTurn = target.reviewTurns.find((t) => t > state.meta.turn) ?? null
+  const current = target.progressSnapshot
+
+  if (nextReviewTurn === null) {
+    return { nextReviewTurn: null, turnsUntil: null, required: 0, current, onTrack: true, isLastTurnBeforeReview: false }
+  }
+
+  const expectedProgress = computeExpectedProgress(target.threshold, nextReviewTurn, target.dueTurn)
+  const required = expectedProgress * (1 - DISPLAY_THRESHOLDS.boardReviewTolerance)
+  const turnsUntil = nextReviewTurn - state.meta.turn
+
+  return {
+    nextReviewTurn,
+    turnsUntil,
+    required,
+    current,
+    onTrack: current >= required,
+    isLastTurnBeforeReview: turnsUntil === 1 && current < required,
+  }
+}
 
 // P79 (ETAPP7_TEKNISK_SPEC.md §7.3/§13): landets bottenark (CountryFile.tsx)
 // bygger INFLUENCE:s TierPicker-nivåer från runda POÄNGtal (5/15/30, en
@@ -308,6 +352,82 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
 }
 
+const PLAYER_WIN_CURVE_POINTS = 7
+
+// P81c (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten, P81-7): speltestets fynd
+// var att de flesta ordrar visade 0 % vinstchans "oavsett bud" — ett
+// visningsfel, inte ett spelfel. bidEstimate.winBand samplar bara FEM punkter
+// mellan rivalPriceLow och rivalPriceHigh (ett band centrerat på en enda
+// rivalsamplings pris ± DEPTH_BAND_PCT), och det bandet kan ligga helt över
+// det prisintervall där SPELARENS EGET bud faktiskt vinner — en simulering
+// mot riktig bidding.ts visade bud på 50–70 % av rivalPriceLow vinna
+// 36–100 % av gångerna, siffror winBand aldrig visade. playerWinCurve
+// besvarar en ANNAN fråga än winBand: inte "var ligger rivalerna", utan
+// "var, mellan min egen självkostnad och rivalPriceHigh, börjar JAG vinna."
+// Golden-säker: bidEstimate/computeWinBand rörs inte (golden-testets
+// balanced-bot läser dem, hård regel — se ANDRINGSLOGG.md), och detta är en
+// ny, fristående funktion med sin egen hash-seedade Rng-ström (hård regel 2).
+export interface PlayerWinCurvePoint {
+  price: Money
+  confidence: Pct
+}
+
+export function playerWinCurve(state: GameState, order: Order, grade: Grade): PlayerWinCurvePoint[] {
+  const product = getProduct(order.productId)
+  const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}:playerWinCurve`, 0)
+
+  // Rivalprisbandets ÖVRE gräns — ordagrant samma beräkning som bidEstimate
+  // ovan (samma "en enda samplad rivalprissiffra, ±DEPTH_BAND_PCT"-metod),
+  // duplicerad avsiktligt i stället för att låta playerWinCurve anropa hela
+  // bidEstimate: den skulle kört en HEL extra winBand-Monte-Carlo (500 rival-
+  // dragningar) bara för en siffra den redan visar spelaren. Håll i synk med
+  // bidEstimate om rivalprisbandets formel någonsin ändras.
+  const depth = effectiveDepth(state, order.buyerId)
+  const pct = DEPTH_BAND_PCT[depth]
+  const rivalPrices: Money[] = []
+  for (const rivalId of order.competingRivals) {
+    const rival = state.rivals[rivalId]
+    if (!rival) continue
+    rivalPrices.push(computeRivalBid(hashRng, rival, product, order.referencePrice).price)
+  }
+  const lowestRivalPrice = rivalPrices.length > 0 ? Math.min(...rivalPrices) : order.referencePrice
+  const rivalPriceHigh = Math.round(lowestRivalPrice * (1 + pct))
+
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities)
+  const costFloor = Math.max(1, yourUnitCost * order.quantity)
+  const ceiling = Math.max(costFloor, rivalPriceHigh)
+
+  const faction = state.factions[order.buyerId]
+  const relationToPlayer = faction ? faction.relationToPlayer : 0
+  const official = state.officials[order.officialId]
+  const integrity = official ? official.integrity : 0
+  const blocMultiplier = official && official.agenda === 'NON_ALIGNMENT' ? BALANCE.agendaNonAlignmentBlocMultiplier : 1
+  const blocTerm = faction ? alignmentPenalty(faction.alignment, state.house) * blocMultiplier : 0
+
+  const inputs: WinBandInputs = {
+    order,
+    product,
+    grade,
+    rivalPriceLow: costFloor,
+    rivalPriceHigh: ceiling,
+    relationToPlayer,
+    reputation: state.house.reputation,
+    blocTerm,
+    rivals: state.rivals,
+    factionAlignment: faction ? faction.alignment : 0,
+    integrity,
+    blocMultiplier,
+  }
+
+  const points: PlayerWinCurvePoint[] = []
+  for (let i = 0; i < PLAYER_WIN_CURVE_POINTS; i++) {
+    const price =
+      ceiling === costFloor ? costFloor : Math.round(costFloor + ((ceiling - costFloor) * i) / (PLAYER_WIN_CURVE_POINTS - 1))
+    points.push({ price, confidence: computeWinAtPrice(hashRng, inputs, price) })
+  }
+  return points
+}
+
 interface WinBandInputs {
   order: Order
   product: ReturnType<typeof getProduct>
@@ -329,13 +449,68 @@ interface WinBandInputs {
   blocMultiplier: number
 }
 
-// Monte Carlo-skattning: för varje prispunkt, kör MONTE_CARLO_SAMPLES simulerade
-// omgångar rivalbud (dragna ur samma hash-Rng-ström) och räkna andelen där ett bud
-// till det priset — med spelarens EGNA kända relation/rykte/blocTerm, ingen mut,
-// leverans exakt vad ordern kräver — hade slagit alla icke-diskvalificerade
-// rivalbud. Det är det ärliga sättet att uttrycka "dold information som
-// sannolikhet" spec 4.3 efterlyser, snarare än att läcka en exakt siffra som ändå
-// inte avgör anbudet.
+// Monte Carlo-skattning för EN prispunkt: kör MONTE_CARLO_SAMPLES simulerade
+// omgångar rivalbud (dragna ur samma hash-Rng-ström) och räkna andelen där ett
+// bud till det priset — med spelarens EGNA kända relation/rykte/blocTerm,
+// ingen mut, leverans exakt vad ordern kräver — hade slagit alla icke-
+// diskvalificerade rivalbud. Det är det ärliga sättet att uttrycka "dold
+// information som sannolikhet" spec 4.3 efterlyser, snarare än att läcka en
+// exakt siffra som ändå inte avgör anbudet. Utbruten ur computeWinBand (P81c,
+// ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten) så att playerWinCurve nedan
+// återanvänder EXAKT samma formel över ett annat prisintervall, i stället för
+// att handkopiera den — samma "en formel, en källa"-disciplin som
+// intelOpSuccessPct/fundCoupSuccessPct (P78).
+function computeWinAtPrice(hashRng: Rng, p: WinBandInputs, price: Money): Pct {
+  const withinBudget = price <= p.order.trueBudget
+  const playerScore = computeScore({
+    bidPrice: price,
+    bidDeliveryTurns: p.order.requiredDeliveryTurns,
+    bidGrade: p.grade,
+    bidBribe: 0,
+    referencePrice: p.order.referencePrice,
+    requiredDeliveryTurns: p.order.requiredDeliveryTurns,
+    weights: p.order.weights,
+    inspectorIntegrity: p.integrity,
+    relationToPlayer: p.relationToPlayer,
+    reputation: p.reputation,
+    blocTerm: p.blocTerm,
+  })
+
+  let wins = 0
+  for (let sample = 0; sample < MONTE_CARLO_SAMPLES; sample++) {
+    let beatsAllRivals = withinBudget
+
+    for (const rivalId of p.order.competingRivals) {
+      const rival = p.rivals[rivalId]
+      if (!rival) continue
+      const sampledBid = computeRivalBid(hashRng, rival, p.product, p.order.referencePrice)
+      if (sampledBid.price > p.order.trueBudget) continue // diskvalificerad, ingen konkurrent
+
+      // relationToPlayer/reputation/blocTerm är sedan P24 rivalens EGNA värden —
+      // samma termer bidding.ts faktiskt avgör med, annars driver skattningen isär
+      // från avgörandet (queries.ts:s egen huvudkommentar).
+      const rivalScore = computeScore({
+        bidPrice: sampledBid.price,
+        bidDeliveryTurns: sampledBid.deliveryTurns,
+        bidGrade: 'A',
+        bidBribe: 0,
+        referencePrice: p.order.referencePrice,
+        requiredDeliveryTurns: p.order.requiredDeliveryTurns,
+        weights: p.order.weights,
+        inspectorIntegrity: p.integrity,
+        relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
+        reputation: rival.reputation,
+        blocTerm: rivalBlocTerm(rival, p.factionAlignment) * p.blocMultiplier,
+      })
+      if (rivalScore >= playerScore) beatsAllRivals = false
+    }
+
+    if (beatsAllRivals) wins++
+  }
+
+  return Math.round((wins / MONTE_CARLO_SAMPLES) * 100)
+}
+
 function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confidence: Pct }[] {
   const points: { price: Money; confidence: Pct }[] = []
 
@@ -345,54 +520,7 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
         ? p.rivalPriceLow
         : Math.round(p.rivalPriceLow + ((p.rivalPriceHigh - p.rivalPriceLow) * i) / (WIN_BAND_POINTS - 1))
 
-    const withinBudget = price <= p.order.trueBudget
-    const playerScore = computeScore({
-      bidPrice: price,
-      bidDeliveryTurns: p.order.requiredDeliveryTurns,
-      bidGrade: p.grade,
-      bidBribe: 0,
-      referencePrice: p.order.referencePrice,
-      requiredDeliveryTurns: p.order.requiredDeliveryTurns,
-      weights: p.order.weights,
-      inspectorIntegrity: p.integrity,
-      relationToPlayer: p.relationToPlayer,
-      reputation: p.reputation,
-      blocTerm: p.blocTerm,
-    })
-
-    let wins = 0
-    for (let sample = 0; sample < MONTE_CARLO_SAMPLES; sample++) {
-      let beatsAllRivals = withinBudget
-
-      for (const rivalId of p.order.competingRivals) {
-        const rival = p.rivals[rivalId]
-        if (!rival) continue
-        const sampledBid = computeRivalBid(hashRng, rival, p.product, p.order.referencePrice)
-        if (sampledBid.price > p.order.trueBudget) continue // diskvalificerad, ingen konkurrent
-
-        // relationToPlayer/reputation/blocTerm är sedan P24 rivalens EGNA värden —
-        // samma termer bidding.ts faktiskt avgör med, annars driver skattningen isär
-        // från avgörandet (queries.ts:s egen huvudkommentar).
-        const rivalScore = computeScore({
-          bidPrice: sampledBid.price,
-          bidDeliveryTurns: sampledBid.deliveryTurns,
-          bidGrade: 'A',
-          bidBribe: 0,
-          referencePrice: p.order.referencePrice,
-          requiredDeliveryTurns: p.order.requiredDeliveryTurns,
-          weights: p.order.weights,
-          inspectorIntegrity: p.integrity,
-          relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
-          reputation: rival.reputation,
-          blocTerm: rivalBlocTerm(rival, p.factionAlignment) * p.blocMultiplier,
-        })
-        if (rivalScore >= playerScore) beatsAllRivals = false
-      }
-
-      if (beatsAllRivals) wins++
-    }
-
-    points.push({ price, confidence: Math.round((wins / MONTE_CARLO_SAMPLES) * 100) })
+    points.push({ price, confidence: computeWinAtPrice(hashRng, p, price) })
   }
 
   return points

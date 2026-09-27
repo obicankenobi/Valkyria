@@ -17,6 +17,7 @@ import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
 import { TheWire } from './components/TheWire.js'
 import { QuarterReplay } from './components/QuarterReplay.js'
+import { PauseOverlay } from './components/PauseOverlay.js'
 import { useGame } from './useGame.js'
 import { hasSavedGame, loadFullReplay, loadMuted, saveFullReplay, saveMuted } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
@@ -73,6 +74,9 @@ export function App() {
   // ("End Quarter → Quarter Replay → Front Page").
   const [replaying, setReplaying] = useState(false)
   const [fullReplay, setFullReplay] = useState(false)
+  // P81b (§13, P81-6): pausöverlaget. Regel 16 ("Esc för paus") nås oavsett
+  // vilken flik som är aktiv, samma princip som End Quarter-fallbacken.
+  const [paused, setPaused] = useState(false)
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -163,6 +167,20 @@ export function App() {
     return () => document.removeEventListener('click', handleClick)
   }, [])
 
+  // Regel 16 (CLAUDE.md, "Spelgränssnitt — regler (etapp 7)"): "Esc för
+  // paus." Guardas mot menyn/uppspelningen — ett pausöverlag ovanpå
+  // huvudmenyn eller mitt i kvartalsuppspelningen har ingen mening (och
+  // uppspelningen har sin egen Skip-knapp).
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      if (view === 'menu' || replaying) return
+      setPaused((v) => !v)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [view, replaying])
+
   if (!hydrated) {
     return (
       <div className="app">
@@ -196,7 +214,7 @@ export function App() {
 
   return (
     <div className="ds-shell">
-      <HudBar state={state} />
+      <HudBar state={state} onOpenMenu={() => setPaused(true)} />
       <QuarterBand state={state} />
 
       <main className="ds-shell-content">
@@ -281,6 +299,21 @@ export function App() {
           }}
         />
       )}
+
+      {/* P81b (§13, P81-6): pausöverlaget. "Tillbaka till huvudmenyn" kräver
+          ingen egen sparning — useGame.ts:s autospar körs redan efter varje
+          tur, samma gräns MainMenu.tsx:s "New Game"-bekräftelse redan litar
+          på. */}
+      <PauseOverlay
+        open={paused}
+        muted={muted}
+        onToggleMuted={handleToggleMuted}
+        onResume={() => setPaused(false)}
+        onMainMenu={() => {
+          setPaused(false)
+          setView('menu')
+        }}
+      />
     </div>
   )
 }

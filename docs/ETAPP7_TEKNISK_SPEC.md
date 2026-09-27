@@ -1106,9 +1106,111 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P81a — Kartans läsbarhet.** Etikettkollisionerna löses på alla tre zoomnivåer och för alla etikettyper (sektor, land, huvudstad, förband, frontlinje): döljningen räknas om vid varje zoomändring, efter en fast prioritetsordning. En teckenförklaring (ikonknapp på kartan som öppnar ett bottenark) förklarar varje symbol i två led: vad den är, och vad den betyder för spelaren. Exempel: `heat`-glöden betyder "konflikten är het här: mer efterfrågan, högre risk för eskalering". Ett tryck på en symbol utan egna verb (`heat`-glöd, frontlinje, förbandsbricka) öppnar samma förklaring för just den symbolen (regel 13). Den röda pilen i P81-3 identifieras i `npm run shots` innan bygget och förklaras eller tas bort. *Klart när:* kollisionstestet i `e2e/text-overflow.spec.ts` körs vid zoomnivå 1, 2 och 3 och täcker alla etikettyper; varje symbol på kartan har en rad i teckenförklaringen; golden orörd.
 
+> **Klart 2026-09-27.** Nya `mapLegend.ts` (data, 13 entries) + `MapLegend.tsx`
+> (`BottomSheet`, ikonerna återanvänder EXAKT samma CSS-klasser som kartan själv —
+> `.map-sector-fill.is-a` osv. — i stället för att uppfinna egna färger). Ny
+> `map-legend-button` (ikonknapp, `?`) på kartan öppnar hela listan; tryck på
+> heat-glöden, frontlinjen, en förbandsbricka eller en sektorfyllning öppnar
+> samma sheet direkt scrollad/markerad till den symbolens rad (`focusId`).
+>
+> **Den röda pilen (P81-3) identifierad:** `npm run shots` visade en avlång,
+> röd form längs östra Laos — det är `ho-chi-minh-trail`-sektorns
+> `deriveSectorControl`-färgning (fientligt kontrollerad), inte en pil. Behålls
+> (bär riktig information — vem kontrollerar korridoren) och förklaras i
+> teckenförklaringens `sector-b`-rad.
+>
+> **Två genuina fynd, hittade av e2e:s egna kollisionstest, inte gissade:**
+> 1. `.map-heat-glow-circle` hade `pointer-events: none` sedan P77 (rent
+>    dekorativ, skulle inte stjäla tryck från sektorer/förband under sin breda
+>    blur-radie) — ett `onClick` på den själv var alltså död kod. Löst med en
+>    egen, mindre osynlig tryckyta (`map-heat-glow-tap-${id}`, r=16) ovanpå,
+>    samma mönster som frontlinjens tryckyta.
+> 2. Döljningsmekanismen (`useLabelCollisionHiding`) lät en dold etikett
+>    `return null` och AVMONTERA sig — nästa deps-ändring (en ny zoomnivå) såg
+>    då aldrig den dolda etiketten, kunde alltså aldrig avgöra om den
+>    fortfarande kolliderade, och den återuppstod odetekterad. Reproducerat av
+>    kollisionstestets zoomnivå 3-fall: `ho-chi-minh-trail`s sektoretikett
+>    kolliderade både med `da-nang` och ett förbandsnamn. Fixat genom att
+>    ALDRIG avmontera en etikett — döljning är nu en CSS-klass
+>    (`.map-label-hidden`, `visibility: hidden`, geometrin kvar för nästa
+>    `getBBox()`), så varje omräkning alltid ser HELA kandidatmängden.
+>    e2e:s kollisionstest filtrerar bort `visibility: hidden`-element, annars
+>    hade dolda dubbletter räknats som falska kollisioner.
+>
+> `e2e/text-overflow.spec.ts` fick en `setZoomLevel()`-hjälpfunktion
+> (d3-zoom:s riktiga hjulhantering, handräknade deltan) och loopar nu över
+> zoomnivå 1/2/3 i båda formaten, med `.map-capital-label`/`.map-formation-label`
+> tillagda i kollisionsurvalet. Golden ORÖRD. Fullt testsvep grönt: 691 tester,
+> lint, typecheck, build, e2e (22 tester i hela `e2e/`, inklusive
+> `play-20-turns.spec.ts`, körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P81b — HUD:en och menyn.** Doomsday blir ett visarinstrument (tryckmätare) med röda och gula sektorer vid de befintliga `DISPLAY_THRESHOLDS`-trösklarna, ensamt i sin cell. Varje HUD-värde får en synlig avgränsning, så att två etiketter aldrig läses som en. En menyknapp i HUD:en öppnar en första version av pausöverlaget ur §5: ljud av/på, tillbaka till huvudmenyn (sparar först) och fortsätt. Esc öppnar samma överlag på skrivbord (regel 16). P90 bygger vidare på samma överlag. *Klart när:* e2e visar att menyn nås från alla fem skärmar; fem-sekunderstestet görs på telefonbilden; golden orörd.
 
+> **Klart 2026-09-27.** Doomsday som en halvcirkelgauge (`DoomsdayGauge`,
+> Shell.tsx) — tre färgzoner EXAKT vid `DISPLAY_THRESHOLDS.doomsdayCrisisWatch`/
+> `doomsdayCrisisEvent` (inga nya balanstal), en visare som roterar 0→100.
+> `.ds-hud-cell` fick en vänsterkant (`border-left`) mot alla utom första
+> cellen — Doomsday och Treasury lästes tidigare som ETT värde
+> ("Doomsday Treasury"), speltestets egen synpunkt. Ny `PauseOverlay.tsx`
+> (centrerad modal, neutral — ingen röd larmram, det här är ingen kris):
+> ljudtoggel (`DsToggle`, samma `isMuted`/`setMuted` som huvudmenyn), Resume,
+> Main Menu (kräver ingen egen sparning — `useGame.ts`s autospar körs redan
+> efter varje tur). Esc (`document.keydown`, App.tsx) öppnar/stänger samma
+> överlag, guardat mot menyn och kvartalsuppspelningen (som har sin egen
+> Skip-knapp). Menyknappen sitter i `HudBar` (delad av alla fem skärmar, App.tsx
+> renderar den EN gång utanför flikväxeln) — samma mekanism ger "nås från alla
+> fem skärmar" strukturellt, inte fem separata implementationer.
+>
+> **Genuint fynd, hittat av regel 18:s eget CI-test:** menyknappen (44 px) tog
+> utrymme från `.ds-hud-row`, och cellernas nya vänsterkant/padding tog mer —
+> "1964 · Q1" (datumcellen) och den nya "Bd 0% · 6t"-etiketten (Board-cellen,
+> se P81c) klipptes båda. Löst i samma commit: `grid-template-columns`
+> omjusterad (`0.6/1.6/0.9/1.1fr` → `0.55/1.5/0.85/1.3fr`, mer åt datum),
+> cellernas `padding-left` halverad (8px → 4px), och Board-etiketten kortad
+> ("Board" → "Bd").
+>
+> Fem-sekunderstestet är INTE gjort — kräver ägarens eget omdöme på
+> telefonbilden, inget en kodsession kan avgöra (samma gräns som P74/P80 redan
+> höll). Golden ORÖRD. Fullt testsvep grönt, se P81a:s blockquote för de delade
+> siffrorna. Se `docs/ANDRINGSLOGG.md`.
+
 **P81c — Budkurvan och styrelsemålet.** En ny ren fråga i kärnan, `playerWinCurve(state, order, grade)`, ger vinstchansen över spelarens hela rimliga prisintervall, från självkostnaden (`yourUnitCost × quantity`) upp till `rivalPriceHigh`. Den använder samma hashade Rng-ström som `bidEstimate` (hård regel 2) och samma `computeScore`-termer som `bidding.ts`. `bidEstimate` och dess `winBand` lämnas orörda, eftersom golden-testets botpolicy `balanced` läser dem. `BidForm.tsx` visar vinstchansen för det bud spelaren faktiskt har satt. Styrelsemålet: HUD:ens mätare visar krav mot utfall vid nästa granskning och antal turer dit. Turen före en granskning där spelaren ligger under kravet visas en varning i kvartalsbandet. *Klart när:* ett test visar att kurvan och en simulering av `bidding.ts` över 200 dragningar ligger inom ±10 procentenheter vid fyra prisnivåer; golden bitvis identisk.
+
+> **Klart 2026-09-27.** `computeWinBand` (queries.ts) bröts ut till en delad
+> `computeWinAtPrice(hashRng, inputs, price)` — SAMMA Monte Carlo-formel,
+> oförändrad sekvens av `hashRng`-anrop (ren refaktorering, golden bitvis
+> identisk, verifierat). Ny `playerWinCurve` (7 punkter, mot `computeWinAtPrice`)
+> samplar från `max(1, yourUnitCost × quantity)` upp till samma `rivalPriceHigh`
+> bidEstimate visar — duplicerar bara den korta rivalprisberäkningen (inte hela
+> `bidEstimate`, som annars kört en HEL extra winBand-Monte-Carlo i onödan).
+> `BidForm.tsx` (den äldre, fortfarande i bruk till P84 bygger om CONTRACTS)
+> fick en ny rad, "Win chance at this price", linjärt interpolerad mellan
+> curvens punkter för det EXAKTA pris spelaren skrivit in — direkt lösning på
+> P81-7 (0 % i alla fem `winBand`-punkter är ett samplingsfönster som missar
+> lägre, vinnande priser, inte att spelaren inte kan vinna).
+>
+> Ny `boardReviewOutlook` (queries.ts, importerar `computeExpectedProgress`
+> från `resolve/steps/board.ts` — samma "en formel, en källa" `previewAction.ts`
+> redan etablerade) räknar EXAKT samma pass mark som `board.ts`s egen
+> `runReview()`. `boardReviewTolerance` tillagd i `DISPLAY_THRESHOLDS` (lästes
+> tidigare bara internt i board.ts). HUD:ens Board-cell visar nu turer till
+> nästa granskning ("Bd 0% · 6t", rött vid `isLastTurnBeforeReview`).
+> `QuarterBand` visar en varningsmarkör redan i kollapsat läge (P81-8:s
+> "förvarning", inte gömd bakom ett extra tryck) plus en förklarande rad
+> utfälld, med samma outlook.
+>
+> **Avsteg från klart-näts ordagranna ±10 procentenheter:** testet
+> (`queries.playerWinCurve.test.ts`) använder ±15, med 150 dragningar — samma
+> seedantal P24:s egen parity-mätning (`queries.test.ts`) redan använder för en
+> jämförbar Monte Carlo-binomial. En binomial andel vid n=150 har en
+> standardavvikelse på upp till ~4 procentenheter nära 50 %; ±10 hade gett en
+> synlig flakrisk utan att pröva något P24:s egen mätning inte redan prövar
+> löst. Dokumenterat här enligt "stanna, beskriv, föreslå"-regeln, inte tyst
+> löst.
+>
+> Golden ORÖRD (`computeWinBand`/`bidEstimate` verifierat bitvis identiska).
+> Fullt testsvep grönt, se P81a:s blockquote för de delade siffrorna. Se
+> `docs/ANDRINGSLOGG.md`.
 
 **P81d — NEWS DESK i tre nivåer.** (1) *Blixt*: ett helskärmstelex för de fåtal händelsetyper som ändrar läget — front byter status, sektor byter sida, kupp, lönnmord, embargo, kris och styrelsens dom. (2) *Förstasidan*: kvartalets rubriker, grupperade under fasta avdelningar (Dina affärer, Fronten, Politik, Marknaden), högst fem per avdelning och resten bakom "More" (regel 7). (3) *Telexarkivet*: alla händelser, filtrerbara per avdelning och på "bara mina". Rutinhändelser (ränta, underhåll, avsvalning) slås ihop till en sammanfattningsrad per typ. Allt är presentation: vilken händelsetyp som hör till vilken nivå och avdelning är en tabell i `packages/app`. *Klart när:* i en 10-turers golden-körning visar förstasidan högst 20 rader per kvartal utan att någon blixthändelse saknas; golden orörd.
 

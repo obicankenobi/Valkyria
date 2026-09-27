@@ -1249,6 +1249,44 @@ td.is-key {
 
 /* ── QuarterReplay (P80, ETAPP7_TEKNISK_SPEC.md §8) ─────────────────────── */
 
+/* P81b (§13, P81-6): pausöverlaget, samma centrerade modal-mönster som
+   .modal-overlay/.modal-panel men neutralt (ingen röd larmram — det här är
+   ingen kris). */
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 8, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 60;
+}
+.pause-panel {
+  max-width: 360px;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pause-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  text-align: center;
+  color: var(--ink);
+}
+.pause-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .replay-panel {
   max-width: 480px;
   display: flex;
@@ -2447,17 +2485,31 @@ td.is-key {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
+/* P81b (§13, P81-6): den yttre raden — HUD:ens statusrad plus menyknappen
+   som en egen kolumn bredvid den, aldrig NÄSTLAD i den (en <button> kan
+   inte innehålla en annan). .ds-hud-expanded (den utfällda statusraden)
+   ligger som ett eget, fullbrett syskon UTANFÖR .ds-hud-top, se JSX:en. */
+.ds-hud-top {
+  display: flex;
+  align-items: stretch;
+}
+
 .ds-hud-row {
   appearance: none;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 56px;
   display: grid;
   /* Kassan ("£4,000,000") är den längsta texten i raden — en jämn 1fr-
      fördelning klippte den (upptäckt av regel 18:s eget CI-test sedan det
      utökades till OPERATIONS-skalet i P74). Doomsday/kvartalsmålet behöver
      bara plats för korta tal, så kassakolumnen får mer av utrymmet i stället
-     för att texten förkortas eller krymps under regel 14:s 15px-golv. */
-  grid-template-columns: 0.6fr 1.6fr 0.9fr 1.1fr;
+     för att texten förkortas eller krymps under regel 14:s 15px-golv.
+     P81b:s menyknapp (44px) tog utrymme från hela raden — datumcellen
+     ("1964 · Q1") klipptes då på nytt (regel 18:s eget CI-test, återigen).
+     Omjusterat: datumkolumnen (1.1fr → 1.3fr) på bekostnad av doomsday och
+     kassan, som båda hade marginal kvar. */
+  grid-template-columns: 0.55fr 1.5fr 0.85fr 1.3fr;
   gap: 6px;
   padding: 8px 12px;
   background: transparent;
@@ -2466,11 +2518,73 @@ td.is-key {
   text-align: left;
 }
 
+/* P81b (§13, P81-6): ikonknappen som öppnar pausöverlaget — samma bakelit-
+   look som map-legend-button (TheatreMap.tsx), fast kvadratisk och i
+   HUD:ens egna flöde i stället för absolut positionerad. */
+.ds-hud-menu-button {
+  appearance: none;
+  flex: none;
+  width: 44px;
+  min-height: 56px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.35);
+  color: var(--steel-ink);
+  font-size: 18px;
+  cursor: pointer;
+}
+.ds-hud-menu-button:active {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 .ds-hud-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  /* P81b (§13, P81-5): en synlig avgränsning mellan cellerna — utan den
+     lästes Doomsday och Treasury som ETT sammanhängande värde
+     ("Doomsday Treasury"), speltestets egen synpunkt (P81-5). Den första
+     cellen har ingen linje att dela med någon till vänster. 4px, inte 8 —
+     en smalare marginal räcker för att läsas som en avgränsning, och de
+     återstående 4 px per cell behövdes för att undvika en ny klippning av
+     datumcellen (regel 18) sedan menyknappen (P81b) tog utrymme från raden. */
+  padding-left: 4px;
+  border-left: 1px solid rgba(0, 0, 0, 0.25);
+}
+.ds-hud-cell:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.ds-hud-cell-doomsday {
+  align-items: center;
+}
+.ds-hud-gauge {
+  width: 44px;
+  height: 25px;
+}
+.ds-hud-gauge-zone {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.ds-hud-gauge-zone.is-safe {
+  stroke: var(--steel-highlight);
+}
+.ds-hud-gauge-zone.is-amber {
+  stroke: var(--amber-glow);
+}
+.ds-hud-gauge-zone.is-danger {
+  stroke: var(--red);
+}
+.ds-hud-gauge-needle {
+  stroke: var(--steel-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ds-hud-gauge-pivot {
+  fill: var(--steel-ink);
 }
 
 .ds-hud-value {
@@ -2499,6 +2613,9 @@ td.is-key {
   text-transform: uppercase;
   color: rgba(217, 209, 182, 0.65);
   white-space: nowrap;
+}
+.ds-hud-label.is-danger {
+  color: var(--red);
 }
 
 .ds-hud-bar {
@@ -2590,6 +2707,16 @@ td.is-key {
 .ds-quarterband-item.is-quiet {
   font-style: italic;
   color: var(--ink-faint);
+}
+.ds-quarterband-item.is-warn {
+  color: var(--red);
+  font-weight: 700;
+}
+/* P81c (§13, P81-blockquoten, P81-8): synlig även i kollapsat läge — en
+   varning gömd bakom ett extra tryck missar syftet ("förvarning"). */
+.ds-quarterband-warning {
+  color: var(--red);
+  font-size: 14px;
 }
 
 /* ── Telexremsan ───────────────────────────────────────────────────────── */
@@ -2758,6 +2885,78 @@ td.is-key {
   overflow: hidden;
   background: var(--sea);
   touch-action: none; /* d3-zoom äger pekgester (panorering/nyp) — webbläsaren ska aldrig scrolla/zooma sidan under fingret */
+  position: relative; /* P81a: värdkontext för .map-legend-button */
+}
+
+/* P81a (§13, P81-blockquoten): teckenförklaringens ikonknapp, alltid synlig
+   över kartan, övre högra hörnet så den aldrig krockar med THIS QUARTER-
+   bandet ovanför eller handlingsplatserna nedanför. Samma bakelit-look som
+   .ds-icon-button, men en egen klass eftersom knappen ligger absolut
+   positionerad ovanpå SVG:n i stället för i det vanliga flödet. */
+.map-legend-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--steel-light) 0%, var(--steel) 100%);
+  color: var(--steel-ink);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 0 var(--steel-dark), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 5;
+}
+.map-legend-button:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.map-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.map-legend-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 200ms ease;
+}
+.map-legend-row.is-focused {
+  background: var(--amber-soft);
+}
+.map-legend-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+.map-legend-text {
+  flex: 1;
+  min-width: 0;
+}
+.map-legend-title {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.map-legend-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+}
+.map-legend-meaning {
+  color: var(--ink);
+  margin-top: 2px;
 }
 
 .map-svg {
@@ -2817,6 +3016,13 @@ td.is-key {
 }
 .map-sector-fill.is-empty {
   fill: var(--line-strong);
+}
+
+/* P81a: regel 18:s kollisionsdöljning (TheatreMap.tsx:s useLabelCollisionHiding)
+   döljer nu genom CSS i stället för att avmontera — elementet stannar i DOM:en
+   (geometrin kvar för nästa getBBox()-mätning) men visas aldrig. */
+.map-label-hidden {
+  visibility: hidden;
 }
 
 .map-sector-label {

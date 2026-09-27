@@ -3,11 +3,33 @@
 // BRUTTOMARGINAL vid det valda priset och den valda graden — spelaren kan inte
 // fatta prisbeslut utan att se sin kostnad. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8.
 import { useMemo, useState } from 'react'
-import { bidEstimate } from '@seventh-front/core'
-import type { Bid, GameState, Grade, Order } from '@seventh-front/core'
+import { bidEstimate, playerWinCurve } from '@seventh-front/core'
+import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
 
 const GRADES: Grade[] = ['A', 'B', 'C']
+
+// P81c (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten, P81-7): winBand samplar
+// bara FEM diskreta punkter mellan rivalPriceLow/rivalPriceHigh — spelarens
+// faktiskt inmatade pris ligger nästan aldrig exakt på en av dem. Linjär
+// interpolation mellan de två närmaste punkterna i playerWinCurve (som redan
+// TÄCKER hela intervallet ner till självkostnaden, se queries.ts) i stället
+// för att bara läsa av den närmaste punkten.
+function interpolateConfidence(curve: PlayerWinCurvePoint[], price: number): number {
+  if (curve.length === 0) return 0
+  if (price <= curve[0]!.price) return curve[0]!.confidence
+  const last = curve[curve.length - 1]!
+  if (price >= last.price) return last.confidence
+  for (let i = 1; i < curve.length; i++) {
+    const a = curve[i - 1]!
+    const b = curve[i]!
+    if (price <= b.price) {
+      const t = b.price === a.price ? 0 : (price - a.price) / (b.price - a.price)
+      return Math.round(a.confidence + (b.confidence - a.confidence) * t)
+    }
+  }
+  return last.confidence
+}
 
 function marginClass(marginPct: number | null): string {
   if (marginPct === null) return 'margin-readout'
@@ -34,9 +56,12 @@ export function BidForm({
   const [grade, setGrade] = useState<Grade>(existingBid?.grade ?? 'A')
   const [bribe, setBribe] = useState<number>(existingBid?.bribe ?? 0)
 
-  // bidEstimate drar aldrig ur huvud-Rng:n (hash-seedad, se queries.ts) — säkert
-  // att räkna om vid varje grade-byte utan att röra rngCursor.
+  // bidEstimate/playerWinCurve drar aldrig ur huvud-Rng:n (hash-seedade, se
+  // queries.ts) — säkert att räkna om vid varje grade-byte utan att röra
+  // rngCursor.
   const estimate = useMemo(() => bidEstimate(state, order, grade), [state, order, grade])
+  const winCurve = useMemo(() => playerWinCurve(state, order, grade), [state, order, grade])
+  const yourWinChance = price > 0 ? interpolateConfidence(winCurve, price) : null
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
   // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste därför skalas med
@@ -91,6 +116,15 @@ export function BidForm({
           Price
           <input type="number" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} required />
         </label>
+        {/* P81c (§13, P81-7): den faktiska vinstchansen för DET pris spelaren
+            just skrev in, inte bara de fem generiska bandpunkterna ovan —
+            speltestets fynd var att bandet ofta visade 0 % överallt medan
+            spelaren egentligen kunde vinna på ett lägre bud. */}
+        {yourWinChance !== null && (
+          <p className="hint" data-testid="your-win-chance">
+            Win chance at this price: <strong>{yourWinChance}%</strong>
+          </p>
+        )}
         <label className="field">
           Delivery time
           <input

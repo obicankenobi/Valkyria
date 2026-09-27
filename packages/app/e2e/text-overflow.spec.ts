@@ -107,41 +107,96 @@ for (const format of FORMATS) {
   }
 }
 
-// P76 (ETAPP7_TEKNISK_SPEC.md §13): kartkollisionsdelen av regel 18, ordagrant
-// "ett test över kartan underkänner om två etiketters eller markörers
-// avgränsningsrutor skär varandra." Bara OPERATIONS har en karta — egen loop,
-// inte SCREENS ovan, eftersom de andra skärmarna saknar .map-sector-label/
-// .map-frontline-marker* helt (ett tomt NodeList ger noll par att jämföra,
-// men vore missvisande att köra i samma loop som testar ett annat påstående).
-for (const format of FORMATS) {
-  test(`kartan — inga etiketter eller markörer kolliderar, ${format.name} (regel 18)`, async ({ page }) => {
-    await page.setViewportSize({ width: format.width, height: format.height })
-    await page.goto('/')
-    await enterOperations(page)
-    await page.getByTestId('theatre-map-svg').waitFor()
-    await page.waitForTimeout(300)
+// P81a (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten): d3-zoom:s inbyggda
+// hjulhantering, samma väg en riktig mus/styrplatta använder — ingen
+// intern d3-state manipuleras direkt. Deltana är handräknade mot
+// TheatreMap.tsx:s formel (k *= 2^(-deltaY/500)) och ZOOM_LEVEL_1_MAX/
+// ZOOM_LEVEL_3_MIN/ZOOM_MIN/ZOOM_MAX, med marginal åt båda hållen.
+async function setZoomLevel(page: Page, level: 1 | 2 | 3): Promise<void> {
+  const svg = page.getByTestId('theatre-map-svg')
+  const box = await svg.boundingBox()
+  if (!box) throw new Error('kartan hittades inte')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const deltaY = level === 1 ? 400 : level === 3 ? -1000 : 0
+  if (deltaY !== 0) await page.mouse.wheel(0, deltaY)
+  await expect(svg).toHaveAttribute('data-zoom-level', String(level))
+}
 
-    const collisions = await page.evaluate(() => {
-      const elements = [
-        ...document.querySelectorAll('.map-sector-label, .map-frontline-marker, .map-frontline-marker-trace'),
-      ] as SVGGraphicsElement[]
-      const boxes = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }))
-      const found: string[] = []
-      for (let i = 0; i < boxes.length; i++) {
-        for (let j = i + 1; j < boxes.length; j++) {
-          const a = boxes[i]!.rect
-          const b = boxes[j]!.rect
-          const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
-          if (overlaps) {
-            const describe = (el: SVGGraphicsElement) =>
-              `${el.tagName}.${el.getAttribute('class')}${el.getAttribute('data-testid') ? `[${el.getAttribute('data-testid')}]` : ''}`
-            found.push(`${describe(boxes[i]!.el)} × ${describe(boxes[j]!.el)}`)
+// Kartkollisionsdelen av regel 18, ordagrant "ett test över kartan
+// underkänner om två etiketters eller markörers avgränsningsrutor skär
+// varandra." Bara OPERATIONS har en karta — egen loop, inte SCREENS ovan.
+// P76 byggde loopen bara för startzoomen (nivå 2) och bara sektoretiketter/
+// frontlinjemarkörer. P81a (speltestet 2026-09-27, P81-1) utökar den till
+// alla tre zoomnivåer och alla etikettyper — huvudstads- och förbandsnamn
+// delar redan samma hiddenLabels-mekanism i TheatreMap.tsx (samma
+// labelRefs-pool som sektoretiketterna), så det här är testtäckning för en
+// mekanism som redan fanns, inte en ny en.
+for (const format of FORMATS) {
+  for (const level of [1, 2, 3] as const) {
+    test(`kartan — inga etiketter eller markörer kolliderar, ${format.name}, zoomnivå ${level} (regel 18)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: format.width, height: format.height })
+      await page.goto('/')
+      await enterOperations(page)
+      await page.getByTestId('theatre-map-svg').waitFor()
+      await page.waitForTimeout(300)
+      await setZoomLevel(page, level)
+      await page.waitForTimeout(300)
+
+      const collisions = await page.evaluate(() => {
+        // P81a: en dold etikett (TheatreMap.tsx:s .map-label-hidden,
+        // visibility: hidden) stannar avsiktligt i DOM:en (geometrin krävs
+        // för nästa omätning, se TheatreMap.tsx:s egen kommentar) — den ska
+        // aldrig räknas som en kollision, spelaren ser den aldrig.
+        const elements = [
+          ...document.querySelectorAll(
+            '.map-sector-label, .map-capital-label, .map-formation-label, .map-frontline-marker, .map-frontline-marker-trace',
+          ),
+        ].filter((el) => window.getComputedStyle(el).visibility !== 'hidden') as SVGGraphicsElement[]
+        const boxes = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }))
+        const found: string[] = []
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i]!.rect
+            const b = boxes[j]!.rect
+            const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+            if (overlaps) {
+              const describe = (el: SVGGraphicsElement) =>
+                `${el.tagName}.${el.getAttribute('class')}${el.getAttribute('data-testid') ? `[${el.getAttribute('data-testid')}]` : ''}`
+              found.push(`${describe(boxes[i]!.el)} × ${describe(boxes[j]!.el)}`)
+            }
           }
         }
-      }
-      return found
-    })
+        return found
+      })
 
-    expect(collisions, `Etikett-/markörkollisioner på kartan:\n${collisions.join('\n')}`).toEqual([])
-  })
+      expect(collisions, `Etikett-/markörkollisioner på kartan:\n${collisions.join('\n')}`).toEqual([])
+    })
+  }
 }
+
+// P81a: teckenförklaringen — tryck på symboler utan egna verb (heat-glöd,
+// frontlinje, förbandsbricka, sektorfyllning) öppnar samma förklaring
+// (regel 13, ingen information bara vid hovring).
+test('kartan — legend-knappen och ett tryck på kartan öppnar teckenförklaringen', async ({ page }) => {
+  // reducedMotion: heat-glödens "andas"-animation (map-heat-breathe, en
+  // ständigt pågående CSS transform: scale()) gör elementet permanent
+  // "instabilt" för Playwrights klickstabilitetskontroll — samma miljöfynd
+  // P80 redan gjorde för NEWS DESK:s reveal-sekvens, bara en annan animation.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: FORMATS[0]!.width, height: FORMATS[0]!.height })
+  await page.goto('/')
+  await enterOperations(page)
+  await page.getByTestId('theatre-map-svg').waitFor()
+  await page.waitForTimeout(300)
+
+  await expect(page.getByTestId('map-legend')).toHaveCount(0)
+  await page.getByTestId('map-legend-button').click()
+  await expect(page.getByTestId('map-legend')).toBeVisible()
+  await page.getByTestId('map-legend').locator('.ds-sheet-close').click()
+  await expect(page.getByTestId('map-legend')).toHaveCount(0)
+
+  await page.getByTestId('map-heat-glow-tap-indochina').click()
+  await expect(page.getByTestId('map-legend-row-heat')).toHaveClass(/is-focused/)
+})

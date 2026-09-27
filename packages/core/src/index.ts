@@ -15,6 +15,8 @@ export { PLAYER_ATTRIBUTION_KEY } from './resolve/steps/deliveries.js'
 export type { WireEmitter } from './wire.js'
 export {
   bidEstimate,
+  playerWinCurve,
+  boardReviewOutlook,
   DISPLAY_THRESHOLDS,
   BOT_BALANCE,
   INFLUENCE_BALANCE,
@@ -23,6 +25,7 @@ export {
   officialDisplay,
   deriveSectorControl,
 } from './queries.js'
+export type { PlayerWinCurvePoint, BoardReviewOutlook } from './queries.js'
 // getProduct: paketets ENDA väg till produktkatalogen (avsnitt 6) för extern kod —
 // packages/harness (P9) behöver den för att avgöra om en order gäller en
 // restricted-produkt (Order har bara productId, inte en kopia av restricted-flaggan).

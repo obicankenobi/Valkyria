@@ -320,3 +320,79 @@ describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
     expect(document.querySelector('[data-testid="map-capital-orders-rvn"]')!.textContent).toBe('1')
   })
 })
+
+// P81a (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten): teckenförklaringen.
+// "Ett tryck på en symbol utan egna verb (heat-glöd, frontlinje,
+// förbandsbricka) öppnar samma förklaring för just den symbolen" (regel 13).
+describe('TheatreMap (P81a) — teckenförklaringen', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response),
+    )
+  })
+
+  it('legend-knappen öppnar hela teckenförklaringen, ingen rad fokuserad', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-legend-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('[data-testid="map-legend"]')).toBeNull()
+    fireEvent.click(document.querySelector('[data-testid="map-legend-button"]')!)
+    expect(document.querySelector('[data-testid="map-legend"]')).toBeTruthy()
+    expect(document.querySelector('.map-legend-row.is-focused')).toBeNull()
+  })
+
+  it('tryck på heat-glöden öppnar teckenförklaringen fokuserad på "heat"', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-legend-heat-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const theatreId = Object.keys(state.theatres)[0]!
+    fireEvent.click(document.querySelector(`[data-testid="map-heat-glow-tap-${theatreId}"]`)!)
+    expect(document.querySelector('[data-testid="map-legend-row-heat"].is-focused')).toBeTruthy()
+  })
+
+  it('tryck på frontlinjens tryckyta öppnar teckenförklaringen fokuserad på "frontline"', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-legend-frontline-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    fireEvent.click(document.querySelector('[data-testid="map-frontline-tap-front-1"]')!)
+    expect(document.querySelector('[data-testid="map-legend-row-frontline"].is-focused')).toBeTruthy()
+  })
+
+  it('tryck på ett känt förband öppnar "formation-known", ett okänt öppnar "formation-unknown"', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-legend-formation-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    fireEvent.click(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
+    expect(document.querySelector('[data-testid="map-legend-row-formation-known"].is-focused')).toBeTruthy()
+
+    fireEvent.click(document.querySelector('[data-testid="map-legend"] .ds-sheet-close')!)
+    fireEvent.click(document.querySelector('[data-testid="map-formation-laos-1st-infantry"]')!)
+    expect(document.querySelector('[data-testid="map-legend-row-formation-unknown"].is-focused')).toBeTruthy()
+  })
+
+  it('tryck på ett sargat förband öppnar "formation-mauled"', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-legend-mauled-seed')
+    state.fronts['front-1']!.formations.find((f) => f.id === 'rvn-1st-infantry')!.status = 'mauled'
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    fireEvent.click(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
+    expect(document.querySelector('[data-testid="map-legend-row-formation-mauled"].is-focused')).toBeTruthy()
+  })
+
+  it('tryck på en sektor öppnar rätt sector-<side>-rad, tidigare ett dött tryck (sektorfyllningen ligger ovanpå landmassan utan pointer-events: none)', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-legend-sector-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const sectorEl = document.querySelector('[data-testid="map-sector-hue"]')!
+    const side = sectorEl.getAttribute('class')!.match(/is-(a|b|contested|empty)/)![1]
+    fireEvent.click(sectorEl)
+    expect(document.querySelector(`[data-testid="map-legend-row-sector-${side}"].is-focused`)).toBeTruthy()
+  })
+})
