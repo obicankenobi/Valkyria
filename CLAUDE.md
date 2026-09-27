@@ -434,6 +434,15 @@ samma mönster som de femton andra filerna. Golden ORÖRD. Fullt testsvep grönt
 tester, lint, `npm run typecheck` (alla tre paket), build, e2e (17 tester, körd två
 gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P80-blockquote och
 `docs/ANDRINGSLOGG.md` för hela genomförandet.
+**P81 SPELTEST 2026-09-27** (ingen kod): skivan inte godkänd som den är. Ägarens synpunkter
+sorterade i tjugo punkter (P81-1–P81-20) och placerade i planen: ett nytt åtgärdspass
+**P81a–P81d körs före 7C** (kartans läsbarhet, HUD och meny, budkurvan och styrelsemålet,
+NEWS DESK i tre nivåer), P82–P91 utökade, och två nya föreslagna etapper i specens §16
+(8: ekonomin med förskott och kassahistorik; 9: nytt forskningssystem). Tre verifierade fynd:
+"0 % vinstchans" är ett visningsfel i `computeWinBand` (bara rivalernas prisintervall samplas),
+"utkastad tur 10" är `BUYOUT` vid andra granskningen, och kartans kollisionstest körs bara vid
+startzoomen. `bidEstimate`/`winBand` får inte ändras — golden-testets `balanced`-bot läser dem.
+Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P81-blockquote och `docs/ANDRINGSLOGG.md`.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

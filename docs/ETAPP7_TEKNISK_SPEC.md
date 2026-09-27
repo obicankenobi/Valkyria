@@ -1049,17 +1049,80 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P81 — Speltest av skivan. Ingen kod.** Ägaren spelar skivan, besvarar frågorna i §11.6 och godkänner eller underkänner stilen. Underkänd stil åtgärdas innan 7C.
 
+> **Speltest genomfört 2026-09-27.** Ägarens svar på §11.6:s tre frågor är sorterade i tjugo
+> punkter (P81-1 till P81-20). Varje punkt kontrollerades mot koden innan den placerades i
+> planen. Ägaren fällde ingen uttrycklig dom över själva registret (krigsrummet 1965);
+> synpunkterna gäller läsbarhet och spelbarhet. Skivan godkänns därför inte som den är, och
+> åtgärdspasset P81a–P81d körs före 7C enligt P81:s egen regel. Fem-sekunderstestet besvarades
+> inte och görs om efter P81d.
+>
+> **Tre fynd i koden, verifierade med riktade sonder:**
+> 1. **"0 % vinstchans oavsett bud" är ett visningsfel, inte ett spelfel.** `computeWinBand`
+>    (`queries.ts`) räknar bara på fem prispunkter mellan `rivalPriceLow` och `rivalPriceHigh`,
+>    och följer aldrig spelarens eget bud. Med seed `playtest-1` vid tur 1 visar 7 av 9 ordrar
+>    0 % i alla fem punkterna. En simulering av `bidding.ts` med spelarens bud på 70 % av
+>    `rivalPriceLow` vann däremot 36–100 % av 100 dragningar, och på 50 % vann den alla. Spelaren
+>    fick alltså aldrig se de priser där den faktiskt kan vinna. Samma fel har styrt
+>    balansmätningarna: botpolicyn `balanced` bjuder på bandets punkter (`policies.ts`) och tog
+>    9,7 % av marknaden, medan `aggressive`, som bjuder under `rivalPriceLow`, tog 45 % (P53).
+>    Golden-testet kör `balanced`, så `bidEstimate.winBand` kan inte ändras utan att golden bryts.
+>    P81c lägger därför en ny, separat fråga för spelarens kurva.
+> 2. **"Utkastad tur 10" är `BUYOUT` vid styrelsens andra underkända granskning**
+>    (`indochina-slice.json`: `reviewTurns` 6, 10, 14, 18; `endings.ts`: `reviewsFailed >= 2`).
+>    Det är samma kaskad som P53 mätte för `balanced` (67 % `BUYOUT`), och fynd 1 är en trolig
+>    medorsak.
+> 3. **Kartans kollisionstest (regel 18) körs bara vid startzoomen**, och bara mot
+>    sektoretiketter och frontlinjemarkörer (`e2e/text-overflow.spec.ts`). Huvudstäder,
+>    förbandsnamn och zoomnivå 1 och 3 kontrolleras inte. Därför nådde överlappen spelaren trots
+>    grönt CI.
+>
+> **Ägarbeslut vid genomgången (2026-09-27):** (a) Research får ett nytt forskningssystem i en
+> egen etapp (§16, etapp 9), inte bara ett tydliggörande. (b) Förskottsbetalning byggs i en ny
+> etapp efter etapp 7 (§16, etapp 8). (c) "Få åtgärder räknas som en action" betyder att verben
+> är svåra att hitta. Det löses i 7C, inte med fler verb. (d) Planen skrivs in här.
+>
+> | Punkt | Synpunkt | Hanteras i |
+> |---|---|---|
+> | P81-1 | Kartetiketter överlappar, särskilt vid zoom | P81a |
+> | P81-2 | Symbolerna förklarar inte vad de är eller vad de betyder för spelaren | P81a |
+> | P81-3 | Röd/gul cirkel (`heat`-glöden) och en röd pil saknar förklaring | P81a |
+> | P81-4 | Doomsday borde vara en mätare (termometer/tryckmätare) | P81b |
+> | P81-5 | "Doomsday" och "Treasury" läses som ett värde | P81b |
+> | P81-6 | Menyknapp: ljud, huvudmeny, spara/ladda, buggrapport | P81b (knapp, ljud, huvudmeny), P90 (resten) |
+> | P81-7 | De flesta kontrakt visar 0 % vinstchans oavsett bud | P81c (kärnan), P84 (reglaget) |
+> | P81-8 | Utkastad (`BUYOUT`) tur 10 utan tydlig förvarning | P81c (målet synligt), etapp 8 (balans) |
+> | P81-9 | Nyhetsflödet är för stort (340 händelser, 26 rubriker efter några turer) | P81d |
+> | P81-10 | Stora händelser syns inte: krig, offensiver, stridsutfall | P81d (befintliga), P82 (genombrott) |
+> | P81-11 | Ingen notis när ett kontrakt vinns, förloras eller slutförs | P83 |
+> | P81-12 | Tryck på en handlingsplats ska visa vilka handlingar som kan fylla den | P83 |
+> | P81-13 | Få handlingar går att nå | P86 (oförändrat: alla 22 verb nåbara) |
+> | P81-14 | Förväntad kvartalsbalans saknas | P85 |
+> | P81-15 | Ekonomiflik: lån, återbetalning, historik över inkomster och utgifter | P85 (nuläge, lån), etapp 8 (historik) |
+> | P81-16 | Produktionslinjer: kapacitet, takt och vad de kan tillverka är oklart | P85 |
+> | P81-17 | Research känns obyggd eller utan effekt | P85 (visa nuläget ärligt), etapp 9 (nytt system) |
+> | P81-18 | Politiken är otydlig, går inte att interagera med, `standing` oförklarad; POLITICAL under THE COMPANY hör till CONTACTS | P86 |
+> | P81-19 | Förskottsbetalning per upphandling, varierande mellan ordrar | Etapp 8 |
+> | P81-20 | Tutorial och wiki i spelet | P91 (delas i P91a och P91b) |
+
+**P81a — Kartans läsbarhet.** Etikettkollisionerna löses på alla tre zoomnivåer och för alla etikettyper (sektor, land, huvudstad, förband, frontlinje): döljningen räknas om vid varje zoomändring, efter en fast prioritetsordning. En teckenförklaring (ikonknapp på kartan som öppnar ett bottenark) förklarar varje symbol i två led: vad den är, och vad den betyder för spelaren. Exempel: `heat`-glöden betyder "konflikten är het här: mer efterfrågan, högre risk för eskalering". Ett tryck på en symbol utan egna verb (`heat`-glöd, frontlinje, förbandsbricka) öppnar samma förklaring för just den symbolen (regel 13). Den röda pilen i P81-3 identifieras i `npm run shots` innan bygget och förklaras eller tas bort. *Klart när:* kollisionstestet i `e2e/text-overflow.spec.ts` körs vid zoomnivå 1, 2 och 3 och täcker alla etikettyper; varje symbol på kartan har en rad i teckenförklaringen; golden orörd.
+
+**P81b — HUD:en och menyn.** Doomsday blir ett visarinstrument (tryckmätare) med röda och gula sektorer vid de befintliga `DISPLAY_THRESHOLDS`-trösklarna, ensamt i sin cell. Varje HUD-värde får en synlig avgränsning, så att två etiketter aldrig läses som en. En menyknapp i HUD:en öppnar en första version av pausöverlaget ur §5: ljud av/på, tillbaka till huvudmenyn (sparar först) och fortsätt. Esc öppnar samma överlag på skrivbord (regel 16). P90 bygger vidare på samma överlag. *Klart när:* e2e visar att menyn nås från alla fem skärmar; fem-sekunderstestet görs på telefonbilden; golden orörd.
+
+**P81c — Budkurvan och styrelsemålet.** En ny ren fråga i kärnan, `playerWinCurve(state, order, grade)`, ger vinstchansen över spelarens hela rimliga prisintervall, från självkostnaden (`yourUnitCost × quantity`) upp till `rivalPriceHigh`. Den använder samma hashade Rng-ström som `bidEstimate` (hård regel 2) och samma `computeScore`-termer som `bidding.ts`. `bidEstimate` och dess `winBand` lämnas orörda, eftersom golden-testets botpolicy `balanced` läser dem. `BidForm.tsx` visar vinstchansen för det bud spelaren faktiskt har satt. Styrelsemålet: HUD:ens mätare visar krav mot utfall vid nästa granskning och antal turer dit. Turen före en granskning där spelaren ligger under kravet visas en varning i kvartalsbandet. *Klart när:* ett test visar att kurvan och en simulering av `bidding.ts` över 200 dragningar ligger inom ±10 procentenheter vid fyra prisnivåer; golden bitvis identisk.
+
+**P81d — NEWS DESK i tre nivåer.** (1) *Blixt*: ett helskärmstelex för de fåtal händelsetyper som ändrar läget — front byter status, sektor byter sida, kupp, lönnmord, embargo, kris och styrelsens dom. (2) *Förstasidan*: kvartalets rubriker, grupperade under fasta avdelningar (Dina affärer, Fronten, Politik, Marknaden), högst fem per avdelning och resten bakom "More" (regel 7). (3) *Telexarkivet*: alla händelser, filtrerbara per avdelning och på "bara mina". Rutinhändelser (ränta, underhåll, avsvalning) slås ihop till en sammanfattningsrad per typ. Allt är presentation: vilken händelsetyp som hör till vilken nivå och avdelning är en tabell i `packages/app`. *Klart när:* i en 10-turers golden-körning visar förstasidan högst 20 rader per kvartal utan att någon blixthändelse saknas; golden orörd.
+
 ### 7C — Bredda
 
-**P82 — Hela kartan.** Laos-teatern, alla länder, huvudstäder, stationer och ordermarkörer, försörjningslinjer (§6.7). Förbandsförflyttning om 2F antagits, som egen commit med omfryst golden.
+**P82 — Hela kartan.** Laos-teatern, alla länder, huvudstäder, stationer och ordermarkörer, försörjningslinjer (§6.7). Förbandsförflyttning om 2F antagits, som egen commit med omfryst golden. *Utökad efter P81 (P81-10):* ett genombrott som leder till omgruppering emittar en egen rubrikhändelse som P81d:s blixtnivå fångar. Den ryms i samma omfrysning av golden.
 
-**P83 — This Quarter.** *Klart när:* varje radtyp i §7.7 hoppar till rätt föremål.
+**P83 — This Quarter.** *Klart när:* varje radtyp i §7.7 hoppar till rätt föremål. *Utökad efter P81:* (1) Kvartalsbeskedet (P81-11) ligger överst i listan efter kvartalsuppspelningen: vunna och förlorade bud (med vinnare och pris när underrättelsen räcker), levererade kontrakt och inbetalningar. (2) En tom handlingsplats går att trycka på och öppnar en handlingskatalog (P81-12): alla verb som kostar en plats, grupperade per föremål, var och en med ett hopp till föremålet där den utförs. Verb som ännu inte går att nå visas inte, så katalogen växer i P84–P86.
 
-**P84 — CONTRACTS.** Stämplade mappar och prisreglaget över `winBand`. *Klart när:* inga dolda fält renderas.
+**P84 — CONTRACTS.** Stämplade mappar och prisreglaget över `winBand`. *Klart när:* inga dolda fält renderas. *Utökad efter P81 (P81-7):* reglaget läser P81c:s `playerWinCurve`, så att vinstchans och marginal följer reglaget över spelarens hela prisintervall.
 
-**P85 — THE COMPANY.** Produktionslinjer som visuella band, `INTERNAL` och råvarupanelen med `BUY_FORWARD`, `RELEASE`.
+**P85 — THE COMPANY.** Produktionslinjer som visuella band, `INTERNAL` och råvarupanelen med `BUY_FORWARD`, `RELEASE`. *Utökad efter P81:* (1) Produktionslinjer (P81-16): per linje vilka produkter den kan tillverka, takt per kvartal, beläggning mot kapacitet och när pågående kontrakt blir klara. (2) Ekonomipanelen (P81-14/15): innevarande kvartals intäkter och kostnader per post, en prognos för nästa kvartal ur accepterade kontrakt och fasta kostnader (ny ren fråga `projectedQuarter(state)` i `queries.ts`), samt lån och återbetalning med `TierPicker`. Historik över hela partiet kräver ett nytt `GameState`-fält och hör till etapp 8. (3) R&D (P81-17): nuläget visas ärligt, med vad varje område låser upp och när. Ingen ny mekanik; det nya forskningssystemet är etapp 9.
 
-**P86 — CONTACTS och politikverben.** Personakter, faktionernas och rivalernas akter. `BRIBE`, `FUND_CAMPAIGN`, `FAVOUR`, `INFLUENCE`, `STAGE_INCIDENT`, `BACK_CHANNEL`, `BROKER` först; `FUND_COUP` och `ASSASSINATE` sist i samma prompt. *Klart när:* alla 22 verb nåbara från gränssnittet, verifierat med samma sökning som i §0.1.
+**P86 — CONTACTS och politikverben.** Personakter, faktionernas och rivalernas akter. `BRIBE`, `FUND_CAMPAIGN`, `FAVOUR`, `INFLUENCE`, `STAGE_INCIDENT`, `BACK_CHANNEL`, `BROKER` först; `FUND_COUP` och `ASSASSINATE` sist i samma prompt. *Klart när:* alla 22 verb nåbara från gränssnittet, verifierat med samma sökning som i §0.1. *Utökad efter P81 (P81-18):* POLITICAL-sektionen i THE COMPANY flyttas in i CONTACTS och tas bort där. Varje personakt förklarar sina tal i klartext: vad `standing`, `relationToPlayer` och `integrity` påverkar i spelet, och vad varje verb väntas ändra (förhandsvisningen från P78/P79).
 
 **P87 — Kriskortet.**
 
@@ -1069,9 +1132,9 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P89 — Krönikan och epilogen.** `GameState.chronicle`, `scenarioVerdict(state)`, slutkort per slutorsak, kärnvapenepilog, vändpunkter. *Klart när:* golden omfryst i denna commit och ingen annan.
 
-**P90 — Paus, inställningar, sparplatser.**
+**P90 — Paus, inställningar, sparplatser.** *Utökad efter P81 (P81-6):* bygger vidare på P81b:s överlag. En buggrapportknapp kopierar version, sparfil och kvartalets senaste händelser till urklipp, tillsammans med en länk till projektets ärendelista. Spelet gör ingen egen nätverkstrafik.
 
-**P91 — Handledning och ordlista.**
+**P91 — Handledning och ordlista.** *Utökad efter P81 (P81-20), delas i två commits:* **P91a, handledningen:** de tre första kvartalen i ett nytt parti leds steg för steg (välj land, lägg ett bud, fyll en handlingsplats, avsluta kvartalet, läs förstasidan). Den går att stänga av och att starta om från menyn. **P91b, handboken:** en uppslagsbok i spelet, nåbar från menyn och från varje info-ikon, med ett uppslag per mekanik (upphandling, produktion, styrelsen, doomsday, `heat`, underrättelse, politik, fronter). Texterna ligger som data i `packages/app`. *Klart när:* ett test underkänner om ett verb eller ett HUD-tal saknar uppslag.
 
 ### 7E — Tillgångar och finish
 
@@ -1083,7 +1146,7 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P95 — Speltest. Ingen kod.** Tre partier på telefon, frågan i §1.
 
-Tjugotre prompter. Skivan i 7B är det som avgör etappen: blir den godkänd vet du hur resten ska se ut, och 7C–7E är att upprepa samma kvalitet på fler ytor.
+Tjugotre prompter, plus åtgärdspasset P81a–P81d efter speltestet. Skivan i 7B är det som avgör etappen: blir den godkänd vet du hur resten ska se ut, och 7C–7E är att upprepa samma kvalitet på fler ytor.
 
 ---
 
@@ -1104,3 +1167,17 @@ Tjugotre prompter. Skivan i 7B är det som avgör etappen: blir den godkänd vet
 3. **Förbandsförflyttning (§2F):** beslutas efter P75, på stillhetsmåttet.
 4. **Skisser (§11.1):** *Beslutat 2026-09-22: OPERATIONS godkänd i tre tillstånd, ligger i `docs/ui/reference/`.*
 5. **Etappens namn:** "Spelbordet", eller annat.
+6. **Speltestet P81 (§13):** *Beslutat 2026-09-27:* åtgärdspasset P81a–P81d före 7C; nytt forskningssystem och förskottsbetalning i egna etapper (§16); "svåra att hitta" löses i 7C.
+
+---
+
+## 16. Efter etappen — föreslagna etapper (inte antagna)
+
+Punkter från speltestet P81 som kräver ny mekanik och därmed omfryst golden. De hör inte hemma i etapp 7, som är ren presentation. Varje etapp får en egen spec med premisskontroll mot koden innan något byggs.
+
+**Etapp 8, ekonomin.**
+- *Förskottsbetalning* (P81-19): en andel av kontraktsvärdet betalas vid tilldelningen. Andelen varierar per order och köpare och syns i budmappen, så att den blir en faktor när spelaren väljer vilka ordrar att bjuda på.
+- *Kassahistorik* (P81-15): ett nytt `GameState`-fält med intäkter och kostnader per kvartal över hela partiet, visat som graf i THE COMPANY. `state.wire` räcker inte, eftersom den bara sparar åtta turer.
+- *Balans för mänskligt spel* (P81-8): styrelsemålet och `BUYOUT` mäts om efter P81c. `balanced` och `capacity` flyttas till `playerWinCurve`, eftersom alla mätningar P37–P64 gjordes med botar som bjöd på det begränsade `winBand` (fynd 1 i P81-blockquoten).
+
+**Etapp 9, forskningen** (P81-17, ägarbeslut a): ett nytt forskningssystem med kännbara effekter, som ersätter dagens modell bakom `REPRIORITISE_RND`. Premisskontrollen utgår från P28:s techspärr och R&D-värde.
