@@ -52,13 +52,36 @@ function computeActionPoints(house: House): number {
   return house.staff.chiefOfStaff > BALANCE.chiefOfStaffActionBonusThreshold ? ACTION_POINTS_WITH_BONUS : ACTION_POINTS_BASE
 }
 
-function computeFixedCosts(house: House): Money {
+export interface FixedCostsBreakdown {
+  payroll: Money
+  lineUpkeep: Money
+  stationUpkeep: Money
+  rndOverhead: Money
+}
+
+// P85 (ETAPP7_TEKNISK_SPEC.md §13, P81-14/15): utbruten ur computeFixedCosts
+// så att queries.ts:s projectedQuarter kan visa samma poster styckvis ("per
+// post") i stället för bara en enda ihopslagen summa — samma "en formel, en
+// källa"-princip som computeLineThroughput (production.ts). computeFixedCosts
+// nedan blir en ren summering av den här, bitvis identisk med tidigare.
+export function computeFixedCostsBreakdown(house: House): FixedCostsBreakdown {
   const extraLines = Math.max(0, house.lines.length - BASE_LINES_INCLUDED_IN_PAYROLL)
   const payroll = BALANCE.fixedCosts.payrollBase + BALANCE.fixedCosts.payrollPerExtraLine * extraLines
   const lineUpkeep = BALANCE.fixedCosts.lineUpkeep * house.lines.length
   const stationUpkeep = BALANCE.fixedCosts.stationUpkeep * house.stations.filter((s) => s.status !== 'burned').length
   const rndOverhead = BALANCE.fixedCosts.rndOverhead * house.rnd.length
-  return payroll + lineUpkeep + stationUpkeep + rndOverhead
+  return { payroll, lineUpkeep, stationUpkeep, rndOverhead }
+}
+
+function computeFixedCosts(house: House): Money {
+  const b = computeFixedCostsBreakdown(house)
+  return b.payroll + b.lineUpkeep + b.stationUpkeep + b.rndOverhead
+}
+
+// P85: utbruten av samma skäl som computeFixedCostsBreakdown ovan — economy.ts:s
+// egen resolve-passage nedan anropar den nu i stället för att upprepa formeln.
+export function computeQuarterlyInterest(house: House): Money {
+  return round((house.debt * house.debtRateAnnual) / 4)
 }
 
 function computeTrailingRevenue(house: House, currentTurn: number): Money {
@@ -103,7 +126,7 @@ export const economy: ResolveStep = (ctx) => {
     subjectId: null,
   })
 
-  const interest = round((house.debt * house.debtRateAnnual) / 4)
+  const interest = computeQuarterlyInterest(house)
   if (interest > 0) {
     house.treasury -= interest
     emit({

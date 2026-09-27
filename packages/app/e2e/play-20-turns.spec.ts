@@ -162,11 +162,15 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     await page.getByTestId('tab-company').click()
 
     // Säkerhetslån — håll partiet likvitt så INSOLVENCY inte hinner före krisen.
+    // P85 (ETAPP7_TEKNISK_SPEC.md §13, regel 2): "Loan amount" är nu en
+    // TierPicker (LoanRepaySection, CompanyActions.tsx), inte ett
+    // <input type="number"> — LAVISH-nivån är exakt 100 % av creditLimit
+    // (TIER_FRACTIONS.lavish === 1), samma belopp testet tidigare fyllde in.
     const treasury = parseMoney(await page.getByTestId('hud-treasury').innerText())
     const creditLimit = parseMoney(await page.getByTestId('credit-limit').innerText())
     if (treasury < 6000000 && creditLimit > 0) {
-      await page.getByLabel('Loan amount').fill(String(creditLimit))
-      await page.getByRole('button', { name: 'Take Loan' }).click()
+      await page.locator('[data-testid="company-credit-tier"]').getByRole('radio', { name: 'LAVISH' }).click()
+      await page.getByRole('button', { name: /Take Loan/ }).click()
     }
 
     // Minst en executive action per tur (P21 klart-när) — se filhuvudets
@@ -174,7 +178,11 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     const recentFailures = failureTurns.filter((t) => t > turn - 6).length
     const useStageIncident = recentFailures < 2
 
-    const targetSelect = page.locator('.action-form').nth(1).locator('select').first()
+    // P85: POLITICAL-formuläret (BRIBE/STAGE_INCIDENT/BACK_CHANNEL) är
+    // medvetet ORÖRT (se CompanyActions.tsx:s SCOPE-BESLUT) — fortfarande den
+    // enda .action-form som finns kvar nu när INTERNAL flyttade ut, så
+    // .first() räcker (INTERNAL byggdes aldrig med den klassen).
+    const targetSelect = page.locator('.action-form').first().locator('select').first()
     await targetSelect.selectOption({ label: 'Republic of Vietnam' }).catch(() => {})
     if (useStageIncident) {
       await page.getByRole('button', { name: 'Stage Incident' }).click()

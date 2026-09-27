@@ -24,15 +24,20 @@ export {
   formationDisplay,
   officialDisplay,
   deriveSectorControl,
+  projectedQuarter,
+  researchOutlook,
+  estimateLineCompletionTurn,
 } from './queries.js'
-export type { PlayerWinCurvePoint, BoardReviewOutlook } from './queries.js'
-// getProduct: paketets ENDA väg till produktkatalogen (avsnitt 6) för extern kod —
-// packages/harness (P9) behöver den för att avgöra om en order gäller en
-// restricted-produkt (Order har bara productId, inte en kopia av restricted-flaggan).
+export type { PlayerWinCurvePoint, BoardReviewOutlook, ProjectedQuarter, CategoryResearchOutlook } from './queries.js'
+// getProduct/allProducts: paketets ENDA väg till produktkatalogen (avsnitt 6) för
+// extern kod — packages/harness (P9) behöver getProduct för att avgöra om en order
+// gäller en restricted-produkt (Order har bara productId, inte en kopia av
+// restricted-flaggan). allProducts (P85): THE COMPANY behöver hela katalogen för
+// att visa R&D:s "vad låser den här kategorin upp härnäst" (researchOutlook).
 // computeUnitCostNow: appen (P21, spec 3.4) behöver den för att räkna marginal per
 // aktivt kontrakt mot DAGENS kostnad (supplyCostIndex rör sig efter kontraktet
 // tecknades), inte bara mot Contract.unitCostAtSigning.
-export { getProduct, computeUnitCostNow } from './pricing.js'
+export { getProduct, allProducts, computeUnitCostNow } from './pricing.js'
 // officialId: appen och testerna behöver kunna slå upp en faktions
 // procurement-tjänsteman utan att duplicera id-schemat (P54, se officials.ts).
 export { officialId, findOfficial } from './officials.js'
@@ -42,3 +47,8 @@ export { officialId, findOfficial } from './officials.js'
 // `export * from './types.js'` ovan.
 export { validateAction } from './validateAction.js'
 export { previewAction } from './previewAction.js'
+// P85: THE COMPANY behöver samma vaktade konstanter INTERNAL/MARKET-formulären
+// redan valideras mot (validateAction.ts), i stället för att TheHouse.tsx
+// (P21) upprepar sin egen lokala kopia av TECH_CATEGORIES/HIRABLE_ROLES.
+export { COMMODITIES, TECH_CATEGORIES, HIRABLE_ROLES } from './validateAction.js'
+export type { HirableRole } from './validateAction.js'

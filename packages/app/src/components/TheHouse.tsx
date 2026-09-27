@@ -1,29 +1,36 @@
-// THE HOUSE — läsvy: produktionslinjer, R&D, kassa, kredit, styrelsemål,
+// THE COMPANY — läsvy: produktionslinjer, R&D, kassa, kredit, styrelsemål,
 // personal, samt (P21) executive actions. Visar uttryckligen MARGINAL PER
 // AKTIVT KONTRAKT, inte bara kassa (DESIGN.md avsnitt 18: "Spelaren kan inte
 // fatta prisbeslut på en siffra som bara rör sig"). Se ETAPP1_TEKNISK_SPEC.md
-// avsnitt 8.
+// avsnitt 8. Filnamnet (TheHouse.tsx) och komponentnamnet (TheHouse) är
+// oförändrade sedan P21 — bara den synliga rubriken bytt namn till "The
+// Company" (P85), samma minimal-diff-princip TheFloor.tsx följde i P84 när
+// skärmen döptes om till Contracts utan att filen/importen ändrades.
 //
 // P21 (spec 3.4): marginalen räknas mot unitCostNow (dagens kostnad, rör sig
 // med supplyCostIndex), inte mot Contract.unitCostAtSigning — men BÅDA talen
 // visas, för samma skäl etapp 1-specens avsnitt 4.1 alltid krävt.
 //
-// P21 (spec avsnitt 8): en enkel handlings-UI för INTERNAL och POLITICAL, med
-// kvarvarande actionPoints synligt. Formulären lägger bara till en PlayerAction
-// i draften (App.tsx/useGame.ts) — den faktiska prövningen (kredit, tak,
-// giltighet) sker i applyActions.ts vid endTurn, precis som BidForm redan gör
-// för bud.
+// P85 (ETAPP7_TEKNISK_SPEC.md §13, regel 2): INTERNAL-formulären (lån,
+// återbetalning, ny linje, anställning, R&D-omprioritering) och den nya
+// råvarupanelen (BUY_FORWARD/RELEASE) bröts ut till CompanyActions.tsx —
+// TierPicker/Segmented i stället för <input type="number">/<select>. Den
+// här filen äger fortfarande POLITICAL-formuläret (BRIBE/STAGE_INCIDENT/
+// BACK_CHANNEL), oförändrat — se CompanyActions.tsx:s egen huvudkommentar
+// för SCOPE-BESLUTET som lämnar det orört.
 import { useState } from 'react'
-import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct, officialId } from '@seventh-front/core'
-import type { Commodity, Contract, GameState, PlayerAction, TechCategory, TurnSubmission } from '@seventh-front/core'
+import {
+  DISPLAY_THRESHOLDS,
+  computeUnitCostNow,
+  estimateLineCompletionTurn,
+  getProduct,
+  officialId,
+  projectedQuarter,
+  researchOutlook,
+} from '@seventh-front/core'
+import type { Commodity, Contract, GameState, PlayerAction, ProductionLine, TurnSubmission } from '@seventh-front/core'
+import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
-
-const TECH_CATEGORIES: TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
-const HIRABLE_ROLES: { role: 'chiefEngineer' | 'chiefSalesman' | 'chiefOfStaff'; label: string }[] = [
-  { role: 'chiefEngineer', label: 'Chief Engineer' },
-  { role: 'chiefSalesman', label: 'Chief Salesman' },
-  { role: 'chiefOfStaff', label: 'Chief of Staff' },
-]
 
 function contractMargin(contract: Contract, commodities: Record<Commodity, number>): { marginPct: number | null; unitCostNow: number } {
   const unitCostNow = computeUnitCostNow(getProduct(contract.productId), contract.grade, commodities)
@@ -79,10 +86,6 @@ function ExecutiveActions({
   onAddAction: (action: PlayerAction) => void
   onRemoveAction: (index: number) => void
 }) {
-  const [loanAmount, setLoanAmount] = useState(0)
-  const [repayAmount, setRepayAmount] = useState(0)
-  const [hireRole, setHireRole] = useState<'chiefEngineer' | 'chiefSalesman' | 'chiefOfStaff'>('chiefEngineer')
-  const [rndCategory, setRndCategory] = useState<TechCategory>(TECH_CATEGORIES[0]!)
   const [targetFactionId, setTargetFactionId] = useState(Object.keys(state.factions)[0] ?? '')
   const [spend, setSpend] = useState(0)
 
@@ -95,76 +98,7 @@ function ExecutiveActions({
       title="Executive actions"
       right={<Tag tone="amber">{state.house.actionPoints} action points</Tag>}
     >
-      <div className="action-form">
-        <span className="action-form-title">Internal</span>
-        <label className="field">
-          Loan amount
-          <input type="number" min={0} value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
-        </label>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => onAddAction({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: loanAmount } })}
-        >
-          Take Loan
-        </button>
-
-        <label className="field">
-          Repay amount
-          <input type="number" min={0} value={repayAmount} onChange={(e) => setRepayAmount(Number(e.target.value))} />
-        </label>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => onAddAction({ type: 'INTERNAL', op: 'REPAY', payload: { amount: repayAmount } })}
-        >
-          Repay Debt
-        </button>
-
-        <button
-          type="button"
-          className="btn"
-          onClick={() => onAddAction({ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} })}
-        >
-          Build Production Line
-        </button>
-
-        <label className="field">
-          Role
-          <select value={hireRole} onChange={(e) => setHireRole(e.target.value as typeof hireRole)}>
-            {HIRABLE_ROLES.map((r) => (
-              <option key={r.role} value={r.role}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => onAddAction({ type: 'INTERNAL', op: 'HIRE', payload: { role: hireRole } })}
-        >
-          Hire
-        </button>
-
-        <label className="field">
-          R&D category
-          <select value={rndCategory} onChange={(e) => setRndCategory(e.target.value as TechCategory)}>
-            {TECH_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => onAddAction({ type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: rndCategory } })}
-        >
-          Reprioritise R&D
-        </button>
-      </div>
+      <InternalActionsForm state={state} onAddAction={onAddAction} />
 
       <div className="action-form">
         <span className="action-form-title">Political</span>
@@ -229,6 +163,80 @@ function ExecutiveActions({
   )
 }
 
+// P85 (ETAPP7_TEKNISK_SPEC.md §13, P81-16): "produktionslinjer som visuella
+// band... per linje vilka produkter den kan tillverka, takt per kvartal,
+// beläggning mot kapacitet och när pågående kontrakt blir klara." GENUINT
+// FYND: en linje kan tillverka VILKEN produkt som helst — den ärver bara
+// productId/grade från vilket kontrakt production.ts (steg 2) råkar tilldela
+// den (ingen kod begränsar en linje till en fast produktlista, se
+// docs/ANDRINGSLOGG.md) — visas därför ärligt som "Any product" i idle-läge,
+// i stället för att hitta på en linje-specifik produktlista som inte finns i
+// datamodellen. capacityPct är i dagens balans alltid 100 (ingen mekanik
+// någonsin ändrar den, se production.ts/applyActions.ts BUILD_LINE) — bandet
+// visar den ändå, ärligt statisk, snarare än att fejka en variation som inte
+// finns.
+function ProductionLineBand({ state, line }: { state: GameState; line: ProductionLine }) {
+  const product = line.productId ? getProduct(line.productId) : null
+  const completionTurn = estimateLineCompletionTurn(state, line)
+  const running = line.status === 'running'
+
+  return (
+    <div className="line-band" data-testid="production-line-band">
+      <div className="line-band-head">
+        <span className="line-band-id">{line.id.toUpperCase()}</span>
+        <span className="line-band-product">{product ? product.name : 'Any product — idle'}</span>
+        {line.status === 'running' && <Tag tone="green">Running</Tag>}
+        {line.status === 'idle' && <Tag>Idle</Tag>}
+        {line.status === 'retooling' && <Tag tone="amber">Retooling</Tag>}
+        {line.status === 'blocked' && <Tag tone="red">{line.blockedReason ?? 'Blocked'}</Tag>}
+      </div>
+      <Bar ratio={running ? line.capacityPct / 100 : 0} tone={running ? 'green' : line.status === 'blocked' ? 'red' : 'neutral'} />
+      <div className="line-band-meta">
+        <span>{product ? `${product.unitsPerLineTurn.toLocaleString('en-GB')} units/quarter at full capacity` : `${line.capacityPct}% capacity, unassigned`}</span>
+        {completionTurn !== null && <span>Completes contract T{completionTurn}</span>}
+      </div>
+    </div>
+  )
+}
+
+// P85 (P81-14/15): "innevarande kvartals intäkter och kostnader per post, en
+// prognos för nästa kvartal ur accepterade kontrakt och fasta kostnader."
+// projectedQuarter (queries.ts) är den enda källan för alla fem talen nedan —
+// inget här räknas om lokalt.
+function NextQuarterPanel({ state }: { state: GameState }) {
+  const q = projectedQuarter(state)
+  const totalFixed = q.fixedCosts.payroll + q.fixedCosts.lineUpkeep + q.fixedCosts.stationUpkeep + q.fixedCosts.rndOverhead
+
+  return (
+    <Panel title="Next quarter" right={<Tag tone={q.netChange >= 0 ? 'green' : 'red'}>{formatMoney(q.netChange)} net</Tag>}>
+      <dl className="kv">
+        <dt>Expected revenue (scheduled deliveries)</dt>
+        <dd>{formatMoney(q.expectedRevenueNextTurn)}</dd>
+        <dt>Payroll</dt>
+        <dd>−{formatMoney(q.fixedCosts.payroll)}</dd>
+        <dt>Line upkeep</dt>
+        <dd>−{formatMoney(q.fixedCosts.lineUpkeep)}</dd>
+        <dt>Station upkeep</dt>
+        <dd>−{formatMoney(q.fixedCosts.stationUpkeep)}</dd>
+        <dt>R&amp;D overhead</dt>
+        <dd>−{formatMoney(q.fixedCosts.rndOverhead)}</dd>
+        {q.interest > 0 && (
+          <>
+            <dt>Debt interest</dt>
+            <dd>−{formatMoney(q.interest)}</dd>
+          </>
+        )}
+        <dt>Fixed costs total</dt>
+        <dd>−{formatMoney(totalFixed)}</dd>
+      </dl>
+      <p className="cf-hint" style={{ marginTop: 10 }}>
+        Revenue counts only shipments already scheduled to arrive next quarter — deliveries further out in the pipeline
+        (delay up to three quarters) aren't guessed at.
+      </p>
+    </Panel>
+  )
+}
+
 export function TheHouse({
   state,
   draft,
@@ -249,7 +257,7 @@ export function TheHouse({
 
   return (
     <>
-      <h2 className="view-title">The House</h2>
+      <h2 className="view-title">The Company</h2>
 
       <div className="grid-2">
         <Panel title="Balance sheet">
@@ -319,7 +327,11 @@ export function TheHouse({
         </Panel>
       </div>
 
+      <NextQuarterPanel state={state} />
+
       <ExecutiveActions state={state} draft={draft} onAddAction={onAddAction} onRemoveAction={onRemoveAction} />
+
+      <RawMaterialsPanel state={state} onAddAction={onAddAction} />
 
       <Panel title="Margin per active contract">
         {activeContracts.length === 0 ? (
@@ -371,67 +383,56 @@ export function TheHouse({
         )}
       </Panel>
 
-      <div className="grid-2">
-        <Panel title="Production lines">
-          <table>
+      <Panel title="Production lines">
+        {house.lines.length === 0 ? (
+          <p className="empty">No production lines yet.</p>
+        ) : (
+          house.lines.map((line) => <ProductionLineBand key={line.id} state={state} line={line} />)
+        )}
+      </Panel>
+
+      <Panel title="R&D and staff">
+        {researchOutlook(state).map((r) => (
+          <div className="research-row" key={r.category} data-testid="research-row">
+            <span className="research-category">{r.category.toUpperCase()}</span>
+            <span className="research-level">Level {r.techLevel}</span>
+            <span className="research-next">
+              {r.nextUnlock ? `Unlocks ${r.nextUnlock.productName} at level ${r.nextUnlock.techRequired}` : 'Everything in this field is unlocked'}
+            </span>
+          </div>
+        ))}
+
+        {house.rnd.length === 0 ? (
+          <p className="empty" style={{ marginTop: 10 }}>
+            No ongoing research projects.
+          </p>
+        ) : (
+          <table style={{ marginTop: 10 }}>
             <thead>
               <tr>
-                <th>Line</th>
-                <th>Product</th>
-                <th>Grade</th>
-                <th>Capacity</th>
-                <th>Status</th>
+                <th>Project</th>
+                <th>Remaining</th>
               </tr>
             </thead>
             <tbody>
-              {house.lines.map((line) => (
-                <tr key={line.id}>
-                  <td className="is-key">{line.id}</td>
-                  <td>{line.productId ? getProduct(line.productId).name : '—'}</td>
-                  <td>{line.grade}</td>
-                  <td>{line.capacityPct}%</td>
+              {house.rnd.map((project) => (
+                <tr key={project.id}>
+                  <td className="is-key">{project.category}</td>
                   <td>
-                    {line.status === 'running' && <Tag tone="green">Running</Tag>}
-                    {line.status === 'idle' && <Tag>Idle</Tag>}
-                    {line.status === 'blocked' && <Tag tone="red">{line.blockedReason ?? 'Blocked'}</Tag>}
+                    {project.turnsRemaining}/{project.turnsTotal} turns
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </Panel>
+        )}
 
-        <Panel title="R&D and staff">
-          {house.rnd.length === 0 ? (
-            <p className="empty">No ongoing research projects.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Remaining</th>
-                </tr>
-              </thead>
-              <tbody>
-                {house.rnd.map((project) => (
-                  <tr key={project.id}>
-                    <td className="is-key">{project.category}</td>
-                    <td>
-                      {project.turnsRemaining}/{project.turnsTotal} turns
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
-            <Meter label="Chief Engineer" value={house.staff.chiefEngineer} tone="blue" />
-            <Meter label="Chief Salesman" value={house.staff.chiefSalesman} tone="blue" />
-            <Meter label="Chief of Staff" value={house.staff.chiefOfStaff} tone="blue" />
-          </div>
-        </Panel>
-      </div>
+        <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+          <Meter label="Chief Engineer" value={house.staff.chiefEngineer} tone="blue" />
+          <Meter label="Chief Salesman" value={house.staff.chiefSalesman} tone="blue" />
+          <Meter label="Chief of Staff" value={house.staff.chiefOfStaff} tone="blue" />
+        </div>
+      </Panel>
     </>
   )
 }

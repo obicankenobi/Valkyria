@@ -21,7 +21,7 @@ describe('ACTION_CATALOG', () => {
     }
   })
 
-  it('täcker exakt de 15 verb som faktiskt har en byggd form i appen (CountryFile.tsx + TheHouse.tsx)', () => {
+  it('täcker exakt de 17 verb som faktiskt har en byggd form i appen (CountryFile.tsx + TheHouse.tsx/CompanyActions.tsx, P85: BUY_FORWARD/RELEASE tillkom)', () => {
     const expected = [
       'EXPAND',
       'WITHDRAW',
@@ -38,6 +38,8 @@ describe('ACTION_CATALOG', () => {
       'BUILD_LINE',
       'HIRE',
       'REPRIORITISE_RND',
+      'BUY_FORWARD',
+      'RELEASE',
     ]
     expect(ACTION_CATALOG.map((e) => e.verb).sort()).toEqual([...expected].sort())
   })

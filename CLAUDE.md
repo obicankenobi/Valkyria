@@ -529,8 +529,33 @@ vidare till NÄSTA mapp så fort den första bytte knapptext till "close", vilke
 expanderingsknapp och krascha en `strict mode`-läsning. Löst med ett stabilt INDEX (`.nth(i)`)
 i stället för ett innehållsberoende filter. Golden ORÖRD. Fullt testsvep grönt: 778 tester
 (774→778), lint, typecheck, build, e2e (22 tester, körd två gånger i rad). Se
-`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P84-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa steg är
-P85, THE COMPANY.**
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P84-blockquote och `docs/ANDRINGSLOGG.md`.
+
+**P85 BYGGD 2026-09-27** — **THE COMPANY.** Tre nya `queries.ts`-funktioner, alla återanvänder
+befintliga formler (en formel, en källa): `computeFixedCostsBreakdown`/`computeQuarterlyInterest`
+utbrutna ur `economy.ts` (bitvis identiska), `computeLineThroughput` utbruten ur `production.ts`.
+`projectedQuarter(state)` (P81-14/15): förväntad intäkt nästa kvartal läser redan schemalagda
+skeppningar (`deliveries.ts`s egen betalningsformel), inte en gissning om röret längre fram.
+`researchOutlook(state)` (P81-17) — GENUINT FYND: `techLevel`s ENDA mekaniska konsument i hela
+kodbasen är `bidding.ts`s diskvalificeringsgrind, så R&D:s nuläge visas som exakt den, ingen ny
+mekanik uppfunnen. `estimateLineCompletionTurn` (P81-16). Alla tre enhetstestade (11 test). Ny
+`CompanyActions.tsx`: INTERNAL-formulären och en helt ny råvarupanel (`BUY_FORWARD`/`RELEASE`,
+ingen tidigare UI kopplade in dem) skrivna om till `TierPicker`/`Segmented`/`DsSlider` (regel 2),
+varje handling körd genom `validateAction` innan den erbjuds. Tier-fraktioner (25/50/100 % av en
+redan KÄND gräns — `creditLimit`/`debt`/ett innehav) är PROVISORISKA men inte gissade
+effektskalor. **SCOPE-BESLUT:** POLITICAL-sektionen rörs INTE — P83 dokumenterade redan att den
+flyttas till CONTACTS i P86, och `CountryFile.tsx`s eget P79-beslut vägrade av samma skäl gissa
+TierPicker-nivåer för just de verben utan en godkänd skiss. `TheHouse.tsx` (namn oförändrat,
+bara rubriken "The Company"): produktionslinjerna som visuella band — GENUINT FYND: en linje kan
+tillverka VILKEN produkt som helst (ingen kod begränsar den till en lista), visas ärligt som "Any
+product — idle" i stället för en påhittad lista; `capacityPct` är alltid 100 i dagens balans,
+visas ändå statisk och ärlig. Ny Next Quarter-panel, R&D-panelen fick `researchOutlook`s rader.
+`actionCatalog.ts`: 15 → 17 verb (`BUY_FORWARD`/`RELEASE` tillkom). Golden ORÖRD (formler
+utbrutna, inte ändrade). Fullt testsvep grönt: 798 tester (778→798), lint, typecheck, build, e2e
+(22 tester, körd två gånger i rad — `play-20-turns.spec.ts`s säkerhetslån klickar nu
+TierPicker:ns LAVISH-nivå i stället för ett borttaget textfält). Se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P85-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa steg är
+P86, CONTACTS och politikverben.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

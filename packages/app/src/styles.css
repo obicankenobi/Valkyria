@@ -1509,6 +1509,88 @@ td.is-key {
   border-bottom: none;
 }
 
+/* ── Production line bands (P85, ETAPP7_TEKNISK_SPEC.md §13, P81-16):
+   "produktionslinjer som visuella band" — ersätter den gamla tabellraden
+   per linje. ────────────────────────────────────────────────────────── */
+
+.line-band {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.line-band:last-child {
+  border-bottom: none;
+}
+
+.line-band-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.line-band-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+
+.line-band-product {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.line-band-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+/* ── R&D-utsikten (P85, P81-17): "vad varje område låser upp och när",
+   visat ärligt — inget nytt forskningssystem (etapp 9). ────────────────── */
+
+.research-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.research-row:last-of-type {
+  border-bottom: none;
+}
+
+.research-category {
+  width: 40px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.research-level {
+  flex-shrink: 0;
+  color: var(--ink-dim);
+}
+
+.research-next {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-faint);
+}
+
 /* ── Main menu (P65, ETAPP6_TEKNISK_SPEC.md §3) ──────────────────────── */
 
 .menu-screen {
@@ -3624,6 +3706,12 @@ td.is-key {
   font-size: 14px;
   color: var(--ink-dim);
   line-height: 1.3;
+}
+
+/* P85: en avvisningsorsak från validateAction, samma disciplin som en
+   RejectedBanner-rad — inte en fritt skriven felfärg. */
+.cf-hint.is-warning {
+  color: var(--red);
 }
 
 .cf-target-list {

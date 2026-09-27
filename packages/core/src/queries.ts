@@ -8,8 +8,12 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
-import { alignmentPenalty, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
+import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
+import { computeFixedCostsBreakdown, computeQuarterlyInterest } from './resolve/steps/economy.js'
+import type { FixedCostsBreakdown } from './resolve/steps/economy.js'
+import { computeLineThroughput } from './resolve/steps/production.js'
+import { round } from './money.js'
 import type {
   BidEstimate,
   Formation,
@@ -22,8 +26,10 @@ import type {
   OfficialDisplay,
   Order,
   Pct,
+  ProductionLine,
   RivalId,
   SectorControl,
+  TechCategory,
 } from './types.js'
 
 const WIN_BAND_POINTS = 5
@@ -524,4 +530,90 @@ function computeWinBand(hashRng: Rng, p: WinBandInputs): { price: Money; confide
   }
 
   return points
+}
+
+// ── THE COMPANY (P85, ETAPP7_TEKNISK_SPEC.md §13, P81-14/15/16) ────────────
+
+export interface ProjectedQuarter {
+  // Skeppningar redan schemalagda att anlända NÄSTA tur (state.market.shipments,
+  // arrivalTurn === meta.turn + 1) — en prognos, inte en gissning: varje krona
+  // är redan låst i ett vunnet kontrakt, samma "betalning bokförs proportionellt
+  // mot levererad andel"-formel som deliveries.ts faktiskt använder (en formel,
+  // en källa). Leveranser längre fram i röret (delay kan vara upp till tre
+  // turer) räknas medvetet INTE in — "prognos för NÄSTA kvartal", inte hela röret.
+  expectedRevenueNextTurn: Money
+  fixedCosts: FixedCostsBreakdown
+  interest: Money
+  netChange: Money
+}
+
+// "en prognos för nästa kvartal ur accepterade kontrakt och fasta kostnader"
+// (P81-14/15, ETAPP7_TEKNISK_SPEC.md §13). Fasta kostnader och ränta är redan
+// kända/deterministiska (de ändras bara av spelarens EGNA handlingar denna
+// tur, inte av rng) — bara den framtida INTÄKTEN är en genuin prognos.
+export function projectedQuarter(state: GameState): ProjectedQuarter {
+  const nextTurn = state.meta.turn + 1
+  let expectedRevenueNextTurn = 0
+  for (const shipment of state.market.shipments) {
+    if (shipment.arrivalTurn !== nextTurn) continue
+    const contract = state.market.contracts.find((c) => c.id === shipment.contractId)
+    if (!contract) continue
+    expectedRevenueNextTurn += round(contract.price * (shipment.units / contract.quantity))
+  }
+
+  const fixedCosts = computeFixedCostsBreakdown(state.house)
+  const interest = computeQuarterlyInterest(state.house)
+  const totalFixedCosts = fixedCosts.payroll + fixedCosts.lineUpkeep + fixedCosts.stationUpkeep + fixedCosts.rndOverhead
+  const netChange = expectedRevenueNextTurn - totalFixedCosts - interest
+
+  return { expectedRevenueNextTurn, fixedCosts, interest, netChange }
+}
+
+const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']
+
+export interface CategoryResearchOutlook {
+  category: TechCategory
+  techLevel: number
+  // Produkten med LÄGST techRequired bland dem som fortfarande är låsta i den
+  // här kategorin — "vad varje område låser upp och när" (P81-17), utan att
+  // hitta på ett nytt forskningssystem (etapp 9:s jobb). null när allt i
+  // kategorin redan är upplåst.
+  nextUnlock: { productName: string; techRequired: number } | null
+}
+
+// R&D:s nuläge visat ÄRLIGT (P81-17): vad techLevel faktiskt gör mekaniskt är
+// gate:a bidding.ts:s techRequired-kontroll (en disponerad rivals bud
+// diskvalificeras annars) — den enda konsumenten i hela kodbasen. Ingen ny
+// mekanik, bara en sanningsenlig läsning av en redan existerande grind.
+export function researchOutlook(state: GameState): CategoryResearchOutlook[] {
+  return TECH_CATEGORIES.map((category) => {
+    const techLevel = state.house.techLevel[category]
+    const locked = allProducts()
+      .filter((p) => p.category === category && p.techRequired > techLevel)
+      .sort((a, b) => a.techRequired - b.techRequired)
+    const nextUnlock = locked[0] ? { productName: locked[0].name, techRequired: locked[0].techRequired } : null
+    return { category, techLevel, nextUnlock }
+  })
+}
+
+// "när pågående kontrakt blir klara" (P81-16). null för en ledig linje (inget
+// kontrakt att räkna mot) eller en linje vars takt är noll (skulle aldrig bli
+// klar — strukturellt onåbart i dagens balans, se computeLineThroughput, men
+// avvisat explicit i stället för att dela med noll).
+export function estimateLineCompletionTurn(state: GameState, line: ProductionLine): number | null {
+  if (!line.assignedContractId) return null
+  const contract = state.market.contracts.find((c) => c.id === line.assignedContractId)
+  if (!contract) return null
+
+  const inTransit = state.market.shipments
+    .filter((s) => s.contractId === contract.id)
+    .reduce((sum, s) => sum + s.units, 0)
+  const remaining = contract.quantity - contract.unitsDelivered - inTransit
+  if (remaining <= 0) return state.meta.turn
+
+  const product = getProduct(contract.productId)
+  const rate = computeLineThroughput(state.house, line, product)
+  if (rate <= 0) return null
+
+  return state.meta.turn + Math.ceil(remaining / rate)
 }

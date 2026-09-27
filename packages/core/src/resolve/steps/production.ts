@@ -11,7 +11,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { computeUnitCostNow, getProduct, materialCostPerUnit } from '../../pricing.js'
 import { round } from '../../money.js'
 import type { ResolveStep } from '../index.js'
-import type { Commodity, Contract, Shipment } from '../../types.js'
+import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 
 interface Balance {
   deliveryDelayMinTurns: number
@@ -30,6 +30,16 @@ function needsProduction(contract: Contract | undefined): contract is Contract {
 
 function remainingToProduce(contract: Contract, shipments: readonly Shipment[]): number {
   return contract.quantity - contract.unitsDelivered - unitsInTransit(shipments, contract.id)
+}
+
+// P85 (ETAPP7_TEKNISK_SPEC.md §13, P81-16): utbruten så att queries.ts kan
+// härleda "när blir ett pågående kontrakt klart" (samma "en formel, en
+// källa"-princip som computeFixedCostsBreakdown, economy.ts) utan att
+// handkopiera avsnitt 4.1:s takt-formel. Oförändrad — bara flyttad ut ur
+// steg 3 nedan, som nu anropar den i stället för att upprepa den.
+export function computeLineThroughput(house: House, line: ProductionLine, product: Product): number {
+  const lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault
+  return product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency
 }
 
 export const production: ResolveStep = (ctx) => {
@@ -122,8 +132,7 @@ export const production: ResolveStep = (ctx) => {
     // ANDRINGSLOGG.md (P16). lineEfficiency är 1,0 för alla linjer i dagens
     // scenario (alla linjer delar husets unitsPerLineTurnDefault), men ger
     // BUILD_LINE (avsnitt 8, ännu obyggd) något att variera senare.
-    const lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault
-    const lineThroughput = product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency
+    const lineThroughput = computeLineThroughput(house, line, product)
     const plannedUnits = Math.min(remaining, Math.floor(lineThroughput))
     if (plannedUnits <= 0) continue
 
