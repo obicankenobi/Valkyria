@@ -89,6 +89,7 @@ export function SettingsOverlay({
   recentEvents,
   onLoadFromSlot,
   onRestartTutorial,
+  onOpenHandbook,
 }: {
   open: boolean
   onClose: () => void
@@ -110,6 +111,9 @@ export function SettingsOverlay({
   // SettingsOverlay ÄR den etablerade "menyn" sedan P90 (nåbar från Pause
   // i spelet), samma hem som Save Slots/Support redan bor i.
   onRestartTutorial: () => void
+  // P91b (§9/§13, P81-20): "[handboken,] nåbar från menyn" — samma "menyn"
+  // som ovan.
+  onOpenHandbook: () => void
 }) {
   const [slots, setSlots] = useState<Record<string, SavedGame | null>>({})
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null)
@@ -195,11 +199,16 @@ export function SettingsOverlay({
           </section>
 
           <section className="settings-section">
-            <h3 className="settings-section-title">Tutorial</h3>
-            <p className="cf-hint">Restarts the three-quarter walkthrough from the beginning.</p>
-            <Button variant="ghost" onClick={onRestartTutorial} testId="settings-restart-tutorial">
-              Restart Tutorial
-            </Button>
+            <h3 className="settings-section-title">Tutorial &amp; Handbook</h3>
+            <p className="cf-hint">One entry per mechanic — procurement, production, the board, doomsday, heat, intelligence, politics, fronts.</p>
+            <div className="setup-actions">
+              <Button variant="ghost" onClick={onRestartTutorial} testId="settings-restart-tutorial">
+                Restart Tutorial
+              </Button>
+              <Button variant="ghost" onClick={onOpenHandbook} testId="settings-open-handbook">
+                Open Handbook
+              </Button>
+            </div>
           </section>
 
           <section className="settings-section">

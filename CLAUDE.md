@@ -650,7 +650,18 @@ textbanderoll (`TutorialOverlay.tsx`), inte DOM-ankrade coachmarks — de fem st
 skärmar. Ny sektion i `SettingsOverlay.tsx` för omstart. Fullt testsvep grönt: 896 tester
 (882→896), lint, typecheck, build, e2e (56 tester, körd två gånger i rad). Se
 `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P91a-blockquote och `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P91b, Handboken.**
+**P91b BYGGD 2026-09-28**: `handbook.ts` (åtta uppslag, `VERB_TOPIC` för alla 22 verb,
+`HUD_NUMBER_TOPIC` för de sex HUD-talen) + `Handbook.tsx` (`BottomSheet`, body bakom More),
+nåbar från huvudmenyn, Settings och HUD:ens info-ikoner (`InfoTooltip` fick `onReadMore`).
+Fyra genuina fynd (bl.a. en svenskspråkig första version som skrevs om till engelska före
+commit, och en regel 11-brist på 32 px som e2e-testet fångade) — se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P91b-blockquote och `docs/ANDRINGSLOGG.md`. Golden ORÖRD.
+913 tester, lint, typecheck, build, e2e 60 gröna en gång. **PAUSAD av ägaren efter P91b:s kod
+och dokumentation: den andra e2e-körningen i rad och `npm run shots` (regel 17, `handbook`-
+skärmen) är INTE gjorda — gör dem först vid återupptagande. Ägarens uppdrag var "kör
+P91–P94": P92 (Porträtt och händelsebilder, promptdokument), P93 (Ljudpass) och P94
+(Tillgänglighet, prestanda, skrivbordsvarianten) återstår.**
+**Nästa steg är P92, Porträtt och händelsebilder.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

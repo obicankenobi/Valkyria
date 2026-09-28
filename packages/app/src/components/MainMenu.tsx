@@ -8,6 +8,7 @@
 // detsamma specen beskriver ("bekräftelsedialog INNAN onNewGame anropas") —
 // bara var JSX:en bor skiljer sig, inte beteendet.
 import { useState } from 'react'
+import { Handbook } from './Handbook.js'
 
 export function MainMenu({
   houseName,
@@ -25,6 +26,10 @@ export function MainMenu({
   onToggleMuted: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
+  // P91b (§9/§13, P81-20): "nåbar från menyn" — Handbook.tsx behöver ingen
+  // GameState, så den mounts helt lokalt här, oberoende av om ett parti
+  // ens är laddat.
+  const [handbookOpen, setHandbookOpen] = useState(false)
 
   function handleNewGameClick() {
     if (hasSave) {
@@ -64,7 +69,12 @@ export function MainMenu({
         <button type="button" className="btn btn-ghost menu-mute" onClick={onToggleMuted} data-testid="menu-mute-toggle">
           {muted ? 'Sound: Off' : 'Sound: On'}
         </button>
+        <button type="button" className="btn btn-ghost menu-handbook" onClick={() => setHandbookOpen(true)} data-testid="menu-handbook">
+          Handbook
+        </button>
       </div>
+
+      <Handbook open={handbookOpen} focusId={null} onClose={() => setHandbookOpen(false)} />
 
       {confirming && (
         <div className="modal-overlay" data-testid="new-game-confirm">

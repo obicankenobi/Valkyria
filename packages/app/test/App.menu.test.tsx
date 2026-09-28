@@ -187,3 +187,21 @@ describe('MainMenu — mute-togglen (P72 klart-når)', () => {
     expect(screen.getByTestId('menu-mute-toggle').textContent).toBe('Sound: Off')
   })
 })
+
+// P91b (ETAPP7_TEKNISK_SPEC.md §9/§13, P81-20): "nåbar från menyn" — Handbook.tsx
+// mounts helt lokalt i MainMenu, oberoende av om ett parti är laddat.
+describe('MainMenu — Handbook-knappen (P91b klart-når: "nåbar från menyn")', () => {
+  it('öppnar Handboken, och den går att stänga igen', () => {
+    render(
+      <MainMenu houseName={null} hasSave={false} onContinue={vi.fn()} onNewGame={vi.fn()} muted={false} onToggleMuted={vi.fn()} />,
+    )
+
+    expect(screen.queryByTestId('handbook')).toBeNull()
+    fireEvent.click(screen.getByTestId('menu-handbook'))
+    const handbook = screen.getByTestId('handbook')
+    expect(handbook).toBeTruthy()
+
+    fireEvent.click(handbook.querySelector('.ds-sheet-close')!)
+    expect(screen.queryByTestId('handbook')).toBeNull()
+  })
+})

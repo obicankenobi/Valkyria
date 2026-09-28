@@ -24,6 +24,8 @@ import { PauseOverlay } from './components/PauseOverlay.js'
 import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
 import { TutorialOverlay } from './components/TutorialOverlay.js'
+import { Handbook } from './components/Handbook.js'
+import type { HandbookTopicId } from './handbook.js'
 import type { ThisQuarterTarget } from './thisQuarter.js'
 import { useGame } from './useGame.js'
 import {
@@ -127,6 +129,17 @@ export function App() {
   // fall visar handledningen en gång för mycket för en återvändande spelare
   // — hellre det än att den ALDRIG visas för en genuint ny.
   const [tutorialSeen, setTutorialSeen] = useState(false)
+
+  // P91b (§9/§13, P81-20): handboken. Ingen persistens behövs — bara ett
+  // öppet/stängt-läge och vilket uppslag som ska vara i fokus, samma
+  // mönster som MapLegend.tsx:s (P81a) redan etablerade focusId.
+  const [handbookOpen, setHandbookOpen] = useState(false)
+  const [handbookFocusId, setHandbookFocusId] = useState<HandbookTopicId | null>(null)
+
+  function handleOpenHandbook(topic: HandbookTopicId) {
+    setHandbookFocusId(topic)
+    setHandbookOpen(true)
+  }
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -453,7 +466,7 @@ export function App() {
 
   return (
     <div className="ds-shell">
-      <HudBar state={state} onOpenMenu={() => setPaused(true)} />
+      <HudBar state={state} onOpenMenu={() => setPaused(true)} onOpenHandbook={handleOpenHandbook} />
       <QuarterBand
         state={state}
         onNavigate={(target: ThisQuarterTarget) => {
@@ -609,7 +622,16 @@ export function App() {
         recentEvents={lastTurnWire}
         onLoadFromSlot={loadFromSlot}
         onRestartTutorial={handleRestartTutorial}
+        onOpenHandbook={() => {
+          setSettingsOpen(false)
+          setHandbookFocusId(null)
+          setHandbookOpen(true)
+        }}
       />
+
+      {/* P91b (§9/§13, P81-20): handboken, nådd från Settings (ovan) ELLER
+          direkt från ett HUD-tals info-ikon (Shell.tsx:s onOpenHandbook). */}
+      <Handbook open={handbookOpen} focusId={handbookFocusId} onClose={() => setHandbookOpen(false)} />
     </div>
   )
 }

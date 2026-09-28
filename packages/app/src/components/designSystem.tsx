@@ -527,19 +527,28 @@ export function DsToggle({
 
 // ── InfoTooltip — förklaring bakom en info-ikon (§9 "Handledning"): tryck på
 // mobil, tryck ELLER hovring på skrivbord (regel 13 — hovring är aldrig den
-// ENDA vägen in). ──
-export function InfoTooltip({ text }: { text: string }) {
+// ENDA vägen in). P91b: valfri onReadMore — öppnar Handbook.tsx:s fulla
+// uppslag i stället för bara bubblans korta sammanfattning (§9: "nåbar ...
+// från varje info-ikon"). Bakåtkompatibel — text-only-anropet (ComponentLibrary.tsx,
+// P73) fungerar oförändrat utan den. ──
+export function InfoTooltip({ text, onReadMore, testId }: { text: string; onReadMore?: () => void; testId?: string }) {
   const [open, setOpen] = useState(false)
   const id = useId()
   return (
-    <span className="ds-tooltip">
+    <span className="ds-tooltip" data-testid={testId}>
       <button
         type="button"
         className="ds-tooltip-trigger"
         aria-label="More information"
         aria-describedby={open ? id : undefined}
         onClick={() => setOpen((v) => !v)}
-        onBlur={() => setOpen(false)}
+        onBlur={(e) => {
+          // Ett klick på "More" nedan flyttar fokus INOM samma .ds-tooltip —
+          // stäng bara om fokus faktiskt lämnar hela komponenten, annars
+          // hinner bubblan (och "More"-knappen i den) försvinna ur DOM:en
+          // innan dess egen onClick hunnit köra.
+          if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node | null)) setOpen(false)
+        }}
       >
         <span className="ds-tooltip-dot" aria-hidden="true">
           i
@@ -548,6 +557,18 @@ export function InfoTooltip({ text }: { text: string }) {
       {open && (
         <span className="ds-tooltip-bubble" role="tooltip" id={id}>
           {text}
+          {onReadMore && (
+            <button
+              type="button"
+              className="ds-tooltip-more"
+              onClick={() => {
+                setOpen(false)
+                onReadMore()
+              }}
+            >
+              More →
+            </button>
+          )}
         </span>
       )}
     </span>

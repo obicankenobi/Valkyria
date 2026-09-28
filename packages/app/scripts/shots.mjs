@@ -525,6 +525,31 @@ const APP_SCREENS = [
       await page.getByTestId('settings-overlay').waitFor()
     },
   },
+  {
+    // P91b (§9/§13, P81-20): Handboken, nådd via Settings' "Open Handbook"-
+    // knapp — en av de tre dokumenterade ingångarna, ingen egen referensskiss.
+    name: 'handbook',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('hud-menu-button').click()
+      await page.getByTestId('pause-overlay').waitFor()
+      await page.getByTestId('pause-settings').click()
+      await page.getByTestId('settings-overlay').waitFor()
+      await page.getByTestId('settings-open-handbook').click()
+      await page.getByTestId('handbook').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

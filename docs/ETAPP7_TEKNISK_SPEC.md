@@ -1770,6 +1770,40 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 > tester efter den nya skärmen och de två nya funktionella testerna, körd
 > två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
 
+> **P91b BYGGD 2026-09-28.** Ny `handbook.ts` (data, `packages/app`): åtta
+> uppslag (`procurement`/`production`/`board`/`doomsday`/`heat`/
+> `intelligence`/`politics`/`fronts`) med `title`/`summary`/`body`, plus
+> `VERB_TOPIC` (alla 22 verb i `actionCatalog.ts`) och `HUD_NUMBER_TOPIC`
+> (de sex visade HUD-talen; datum/tur utelämnade — en klocka, ingen
+> mekanik). Klart-när ordagrant: `handbook.test.ts` underkänner om ett verb
+> eller ett HUD-tal saknar uppslag. Ny `Handbook.tsx` (`BottomSheet`, samma
+> mönster som `MapLegend.tsx`, `focusId` scrollar och fäller ut): bara
+> `summary` syns först, `body` ligger bakom en "More"-knapp per rad (regel
+> 7). Tre ingångar: huvudmenyn (`MainMenu.tsx`, egen lokal state — kräver
+> ingen `GameState`), Settings (`SettingsOverlay.tsx`, "Open Handbook") och
+> HUD:ens info-ikoner. GENUINT FYND 1: `InfoTooltip` (P73) hade aldrig
+> kopplats in i riktig UI, bara i `ComponentLibrary.tsx`; den fick en valfri
+> `onReadMore`/`testId` (bakåtkompatibel) och en `onBlur` som bara stänger
+> bubblan när fokus lämnar hela komponenten — annars hann bubblan avmonteras
+> innan dess egen "More →"-knapps `onClick` körde. GENUINT FYND 2: `HudBar`s
+> kompaktrad är själv en `<button>`, och en `InfoTooltip`-knapp inuti den är
+> ogiltig HTML — info-ikonerna bor därför i den utfällda panelen (som nu
+> visar alla sex talen, inte bara tre). GENUINT FYND 3 (självfångat före
+> commit): första utkastet av `handbook.ts` var skrivet på svenska, inklusive
+> topic-ID:na, i strid med P21:s regel att hela UI:t är på engelska —
+> omskrivet helt. GENUINT FYND 4 (regel 11, fångat av
+> `e2e/text-overflow.spec.ts` på den nya `handbook`-skärmen):
+> `.handbook-more` hade `min-height: 32px` (8 knappar, 53×32 px) — fixat till
+> 44 px, och samma fel rättat proaktivt i `.ds-tooltip-more`. Ny skärm
+> (`handbook`) i `scripts/shots.mjs` och `SCREENS`. Golden ORÖRD (ingen
+> `packages/core`-fil rörd). Nya tester: `handbook.test.ts` (5),
+> `Handbook.test.tsx` (5), `InfoTooltip.test.tsx` (4), `App.menu.test.tsx`
+> (+1), `Shell.hud.test.tsx` (+2). Testsvep: 913 tester (896→913), lint,
+> typecheck, build, e2e 60 tester gröna EN gång efter regel 11-fixen —
+> **den andra på varandra följande e2e-körningen och `npm run shots` (regel
+> 17, visuell jämförelse av `handbook`-skärmen) är INTE gjorda**; sessionen
+> pausades av ägaren innan dess. Se `docs/ANDRINGSLOGG.md`.
+
 ### 7E — Tillgångar och finish
 
 **P92 — Porträtt och händelsebilder.** Promptdokument först, bilderna genereras av ägaren, kopplas sedan in.

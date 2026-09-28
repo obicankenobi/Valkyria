@@ -9,10 +9,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { boardReviewOutlook, DISPLAY_THRESHOLDS, previewAction } from '@seventh-front/core'
 import type { GameState, PlayerAction } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
-import { ActionSlot } from './designSystem.js'
+import { ActionSlot, InfoTooltip } from './designSystem.js'
 import type { RejectedEntry } from '../useGame.js'
 import { deriveQuarterlyNotice, deriveThisQuarter } from '../thisQuarter.js'
 import type { ThisQuarterTarget } from '../thisQuarter.js'
+import { HANDBOOK, hudNumberTopic } from '../handbook.js'
+import type { HandbookTopicId } from '../handbook.js'
+
+// P91b (§9/§13, P81-20): en HUD-summering läst direkt ur HANDBOOK — en
+// enda källa, aldrig en handkopierad textsträng vid sidan av handbook.ts.
+function hudSummary(id: Parameters<typeof hudNumberTopic>[0]): string {
+  const topic = hudNumberTopic(id)
+  return HANDBOOK.find((entry) => entry.id === topic)?.summary ?? ''
+}
 
 // P79 (ETAPP7_TEKNISK_SPEC.md §7.2, "Handlingsplatserna"): varje köat kort
 // visar ett riktigt ikon/mål/kostnad, inte en generisk "Action N" — samma
@@ -184,10 +193,16 @@ export function HudBar({
   state,
   testId = 'hud',
   onOpenMenu,
+  onOpenHandbook,
 }: {
   state: GameState
   testId?: string
   onOpenMenu?: () => void
+  // P91b (§9/§13, P81-20): "nåbar ... från varje info-ikon." Nästlade
+  // knappar är ogiltig HTML — .ds-hud-row ÄR redan en <button> (växlar
+  // expanded) — så InfoTooltip:s egna knappar bor i den UTFÄLLDA panelen
+  // (en <div>, inte en <button>) i stället för i den kompakta raden.
+  onOpenHandbook?: (topic: HandbookTopicId) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const doomsday = useCountUp(state.doomsday)
@@ -262,17 +277,63 @@ export function HudBar({
       {expanded && (
         <div className="ds-hud-expanded" data-testid="hud-expanded">
           <span className="ds-hud-expanded-cell">
-            <span className="ds-hud-label">Debt</span>
+            <span className="ds-hud-label">
+              Doomsday
+              {onOpenHandbook && (
+                <InfoTooltip text={hudSummary('doomsday')} onReadMore={() => onOpenHandbook(hudNumberTopic('doomsday'))} testId="hud-info-doomsday" />
+              )}
+            </span>
+            <span className="ds-hud-value">{state.doomsday.toFixed(0)}</span>
+          </span>
+          <span className="ds-hud-expanded-cell">
+            <span className="ds-hud-label">
+              Treasury
+              {onOpenHandbook && (
+                <InfoTooltip text={hudSummary('treasury')} onReadMore={() => onOpenHandbook(hudNumberTopic('treasury'))} testId="hud-info-treasury" />
+              )}
+            </span>
+            <span className="ds-hud-value">{formatMoney(state.house.treasury)}</span>
+          </span>
+          <span className="ds-hud-expanded-cell">
+            <span className="ds-hud-label">
+              Board target
+              {onOpenHandbook && (
+                <InfoTooltip text={hudSummary('board')} onReadMore={() => onOpenHandbook(hudNumberTopic('board'))} testId="hud-info-board" />
+              )}
+            </span>
+            <span className="ds-hud-value">{progress.toFixed(0)}%</span>
+          </span>
+          <span className="ds-hud-expanded-cell">
+            <span className="ds-hud-label">
+              Debt
+              {onOpenHandbook && (
+                <InfoTooltip text={hudSummary('debt')} onReadMore={() => onOpenHandbook(hudNumberTopic('debt'))} testId="hud-info-debt" />
+              )}
+            </span>
             <span className="ds-hud-value">{formatMoney(state.house.debt)}</span>
           </span>
           <span className="ds-hud-expanded-cell">
-            <span className="ds-hud-label">Credit limit</span>
+            <span className="ds-hud-label">
+              Credit limit
+              {onOpenHandbook && (
+                <InfoTooltip text={hudSummary('creditLimit')} onReadMore={() => onOpenHandbook(hudNumberTopic('creditLimit'))} testId="hud-info-credit-limit" />
+              )}
+            </span>
             <span className="ds-hud-value" data-testid="credit-limit">
               {formatMoney(state.house.creditLimit)}
             </span>
           </span>
           <span className="ds-hud-expanded-cell">
-            <span className="ds-hud-label">Action points</span>
+            <span className="ds-hud-label">
+              Action points
+              {onOpenHandbook && (
+                <InfoTooltip
+                  text={hudSummary('actionPoints')}
+                  onReadMore={() => onOpenHandbook(hudNumberTopic('actionPoints'))}
+                  testId="hud-info-action-points"
+                />
+              )}
+            </span>
             <span className="ds-hud-value">{state.house.actionPoints}</span>
           </span>
         </div>

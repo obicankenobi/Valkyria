@@ -1912,7 +1912,8 @@ td.is-key {
    Continue/New Game — den är en inställning, inte en spelhandling. Ändå en
    riktig träffyta (regel 11, etapp 7) — upptäckt av regel 11:s eget CI-test
    sedan det utökades till huvudmenyn i P74; 32px höjd innan denna rad. */
-.menu-mute {
+.menu-mute,
+.menu-handbook {
   min-height: 44px;
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -2783,6 +2784,27 @@ td.is-key {
   z-index: 30;
 }
 
+/* P91b: "More" öppnar Handbook.tsx:s fulla uppslag. Egen rad under
+   sammanfattningen, samma träffytegolv som varje annan knapp (regel 11) —
+   bubblan själv är bara 220px bred, så knappen tar hela sin rads bredd i
+   stället för att klämmas ihop. */
+.ds-tooltip-more {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 4px 0 0;
+  border: none;
+  border-top: 1px solid rgba(251, 243, 226, 0.25);
+  background: transparent;
+  color: var(--amber);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
 @media (hover: hover) {
   .ds-tooltip-trigger:hover + .ds-tooltip-bubble,
   .ds-tooltip:hover .ds-tooltip-bubble {
@@ -3454,6 +3476,64 @@ td.is-key {
 .map-legend-meaning {
   color: var(--ink);
   margin-top: 2px;
+}
+
+/* P91b (ETAPP7_TEKNISK_SPEC.md §9/§13, P81-20): handboken. Samma
+   BottomSheet-skal som teckenförklaringen ovan, men utan ikonkolumn — varje
+   post är ren text, ett uppslag per mekanik. Regel 7: bara summary visas
+   till att börja med, body ligger bakom en egen "More"-knapp per rad. */
+.handbook-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.handbook-row {
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 200ms ease;
+}
+.handbook-row.is-focused {
+  background: var(--amber-soft);
+}
+.handbook-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.handbook-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.handbook-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.handbook-body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.handbook-more {
+  margin-top: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-raised);
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 /* P81-12 (§13, P81-blockquoten): handlingskatalogen. Samma BottomSheet-skal

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
 import { HudBar } from '../src/components/Shell.js'
+import { hudNumberTopic } from '../src/handbook.js'
 
 afterEach(cleanup)
 
@@ -44,5 +45,33 @@ describe('HudBar (P81b) — menyknappen', () => {
     fireEvent.click(document.querySelector('[data-testid="hud-menu-button"]')!)
     expect(onOpenMenu).toHaveBeenCalledOnce()
     expect(document.querySelector('[data-testid="hud-expanded"]')).toBeNull()
+  })
+})
+
+// P91b (ETAPP7_TEKNISK_SPEC.md §9/§13, P81-20): "nåbar ... från varje info-ikon".
+describe('HudBar (P91b) — info-ikonerna i den utfällda panelen', () => {
+  it('renderas inte utan onOpenHandbook (bakåtkompatibelt)', () => {
+    const state = createInitialState('indochina-slice', 'hud-info-no-handbook-seed')
+    render(<HudBar state={state} />)
+    fireEvent.click(document.querySelector('.ds-hud-row')!)
+    expect(document.querySelector('[data-testid="hud-info-doomsday"]')).toBeNull()
+  })
+
+  it('varje av de sex talen har en info-ikon som anropar onOpenHandbook med rätt topic', () => {
+    const state = createInitialState('indochina-slice', 'hud-info-seed')
+    const onOpenHandbook = vi.fn()
+    render(<HudBar state={state} onOpenHandbook={onOpenHandbook} />)
+    fireEvent.click(document.querySelector('.ds-hud-row')!)
+
+    const ids = ['doomsday', 'treasury', 'board', 'debt', 'creditLimit', 'actionPoints'] as const
+    const testIds = ['hud-info-doomsday', 'hud-info-treasury', 'hud-info-board', 'hud-info-debt', 'hud-info-credit-limit', 'hud-info-action-points']
+    for (let i = 0; i < ids.length; i++) {
+      const tip = document.querySelector(`[data-testid="${testIds[i]}"]`)
+      expect(tip, testIds[i]).toBeTruthy()
+      fireEvent.click(tip!.querySelector('.ds-tooltip-trigger')!)
+      fireEvent.click(tip!.querySelector('.ds-tooltip-more')!)
+      expect(onOpenHandbook).toHaveBeenLastCalledWith(hudNumberTopic(ids[i]!))
+    }
+    expect(onOpenHandbook).toHaveBeenCalledTimes(ids.length)
   })
 })

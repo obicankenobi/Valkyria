@@ -45,6 +45,7 @@ function baseProps() {
     recentEvents: [],
     onLoadFromSlot: vi.fn().mockResolvedValue(true),
     onRestartTutorial: vi.fn(),
+    onOpenHandbook: vi.fn(),
   }
 }
 

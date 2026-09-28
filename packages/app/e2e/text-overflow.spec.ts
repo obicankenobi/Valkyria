@@ -198,6 +198,15 @@ async function enterSettings(page: Page): Promise<void> {
   await page.getByTestId('settings-overlay').waitFor()
 }
 
+// P91b (§9/§13, P81-20): Handboken nådd via Settings' "Open Handbook"-knapp,
+// en av de tre dokumenterade ingångarna (de andra två är huvudmenyn och HUD:ens
+// info-ikoner — samma komponent i alla tre, en egen skärm räcker för regel 18/11).
+async function enterHandbook(page: Page): Promise<void> {
+  await enterSettings(page)
+  await page.getByTestId('settings-open-handbook').click()
+  await page.getByTestId('handbook').waitFor()
+}
+
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -210,6 +219,7 @@ const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<voi
   { name: 'epilogue-history', path: '/', setup: enterEpilogueHistory },
   { name: 'settings', path: '/', setup: enterSettings },
   { name: 'tutorial', path: '/', setup: enterTutorial },
+  { name: 'handbook', path: '/', setup: enterHandbook },
 ]
 
 for (const format of FORMATS) {
