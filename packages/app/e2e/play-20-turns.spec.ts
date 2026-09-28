@@ -178,16 +178,24 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     const recentFailures = failureTurns.filter((t) => t > turn - 6).length
     const useStageIncident = recentFailures < 2
 
-    // P85: POLITICAL-formuläret (BRIBE/STAGE_INCIDENT/BACK_CHANNEL) är
-    // medvetet ORÖRT (se CompanyActions.tsx:s SCOPE-BESLUT) — fortfarande den
-    // enda .action-form som finns kvar nu när INTERNAL flyttade ut, så
-    // .first() räcker (INTERNAL byggdes aldrig med den klassen).
-    const targetSelect = page.locator('.action-form').first().locator('select').first()
-    await targetSelect.selectOption({ label: 'Republic of Vietnam' }).catch(() => {})
+    // P86: POLITICAL-formuläret flyttade till CONTACTS (ThePolitics.tsx) —
+    // STAGE_INCIDENT är en faktionshandling (targetFactionId "rvn" direkt,
+    // ingen väljare längre); BRIBE riktas mot RVN:s FÖRSTA tjänsteman (vilken
+    // post spelar ingen roll för det här testets syfte, "minst en executive
+    // action per tur" — id-prefixet `official-rvn-` räcker för att hålla
+    // målet inom Republic of Vietnam, samma faktion filhuvudets STAGE_
+    // INCIDENT-motivering redan bygger på). Bägge formulären öppnar på
+    // MODEST-nivån som standard — ett spend-belopp som INTE påverkar
+    // STAGE_INCIDENT:s 65 %-chans eller doomsday-intervallet (se
+    // ThePolitics.tsx:s huvudkommentar), så testets adaptiva
+    // misslyckande-spårning nedan förblir giltig oförändrad.
+    await page.getByTestId('tab-contacts').click()
     if (useStageIncident) {
-      await page.getByRole('button', { name: 'Stage Incident' }).click()
+      await page.getByTestId('contacts-verb-STAGE_INCIDENT-rvn').click()
+      await page.getByTestId('contacts-STAGE_INCIDENT-file-rvn').click()
     } else {
-      await page.getByRole('button', { name: 'Bribe' }).click()
+      await page.locator('[data-testid^="contacts-verb-BRIBE-official-rvn-"]').first().click()
+      await page.locator('[data-testid^="contacts-BRIBE-file-official-rvn-"]').first().click()
     }
 
     await endTurnButton.click()

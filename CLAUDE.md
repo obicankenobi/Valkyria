@@ -554,8 +554,21 @@ visas ändå statisk och ärlig. Ny Next Quarter-panel, R&D-panelen fick `resear
 utbrutna, inte ändrade). Fullt testsvep grönt: 798 tester (778→798), lint, typecheck, build, e2e
 (22 tester, körd två gånger i rad — `play-20-turns.spec.ts`s säkerhetslån klickar nu
 TierPicker:ns LAVISH-nivå i stället för ett borttaget textfält). Se
-`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P85-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa steg är
-P86, CONTACTS och politikverben.**
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P85-blockquote och `docs/ANDRINGSLOGG.md`.
+**P86 BYGGD 2026-09-28**: `ThePolitics.tsx` (CONTACTS) fick de sju återstående POLITICAL/BROKER-
+verben (`BRIBE`/`FUND_CAMPAIGN`/`FAVOUR`/`ASSASSINATE` mot tjänstemän, `STAGE_INCIDENT`/
+`BACK_CHANNEL`/`FUND_COUP`/`BROKER` mot faktioner) plus rivalhusens rena läsvy. **Genuint fynd**:
+utöver `INFLUENCE` (P79) skalar bara `BRIBE`/`FUND_CAMPAIGN`/`FAVOUR` sitt belopp mot en faktisk
+effekt — `STAGE_INCIDENT`/`BACK_CHANNEL`/`FUND_COUP`/`ASSASSINATE` debiterar treasury men spend
+skalar INGENTING i utfallet (verifierat mot `political.ts`), samma linje `CountryFile.tsx` (P79)
+redan dokumenterat för två av de fyra — UI:t är ärligt om det i stället för att gissa en
+effektskala. POLITICAL-formuläret (`<select>`/`<input type="number">`) borttaget ur
+`TheHouse.tsx`. `actionCatalog.ts`: 17 → 22 verb — **alla 22 verb i §0.1:s tabell är nu nåbara**,
+§7.1:s klart-när för hela avsnitt 7. Ny skärm `contacts`/`contacts-broker` i `scripts/shots.mjs`
+OCH i `e2e/text-overflow.spec.ts`s `SCREENS` (regel 18/11) i samma commit. Golden ORÖRD. Fullt
+testsvep grönt: 809 tester (798→809), lint, typecheck, build, e2e (26 tester, körd två gånger i
+rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P86-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa
+steg är P87, Kriskortet.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

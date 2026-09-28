@@ -16,7 +16,7 @@ describe('ThePolitics — rummet blir synligt (P63 klart-när)', () => {
     const state = createInitialState('indochina-slice', 'the-politics-gating-seed')
     state.house.stations = []
 
-    const { container } = render(<ThePolitics state={state} />)
+    const { container } = render(<ThePolitics state={state} onAddAction={() => {}} />)
 
     expect(container.textContent).toContain('UNKNOWN')
     expect(container.textContent).not.toMatch(/REARM|AUSTERITY|MODERNISE|NON_ALIGNMENT|SELF_ENRICHMENT/)
@@ -38,7 +38,7 @@ describe('ThePolitics — rummet blir synligt (P63 klart-när)', () => {
       },
     ]
 
-    const { container } = render(<ThePolitics state={state} />)
+    const { container } = render(<ThePolitics state={state} onAddAction={() => {}} />)
 
     expect(container.textContent).toContain(official.agenda)
     expect(container.textContent).toContain(official.integrity.toFixed(0))
@@ -60,7 +60,7 @@ describe('ThePolitics — rummet blir synligt (P63 klart-när)', () => {
       },
     ]
 
-    const { container } = render(<ThePolitics state={state} />)
+    const { container } = render(<ThePolitics state={state} onAddAction={() => {}} />)
 
     expect(container.textContent).toContain('UNKNOWN')
     expect(container.textContent).not.toContain(official.agenda)

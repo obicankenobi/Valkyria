@@ -15,13 +15,13 @@ describe('ACTION_CATALOG', () => {
     expect(new Set(verbs).size).toBe(verbs.length)
   })
 
-  it('bara "operations" och "company" förekommer som mål (de enda skärmar med byggda former)', () => {
+  it('bara "operations", "company" och "contacts" förekommer som mål (de enda skärmar med byggda former)', () => {
     for (const entry of ACTION_CATALOG) {
-      expect(['operations', 'company']).toContain(entry.target)
+      expect(['operations', 'company', 'contacts']).toContain(entry.target)
     }
   })
 
-  it('täcker exakt de 17 verb som faktiskt har en byggd form i appen (CountryFile.tsx + TheHouse.tsx/CompanyActions.tsx, P85: BUY_FORWARD/RELEASE tillkom)', () => {
+  it('täcker exakt de 22 verb som faktiskt har en byggd form i appen (P86: CONTACTS ger STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER/FUND_CAMPAIGN/FAVOUR/ASSASSINATE en riktig form — §7.1:s klart-när, "alla 22 verb nåbara")', () => {
     const expected = [
       'EXPAND',
       'WITHDRAW',
@@ -32,7 +32,12 @@ describe('ACTION_CATALOG', () => {
       'INFLUENCE',
       'STAGE_INCIDENT',
       'BACK_CHANNEL',
+      'FUND_COUP',
+      'BROKER',
       'BRIBE',
+      'FUND_CAMPAIGN',
+      'FAVOUR',
+      'ASSASSINATE',
       'TAKE_LOAN',
       'REPAY',
       'BUILD_LINE',

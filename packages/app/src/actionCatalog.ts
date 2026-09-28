@@ -15,7 +15,7 @@
 // §7.1:s tabell delar upp bud (inget verb, kostar ingen plats — §7.2) från
 // resten — den här katalogen listar bara handlingar som FAKTISKT kostar en
 // handlingsplats, ordagrant vad P81-12 ber om.
-export type ActionCatalogView = 'operations' | 'company'
+export type ActionCatalogView = 'operations' | 'company' | 'contacts'
 
 export interface ActionCatalogEntry {
   verb: string
@@ -36,14 +36,18 @@ export const ACTION_CATALOG: readonly ActionCatalogEntry[] = [
   { verb: 'TURN', label: 'Turn an official', objectGroup: 'Country with a station', target: 'operations' },
   // Land utan station.
   { verb: 'RECRUIT', label: 'Recruit a new station', objectGroup: 'Country without a station', target: 'operations' },
-  // Faktion / huvudstad (CountryFile.tsx, P79 — bara INFLUENCE byggd där än;
-  // STAGE_INCIDENT/BACK_CHANNEL nås i praktiken via THE COMPANY tills P86
-  // flyttar in dem i CONTACTS, se §13:s P86-rad).
+  // Faktion / huvudstad. INFLUENCE byggd i CountryFile.tsx (P79); STAGE_
+  // INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER i ThePolitics.tsx (CONTACTS, P86).
   { verb: 'INFLUENCE', label: 'Influence public support or relations', objectGroup: 'Faction / capital', target: 'operations' },
-  { verb: 'STAGE_INCIDENT', label: 'Stage an incident', objectGroup: 'Faction / capital', target: 'company' },
-  { verb: 'BACK_CHANNEL', label: 'Open a back channel', objectGroup: 'Faction / capital', target: 'company' },
-  // Tjänsteman (TheHouse.tsx tills P86 flyttar in den i CONTACTS).
-  { verb: 'BRIBE', label: 'Bribe an official', objectGroup: 'Official', target: 'company' },
+  { verb: 'STAGE_INCIDENT', label: 'Stage an incident', objectGroup: 'Faction / capital', target: 'contacts' },
+  { verb: 'BACK_CHANNEL', label: 'Open a back channel', objectGroup: 'Faction / capital', target: 'contacts' },
+  { verb: 'FUND_COUP', label: 'Fund a coup', objectGroup: 'Faction / capital', target: 'contacts' },
+  { verb: 'BROKER', label: 'Broker a direct deal', objectGroup: 'Faction / capital', target: 'contacts' },
+  // Tjänsteman (ThePolitics.tsx, CONTACTS, P86).
+  { verb: 'BRIBE', label: 'Bribe an official', objectGroup: 'Official', target: 'contacts' },
+  { verb: 'FUND_CAMPAIGN', label: "Fund an official's campaign", objectGroup: 'Official', target: 'contacts' },
+  { verb: 'FAVOUR', label: 'Do an official a favour', objectGroup: 'Official', target: 'contacts' },
+  { verb: 'ASSASSINATE', label: 'Assassinate an official', objectGroup: 'Official', target: 'contacts' },
   // THE COMPANY (TheHouse.tsx).
   { verb: 'TAKE_LOAN', label: 'Take a loan', objectGroup: 'THE COMPANY', target: 'company' },
   { verb: 'REPAY', label: 'Repay debt', objectGroup: 'THE COMPANY', target: 'company' },

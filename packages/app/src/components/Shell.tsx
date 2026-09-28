@@ -36,6 +36,7 @@ export const VERB_ICON: Record<string, string> = {
   FAVOUR: '✎',
   FUND_COUP: '☠',
   ASSASSINATE: '☠',
+  BROKER: '⇄',
   BUY_FORWARD: '⇩',
   RELEASE: '⇧',
   TAKE_LOAN: '£',

@@ -251,6 +251,45 @@ const APP_SCREENS = [
       await page.getByTestId('company-credit-tier').waitFor()
     },
   },
+  {
+    // P86: CONTACTS — personakter med politikverben, faktionernas akter och
+    // rivalhusens akter (ingen egen referensskiss).
+    name: 'contacts',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('tab-contacts').click()
+      await page.getByTestId('contacts-verb-BROKER-rvn').waitFor()
+    },
+  },
+  {
+    // P86: BROKER-formuläret, ThePolitics.tsx:s mest komplexa (produktlista,
+    // kvantitet, prisreglage) — ingen egen referensskiss.
+    name: 'contacts-broker',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('tab-contacts').click()
+      await page.getByTestId('contacts-verb-BROKER-rvn').click()
+      await page.getByTestId('contacts-broker-preview-rvn').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

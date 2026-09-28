@@ -14,17 +14,18 @@
 // P85 (ETAPP7_TEKNISK_SPEC.md §13, regel 2): INTERNAL-formulären (lån,
 // återbetalning, ny linje, anställning, R&D-omprioritering) och den nya
 // råvarupanelen (BUY_FORWARD/RELEASE) bröts ut till CompanyActions.tsx —
-// TierPicker/Segmented i stället för <input type="number">/<select>. Den
-// här filen äger fortfarande POLITICAL-formuläret (BRIBE/STAGE_INCIDENT/
-// BACK_CHANNEL), oförändrat — se CompanyActions.tsx:s egen huvudkommentar
-// för SCOPE-BESLUTET som lämnar det orört.
-import { useState } from 'react'
+// TierPicker/Segmented i stället för <input type="number">/<select>.
+//
+// P86 (§13, P81-18): POLITICAL-formuläret (BRIBE/STAGE_INCIDENT/BACK_CHANNEL,
+// <select>/<input type="number">) flyttat till ThePolitics.tsx (CONTACTS) och
+// borttaget härifrån — den hårdkodade genvägen den här filens kommentar
+// tidigare beskrev är nu den avsedda platsen. "Executive actions"-panelen
+// visar bara INTERNAL-formuläret och dess köade kort.
 import {
   DISPLAY_THRESHOLDS,
   computeUnitCostNow,
   estimateLineCompletionTurn,
   getProduct,
-  officialId,
   projectedQuarter,
   researchOutlook,
 } from '@seventh-front/core'
@@ -39,40 +40,19 @@ function contractMargin(contract: Contract, commodities: Record<Commodity, numbe
   return { marginPct: ((contract.price - cost) / contract.price) * 100, unitCostNow }
 }
 
-function describeAction(action: PlayerAction): string {
-  switch (action.type) {
-    case 'INTERNAL':
-      switch (action.op) {
-        case 'TAKE_LOAN':
-          return `Take loan — ${formatMoney(Number(action.payload.amount ?? 0))}`
-        case 'REPAY':
-          return `Repay debt — ${formatMoney(Number(action.payload.amount ?? 0))}`
-        case 'BUILD_LINE':
-          return 'Build production line'
-        case 'HIRE':
-          return `Hire — ${String(action.payload.role ?? '')}`
-        case 'REPRIORITISE_RND':
-          return `Reprioritise R&D — ${String(action.payload.category ?? '')}`
-      }
-      break
-    case 'POLITICAL':
-      switch (action.op) {
-        case 'STAGE_INCIDENT':
-        case 'BACK_CHANNEL':
-          return `${action.op.replace('_', ' ')} — ${action.targetFactionId} (${formatMoney(action.spend)})`
-        case 'BRIBE':
-        case 'FUND_CAMPAIGN':
-          return `${action.op.replace('_', ' ')} — ${action.officialId} (${formatMoney(action.spend)})`
-        case 'FAVOUR':
-          return `Favour — ${action.officialId} (margin ${formatMoney(action.marginCost)})`
-      }
-      break
-    case 'CRISIS':
-      return `Crisis choice — ${action.choice}`
-    default:
-      return action.type
+function describeAction(action: Extract<PlayerAction, { type: 'INTERNAL' }>): string {
+  switch (action.op) {
+    case 'TAKE_LOAN':
+      return `Take loan — ${formatMoney(Number(action.payload.amount ?? 0))}`
+    case 'REPAY':
+      return `Repay debt — ${formatMoney(Number(action.payload.amount ?? 0))}`
+    case 'BUILD_LINE':
+      return 'Build production line'
+    case 'HIRE':
+      return `Hire — ${String(action.payload.role ?? '')}`
+    case 'REPRIORITISE_RND':
+      return `Reprioritise R&D — ${String(action.payload.category ?? '')}`
   }
-  return 'action'
 }
 
 function ExecutiveActions({
@@ -86,12 +66,9 @@ function ExecutiveActions({
   onAddAction: (action: PlayerAction) => void
   onRemoveAction: (index: number) => void
 }) {
-  const [targetFactionId, setTargetFactionId] = useState(Object.keys(state.factions)[0] ?? '')
-  const [spend, setSpend] = useState(0)
-
   const queued = draft.actions
     .map((action, index) => ({ action, index }))
-    .filter(({ action }) => action.type === 'INTERNAL' || action.type === 'POLITICAL')
+    .filter((entry): entry is { action: Extract<PlayerAction, { type: 'INTERNAL' }>; index: number } => entry.action.type === 'INTERNAL')
 
   return (
     <Panel
@@ -99,52 +76,6 @@ function ExecutiveActions({
       right={<Tag tone="amber">{state.house.actionPoints} action points</Tag>}
     >
       <InternalActionsForm state={state} onAddAction={onAddAction} />
-
-      <div className="action-form">
-        <span className="action-form-title">Political</span>
-        <label className="field">
-          Target faction
-          <select value={targetFactionId} onChange={(e) => setTargetFactionId(e.target.value)}>
-            {Object.values(state.factions).map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Spend
-          <input type="number" min={0} value={spend} onChange={(e) => setSpend(Number(e.target.value))} />
-        </label>
-        <button
-          type="button"
-          className="btn"
-          disabled={!targetFactionId}
-          // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): BRIBE tar nu officialId,
-          // inte targetFactionId. Riktar sig mot faktionens procurement-
-          // tjänsteman tills P63 bygger en riktig tjänsteman-väljare
-          // (Politikpanelen, gated av Station.coverage).
-          onClick={() => onAddAction({ type: 'POLITICAL', op: 'BRIBE', officialId: officialId(targetFactionId, 'procurement'), spend })}
-        >
-          Bribe
-        </button>
-        <button
-          type="button"
-          className="btn"
-          disabled={!targetFactionId}
-          onClick={() => onAddAction({ type: 'POLITICAL', op: 'STAGE_INCIDENT', targetFactionId, spend })}
-        >
-          Stage Incident
-        </button>
-        <button
-          type="button"
-          className="btn"
-          disabled={!targetFactionId}
-          onClick={() => onAddAction({ type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId, spend })}
-        >
-          Back Channel
-        </button>
-      </div>
 
       {queued.length > 0 && (
         <div style={{ marginTop: 14 }}>

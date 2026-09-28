@@ -28,10 +28,21 @@ async function enterOperations(page: Page): Promise<void> {
   await page.getByTestId('hud').waitFor()
 }
 
+// P86: CONTACTS — personakter med politikverben, faktionsverben (STAGE_
+// INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER) och rivalhusens akter, den
+// textmässigt tätaste skärmen etapp 7 hittills byggt.
+async function enterContacts(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('hud').waitFor()
+  await page.getByTestId('tab-contacts').click()
+  await page.getByTestId('contacts-verb-BROKER-rvn').waitFor()
+}
+
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
   { name: 'operations', path: '/', setup: enterOperations },
+  { name: 'contacts', path: '/', setup: enterContacts },
 ]
 
 for (const format of FORMATS) {

@@ -91,6 +91,18 @@ describe('TheHouse — Next Quarter-panelen (P85, P81-14/15)', () => {
   })
 })
 
+describe('TheHouse — POLITICAL flyttat till CONTACTS (P86, P81-18)', () => {
+  it('Executive actions-panelen erbjuder inte längre BRIBE/STAGE_INCIDENT/BACK_CHANNEL', () => {
+    const state = createInitialState('indochina-slice', 'thehouse-no-political-seed')
+    render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} />)
+
+    expect(screen.queryByText('Political')).toBeNull()
+    expect(screen.queryByText('Bribe')).toBeNull()
+    expect(screen.queryByText('Stage Incident')).toBeNull()
+    expect(screen.queryByText('Back Channel')).toBeNull()
+  })
+})
+
 describe('TheHouse — R&D-utsikten (P85, P81-17)', () => {
   it('visar en rad per techkategori med techLevel och nästa upplåsning', () => {
     const state = createInitialState('indochina-slice', 'thehouse-research-seed')

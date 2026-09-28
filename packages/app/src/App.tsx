@@ -269,7 +269,7 @@ export function App() {
         {view === 'company' && (
           <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />
         )}
-        {view === 'contacts' && <ThePolitics state={state} />}
+        {view === 'contacts' && <ThePolitics state={state} onAddAction={addAction} />}
         {view === 'news' && (
           <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} />
         )}

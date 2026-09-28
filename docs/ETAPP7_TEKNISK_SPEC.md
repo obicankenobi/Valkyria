@@ -1440,6 +1440,51 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P86 — CONTACTS och politikverben.** Personakter, faktionernas och rivalernas akter. `BRIBE`, `FUND_CAMPAIGN`, `FAVOUR`, `INFLUENCE`, `STAGE_INCIDENT`, `BACK_CHANNEL`, `BROKER` först; `FUND_COUP` och `ASSASSINATE` sist i samma prompt. *Klart när:* alla 22 verb nåbara från gränssnittet, verifierat med samma sökning som i §0.1. *Utökad efter P81 (P81-18):* POLITICAL-sektionen i THE COMPANY flyttas in i CONTACTS och tas bort där. Varje personakt förklarar sina tal i klartext: vad `standing`, `relationToPlayer` och `integrity` påverkar i spelet, och vad varje verb väntas ändra (förhandsvisningen från P78/P79).
 
+> **P86 BYGGD 2026-09-28**: `ThePolitics.tsx` (P63:s läsvy) fick en skrivyta
+> ovanpå — per tjänsteman `BRIBE`/`FUND_CAMPAIGN`/`FAVOUR`/`ASSASSINATE`
+> (`officialId`), per faktion `STAGE_INCIDENT`/`BACK_CHANNEL`/`FUND_COUP`/
+> `BROKER` (`targetFactionId`/`buyerId`) — `INFLUENCE` oförändrad i
+> `CountryFile.tsx` (P79). Skyddsräcke 3 genomgående: varje kandidathandling
+> körs genom `validateAction(state, state, action)` innan FILE aktiveras.
+> **GENUINT FYND**, promptens huvudsakliga: av POLITICAL:s åtta op skalar
+> bara `BRIBE`/`FUND_CAMPAIGN`/`FAVOUR`/`INFLUENCE` sitt spend/marginCost
+> mot en faktisk effekt (political.ts:s cost-per-point-formler) —
+> `STAGE_INCIDENT`/`BACK_CHANNEL`/`FUND_COUP`/`ASSASSINATE` debiterar
+> treasury men beloppet skalar INGENTING i utfallet (fast sannolikhet
+> respektive fast rng-intervall). `CountryFile.tsx` (P79) dokumenterade
+> redan hälften (`STAGE_INCIDENT`/`BACK_CHANNEL`); den här prompten
+> bekräftar att `FUND_COUP`/`ASSASSINATE` delar egenskapen, verifierat mot
+> `applyFundCoup`/`applyAssassinate` som aldrig läser `action.spend` i någon
+> formel. UI:t är ärligt om det (en hint under reglaget) i stället för att
+> låtsas att mer pengar ger bättre odds — tiers är PROVISORISKA runda
+> kronbelopp, `FUND_COUP`/`ASSASSINATE`:s SERIOUS-nivå återanvänder
+> härnessens egna bot-konstanter (`packages/harness/src/policies.ts`)
+> snarare än en helt ny gissning; `BRIBE`/`FUND_CAMPAIGN`/`FAVOUR` fick
+> poängbaserade tiers (INFLUENCE:s mönster) — `BRIBE`:s LAVISH (15 poäng)
+> landar exakt på `bribeRelationMaxPerTurn`, taket political.ts redan
+> klipper mot. `BROKER` (ny, ingen tidigare UI kopplade in den typen alls):
+> produktväljare, `Stepper` för kvantitet, `DsSlider` för pris (referens
+> `baseCost × quantity`, ±50 %) — gated av `findOfficial`s
+> relationToPlayer/integrity mot `brokerRelationThreshold`/
+> `IntegrityThreshold`. Verifierat i test: `relationToPlayer` är 0 för ALLA
+> tjänstemän vid partistart, så `BROKER` är strukturellt avvisad tills
+> spelaren byggt relation — FILE inaktiverad från första sekunden, inte en
+> bugg. Rivalhusens akter: ren läsvy, inga verb (§7.1, ordagrant). P81-18:
+> POLITICAL-sektionen (`<select>`/`<input type="number">`) borttagen ur
+> `TheHouse.tsx`s `ExecutiveActions` — panelen visar nu bara `INTERNAL`-
+> formuläret och dess köade kort. `actionCatalog.ts`: 17 → 22 verb (nytt
+> `target: 'contacts'`) — samtliga 22 verb i §0.1:s tabell har nu en byggd
+> form, samma sökmetod som §0.1 bekräftar det. `play-20-turns.spec.ts`s
+> adaptiva `STAGE_INCIDENT`/`BRIBE`-regel omskriven mot CONTACTS-testid:erna
+> (sekvensen förblir giltig — spend-beloppets frånvaro av effekt gör
+> testets 65 %-baserade misslyckande-spårning oförändrad). Ny skärm i
+> `scripts/shots.mjs` (`contacts`, `contacts-broker`) OCH i
+> `e2e/text-overflow.spec.ts`s `SCREENS`-lista (regel 18/11) i samma commit
+> som skärmen byggs. Golden ORÖRD (ingen `packages/core`-fil ändrad, bara
+> läst). Fullt testsvep grönt: 809 tester (798→809), lint, typecheck, build,
+> e2e (26 tester efter den nya `contacts`-skärmen, körd två gånger i rad).
+> Se `docs/ANDRINGSLOGG.md`.
+
 **P87 — Kriskortet.**
 
 ### 7D — Sidorna
