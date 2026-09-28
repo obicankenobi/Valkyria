@@ -176,3 +176,124 @@ export async function saveFullReplay(full: boolean): Promise<void> {
     db.close()
   }
 }
+
+// P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): "sparplatser." Genuint fynd: useGame.ts
+// autosparar kontinuerligt till EN enda flik (SAVE_SLOT, game.ts) — att göra
+// varje flik till ett eget, självständigt autosparande parti hade krävt att
+// riva upp den arkitekturen (vilken flik är "aktiv", stäng av autospar mot
+// den gamla, m.m.), utanför en enda prompts rimliga yta. Löst med NAMNGIVNA
+// MANUELLA KONTROLLPUNKTER ovanpå den redan befintliga autosparningen —
+// saveGame/loadGame tar redan en godtycklig `slot`-sträng (inget nytt schema
+// behövs), bara en ny `deleteSave` saknades för att kunna tömma en flik.
+export async function deleteSave(slot: string): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).delete(saveKey(slot))
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+// P90: volym (0–1, se sound.ts:s egen kommentar om varför "per kanal" blev
+// en enda global volym), rörelseläge (reducerad rörelse + animationshastighet
+// slås ihop till EN kontroll, se styles.css:s [data-motion]-regler) och
+// textstorlek. Samma nyckel-i-samma-objektlager-mönster som SOUND_SETTINGS_KEY/
+// REPLAY_SETTINGS_KEY ovan.
+const VOLUME_SETTINGS_KEY = 'settings:volume'
+const MOTION_SETTINGS_KEY = 'settings:motion'
+const TEXT_SCALE_SETTINGS_KEY = 'settings:textScale'
+
+export type MotionSetting = 'normal' | 'fast' | 'off'
+export type TextScaleSetting = 'normal' | 'large'
+
+export async function loadVolume(): Promise<number> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<number | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(VOLUME_SETTINGS_KEY)
+      request.onsuccess = () => resolve(request.result as number | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? 1
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveVolume(volume: number): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(volume, VOLUME_SETTINGS_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+export async function loadMotion(): Promise<MotionSetting> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<MotionSetting | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(MOTION_SETTINGS_KEY)
+      request.onsuccess = () => resolve(request.result as MotionSetting | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? 'normal'
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveMotion(motion: MotionSetting): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(motion, MOTION_SETTINGS_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+export async function loadTextScale(): Promise<TextScaleSetting> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<TextScaleSetting | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(TEXT_SCALE_SETTINGS_KEY)
+      request.onsuccess = () => resolve(request.result as TextScaleSetting | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? 'normal'
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveTextScale(scale: TextScaleSetting): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(scale, TEXT_SCALE_SETTINGS_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}

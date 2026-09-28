@@ -7,7 +7,7 @@
 // efterfrågar.
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { crossedDoomsdayThreshold, isMuted, playSound, setMuted } from '../src/sound.js'
+import { crossedDoomsdayThreshold, getVolume, isMuted, playSound, setMuted, setVolume } from '../src/sound.js'
 
 describe('sound — mute-flaggan (P72 klart-når)', () => {
   it('setMuted/isMuted håller flaggan, default är omutad', () => {
@@ -16,6 +16,29 @@ describe('sound — mute-flaggan (P72 klart-når)', () => {
     expect(isMuted()).toBe(true)
     setMuted(false)
     expect(isMuted()).toBe(false)
+  })
+})
+
+describe('sound — volym (P90)', () => {
+  it('setVolume/getVolume håller värdet, default är 1', () => {
+    expect(getVolume()).toBe(1)
+    setVolume(0.5)
+    expect(getVolume()).toBe(0.5)
+    setVolume(1)
+  })
+
+  it('klampar värdet till [0, 1]', () => {
+    setVolume(-5)
+    expect(getVolume()).toBe(0)
+    setVolume(50)
+    expect(getVolume()).toBe(1)
+    setVolume(1)
+  })
+
+  it('playSound kraschar inte vid en annan volym än default (jsdom saknar AudioContext helt, samma gräns som ovan)', async () => {
+    setVolume(0)
+    await expect(playSound('turn-end')).resolves.toBeUndefined()
+    setVolume(1)
   })
 })
 

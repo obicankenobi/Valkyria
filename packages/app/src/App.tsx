@@ -21,12 +21,26 @@ import { ThePolitics } from './components/ThePolitics.js'
 import { TheWire } from './components/TheWire.js'
 import { QuarterReplay } from './components/QuarterReplay.js'
 import { PauseOverlay } from './components/PauseOverlay.js'
+import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
 import type { ThisQuarterTarget } from './thisQuarter.js'
 import { useGame } from './useGame.js'
-import { hasSavedGame, loadFullReplay, loadMuted, saveFullReplay, saveMuted } from './persistence.js'
+import {
+  hasSavedGame,
+  loadFullReplay,
+  loadMotion,
+  loadMuted,
+  loadTextScale,
+  loadVolume,
+  saveFullReplay,
+  saveMotion,
+  saveMuted,
+  saveTextScale,
+  saveVolume,
+} from './persistence.js'
+import type { MotionSetting, TextScaleSetting } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
-import { playSound, setMuted as setSoundMuted } from './sound.js'
+import { playSound, setMuted as setSoundMuted, setVolume as setSoundVolume } from './sound.js'
 
 // P88 (ETAPP7_TEKNISK_SPEC.md §5/§9/§13): "Title Screen ─► New Game ─►
 // Briefing ─► OPERATIONS." 'menu' är Title Screen (MainMenu.tsx, oförändrad
@@ -61,6 +75,7 @@ export function App() {
     setCrisisChoice,
     endTurn,
     restart,
+    loadFromSlot,
   } = useGame()
   const [view, setView] = useState<View>('menu') // P65 (ETAPP6_TEKNISK_SPEC.md §3): menyn grindar inträdet, inte spelet direkt
   const [hasSave, setHasSave] = useState(false)
@@ -80,6 +95,13 @@ export function App() {
   // P81b (§13, P81-6): pausöverlaget. Regel 16 ("Esc för paus") nås oavsett
   // vilken flik som är aktiv, samma princip som End Quarter-fallbacken.
   const [paused, setPaused] = useState(false)
+  // P90 (§9/§13): inställningsöverlaget, öppnat FRÅN pausöverlaget (en ny
+  // "Settings"-knapp där) — se SettingsOverlay.tsx:s egen kommentar för
+  // varför volym/rörelseläge/textstorlek fick de här formerna.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [volume, setVolume] = useState(1)
+  const [motion, setMotion] = useState<MotionSetting>('normal')
+  const [textScale, setTextScale] = useState<TextScaleSetting>('normal')
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -139,12 +161,87 @@ export function App() {
     })
   }
 
+  // P90: samma förkastat-löfte-är-standardvärde-gräns som ovan, för de tre
+  // nya inställningarna.
+  useEffect(() => {
+    let cancelled = false
+    loadVolume()
+      .then((value) => {
+        if (!cancelled) setVolume(value)
+      })
+      .catch(() => {
+        if (!cancelled) setVolume(1)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    loadMotion()
+      .then((value) => {
+        if (!cancelled) setMotion(value)
+      })
+      .catch(() => {
+        if (!cancelled) setMotion('normal')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    loadTextScale()
+      .then((value) => {
+        if (!cancelled) setTextScale(value)
+      })
+      .catch(() => {
+        if (!cancelled) setTextScale('normal')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function handleVolumeChange(next: number) {
+    setVolume(next)
+    saveVolume(next).catch(() => {})
+  }
+
+  function handleMotionChange(next: MotionSetting) {
+    setMotion(next)
+    saveMotion(next).catch(() => {})
+  }
+
+  function handleTextScaleChange(next: TextScaleSetting) {
+    setTextScale(next)
+    saveTextScale(next).catch(() => {})
+  }
+
   // Håller sound.ts:s modulnivå-flagga i synk med React-staten ovan — den
   // enda platsen som skriver till den, så playSound() (anropad från useGame.ts
   // och klickdelegeringen nedan) alltid läser ett färskt värde.
   useEffect(() => {
     setSoundMuted(muted)
   }, [muted])
+
+  useEffect(() => {
+    setSoundVolume(volume)
+  }, [volume])
+
+  // P90: [data-motion]/[data-text-scale] på <html> — styles.css:s nya regler
+  // (samma universalselektor-teknik som den redan befintliga
+  // prefers-reduced-motion-regeln) läser attributen direkt, ingen inline-
+  // style eller CSS-in-JS behövs.
+  useEffect(() => {
+    document.documentElement.dataset.motion = motion
+  }, [motion])
+
+  useEffect(() => {
+    document.documentElement.dataset.textScale = textScale
+  }, [textScale])
 
   function handleToggleMuted() {
     const next = !muted
@@ -173,16 +270,24 @@ export function App() {
   // Regel 16 (CLAUDE.md, "Spelgränssnitt — regler (etapp 7)"): "Esc för
   // paus." Guardas mot menyn/uppspelningen — ett pausöverlag ovanpå
   // huvudmenyn eller mitt i kvartalsuppspelningen har ingen mening (och
-  // uppspelningen har sin egen Skip-knapp).
+  // uppspelningen har sin egen Skip-knapp). P90: Settings öppnas OVANPÅ
+  // Pause (samma "en kris slår igenom ett öppet pausläge"-lagring som
+  // crisis-fullscreen redan har mot .pause-overlay) — Esc stänger då bara
+  // Settings, aldrig båda på en gång, annars hade paus-overlayet blivit
+  // kvarlämnat overlayat utan sin egen dimning.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       if (view === 'menu' || replaying) return
+      if (settingsOpen) {
+        setSettingsOpen(false)
+        return
+      }
       setPaused((v) => !v)
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [view, replaying])
+  }, [view, replaying, settingsOpen])
 
   if (!hydrated) {
     return (
@@ -367,6 +472,31 @@ export function App() {
           setPaused(false)
           setView('menu')
         }}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
+
+      {/* P90 (§9/§13): SettingsOverlay öppnas FRÅN pausöverlaget — se den
+          filens egen kommentar för scope-besluten (volym i stället för
+          "kanaler", rörelseläge i stället för två separata reglage,
+          sparplatser som manuella kontrollpunkter ovanpå den befintliga
+          autosparningen). */}
+      <SettingsOverlay
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        muted={muted}
+        onToggleMuted={handleToggleMuted}
+        volume={volume}
+        onVolumeChange={handleVolumeChange}
+        fullReplay={fullReplay}
+        onToggleFullReplay={handleToggleFullReplay}
+        motion={motion}
+        onMotionChange={handleMotionChange}
+        textScale={textScale}
+        onTextScaleChange={handleTextScaleChange}
+        state={state}
+        draft={draft}
+        recentEvents={lastTurnWire}
+        onLoadFromSlot={loadFromSlot}
       />
     </div>
   )

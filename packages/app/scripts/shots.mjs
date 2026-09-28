@@ -479,6 +479,29 @@ const APP_SCREENS = [
       await page.getByTestId('epilogue-screen').waitFor()
     },
   },
+  {
+    // P90: SettingsOverlay, nådd FRÅN pausen (PauseOverlay.tsx:s nya
+    // "Settings"-knapp) — ingen egen referensskiss.
+    name: 'settings',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('hud-menu-button').click()
+      await page.getByTestId('pause-overlay').waitFor()
+      await page.getByTestId('pause-settings').click()
+      await page.getByTestId('settings-overlay').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

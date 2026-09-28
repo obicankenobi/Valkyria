@@ -11,6 +11,13 @@ export const SCENARIO_ID = 'indochina-slice'
 // samma sträng.
 export const SAVE_SLOT = 'default'
 
+// P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): tre namngivna, manuella kontrollpunkter
+// — se persistence.ts:s deleteSave-kommentar för varför de är checkpoints
+// ovanpå SAVE_SLOT:s kontinuerliga autospar, inte tre egna, självständigt
+// spelbara partier.
+export const MANUAL_SLOTS = ['manual-1', 'manual-2', 'manual-3'] as const
+export type ManualSlot = (typeof MANUAL_SLOTS)[number]
+
 export function emptySubmission(): TurnSubmission {
   return { standingOrders: [], bids: [], actions: [] }
 }

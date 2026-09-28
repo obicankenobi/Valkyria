@@ -29,6 +29,25 @@ export function isMuted(): boolean {
   return muted
 }
 
+// P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): "Ljudnivå per kanal." Genuint fynd:
+// det finns bara EN odifferentierad kanal här (tre namngivna engångseffekter,
+// alla behandlade identiskt — inget musik-/röst-/SFX-lager finns att skilja
+// på), och ingen gain-kontroll fanns alls innan den här prompten (bara
+// binär mute). Löst med en enda global volym (0–1) i stället för att hitta
+// på en kanaltaxonomi specen inte ger — den ärliga superset av det som redan
+// fanns, inte en nedskalning av något verkligt. `muted` förblir en separat,
+// hård spärr (hoppar över själva hämtningen, som innan) — volym är en mjuk
+// förstärkning ovanpå, aktiv bara när ljudet inte är mutat.
+let volume = 1
+
+export function setVolume(value: number): void {
+  volume = Math.min(1, Math.max(0, value))
+}
+
+export function getVolume(): number {
+  return volume
+}
+
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null
   const Ctor =
@@ -65,7 +84,10 @@ export async function playSound(effect: SoundEffect): Promise<void> {
   if (!buffer) return
   const source = ctx.createBufferSource()
   source.buffer = buffer
-  source.connect(ctx.destination)
+  const gain = ctx.createGain()
+  gain.gain.value = volume
+  source.connect(gain)
+  gain.connect(ctx.destination)
   source.start()
 }
 

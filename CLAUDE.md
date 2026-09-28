@@ -614,7 +614,30 @@ kärnvapenepilog och en `BottomSheet`-historikskärm. Golden omfryst EN gång i 
 (pre-auktoriserat av promptens eget klart-när), ingen annanstans. Fullt testsvep grönt: 863
 tester (826→863), lint, typecheck, build, e2e (46 tester, körd två gånger i rad). Se
 `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P89-blockquote och `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P90, Paus, inställningar, sparplatser.**
+**P90 BYGGD 2026-09-28**: Ny `SettingsOverlay.tsx`, öppnad från en ny "Settings"-knapp i
+`PauseOverlay.tsx`. §9:s sex punkter gav fyra genuina fynd, var och en löst med en
+dokumenterad förenkling i stället för en gissad taxonomi: (1) "ljudnivå per kanal" —
+`sound.ts` hade bara EN odifferentierad kanal och ingen gain-kontroll alls, löst med en enda
+global volym (ny `GainNode`). (2) "animationshastighet" + "reducerad rörelse" slogs ihop till
+EN `Motion`-kontroll (Normal/Fast/Off) — `Off` upprepar den redan befintliga
+`prefers-reduced-motion`-regelns universalselektor, `Fast` generaliserar samma teknik till att
+klippa alla varaktigheter till 60 ms. (3) "textstorlek" — hela `styles.css` deklarerar px rakt
+av, löst med avsiktligt partiell täckning (bara de mest lästa brödtextsklasserna). (4)
+"sparplatser" — `useGame.ts` autosparar kontinuerligt till EN flik, att göra varje flik
+självständigt autosparande hade krävt att riva upp den arkitekturen, löst med tre namngivna
+manuella kontrollpunkter ovanpå den befintliga autosparningen (`persistence.ts`s
+`saveGame`/`loadGame` tog redan en godtycklig slot-sträng). Buggrapportknappen (P90:s enda
+konkreta, namngivna leverabel) kopierar hus/tur/status/senaste händelser till urklipp
+(`navigator.clipboard.writeText`) plus en vanlig `<a href>`-länk till GitHub-repots
+`/issues/new` — ingen egen nätverkstrafik. Två genuina fynd hittade av testerna: en nästlad
+bekräftelsedialog som lät ett klick bubbla upp och stänga hela panelen (fixat med
+`stopPropagation`), och en `Segmented`-kontroll vars tre alternativ i en trång rad bröt regel
+11 (för smal) och sedan regel 18 (klippt text) — löst med `min-width: 44px` på
+`.ds-segmented-opt` (gynnar varje framtida `Segmented`) och en stapel-layout i stället för en
+rad. Fullt testsvep grönt: 882 tester (863→882), lint, typecheck, build, e2e (50 tester, körd
+två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P90-blockquote och
+`docs/ANDRINGSLOGG.md`.
+**Nästa steg är P91, Handledning och ordlista.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

@@ -176,6 +176,17 @@ async function enterEpilogueHistory(page: Page): Promise<void> {
   await page.getByTestId('epilogue-history-sheet').waitFor()
 }
 
+// P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): SettingsOverlay, nådd FRÅN pausen
+// (PauseOverlay.tsx:s nya "Settings"-knapp) — samma väg en riktig spelare
+// tar, inte ett direkt Escape-genvägstest.
+async function enterSettings(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('hud-menu-button').click()
+  await page.getByTestId('pause-overlay').waitFor()
+  await page.getByTestId('pause-settings').click()
+  await page.getByTestId('settings-overlay').waitFor()
+}
+
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -186,6 +197,7 @@ const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<voi
   { name: 'crisis', path: '/', setup: enterCrisis },
   { name: 'epilogue', path: '/', setup: enterEpilogue },
   { name: 'epilogue-history', path: '/', setup: enterEpilogueHistory },
+  { name: 'settings', path: '/', setup: enterSettings },
 ]
 
 for (const format of FORMATS) {

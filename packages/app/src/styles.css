@@ -1434,6 +1434,128 @@ td.is-key {
   gap: 10px;
 }
 
+/* P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): SettingsOverlay, öppnad FRÅN
+   pausöverlaget (PauseOverlay.tsx). Högre z-index (65) än .pause-overlay
+   (60) — samma lagringsprincip som .crisis-fullscreen (90) redan har mot
+   pausen, bara ett steg lägre eftersom Settings nås GENOM Pause, inte
+   oberoende av den. Panelen är den första i etapp 7 med SÅ MÅNGA sektioner
+   att den måste scrolla inuti sig själv (regel 1) trots att den redan är en
+   "liten" overlay-panel, inte en helskärmsskärm som .setup-panel. */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 8, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 65;
+}
+
+.settings-panel {
+  max-width: 420px;
+  width: 100%;
+  max-height: 80vh;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 0;
+}
+
+.settings-body {
+  overflow-y: auto;
+  padding: 12px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.settings-section-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.settings-field-label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.settings-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-slot-row:last-child {
+  border-bottom: none;
+}
+
+.settings-slot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-slot-label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.settings-slot-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.settings-slot-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .replay-panel {
   max-width: 480px;
   display: flex;
@@ -1877,6 +1999,40 @@ td.is-key {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): "reducerad rörelse" + "animations-
+   hastighet" slagna ihop till EN inställning (SettingsOverlay.tsx:s egen
+   kommentar) — samma universalselektor-teknik som den OS-styrda regeln
+   ovan, bara satt av ett explicit data-attribut i stället för en media-
+   fråga, så spelaren kan välja det oavsett OS-inställning. [data-motion="off"]
+   ger exakt samma effekt som prefers-reduced-motion; [data-motion="fast"]
+   klipper alla dekorativa dröjsmål till 60 ms i stället för att stänga av
+   dem helt. */
+:root[data-motion='off'] * {
+  transition: none !important;
+  animation: none !important;
+}
+:root[data-motion='fast'] * {
+  transition-duration: 60ms !important;
+  animation-duration: 60ms !important;
+}
+
+/* P90: textstorlek. Genuint fynd (SettingsOverlay.tsx:s egen kommentar):
+   hela stilmallen deklarerar px rakt av (regel 14 kräver uttryckligen
+   literala px-golv), så en fullständig omskalning hade krävt att skriva om
+   varje font-size i filen till relativa enheter — utanför den här prompten.
+   Löst med avsiktligt PARTIELL täckning: bara de mest lästa brödtexts-
+   klasserna (panelens hint-text, telex/repris-rader, kriskortets text)
+   växer med [data-text-scale="large"] — HUD-tal och versala etiketter
+   (som redan har egna, medvetna px-golv, regel 14) rörs inte. */
+:root[data-text-scale='large'] .cf-hint,
+:root[data-text-scale='large'] .replay-text,
+:root[data-text-scale='large'] .wire-text,
+:root[data-text-scale='large'] .crisis-sub,
+:root[data-text-scale='large'] .crisis-choice-consequence,
+:root[data-text-scale='large'] .banner-sub {
+  font-size: 1.15em;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -2452,6 +2608,9 @@ td.is-key {
   appearance: none;
   flex: 1;
   min-height: 44px;
+  min-width: 44px; /* P90: regel 11 fångade en 33-40 px bred träffyta i en trång rad
+                       med tre korta etiketter (SettingsOverlay.tsx:s Motion-kontroll)
+                       — samma golv som min-height redan garanterar, bara på bredden. */
   background: var(--panel);
   border: none;
   border-right: 1px solid var(--line-strong);

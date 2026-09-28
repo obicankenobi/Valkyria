@@ -1645,6 +1645,87 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P90 — Paus, inställningar, sparplatser.** *Utökad efter P81 (P81-6):* bygger vidare på P81b:s överlag. En buggrapportknapp kopierar version, sparfil och kvartalets senaste händelser till urklipp, tillsammans med en länk till projektets ärendelista. Spelet gör ingen egen nätverkstrafik.
 
+> **P90 BYGGD 2026-09-28.** Ny `SettingsOverlay.tsx`, öppnad från en ny
+> "Settings"-knapp i `PauseOverlay.tsx` (`.pause-actions` fick en tredje
+> knapp) — panelen förblir minimal, det stora inställningsinnehållet bor
+> i en egen overlay ovanpå (samma "z-index högre än .pause-overlay"-
+> lagringsprincip P87s `.crisis-fullscreen` redan använder, ett steg
+> lägre eftersom Settings nås GENOM Pause). §9:s sex punkter gav fyra
+> GENUINA FYND, var och en löst med en dokumenterad, ärlig förenkling i
+> stället för en gissad taxonomi (alla i `SettingsOverlay.tsx`s egen
+> huvudkommentar, upprepas inte ordagrant här):
+>
+> - "Ljudnivå per kanal": `sound.ts` hade bara EN odifferentierad kanal
+>   (tre likabehandlade engångseffekter, ingen gain-kontroll alls) —
+>   löst med en enda global volym (0–100 %, ny `GainNode` mellan
+>   buffer-källan och destinationen), den ärliga supersetet av det som
+>   redan fanns.
+> - "Animationshastighet" + "reducerad rörelse": slogs ihop till EN
+>   `Motion`-kontroll (Normal/Fast/Off). `Off` upprepar exakt den redan
+>   befintliga `@media (prefers-reduced-motion: reduce)`-regelns
+>   universalselektor, bara satt av `[data-motion="off"]` i stället för
+>   en OS-inställning; `Fast` generaliserar SAMMA teknik till att klippa
+>   alla `transition`/`animation`-varaktigheter till 60 ms — fullständig
+>   täckning (universalselektorn träffar varje regel i filen), inte en
+>   handplockad delmängd.
+> - "Textstorlek": hela `styles.css` deklarerar px rakt av (regel 14
+>   kräver uttryckligen literala px-golv) — en fullständig omskalning
+>   hade krävt att skriva om varenda `font-size` till relativa enheter.
+>   Löst med AVSIKTLIGT PARTIELL täckning: `[data-text-scale="large"]`
+>   växer bara de mest lästa brödtextsklasserna (`.cf-hint`,
+>   `.replay-text`, `.wire-text`, kriskortets text, bannertext) —
+>   HUD-tal och versala etiketter (egna px-golv, regel 14) rörs inte,
+>   dokumenterat som partiell täckning, inte en exhaustiv omskalning.
+> - "Sparplatser": `useGame.ts` autosparar kontinuerligt till EN enda
+>   flik (`SAVE_SLOT`) — att göra varje flik till ett eget, självständigt
+>   autosparande parti hade krävt att riva upp den arkitekturen, utanför
+>   en enda prompts yta. Löst med TRE NAMNGIVNA MANUELLA KONTROLLPUNKTER
+>   ovanpå den befintliga autosparningen: `persistence.ts`s
+>   `saveGame`/`loadGame` tog redan en godtycklig `slot`-sträng (bara en
+>   ny `deleteSave` saknades), och `useGame.ts` fick en ny
+>   `loadFromSlot(slot)` som gör en kontrollpunkt till det LEVANDE
+>   partiet (autospar-effekten skriver den sedan vidare till `SAVE_SLOT`
+>   som vanligt).
+>
+> Buggrapportknappen (P90:s enda konkreta, namngivna leverabel): kopierar
+> hus, tur, scenario, status och kvartalets senaste händelser
+> (`lastTurnWire`, samma "denna turs färska händelser" `useGame.ts`
+> redan exponerar) till urklipp via `navigator.clipboard.writeText` —
+> `Report an Issue` är ett vanligt `<a href>` till GitHub-repots
+> `/issues/new`, aldrig ett `fetch`/XHR-anrop (spec: "gör ingen egen
+> nätverkstrafik"). Version läst från `packages/app/package.json` (ny
+> `version.ts`) — genuint fynd: till skillnad från Synappsen-projektets
+> egen versionsdisciplin har det här repot ingen releaserutin, så
+> versionen har stått still på `0.0.0` sedan start. Ärligt visat som är,
+> inte gissat.
+>
+> GENUINT FYND under bygget (hittat av testerna, inte gissat): den nya
+> bekräftelsedialogen för spara/ladda/radera en kontrollpunkt renderas
+> nästlad INUTI `.settings-overlay`s egen `onClick={onClose}` — utan
+> `stopPropagation` på `.modal-overlay` bubblade ett tryck på
+> Confirm/Cancel vidare och stängde HELA inställningspanelen som en
+> oavsiktlig bieffekt (`onClose` anropades två gånger). Fixat med samma
+> `stopPropagation`-mönster `.settings-panel` redan hade. Ett andra fynd,
+> fångat av regel 11/18:s CI-svep: `Motion`-kontrollens tre alternativ
+> (Normal/Fast/Off) i en trång rad gav en 33–40 px bred träffyta (under
+> 44 px-golvet) och sedan, efter en första fix, ett klippt "NORMAL"
+> (52 px text i en 48 px ruta) — löst med två generella, permanenta
+> fixar i `styles.css`: `.ds-segmented-opt` fick ett `min-width: 44px`
+> (samma golv `min-height` redan gav, nu på bredden också — gynnar VARJE
+> framtida `Segmented`, inte bara den här), och `.settings-field` bytte
+> från en rad (etikett + kontroll sida vid sida) till en stapel (etikett
+> ovanför), så en `Segmented`-kontroll alltid får panelens fulla bredd i
+> stället för att klämmas av en granne.
+>
+> Ny e2e-täckning (`enterSettings`, samma väg en riktig spelare tar: Esc
+> eller HUD:ens meny-knapp → Pause → "Settings") — en ny skärm i regel
+> 18/11-loopen och i `npm run shots`. Nya tester: `sound.test.ts` (+3,
+> volym), `PauseOverlay.test.tsx` (uppdaterad för den nya knappen),
+> `SettingsOverlay.test.tsx` (16). Golden ORÖRD (ingen `packages/core`-fil
+> rörd). Fullt testsvep grönt: 882 tester (863→882), lint, typecheck,
+> build, e2e (50 tester efter den nya skärmen, körd två gånger i rad). Se
+> `docs/ANDRINGSLOGG.md`.
+
 **P91 — Handledning och ordlista.** *Utökad efter P81 (P81-20), delas i två commits:* **P91a, handledningen:** de tre första kvartalen i ett nytt parti leds steg för steg (välj land, lägg ett bud, fyll en handlingsplats, avsluta kvartalet, läs förstasidan). Den går att stänga av och att starta om från menyn. **P91b, handboken:** en uppslagsbok i spelet, nåbar från menyn och från varje info-ikon, med ett uppslag per mekanik (upphandling, produktion, styrelsen, doomsday, `heat`, underrättelse, politik, fronter). Texterna ligger som data i `packages/app`. *Klart när:* ett test underkänner om ett verb eller ett HUD-tal saknar uppslag.
 
 ### 7E — Tillgångar och finish

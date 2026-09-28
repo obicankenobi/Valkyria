@@ -42,6 +42,13 @@ export interface UseGameResult {
   setCrisisChoice: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
   endTurn: () => void
   restart: (startChoices?: StartChoices) => void
+  // P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): "sparplatser." Läser en manuell
+  // kontrollpunkt (persistence.ts) och gör den till det LEVANDE partiet —
+  // useGame.ts:s egen autospar-effekt (ovan) skriver den sedan vidare till
+  // SAVE_SLOT som vanligt, precis som efter varje endTurn. Returnerar false
+  // om fliken var tom, så anropsplatsen kan visa ett resultat utan att
+  // behöva duplicera loadGame-anropet.
+  loadFromSlot: (slot: string) => Promise<boolean>
 }
 
 export function useGame(): UseGameResult {
@@ -150,6 +157,16 @@ export function useGame(): UseGameResult {
     setLastTurnWire([])
   }, [])
 
+  const loadFromSlot = useCallback(async (slot: string): Promise<boolean> => {
+    const saved = await loadGame(slot)
+    if (!saved) return false
+    setState(saved.state)
+    setDraft(saved.draft)
+    setLastRejected([])
+    setLastTurnWire([])
+    return true
+  }, [])
+
   return {
     state,
     draft,
@@ -163,5 +180,6 @@ export function useGame(): UseGameResult {
     setCrisisChoice,
     endTurn,
     restart,
+    loadFromSlot,
   }
 }
