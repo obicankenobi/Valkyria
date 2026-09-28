@@ -205,6 +205,9 @@ async function enterHandbook(page: Page): Promise<void> {
   await enterSettings(page)
   await page.getByTestId('settings-open-handbook').click()
   await page.getByTestId('handbook').waitFor()
+  // Pausöverlaget låg kvar ovanpå Handboken när den öppnades härifrån (fångat
+  // först av npm run shots) — det får inte täcka den.
+  await page.getByTestId('pause-overlay').waitFor({ state: 'hidden' })
 }
 
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [

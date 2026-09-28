@@ -1794,15 +1794,19 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 > omskrivet helt. GENUINT FYND 4 (regel 11, fångat av
 > `e2e/text-overflow.spec.ts` på den nya `handbook`-skärmen):
 > `.handbook-more` hade `min-height: 32px` (8 knappar, 53×32 px) — fixat till
-> 44 px, och samma fel rättat proaktivt i `.ds-tooltip-more`. Ny skärm
+> 44 px, och samma fel rättat proaktivt i `.ds-tooltip-more`. GENUINT FYND 5
+> (fångat av `npm run shots`, regel 17 — varken jsdom-testerna eller regel
+> 11/18-testet ser det): när Handboken öppnades från Settings låg
+> pausöverlaget kvar ovanpå den — `onOpenHandbook` i `App.tsx` stängde
+> Settings men inte pausen. Fixat (`setPaused(false)`), och `enterHandbook`
+> i `text-overflow.spec.ts` kräver nu att `pause-overlay` är dolt. Ny skärm
 > (`handbook`) i `scripts/shots.mjs` och `SCREENS`. Golden ORÖRD (ingen
 > `packages/core`-fil rörd). Nya tester: `handbook.test.ts` (5),
 > `Handbook.test.tsx` (5), `InfoTooltip.test.tsx` (4), `App.menu.test.tsx`
 > (+1), `Shell.hud.test.tsx` (+2). Testsvep: 913 tester (896→913), lint,
-> typecheck, build, e2e 60 tester gröna EN gång efter regel 11-fixen —
-> **den andra på varandra följande e2e-körningen och `npm run shots` (regel
-> 17, visuell jämförelse av `handbook`-skärmen) är INTE gjorda**; sessionen
-> pausades av ägaren innan dess. Se `docs/ANDRINGSLOGG.md`.
+> typecheck, build, e2e 60 tester gröna två gånger i rad, `npm run shots` körd
+> och `handbook`-skärmen granskad i båda formaten (papperspanel, samma register
+> som teckenförklaringen; ingen referensskiss finns för den). Se `docs/ANDRINGSLOGG.md`.
 
 ### 7E — Tillgångar och finish
 

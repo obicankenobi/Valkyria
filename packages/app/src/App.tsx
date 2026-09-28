@@ -624,6 +624,7 @@ export function App() {
         onRestartTutorial={handleRestartTutorial}
         onOpenHandbook={() => {
           setSettingsOpen(false)
+          setPaused(false)
           setHandbookFocusId(null)
           setHandbookOpen(true)
         }}
