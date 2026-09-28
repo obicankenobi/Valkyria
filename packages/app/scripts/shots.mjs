@@ -41,6 +41,40 @@ const APP_SCREENS = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
   {
+    // P88 (§9/§13): New Game-formuläret (ingen egen referensskiss).
+    name: 'new-game',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Ingen bekräftelsedialog visades — inget sparat parti fanns.
+      }
+      await page.getByTestId('new-game-screen').waitFor()
+    },
+  },
+  {
+    // P88 (§9/§13): Briefing, med husets nyss valda namn och kartan.
+    name: 'briefing',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Ingen bekräftelsedialog visades — inget sparat parti fanns.
+      }
+      await page.getByTestId('newgame-name-Ashford & Vale').click()
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-screen').waitFor()
+    },
+  },
+  {
     name: 'operations',
     path: '/',
     async afterGoto(page) {
@@ -60,6 +94,9 @@ const APP_SCREENS = [
         // Ingen bekräftelsedialog visades — inget sparat parti fanns, "New
         // Game" gick rakt in.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
     },
   },
@@ -76,6 +113,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
       await page.getByTestId('country-file').waitFor()
@@ -94,6 +134,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
       await page.getByTestId('country-file').waitFor()
@@ -115,6 +158,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('end-quarter-button').click()
       await page.getByTestId('quarter-replay').waitFor()
@@ -139,6 +185,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       // reducedMotion gör QuarterReplay.tsx omedelbar (§8: "Omedelbar vid
       // prefers-reduced-motion") — överlaget hinner aldrig monteras, appen
@@ -162,6 +211,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('map-legend-button').click()
       await page.getByTestId('map-legend').waitFor()
@@ -181,6 +233,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('quarterband-toggle').click()
       await page.getByTestId('quarterband-body').waitFor()
@@ -200,6 +255,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('action-slot-0-empty').click()
       await page.getByTestId('action-catalog').waitFor()
@@ -221,6 +279,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       for (let i = 0; i < 10; i++) {
         await page.getByTestId('tab-contracts').click()
@@ -246,6 +307,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('tab-company').click()
       await page.getByTestId('company-credit-tier').waitFor()
@@ -265,6 +329,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('tab-contacts').click()
       await page.getByTestId('contacts-verb-BROKER-rvn').waitFor()
@@ -284,6 +351,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('tab-contacts').click()
       await page.getByTestId('contacts-verb-BROKER-rvn').click()
@@ -308,6 +378,9 @@ const APP_SCREENS = [
       } catch {
         // Inget sparat parti — samma gren som ovan.
       }
+      // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.evaluate(async () => {
         const dbReq = indexedDB.open('seventh-front', 1)

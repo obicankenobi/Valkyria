@@ -1551,6 +1551,42 @@ td.is-key {
   opacity: 0.85;
 }
 
+/* ── NEW GAME / BRIEFING (P88, §9/§13) — helskärmsformulär mellan Title
+   Screen och OPERATIONS (§5:s skärmarkitektur). Paperregistret (DsPanel),
+   inte menyns mörka bakgrundsfoto — en riktig blankett/aktakort, inte en
+   filmaffisch. ─────────────────────────────────────────────────────── */
+
+.setup-screen {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  background: var(--bg);
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.setup-panel {
+  width: 100%;
+  max-width: 560px;
+  margin: auto 0;
+}
+
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.setup-actions .ds-button {
+  flex: 1;
+}
+
+.briefing-map {
+  height: 280px;
+}
+
 /* ── Executive actions (THE HOUSE, spec avsnitt 8) ────────────────────── */
 
 .action-form {

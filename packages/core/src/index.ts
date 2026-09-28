@@ -6,6 +6,7 @@ export * from './types.js'
 export * from './rng.js'
 export { round } from './money.js'
 export { createInitialState, cloneState } from './state.js'
+export type { StartChoices } from './state.js'
 export { resolveTurn } from './resolve/index.js'
 export { createWireEmitter, pruneWire, WIRE_WINDOW_TURNS, WIRE_CHAIN_DEPTH } from './wire.js'
 // P31 (ETAPP2_TEKNISK_SPEC.md avsnitt 6.2): härnessens rivalAttributionShare-

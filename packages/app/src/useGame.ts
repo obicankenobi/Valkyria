@@ -4,7 +4,7 @@
 // hanteringsbibliotek — bara useState, exakt som specen ber om.
 import { useCallback, useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS, createInitialState, resolveTurn } from '@seventh-front/core'
-import type { Bid, GameState, PlayerAction, TurnSubmission, WireEvent } from '@seventh-front/core'
+import type { Bid, GameState, PlayerAction, StartChoices, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
 import { crossedDoomsdayThreshold, playSound } from './sound.js'
@@ -41,7 +41,7 @@ export interface UseGameResult {
   removeAction: (index: number) => void
   setCrisisChoice: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
   endTurn: () => void
-  restart: () => void
+  restart: (startChoices?: StartChoices) => void
 }
 
 export function useGame(): UseGameResult {
@@ -138,8 +138,13 @@ export function useGame(): UseGameResult {
     setLastTurnWire(result.wire)
   }, [state, draft])
 
-  const restart = useCallback(() => {
-    setState(createInitialState(SCENARIO_ID, newSeed()))
+  // P88 (ETAPP7_TEKNISK_SPEC.md §9/§13): startChoices valfri — App.tsx:s
+  // "New Game" via Briefing skickar in spelarens val (husnamn/hemstat/
+  // specialisation), medan en direkt omstart (t.ex. den avslutade
+  // partiets "New Game"-genväg) fortfarande kan anropa restart() utan
+  // argument och få scenariots defaultval, precis som innan.
+  const restart = useCallback((startChoices?: StartChoices) => {
+    setState(createInitialState(SCENARIO_ID, newSeed(), startChoices))
     setDraft(emptySubmission())
     setLastRejected([])
     setLastTurnWire([])

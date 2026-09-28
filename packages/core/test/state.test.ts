@@ -15,6 +15,54 @@ describe('createInitialState', () => {
     expect(b).toEqual(a)
   })
 
+  // P88 (ETAPP7_TEKNISK_SPEC.md §9/§13): "createInitialState tar valfria
+  // startval; standardvalen ger bitvis identisk golden." De två testen
+  // nedan verifierar båda hälfterna av det påståendet ordagrant.
+  it('utan startChoices ger exakt samma tillstånd som innan parametern fanns (golden-säkerheten)', () => {
+    const withoutArg = createInitialState('indochina-slice', 'test-seed')
+    const withUndefined = createInitialState('indochina-slice', 'test-seed', undefined)
+    const withEmptyObject = createInitialState('indochina-slice', 'test-seed', {})
+    expect(withUndefined).toEqual(withoutArg)
+    expect(withEmptyObject).toEqual(withoutArg)
+  })
+
+  it('startChoices skriver över husets namn, hemstat och specialisering, resten oförändrat', () => {
+    const defaultState = createInitialState('indochina-slice', 'test-seed')
+    const chosen = createInitialState('indochina-slice', 'test-seed', {
+      houseName: 'Meridian Arms',
+      homeState: 'east',
+      specialisation: 'naval',
+    })
+
+    expect(chosen.house.name).toBe('Meridian Arms')
+    expect(chosen.house.homeState).toBe('east')
+    expect(chosen.house.specialisation).toBe('naval')
+    // techLevel-bonusen följer den VALDA specialiseringen, inte scenariots
+    // default (artillery) — samma techLevelWithSpecialisationBonus-formel,
+    // bara given ett annat argument.
+    expect(chosen.house.techLevel.naval).toBeGreaterThan(defaultState.house.techLevel.naval)
+    // artillery är scenariots DEFAULT-specialisering (indochina-slice.json) —
+    // defaultState:s artillery är alltså BOOSTAD, medan chosen:s (naval
+    // vald i stället) bara har grundnivån. Samma tal chosen:s egen
+    // grundnivå-kategori (t.ex. infantry, som ingen av de två boostar) delar.
+    expect(chosen.house.techLevel.artillery).toBe(chosen.house.techLevel.infantry)
+    expect(chosen.house.techLevel.artillery).toBeLessThan(defaultState.house.techLevel.artillery)
+    // Allt annat (kassa, linjer, station, styrelsemål) är opåverkat.
+    expect(chosen.house.treasury).toBe(defaultState.house.treasury)
+    expect(chosen.house.lines).toEqual(defaultState.house.lines)
+    expect(chosen.house.stations).toEqual(defaultState.house.stations)
+    expect(chosen.house.boardTarget).toEqual(defaultState.house.boardTarget)
+  })
+
+  it('en delvis ifylld startChoices faller tillbaka på scenariots default för de utelämnade fälten', () => {
+    const defaultState = createInitialState('indochina-slice', 'test-seed')
+    const chosen = createInitialState('indochina-slice', 'test-seed', { houseName: 'Only The Name' })
+
+    expect(chosen.house.name).toBe('Only The Name')
+    expect(chosen.house.homeState).toBe(defaultState.house.homeState)
+    expect(chosen.house.specialisation).toBe(defaultState.house.specialisation)
+  })
+
   it('startar på tur 0 med rngCursor 0 och sparar seeden', () => {
     const state = createInitialState('indochina-slice', 'test-seed')
     expect(state.meta.turn).toBe(0)

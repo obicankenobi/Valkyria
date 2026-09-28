@@ -13,6 +13,9 @@ async function enterGame() {
   render(<App />)
   const newGameBtn = await screen.findByTestId('menu-new-game')
   fireEvent.click(newGameBtn)
+  // P88 (§5): "New Game ─► Briefing ─► OPERATIONS" — a new intermediate leg.
+  fireEvent.click(await screen.findByTestId('newgame-submit'))
+  fireEvent.click(await screen.findByTestId('briefing-begin'))
   await screen.findByTestId('hud')
 }
 

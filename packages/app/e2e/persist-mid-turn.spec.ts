@@ -40,6 +40,9 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   // spelet direkt. Inget sparat parti finns i en färsk browserkontext, så
   // "New Game" går rakt in — ingen bekräftelsedialog att klicka igenom.
   await page.getByTestId('menu-new-game').click()
+  // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
   await expect(page.getByTestId('hud')).toBeVisible()
 
   // Spela fram tills en order faktiskt finns att bjuda på (ordergenerering är

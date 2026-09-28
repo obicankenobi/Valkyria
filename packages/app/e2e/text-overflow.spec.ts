@@ -25,7 +25,26 @@ const FORMATS: { name: string; width: number; height: number }[] = [
 
 async function enterOperations(page: Page): Promise<void> {
   await page.getByTestId('menu-new-game').click()
+  // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
   await page.getByTestId('hud').waitFor()
+}
+
+// P88: New Game/Briefing — five options in one Segmented row already clipped
+// a full-word specialisation label at phone width once (caught visually in
+// npm run shots, fixed by reusing CompanyActions.tsx's short codes). Regel
+// 18/11 coverage catches a regression mechanically from now on.
+async function enterNewGame(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('new-game-screen').waitFor()
+}
+
+async function enterBriefing(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('newgame-name-Ashford & Vale').click()
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-screen').waitFor()
 }
 
 // P86: CONTACTS — personakter med politikverben, faktionsverben (STAGE_
@@ -33,6 +52,9 @@ async function enterOperations(page: Page): Promise<void> {
 // textmässigt tätaste skärmen etapp 7 hittills byggt.
 async function enterContacts(page: Page): Promise<void> {
   await page.getByTestId('menu-new-game').click()
+  // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
   await page.getByTestId('hud').waitFor()
   await page.getByTestId('tab-contacts').click()
   await page.getByTestId('contacts-verb-BROKER-rvn').waitFor()
@@ -46,6 +68,9 @@ async function enterContacts(page: Page): Promise<void> {
 // helt parti i varje CI-körning.
 async function enterCrisis(page: Page): Promise<void> {
   await page.getByTestId('menu-new-game').click()
+  // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
   await page.getByTestId('hud').waitFor()
   await page.evaluate(async () => {
     const dbReq = indexedDB.open('seventh-front', 1)
@@ -80,6 +105,8 @@ async function enterCrisis(page: Page): Promise<void> {
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
+  { name: 'new-game', path: '/', setup: enterNewGame },
+  { name: 'briefing', path: '/', setup: enterBriefing },
   { name: 'operations', path: '/', setup: enterOperations },
   { name: 'contacts', path: '/', setup: enterContacts },
   { name: 'crisis', path: '/', setup: enterCrisis },

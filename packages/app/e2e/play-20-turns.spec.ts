@@ -110,6 +110,9 @@ async function startFreshGame(page: Page): Promise<void> {
   // P65 (ETAPP6_TEKNISK_SPEC.md §3): appen startar på huvudmenyn. Databasen
   // just raderad ovan — inget sparat parti, "New Game" går rakt in.
   await page.getByTestId('menu-new-game').click()
+  // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
   await expect(page.getByTestId('hud')).toBeVisible()
 }
 

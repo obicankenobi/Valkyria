@@ -7,6 +7,8 @@
 import { useEffect, useState } from 'react'
 import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
+import { NewGameScreen } from './components/NewGameScreen.js'
+import { BriefingScreen } from './components/BriefingScreen.js'
 import { ActionDock, HudBar, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
 import type { ShellView } from './components/Shell.js'
 import { TheatreMap } from './components/TheatreMap.js'
@@ -25,7 +27,10 @@ import { hasSavedGame, loadFullReplay, loadMuted, saveFullReplay, saveMuted } fr
 import { SAVE_SLOT } from './game.js'
 import { playSound, setMuted as setSoundMuted } from './sound.js'
 
-type View = 'menu' | ShellView
+// P88 (ETAPP7_TEKNISK_SPEC.md §5/§9/§13): "Title Screen ─► New Game ─►
+// Briefing ─► OPERATIONS." 'menu' är Title Screen (MainMenu.tsx, oförändrad
+// sedan P65); 'new-game'/'briefing' är de två nya mellanstegen.
+type View = 'menu' | 'new-game' | 'briefing' | ShellView
 
 const ENDING_LABEL: Record<string, string> = {
   INSOLVENCY: 'Insolvent — the house is liquidated',
@@ -198,14 +203,31 @@ export function App() {
         houseName={hasSave ? state.house.name : null}
         hasSave={hasSave}
         onContinue={() => setView('operations')}
-        onNewGame={() => {
-          restart()
-          setView('operations')
-        }}
+        onNewGame={() => setView('new-game')}
         muted={muted}
         onToggleMuted={handleToggleMuted}
       />
     )
+  }
+
+  // P88 (§5): "New Game ─► Briefing ─► OPERATIONS." restart() overwrites
+  // state immediately (same as the old direct-to-operations flow always
+  // did) — Briefing then shows the freshly created house before the
+  // player commits to entering OPERATIONS.
+  if (view === 'new-game') {
+    return (
+      <NewGameScreen
+        onSubmit={(choices) => {
+          restart(choices)
+          setView('briefing')
+        }}
+        onBack={() => setView('menu')}
+      />
+    )
+  }
+
+  if (view === 'briefing') {
+    return <BriefingScreen state={state} onBegin={() => setView('operations')} onBack={() => setView('menu')} />
   }
 
   const ended = state.status.kind === 'ended'
@@ -234,7 +256,11 @@ export function App() {
               <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
             </div>
             <span className="tabs-spacer" />
-            <button type="button" className="btn" onClick={restart}>
+            {/* P88 (§5): "Epilogue ─► Title Screen" — the ended-game shortcut
+                now returns to the Title Screen (which offers New Game →
+                Briefing) rather than restarting instantly with the
+                previous house's choices carried over silently. */}
+            <button type="button" className="btn" onClick={() => setView('menu')}>
               New Game
             </button>
           </div>

@@ -36,14 +36,55 @@ describe('App — huvudmenyn grindar inträdet (P65 klart-när, riktigt <App/>-r
     expect(screen.getByTestId('menu-subtitle').textContent).not.toMatch(/Continue as/)
   })
 
-  it('utan sparat parti: New Game startar spelet direkt, ingen bekräftelsedialog — full väg genom riktig <App/>', async () => {
+  it('utan sparat parti: New Game öppnar direkt New Game-skärmen, ingen bekräftelsedialog', async () => {
     render(<App />)
 
     const newGameBtn = await screen.findByTestId('menu-new-game')
     fireEvent.click(newGameBtn)
 
     expect(screen.queryByTestId('new-game-confirm')).toBeNull()
+    expect(await screen.findByTestId('new-game-screen')).toBeTruthy()
+  })
+})
+
+// P88 (ETAPP7_TEKNISK_SPEC.md §5/§9/§13): "Title Screen ─► New Game ─►
+// Briefing ─► OPERATIONS." Full väg genom en riktig <App/>-render, samma
+// princip som ovan.
+describe('App — New Game → Briefing → OPERATIONS (P88, riktigt <App/>-render)', () => {
+  it('husets val (namn/hemstat/specialisation) syns i Briefing och sedan i spelet', async () => {
+    render(<App />)
+
+    fireEvent.click(await screen.findByTestId('menu-new-game'))
+    fireEvent.click(await screen.findByTestId('newgame-name-Halcyon Ordnance'))
+    fireEvent.click((await screen.findByTestId('newgame-homestate')).querySelector('[aria-checked="false"]') as HTMLElement)
+    fireEvent.click(await screen.findByTestId('newgame-submit'))
+
+    const briefing = await screen.findByTestId('briefing-screen')
+    expect(briefing.textContent).toContain('Halcyon Ordnance')
+    expect(screen.getByTestId('briefing-classified').textContent).toBe('CLASSIFIED')
+
+    fireEvent.click(await screen.findByTestId('briefing-begin'))
     expect(await screen.findByTestId('hud')).toBeTruthy()
+  })
+
+  it('BACK på New Game-skärmen återgår till huvudmenyn utan att skapa ett nytt parti', async () => {
+    render(<App />)
+
+    fireEvent.click(await screen.findByTestId('menu-new-game'))
+    fireEvent.click(await screen.findByTestId('newgame-back'))
+
+    expect(await screen.findByTestId('menu-continue')).toBeTruthy()
+    expect(screen.queryByTestId('new-game-screen')).toBeNull()
+  })
+
+  it('BACK på Briefing-skärmen återgår till huvudmenyn', async () => {
+    render(<App />)
+
+    fireEvent.click(await screen.findByTestId('menu-new-game'))
+    fireEvent.click(await screen.findByTestId('newgame-submit'))
+    fireEvent.click(await screen.findByTestId('briefing-back'))
+
+    expect(await screen.findByTestId('menu-continue')).toBeTruthy()
   })
 })
 

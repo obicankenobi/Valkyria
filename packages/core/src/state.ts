@@ -197,8 +197,24 @@ function loadScenario(scenarioId: string): ScenarioFile {
   return castJson<ScenarioFile>(raw)
 }
 
-function buildHouse(scenario: ScenarioFile): House {
-  const seed = scenario.house
+// P88 (ETAPP7_TEKNISK_SPEC.md §9/§13): "New Game. Husets namn, specialisering
+// och hemstat enligt DESIGN.md §3. createInitialState tar valfria startval;
+// standardvalen ger bitvis identisk golden." founding_capital är INTE ett
+// val (DESIGN.md §3: "£4 000 000", en fast siffra) — bara de tre fält §3
+// faktiskt listar som spelardefinierade.
+export interface StartChoices {
+  houseName?: string
+  homeState?: House['homeState']
+  specialisation?: TechCategory
+}
+
+function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House {
+  const seed = {
+    ...scenario.house,
+    name: startChoices?.houseName ?? scenario.house.name,
+    homeState: startChoices?.homeState ?? scenario.house.homeState,
+    specialisation: startChoices?.specialisation ?? scenario.house.specialisation,
+  }
 
   const lines: ProductionLine[] = Array.from({ length: seed.lineCount }, (_, i) => ({
     id: `line-${i + 1}`,
@@ -450,7 +466,7 @@ export function buildWorld(scenario: ScenarioFile): { theatres: Theatre[]; front
   return { theatres, fronts }
 }
 
-export function createInitialState(scenarioId: string, seed: string): GameState {
+export function createInitialState(scenarioId: string, seed: string, startChoices?: StartChoices): GameState {
   const scenario = loadScenario(scenarioId)
   const { theatres, fronts } = buildWorld(scenario)
 
@@ -464,7 +480,7 @@ export function createInitialState(scenarioId: string, seed: string): GameState 
       seed,
       rngCursor: 0,
     },
-    house: buildHouse(scenario),
+    house: buildHouse(scenario, startChoices),
     factions: buildFactions(scenario, fronts),
     officials: buildOfficials(scenario),
     fronts: Object.fromEntries(fronts.map((front) => [front.id, front])),

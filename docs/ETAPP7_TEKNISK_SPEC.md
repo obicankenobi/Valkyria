@@ -1530,6 +1530,51 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P88 — Title Screen, New Game och Briefing.** Valfria startval i `createInitialState`. *Klart när:* standardvalen ger bitvis identisk golden.
 
+> **P88 BYGGD 2026-09-28**: `createInitialState(scenarioId, seed, startChoices?)`
+> fick en tredje, valfri parameter (`StartChoices { houseName?, homeState?,
+> specialisation? }`, `packages/core/src/state.ts`) — `buildHouse` slår ihop
+> `scenario.house` med de tre fälten `startChoices` faktiskt ger, resten av
+> huset (kassa, linjer, station, styrelsemål) opåverkat. `founding_capital`
+> är INTE ett val (DESIGN.md §3: en fast £4 000 000) — bara de tre fält §3
+> listar som spelardefinierade. Klart-när verifierat ordagrant: ett test
+> jämför `createInitialState(id, seed)`, `createInitialState(id, seed,
+> undefined)` och `createInitialState(id, seed, {})` och kräver bitvis
+> identiskt resultat. Skyddsräcke 1 tillät uttryckligen att den här
+> prompten (till skillnad från resten av `packages/core`) INTE är en ren
+> fråga/validerare, se §12 punkt 1.
+>
+> Två nya skärmar i `packages/app`, insatta i §5:s skärmarkitektur ("Title
+> Screen ─► New Game ─► Briefing ─► OPERATIONS"): `NewGameScreen.tsx`
+> (husnamn ur en handhållen förslagslista — DESIGN.md §3: "förslag
+> genereras", aldrig ett fritextfält, regel 2:s anda — plus hemstat och
+> specialisation som `Segmented`) och `BriefingScreen.tsx` (läget/
+> styrelsemålet/en `CLASSIFIED`-stämpel, och EXAKT samma `TheatreMap` som
+> OPERATIONS självt visar, utan `onSelectCountry` inkopplat — redan säkert
+> no-op, se `TheatreMap.tsx`). `App.tsx` fick två nya `View`-lägen
+> (`'new-game'`/`'briefing'`); `MainMenu`s "New Game" navigerar dit i
+> stället för att anropa `restart()` direkt. `useGame.ts`s `restart` tar nu
+> valfria `startChoices`, skickade vidare oförändrat. GENUINT FYND: en
+> `Segmented`-rad med alla fem specialiseringarna utskrivna i fullt ord
+> klipptes på telefonbredd (upptäckt visuellt i `npm run shots`, inte av
+> ett test) — löst genom att återanvända `CompanyActions.tsx`s redan
+> etablerade tre-bokstavskoder (ART/ARM/AVI/NAV/ELE) i stället för att
+> uppfinna en ny textstil. Den avslutade partibannerns "New Game"-genväg
+> ändrad att gå via Title Screen (`setView('menu')`) i stället för ett rått
+> `onClick={restart}` — det senare hade läckt Reacts `SyntheticEvent` som
+> `startChoices` (ofarligt av en slump, eftersom `MouseEvent` saknar
+> `houseName`/`homeState`/`specialisation`, men skört). Stor ändringsyta:
+> `menu-new-game` ledde tidigare direkt till `hud` i sju e2e-specer och
+> tretton `scripts/shots.mjs`-skärmar — alla uppdaterade med de två nya
+> klicken (`newgame-submit`, `briefing-begin`). Två nya skärmar i CI:s
+> regel 18/11-kontroll (`new-game`, `briefing`) och i `npm run shots`. Golden
+> ORÖRD för scenariots faktiska default-körning (verifierat av testet ovan)
+> — bara startvalens EGEN parameter är ny yta. Nya tester: `state.test.ts`
+> (+3, `StartChoices`), `NewGameScreen.test.tsx` (3), `BriefingScreen.test.tsx`
+> (3), `App.menu.test.tsx` (+3, hela New Game → Briefing → OPERATIONS-vägen).
+> Fullt testsvep grönt: 826 tester (814→826), lint, typecheck, build, e2e
+> (38 tester efter de två nya skärmarna, körd två gånger i rad). Se
+> `docs/ANDRINGSLOGG.md`.
+
 **P89 — Krönikan och epilogen.** `GameState.chronicle`, `scenarioVerdict(state)`, slutkort per slutorsak, kärnvapenepilog, vändpunkter. *Klart när:* golden omfryst i denna commit och ingen annan.
 
 **P90 — Paus, inställningar, sparplatser.** *Utökad efter P81 (P81-6):* bygger vidare på P81b:s överlag. En buggrapportknapp kopierar version, sparfil och kvartalets senaste händelser till urklipp, tillsammans med en länk till projektets ärendelista. Spelet gör ingen egen nätverkstrafik.

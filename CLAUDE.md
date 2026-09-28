@@ -579,7 +579,20 @@ redan (oförändrade). Ny, permanent CI-täckning: en kris går inte att nå gen
 som injicerar `pendingCrisis` direkt i den redan autosparade IndexedDB-posten. Golden ORÖRD.
 Fullt testsvep grönt: 814 tester (809→814), lint, typecheck, build, e2e (30 tester, körd två
 gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P87-blockquote och `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P88, Title Screen, New Game och Briefing.**
+**P88 BYGGD 2026-09-28**: `createInitialState` fick en tredje, valfri `startChoices`-parameter
+(`StartChoices { houseName?, homeState?, specialisation? }`) — `founding_capital` är INTE ett
+val (DESIGN.md §3: fast £4 000 000). Klart-när verifierat ordagrant: default-anrop ger bitvis
+identisk golden. Två nya skärmar mellan Title Screen och OPERATIONS (§5): `NewGameScreen.tsx`
+(husnamn ur en förslagslista, aldrig ett fritextfält; hemstat/specialisation som `Segmented`)
+och `BriefingScreen.tsx` (läget, styrelsemålet, en `CLASSIFIED`-stämpel, och exakt samma
+`TheatreMap` OPERATIONS redan visar). Genuint fynd: en `Segmented`-rad med alla fem
+specialiseringar i fullt ord klipptes på telefonbredd — löst genom att återanvända
+`CompanyActions.tsx`s redan etablerade tre-bokstavskoder. Stor ändringsyta: `menu-new-game` ledde
+tidigare direkt till `hud` i sju e2e-specer och tretton `scripts/shots.mjs`-skärmar, alla
+uppdaterade med de två nya klicken. Golden ORÖRD för scenariots default-körning. Fullt testsvep
+grönt: 826 tester (814→826), lint, typecheck, build, e2e (38 tester, körd två gånger i rad). Se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P88-blockquote och `docs/ANDRINGSLOGG.md`.
+**Nästa steg är P89, Krönikan och epilogen.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
