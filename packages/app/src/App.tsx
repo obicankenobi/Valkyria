@@ -23,6 +23,7 @@ import { QuarterReplay } from './components/QuarterReplay.js'
 import { PauseOverlay } from './components/PauseOverlay.js'
 import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
+import { TutorialOverlay } from './components/TutorialOverlay.js'
 import type { ThisQuarterTarget } from './thisQuarter.js'
 import { useGame } from './useGame.js'
 import {
@@ -31,16 +32,28 @@ import {
   loadMotion,
   loadMuted,
   loadTextScale,
+  loadTutorialSeen,
+  loadTutorialState,
   loadVolume,
   saveFullReplay,
   saveMotion,
   saveMuted,
   saveTextScale,
+  saveTutorialSeen,
+  saveTutorialState,
   saveVolume,
 } from './persistence.js'
 import type { MotionSetting, TextScaleSetting } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
 import { playSound, setMuted as setSoundMuted, setVolume as setSoundVolume } from './sound.js'
+import {
+  INITIAL_TUTORIAL_STATE,
+  completeTutorialStep,
+  currentTutorialStep,
+  startTutorial,
+  stopTutorial,
+  tutorialIsDone,
+} from './tutorial.js'
 
 // P88 (ETAPP7_TEKNISK_SPEC.md §5/§9/§13): "Title Screen ─► New Game ─►
 // Briefing ─► OPERATIONS." 'menu' är Title Screen (MainMenu.tsx, oförändrad
@@ -102,6 +115,18 @@ export function App() {
   const [volume, setVolume] = useState(1)
   const [motion, setMotion] = useState<MotionSetting>('normal')
   const [textScale, setTextScale] = useState<TextScaleSetting>('normal')
+  // P91a (§9/§13, P81-20): handledningen. `tutorialSeen` styr bara
+  // AUTOSTARTEN (se persistence.ts:s egen kommentar) — `tutorial` är det
+  // faktiska förloppet, laddat separat nedan så ett pågående steg överlever
+  // en omladdning mitt i.
+  const [tutorial, setTutorial] = useState(INITIAL_TUTORIAL_STATE)
+  // GENUINT FYND: `false` (inte `true`) som startvärde — `loadTutorialSeen()`
+  // är asynkron (IndexedDB), och ett tillräckligt snabbt klick genom New Game
+  // (upptäckt av just den sortens klick i scripts/shots.mjs/e2e-specerna)
+  // hinner annars före svaret. `false` gör att en racead läsning i VÄRSTA
+  // fall visar handledningen en gång för mycket för en återvändande spelare
+  // — hellre det än att den ALDRIG visas för en genuint ny.
+  const [tutorialSeen, setTutorialSeen] = useState(false)
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -220,6 +245,78 @@ export function App() {
     saveTextScale(next).catch(() => {})
   }
 
+  // P91a: läs vilket förlopp som redan pågår (om spelaren laddade om mitt i)
+  // och om handledningen någonsin körts förut — samma förkastat-löfte-är-
+  // standardvärde-gräns som resten av filens egna loadX-effekter.
+  useEffect(() => {
+    let cancelled = false
+    loadTutorialState()
+      .then((value) => {
+        if (!cancelled && value) setTutorial(value)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    loadTutorialSeen()
+      .then((seen) => {
+        if (!cancelled) setTutorialSeen(seen)
+      })
+      .catch(() => {
+        if (!cancelled) setTutorialSeen(true) // ovisst läge — hellre tyst än en oönskad autostart
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    saveTutorialState(tutorial).catch(() => {})
+  }, [tutorial])
+
+  function handleDismissTutorial() {
+    setTutorial(stopTutorial())
+  }
+
+  function handleRestartTutorial() {
+    setTutorial(startTutorial())
+    setTutorialSeen(true)
+    saveTutorialSeen(true).catch(() => {})
+  }
+
+  // Ett steg markeras klart oavsett var i partiet spelaren är — se
+  // tutorial.ts:s egen kommentar om varför ordningen inte är hårt grindad.
+  // Avstängningen vid TUTORIAL_TURN_LIMIT sker i samma effekt som markerar
+  // 'read-news' (den enda som beror på `state.meta.turn`).
+  useEffect(() => {
+    if (!tutorial.active) return
+    if (selectedFactionId) setTutorial((t) => completeTutorialStep(t, 'select-country'))
+  }, [tutorial.active, selectedFactionId])
+
+  useEffect(() => {
+    if (!tutorial.active) return
+    if (draft.bids.length > 0) setTutorial((t) => completeTutorialStep(t, 'place-bid'))
+  }, [tutorial.active, draft.bids.length])
+
+  useEffect(() => {
+    if (!tutorial.active) return
+    if (draft.actions.length > 0) setTutorial((t) => completeTutorialStep(t, 'fill-action-slot'))
+  }, [tutorial.active, draft.actions.length])
+
+  useEffect(() => {
+    if (!tutorial.active) return
+    if (view === 'news' && state.meta.turn > 0) setTutorial((t) => completeTutorialStep(t, 'read-news'))
+  }, [tutorial.active, view, state.meta.turn])
+
+  useEffect(() => {
+    if (!tutorial.active) return
+    if (tutorialIsDone(tutorial, state.meta.turn)) setTutorial(stopTutorial())
+  }, [tutorial, state.meta.turn])
+
   // Håller sound.ts:s modulnivå-flagga i synk med React-staten ovan — den
   // enda platsen som skriver till den, så playSound() (anropad från useGame.ts
   // och klickdelegeringen nedan) alltid läser ett färskt värde.
@@ -319,6 +416,15 @@ export function App() {
       <NewGameScreen
         onSubmit={(choices) => {
           restart(choices)
+          // P91a (§9/§13, P81-20): "de tre första kvartalen i ETT NYTT
+          // PARTI" — bara den FÖRSTA egentliga nya spelomgången autostartar
+          // den (tutorialSeen), aldrig varje omstart (annars vore "avstängningsbar"
+          // meningslöst).
+          if (!tutorialSeen) {
+            setTutorial(startTutorial())
+            setTutorialSeen(true)
+            saveTutorialSeen(true).catch(() => {})
+          }
           setView('briefing')
         }}
         onBack={() => setView('menu')}
@@ -342,6 +448,7 @@ export function App() {
   function handleEndTurn() {
     endTurn()
     setReplaying(true) // §5: End Quarter → Quarter Replay → Front Page (NEWS DESK)
+    if (tutorial.active) setTutorial((t) => completeTutorialStep(t, 'end-quarter'))
   }
 
   return (
@@ -376,6 +483,10 @@ export function App() {
         )}
 
         <RejectedBanner rejected={lastRejected} />
+
+        {/* P91a (§9/§13, P81-20): synlig oavsett flik, samma princip som
+            RejectedBanner ovan — se TutorialOverlay.tsx:s egen kommentar. */}
+        <TutorialOverlay step={currentTutorialStep(tutorial)} onDismiss={handleDismissTutorial} />
 
         {/* P74/P76 (§13): OPERATIONS är kartan. P74 byggde skalet med en
             platshållare; P76 ersätter den med TheatreMap, den riktiga
@@ -497,6 +608,7 @@ export function App() {
         draft={draft}
         recentEvents={lastTurnWire}
         onLoadFromSlot={loadFromSlot}
+        onRestartTutorial={handleRestartTutorial}
       />
     </div>
   )

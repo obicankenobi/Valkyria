@@ -13,6 +13,7 @@
 // utan förlust") kräver det uttryckligen; att bara spara efter resolveTurn hade
 // tappat ett halvifyllt anbud vid en omladdning.
 import type { GameState, TurnSubmission } from '@seventh-front/core'
+import type { TutorialState } from './tutorial.js'
 
 const DB_NAME = 'seventh-front'
 const DB_VERSION = 1
@@ -290,6 +291,74 @@ export async function saveTextScale(scale: TextScaleSetting): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite')
       tx.objectStore(STORE_NAME).put(scale, TEXT_SCALE_SETTINGS_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+// P91a (ETAPP7_TEKNISK_SPEC.md §9/§13, P81-20): två separata flaggor.
+// `tutorialSeen` (settings:tutorialSeen) styr AUTOSTARTEN — en spelares
+// FÖRSTA nya parti startar den automatiskt, ett senare nytt parti gör det
+// inte (annars vore "avstängningsbar" meningslöst, den vore på igen nästa
+// omstart). `tutorial` (settings:tutorial) är själva förloppet — sparas så
+// ett halvfärdigt handledningssteg överlever en omladdning mitt i, samma
+// princip som draften i `saveGame` ovan.
+const TUTORIAL_SEEN_KEY = 'settings:tutorialSeen'
+const TUTORIAL_STATE_KEY = 'settings:tutorial'
+
+export async function loadTutorialSeen(): Promise<boolean> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<boolean | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(TUTORIAL_SEEN_KEY)
+      request.onsuccess = () => resolve(request.result as boolean | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? false
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveTutorialSeen(seen: boolean): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(seen, TUTORIAL_SEEN_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+export async function loadTutorialState(): Promise<TutorialState | null> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<TutorialState | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(TUTORIAL_STATE_KEY)
+      request.onsuccess = () => resolve(request.result as TutorialState | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return raw ?? null
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveTutorialState(tutorial: TutorialState): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put(tutorial, TUTORIAL_STATE_KEY)
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error as Error)
     })

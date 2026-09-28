@@ -1728,6 +1728,48 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P91 — Handledning och ordlista.** *Utökad efter P81 (P81-20), delas i två commits:* **P91a, handledningen:** de tre första kvartalen i ett nytt parti leds steg för steg (välj land, lägg ett bud, fyll en handlingsplats, avsluta kvartalet, läs förstasidan). Den går att stänga av och att starta om från menyn. **P91b, handboken:** en uppslagsbok i spelet, nåbar från menyn och från varje info-ikon, med ett uppslag per mekanik (upphandling, produktion, styrelsen, doomsday, `heat`, underrättelse, politik, fronter). Texterna ligger som data i `packages/app`. *Klart när:* ett test underkänner om ett verb eller ett HUD-tal saknar uppslag.
 
+> **P91a BYGGD 2026-09-28.** Ny `tutorial.ts` (ren, testbar): fem steg
+> (`select-country`/`place-bid`/`fill-action-slot`/`end-quarter`/`read-news`),
+> INTE hårt grindade i ordning — varje steg markeras klart så fort dess
+> egen händelse inträffar oavsett vad spelaren gjorde precis innan, och
+> panelen visar alltid det TIDIGASTE ännu ofärdiga steget. GENUINT FYND,
+> hittat av det egna e2e-testet: `state.market.openOrders` är TOM vid
+> partistart (`state.ts`) — `orders.ts` genererar ordrar först under
+> `resolveTurn` — så "lägg ett bud" som steg 2, bokstavligen FÖRE "avsluta
+> kvartalet" som steg 4, går inte att göra i den ordningen vid ett genuint
+> första kvartal. Den icke-grindade designen gör det ändå harmlöst: en
+> spelare som följer texten uppifrån och ner hoppar bara naturligt till
+> steg 4 innan steg 2 blir möjligt, exakt det testet till slut verifierar.
+> SCOPE-BESLUT: byggd som en kontextuell textbanderoll (`TutorialOverlay.tsx`,
+> samma register som `Shell.tsx`s `RejectedBanner`), inte DOM-ankrade
+> "coachmarks" — de fem stegen spänner fyra skärmar (OPERATIONS/kartan,
+> CONTRACTS, handlingsdockan, NEWS DESK), och riktiga ankrade pilar hade
+> krävt en egen positioneringsmekanik för en enda prompt. Persisterad i
+> `persistence.ts` (två nya nyckelpar: `tutorialSeen` styr AUTOSTARTEN — en
+> spelares FÖRSTA nya parti, aldrig en senare omstart — `tutorial` är själva
+> förloppet, överlever en omladdning mitt i). ETT ANDRA GENUINT FYND: ett
+> `useState(true)`-startvärde för `tutorialSeen` (tänkt som en säker
+> platshållare innan den riktiga IndexedDB-läsningen hunnit svara) visade
+> sig kunna VINNA racet mot ett tillräckligt snabbt klick genom New Game
+> (upptäckt av `scripts/shots.mjs`s egen körning — en tidigare skärm i
+> samma delade browserkontext hade redan satt den riktiga flaggan, vilket
+> dolde buggen där, men startvärdet var fortfarande fel) — fixat genom att
+> byta startvärdet till `false`: en racead läsning visar i värsta fall
+> handledningen en gång för mycket för en återvändande spelare, aldrig
+> för en genuint ny. "Starta om från menyn": en ny sektion i
+> `SettingsOverlay.tsx` (redan den etablerade "menyn" sedan P90) med en
+> Restart-knapp. Ny e2e `tutorial.spec.ts`: en fullständig genomspelning av
+> alla fem steg i den ordning spelet FAKTISKT tillåter, plus dismiss/
+> restart. Ny skärm (`tutorial`) i `scripts/shots.mjs` och `e2e/
+> text-overflow.spec.ts`s `SCREENS` (regel 18/11) — måste vara den FÖRSTA
+> skärmen i respektive lista som skickar in New Game, annars döljs
+> banderollen av en tidigare skärms egen `restart()`. Golden ORÖRD (ingen
+> `packages/core`-fil rörd). Nya tester: `tutorial.test.ts` (10),
+> `TutorialOverlay.test.tsx` (3), `SettingsOverlay.test.tsx` (+1). Fullt
+> testsvep grönt: 896 tester (882→896), lint, typecheck, build, e2e (56
+> tester efter den nya skärmen och de två nya funktionella testerna, körd
+> två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 ### 7E — Tillgångar och finish
 
 **P92 — Porträtt och händelsebilder.** Promptdokument först, bilderna genereras av ägaren, kopplas sedan in.

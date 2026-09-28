@@ -176,6 +176,17 @@ async function enterEpilogueHistory(page: Page): Promise<void> {
   await page.getByTestId('epilogue-history-sheet').waitFor()
 }
 
+// P91a (ETAPP7_TEKNISK_SPEC.md §9/§13, P81-20): handledningsbanderollen.
+// Samma flöde som enterOperations, bara med ett väntemål på banderollen i
+// stället för bara HUD:en — varje Playwright-test får sin egen tomma
+// browserkontext, så det här ÄR ett genuint första nytt parti.
+async function enterTutorial(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
+  await page.getByTestId('tutorial-banner').waitFor()
+}
+
 // P90 (ETAPP7_TEKNISK_SPEC.md §9/§13): SettingsOverlay, nådd FRÅN pausen
 // (PauseOverlay.tsx:s nya "Settings"-knapp) — samma väg en riktig spelare
 // tar, inte ett direkt Escape-genvägstest.
@@ -198,6 +209,7 @@ const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<voi
   { name: 'epilogue', path: '/', setup: enterEpilogue },
   { name: 'epilogue-history', path: '/', setup: enterEpilogueHistory },
   { name: 'settings', path: '/', setup: enterSettings },
+  { name: 'tutorial', path: '/', setup: enterTutorial },
 ]
 
 for (const format of FORMATS) {

@@ -57,6 +57,29 @@ const APP_SCREENS = [
     },
   },
   {
+    // P91a (§9/§13, P81-20): handledningsbanderollen — måste vara det
+    // FÖRSTA skärmen i den här listan som faktiskt skickar in New Game
+    // (restart()), annars har tutorialSeen redan satts av en tidigare
+    // skärm i samma delade browserkontext (main.mjs:s egen loop, en
+    // context per format) och banderollen visas aldrig. Ingen egen
+    // referensskiss.
+    name: 'tutorial',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Ingen bekräftelsedialog visades — inget sparat parti fanns.
+      }
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
+      await page.getByTestId('tutorial-banner').waitFor()
+    },
+  },
+  {
     // P88 (§9/§13): Briefing, med husets nyss valda namn och kartan.
     name: 'briefing',
     path: '/',

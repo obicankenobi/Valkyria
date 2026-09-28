@@ -88,6 +88,7 @@ export function SettingsOverlay({
   draft,
   recentEvents,
   onLoadFromSlot,
+  onRestartTutorial,
 }: {
   open: boolean
   onClose: () => void
@@ -105,6 +106,10 @@ export function SettingsOverlay({
   draft: TurnSubmission
   recentEvents: readonly WireEvent[]
   onLoadFromSlot: (slot: string) => Promise<boolean>
+  // P91a (§9/§13, P81-20): "starta om [handledningen] från menyn" —
+  // SettingsOverlay ÄR den etablerade "menyn" sedan P90 (nåbar från Pause
+  // i spelet), samma hem som Save Slots/Support redan bor i.
+  onRestartTutorial: () => void
 }) {
   const [slots, setSlots] = useState<Record<string, SavedGame | null>>({})
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null)
@@ -187,6 +192,14 @@ export function SettingsOverlay({
               onChange={() => onToggleFullReplay(!fullReplay)}
               testId="settings-full-replay-toggle"
             />
+          </section>
+
+          <section className="settings-section">
+            <h3 className="settings-section-title">Tutorial</h3>
+            <p className="cf-hint">Restarts the three-quarter walkthrough from the beginning.</p>
+            <Button variant="ghost" onClick={onRestartTutorial} testId="settings-restart-tutorial">
+              Restart Tutorial
+            </Button>
           </section>
 
           <section className="settings-section">

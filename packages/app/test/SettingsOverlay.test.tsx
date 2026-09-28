@@ -44,6 +44,7 @@ function baseProps() {
     draft: emptySubmission(),
     recentEvents: [],
     onLoadFromSlot: vi.fn().mockResolvedValue(true),
+    onRestartTutorial: vi.fn(),
   }
 }
 
@@ -179,6 +180,13 @@ describe('SettingsOverlay (P90)', () => {
     expect(report).toContain('Meridian Arms')
     expect(report).toContain('Turn: 0')
     expect(report).toContain('DELIVERED 5x RIFLES TO RVN')
+  })
+
+  it('Restart Tutorial anropar onRestartTutorial', () => {
+    const props = baseProps()
+    render(<SettingsOverlay {...props} />)
+    fireEvent.click(screen.getByTestId('settings-restart-tutorial'))
+    expect(props.onRestartTutorial).toHaveBeenCalledOnce()
   })
 
   it('länken till ärendelistan pekar på GitHub-repots issues, och gör ingen egen nätverkstrafik', () => {

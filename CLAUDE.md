@@ -637,7 +637,20 @@ bekräftelsedialog som lät ett klick bubbla upp och stänga hela panelen (fixat
 rad. Fullt testsvep grönt: 882 tester (863→882), lint, typecheck, build, e2e (50 tester, körd
 två gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P90-blockquote och
 `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P91, Handledning och ordlista.**
+**P91a BYGGD 2026-09-28**: fem kontextuella handledningssteg (`tutorial.ts`, ren, testbar) —
+`select-country`/`place-bid`/`fill-action-slot`/`end-quarter`/`read-news`, INTE hårt grindade
+i ordning (varje steg klart så fort dess egen händelse inträffar; panelen visar alltid det
+tidigaste ofärdiga steget). Genuint fynd, hittat av e2e-testet: `state.market.openOrders` är
+tom vid partistart, så "lägg ett bud" (steg 2) inte kan göras före "avsluta kvartalet" (steg 4)
+vid ett genuint första kvartal — den icke-grindade designen gör det harmlöst. Ett andra genuint
+fynd: ett `useState(true)`-startvärde för `tutorialSeen` kunde vinna racet mot ett snabbt klick
+genom New Game innan IndexedDB-läsningen hunnit svara — fixat med `false` som startvärde (hellre
+en extra visning för en återvändande spelare än ingen alls för en ny). Byggd som en kontextuell
+textbanderoll (`TutorialOverlay.tsx`), inte DOM-ankrade coachmarks — de fem stegen spänner fyra
+skärmar. Ny sektion i `SettingsOverlay.tsx` för omstart. Fullt testsvep grönt: 896 tester
+(882→896), lint, typecheck, build, e2e (56 tester, körd två gånger i rad). Se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P91a-blockquote och `docs/ANDRINGSLOGG.md`.
+**Nästa steg är P91b, Handboken.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
