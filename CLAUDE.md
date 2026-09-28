@@ -567,8 +567,19 @@ effektskala. POLITICAL-formuläret (`<select>`/`<input type="number">`) borttage
 §7.1:s klart-när för hela avsnitt 7. Ny skärm `contacts`/`contacts-broker` i `scripts/shots.mjs`
 OCH i `e2e/text-overflow.spec.ts`s `SCREENS` (regel 18/11) i samma commit. Golden ORÖRD. Fullt
 testsvep grönt: 809 tester (798→809), lint, typecheck, build, e2e (26 tester, körd två gånger i
-rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P86-blockquote och `docs/ANDRINGSLOGG.md`. **Nästa
-steg är P87, Kriskortet.**
+rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P86-blockquote och `docs/ANDRINGSLOGG.md`.
+**P87 BYGGD 2026-09-28**: krismodalen (spec 9.4) byggdes om till ett riktigt "helskärmskort" —
+den hade aldrig följt etapp 7:s regelverk, bara varit en centrerad `.modal-overlay`/`.modal-panel`
+(P21) med generiska `.btn`-knappar. Ny `.crisis-fullscreen`/`.crisis-card` (opak, täcker hela
+skärmen, `z-index` över pausöverlaget). Illustrationen är EXAKT samma `DoomsdayGauge` HUD:en redan
+ritar (P81b, nu exporterad från `Shell.tsx`) — bara större, med kortets egna doomsday-värde, "en
+formel, en källa" i stället för en uppfunnen krisgrafik. De tre valen och `PUSH`:s 30 % fanns
+redan (oförändrade). Ny, permanent CI-täckning: en kris går inte att nå genom att bara klicka
+(sannolikhetsstyrd), så `scripts/shots.mjs`/`e2e/text-overflow.spec.ts` fick en `crisis`-skärm
+som injicerar `pendingCrisis` direkt i den redan autosparade IndexedDB-posten. Golden ORÖRD.
+Fullt testsvep grönt: 814 tester (809→814), lint, typecheck, build, e2e (30 tester, körd två
+gånger i rad). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P87-blockquote och `docs/ANDRINGSLOGG.md`.
+**Nästa steg är P88, Title Screen, New Game och Briefing.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

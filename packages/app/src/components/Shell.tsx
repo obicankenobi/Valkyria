@@ -154,14 +154,18 @@ function gaugeArc(fromFraction: number, toFraction: number): string {
   return `M${x1.toFixed(2)},${y1.toFixed(2)} A${GAUGE_R},${GAUGE_R} 0 0 1 ${x2.toFixed(2)},${y2.toFixed(2)}`
 }
 
-function DoomsdayGauge({ value }: { value: number }) {
+// P87 (ETAPP7_TEKNISK_SPEC.md §7.6/§13): exporterad så TheWire.tsx:s
+// krisöverlag kan återanvända EXAKT samma instrument, bara större — "en
+// formel, en källa" i stället för en egen krisillustration uppfunnen vid
+// sidan av HUD:ens redan byggda visarinstrument (P81b).
+export function DoomsdayGauge({ value, className }: { value: number; className?: string }) {
   const fraction = Math.max(0, Math.min(100, value)) / 100
   const watchFraction = DISPLAY_THRESHOLDS.doomsdayCrisisWatch / 100
   const eventFraction = DISPLAY_THRESHOLDS.doomsdayCrisisEvent / 100
   const [needleX, needleY] = gaugePoint(fraction)
 
   return (
-    <svg className="ds-hud-gauge" viewBox="0 0 64 36" aria-hidden="true">
+    <svg className={className ? `ds-hud-gauge ${className}` : 'ds-hud-gauge'} viewBox="0 0 64 36" aria-hidden="true">
       <path d={gaugeArc(0, watchFraction)} className="ds-hud-gauge-zone is-safe" />
       <path d={gaugeArc(watchFraction, eventFraction)} className="ds-hud-gauge-zone is-amber" />
       <path d={gaugeArc(eventFraction, 1)} className="ds-hud-gauge-zone is-danger" />

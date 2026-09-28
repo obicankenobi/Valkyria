@@ -290,6 +290,53 @@ const APP_SCREENS = [
       await page.getByTestId('contacts-broker-preview-rvn').waitFor()
     },
   },
+  {
+    // P87: krisens helskärmskort (§7.6) — ingen egen referensskiss. En kris
+    // är sannolikhetsstyrd (doomsday måste korsa en tröskel, se play-20-
+    // turns.spec.ts:s egen motivering) — går inte att nå genom att bara
+    // klicka. Skriver `pendingCrisis` direkt in i IndexedDB-sparfilen (samma
+    // "save:default"-nyckel appen självt autosparar till, persistence.ts)
+    // och laddar om, i stället för att spela fram ett helt parti och hoppas.
+    name: 'crisis',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti — samma gren som ovan.
+      }
+      await page.getByTestId('hud').waitFor()
+      await page.evaluate(async () => {
+        const dbReq = indexedDB.open('seventh-front', 1)
+        const db = await new Promise((resolve, reject) => {
+          dbReq.onsuccess = () => resolve(dbReq.result)
+          dbReq.onerror = () => reject(dbReq.error)
+        })
+        const tx = db.transaction('saves', 'readwrite')
+        const store = tx.objectStore('saves')
+        const getReq = store.get('save:default')
+        const saved = await new Promise((resolve, reject) => {
+          getReq.onsuccess = () => resolve(getReq.result)
+          getReq.onerror = () => reject(getReq.error)
+        })
+        const theatreId = Object.keys(saved.state.theatres)[0]
+        saved.state.doomsday = 82
+        saved.state.pendingCrisis = { turn: saved.state.meta.turn, theatreId, restrictedRevenueThisTurn: 2_000_000 }
+        await new Promise((resolve, reject) => {
+          const putReq = store.put(saved, 'save:default')
+          putReq.onsuccess = () => resolve(undefined)
+          putReq.onerror = () => reject(putReq.error)
+        })
+      })
+      await page.reload()
+      await page.getByTestId('menu-continue').click()
+      await page.getByTestId('tab-news').click()
+      await page.getByTestId('crisis-modal').waitFor()
+    },
+  },
 ]
 
 const REFERENCE_FILES = [

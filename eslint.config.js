@@ -104,4 +104,16 @@ export default tseslint.config(
     files: ['**/*.js'],
     ...tseslint.configs.disableTypeChecked,
   },
+  {
+    // P87: scripts/shots.mjs:s "crisis"-skärm (ETAPP7_TEKNISK_SPEC.md §7.6)
+    // injicerar pendingCrisis via en page.evaluate()-callback, som körs i
+    // WEBBLÄSARENS globala scope (indexedDB m.fl.), inte skriptets eget
+    // Node-scope — samma sorts scope-blandning som packages/app/public/sw.js
+    // ovan, fast åt andra hållet (ett Node-skript med en inbäddad
+    // webbläsarsträng, inte tvärtom).
+    files: ['packages/app/scripts/shots.mjs'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
 )

@@ -1487,6 +1487,45 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P87 — Kriskortet.**
 
+> **P87 BYGGD 2026-09-28**: krismodalen (spec 9.4) hade aldrig byggts om
+> sedan etapp 7:s regelverk skrevs — den var fortfarande en centrerad
+> `.modal-overlay`/`.modal-panel` (P21) med generiska `.btn`-knappar, ingen
+> `Panel`-ram (regel 6), ingen illustration. **Premisskontroll**: de tre
+> valen och `PUSH`:s 30 %-siffra (`DISPLAY_THRESHOLDS.crisisPushExchangePct`)
+> fanns redan, liksom "ingen stäng-knapp" — det som faktiskt saknades för
+> §7.6:s klart-när var "helskärmskort" (kortet var en flytande panel över en
+> halvt synlig bakgrund, inte ett opakt kort som täcker hela skärmen) och en
+> illustration. Ny `.crisis-fullscreen`/`.crisis-card` (styles.css): opakt
+> `var(--bg)`, `position: fixed; inset: 0`, `z-index: 90` (över
+> `.pause-overlay`s 60 — en kris slår igenom ett öppet pausläge), `env(safe-
+> area-inset-*)`. Illustrationen är EXAKT `DoomsdayGauge` — HUD:ens redan
+> byggda visarinstrument (P81b), nu exporterad från `Shell.tsx` med en
+> valfri `className` — bara större och med kortets egna `state.doomsday`,
+> "en formel, en källa" i stället för en uppfunnen krisgrafik. `.order-
+> stamp` (P84:s stämpelregister) återanvänd för en "EYES ONLY"-etikett.
+> `.crisis-choice` fick egna hover/press-tillstånd (regel 3) och
+> `min-height: 44px` (regel 11) i stället för att luta sig mot `.btn`, som
+> aldrig garanterade det. `.modal-overlay`/`.modal-panel` rörda inte —
+> delas fortfarande av `QuarterReplay.tsx`s pausöverlag och
+> `MainMenu.tsx`s nya-parti-bekräftelse. Verifierat visuellt (en
+> engångsverifiering, se nedan) och i `play-20-turns.spec.ts`, som redan
+> möter en riktig kris i en riktig Chromium-körning. **Ny, permanent
+> CI-täckning**: en kris är sannolikhetsstyrd i ett riktigt parti (samma
+> skäl `play-20-turns.spec.ts` har en adaptiv väntloop) — går inte att nå
+> genom att bara klicka. `scripts/shots.mjs` och
+> `e2e/text-overflow.spec.ts`s `SCREENS` fick båda en `crisis`-skärm som
+> skriver `pendingCrisis` direkt in i den redan autosparade
+> `save:default`-posten (`persistence.ts`) och laddar om, i stället för att
+> spela fram ett helt parti i varje körning — regel 18/11 kontrollerar
+> alltså kortet i CI från och med den här commiten, inte bara vid en
+> manuell granskning. `eslint.config.js` fick en smal override för
+> `scripts/shots.mjs` (webbläsarglobaler utöver Node-globalerna, eftersom
+> filens `page.evaluate()`-callback kör i webbläsarens scope, inte
+> skriptets eget). Golden ORÖRD (ingen `packages/core`-fil rörd). Nya
+> tester: `TheWire.crisis.test.tsx` (5). Fullt testsvep grönt: 814 tester
+> (809→814), lint, typecheck, build, e2e (30 tester efter den nya
+> `crisis`-skärmen, körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 ### 7D — Sidorna
 
 **P88 — Title Screen, New Game och Briefing.** Valfria startval i `createInitialState`. *Klart när:* standardvalen ger bitvis identisk golden.

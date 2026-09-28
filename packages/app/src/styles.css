@@ -1301,7 +1301,8 @@ td.is-key {
   font-size: 12px;
 }
 
-/* ── CRISIS-modalen (THE WIRE, spec 9.4) ──────────────────────────────── */
+/* ── Delad centrerad modal (QuarterReplay.tsx pausöverlag, MainMenu.tsx nya
+   parti-bekräftelse) — INTE längre krisens klasser, se nedan. ─────────── */
 
 .modal-overlay {
   position: fixed;
@@ -1324,10 +1325,73 @@ td.is-key {
   padding: 22px 24px;
 }
 
+/* ── CRISIS-kortet (THE WIRE, §7.6, P87) — "Helskärmskort med illustration,
+   de tre valen och PUSH:s 30 % utskrivet. Kan inte stängas utan val." Ett
+   OPAKT kort som täcker hela skärmen (regel 8:s manillamapp i sin
+   fysiskt yttersta form), inte en flytande panel över en synlig bakgrund —
+   ersätter den gamla .modal-overlay/.modal-panel-baserade krisen (spec
+   9.4), som aldrig byggdes om till etapp 7:s regelverk. z-index högre än
+   .pause-overlay (60): en kris slår igenom ett öppet pausläge. ─────────── */
+
+.crisis-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--bg);
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.crisis-card {
+  max-width: 560px;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 60px rgba(179, 48, 42, 0.22), var(--shadow);
+  padding: 28px 26px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.crisis-eyes-only {
+  align-self: flex-end;
+  margin-bottom: -8px;
+}
+
+.crisis-illustration {
+  width: 200px;
+  height: auto;
+  margin: 12px 0 4px;
+}
+
+.crisis-title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--red);
+  letter-spacing: 0.02em;
+}
+
+.crisis-sub {
+  margin: 10px 0 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink-dim);
+  max-width: 46ch;
+}
+
 .crisis-choices {
   display: grid;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 22px;
+  width: 100%;
 }
 
 /* ── QuarterReplay (P80, ETAPP7_TEKNISK_SPEC.md §8) ─────────────────────── */
@@ -1449,11 +1513,32 @@ td.is-key {
   gap: 4px;
   text-align: left;
   white-space: normal;
+  min-height: 44px;
   padding: 12px 16px;
+  width: 100%;
+  background: var(--panel-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 100ms ease, transform 100ms ease;
+}
+
+.crisis-choice:hover {
+  background: var(--panel-sunken);
+}
+
+/* Regel 3: pressed syns inom 100 ms. */
+.crisis-choice:active {
+  background: var(--red-soft);
+  border-color: var(--red);
+  transform: translateY(1px);
 }
 
 .crisis-choice-label {
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.02em;
 }
 
 .crisis-choice-consequence {

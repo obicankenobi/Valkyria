@@ -38,11 +38,51 @@ async function enterContacts(page: Page): Promise<void> {
   await page.getByTestId('contacts-verb-BROKER-rvn').waitFor()
 }
 
+// P87: krisens helskärmskort (§7.6) — sannolikhetsstyrd i ett riktigt parti
+// (samma skäl play-20-turns.spec.ts har en adaptiv väntloop), så samma
+// IndexedDB-injektion som scripts/shots.mjs:s "crisis"-skärm används här:
+// skriv pendingCrisis direkt in i den redan autosparade "save:default"-
+// posten (persistence.ts) och ladda om, i stället för att spela fram ett
+// helt parti i varje CI-körning.
+async function enterCrisis(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('hud').waitFor()
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise<{ state: { theatres: Record<string, unknown>; meta: { turn: number }; doomsday: number; pendingCrisis: unknown } }>(
+      (resolve, reject) => {
+        getReq.onsuccess = () => resolve(getReq.result)
+        getReq.onerror = () => reject(getReq.error)
+      },
+    )
+    const theatreId = Object.keys(saved.state.theatres)[0]
+    saved.state.doomsday = 82
+    saved.state.pendingCrisis = { turn: saved.state.meta.turn, theatreId, restrictedRevenueThisTurn: 2_000_000 }
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('tab-news').click()
+  await page.getByTestId('crisis-modal').waitFor()
+}
+
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
   { name: 'operations', path: '/', setup: enterOperations },
   { name: 'contacts', path: '/', setup: enterContacts },
+  { name: 'crisis', path: '/', setup: enterCrisis },
 ]
 
 for (const format of FORMATS) {

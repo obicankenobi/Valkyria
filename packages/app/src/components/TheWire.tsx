@@ -26,6 +26,7 @@ import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { causeChain } from '../wireChain.js'
 import { anchorLabel, wireAnchor } from '../wireAnchor.js'
+import { DoomsdayGauge } from './Shell.js'
 import {
   groupTickers,
   isFlashEvent,
@@ -237,6 +238,16 @@ const CRISIS_CHOICES: { choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE'; label: s
   },
 ]
 
+// P87 (ETAPP7_TEKNISK_SPEC.md §7.6/§13): "Helskärmskort med illustration, de
+// tre valen och PUSH:s 30 % utskrivet. Kan inte stängas utan val." Byggd om
+// från den gamla, pre-regel-8-modalen (en centrerad panel över en halvt
+// synlig bakgrund) till ett OPAKT helskärmskort — regel 8:s "manillamapp" i
+// sin fysiskt yttersta form, ett aktakort som slås ned över hela bordet.
+// Illustrationen är EXAKT samma DoomsdayGauge som HUD:en redan ritar (P81b),
+// bara större och med kortets EGNA doomsday-värde — "en formel, en källa" i
+// stället för en uppfunnen krisgrafik ingen annan skärm delar. Ingen stäng-/
+// X-knapp (se filens huvudkommentar) — .crisis-fullscreen har medvetet ingen
+// onClick/Esc-hantering.
 function CrisisModal({
   state,
   onChoose,
@@ -249,10 +260,14 @@ function CrisisModal({
   const theatre = state.theatres[pending.theatreId]
 
   return (
-    <div className="modal-overlay" data-testid="crisis-modal">
-      <div className="modal-panel">
-        <h2 className="view-title">CRISIS — DOOMSDAY AT {state.doomsday.toFixed(0)}</h2>
-        <p className="banner-sub">
+    <div className="crisis-fullscreen" data-testid="crisis-modal">
+      <div className="crisis-card">
+        <span className="order-stamp is-urgent crisis-eyes-only">EYES ONLY</span>
+        <DoomsdayGauge value={state.doomsday} className="crisis-illustration" />
+        <h2 className="crisis-title" data-testid="crisis-doomsday">
+          CRISIS — DOOMSDAY AT {state.doomsday.toFixed(0)}
+        </h2>
+        <p className="crisis-sub">
           {theatre ? theatre.name.toUpperCase() : pending.theatreId.toUpperCase()} is at the centre of it. You are
           never a bystander. Choose.
         </p>
@@ -261,8 +276,9 @@ function CrisisModal({
             <button
               key={c.choice}
               type="button"
-              className="btn btn-primary crisis-choice"
+              className="crisis-choice"
               onClick={() => onChoose(c.choice)}
+              data-testid={`crisis-choice-${c.choice}`}
             >
               <span className="crisis-choice-label">{c.label}</span>
               <span className="crisis-choice-consequence">{c.consequence}</span>
