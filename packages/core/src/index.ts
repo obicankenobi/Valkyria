@@ -53,3 +53,9 @@ export { previewAction } from './previewAction.js'
 // (P21) upprepar sin egen lokala kopia av TECH_CATEGORIES/HIRABLE_ROLES.
 export { COMMODITIES, TECH_CATEGORIES, HIRABLE_ROLES } from './validateAction.js'
 export type { HirableRole } from './validateAction.js'
+// P89: krönikan (byggd i resolveTurn(), se resolve/index.ts) och
+// epilogen (scenarioVerdict, härledd — samma "härledd, inte lagrad"-princip
+// som bidEstimate/ActionPreview). ChronicleEntry/ChronicleKind/ScenarioVerdict/
+// NuclearEpilogue exporteras redan via `export * from './types.js'` ovan.
+export { classifyChronicleEntries, appendChronicle, CHRONICLE_CAP } from './chronicle.js'
+export { scenarioVerdict } from './scenarioVerdict.js'

@@ -194,10 +194,21 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // se docs/ANDRINGSLOGG.md för hela mätningen och den tidigare, strukturellt
   // ALDRIG utlösande designen (0 % av 1 827 genombrott) den ersätter.
   // headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P89 (ETAPP7_TEKNISK_SPEC.md §9/§13, "golden omfryst i denna
+  // commit och ingen annan"). GameState.chronicle är ett nytt fält -- byggt av
+  // resolveTurn() själv (resolve/index.ts) direkt efter PIPELINE-loopen, ur
+  // exakt den turens råa, opruade WireEvent (se chronicle.ts:s egen kommentar
+  // för varför det INTE kan vara ett PIPELINE-steg: ResolveContext exponerar
+  // bara ctx.emit, aldrig en läsning tillbaka av samma turs redan emitterade
+  // händelser). Ingen spelregel/balanssiffra rörd -- bara ny form (ett nytt,
+  // hittills tomt-vid-tur-0 fält som fylls på i takt med partiet) och
+  // därför en ny hash, precis som P48/P51/P59 m.fl. tidigare rena
+  // formändringar. headlines > 8 höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c50537e1bd6ad' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'efb3cf78f70be' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '13b7563921cb9' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '13410cbd5a4b' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '32259821910dc' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '72f55dcef5b0c' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

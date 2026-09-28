@@ -1577,6 +1577,72 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P89 — Krönikan och epilogen.** `GameState.chronicle`, `scenarioVerdict(state)`, slutkort per slutorsak, kärnvapenepilog, vändpunkter. *Klart när:* golden omfryst i denna commit och ingen annan.
 
+> **P89 BYGGD 2026-09-28.** `GameState.chronicle: ChronicleEntry[]` (nytt
+> fält) byggs i `resolveTurn()` självt (`resolve/index.ts`), direkt efter
+> `PIPELINE`-loopen, ur den turens RÅ, opruade `WireEvent`-lista
+> (`wireEmitter.thisTurnEvents()`) — INTE som ett fjortonde `PIPELINE`-steg:
+> `ResolveContext` exponerar bara `ctx.emit` (skrivning), aldrig en läsning
+> tillbaka av samma turs egna emitterade händelser, så ett steg kan
+> mekaniskt inte klassificera sin egen turs krönika. Samma
+> "cross-cutting-bokföring-runt-pipelinen"-princip filens egen
+> huvudkommentar redan motiverar för `rngCursor`/`pruneWire`. Ny fil
+> `chronicle.ts`: `classifyChronicleEntries()` mönstermatchar de elva
+> `ChronicleKind`-värdena mot faktiska rubriktexter, hämtade direkt ur
+> `emit()`-anropen i `resolve/` (samma verifierade metod som
+> `newsClassification.ts`s `FLASH_PATTERNS`, se dess egen kommentar).
+> GENUINT FYND: en `restricted_delivery` delar ordagrant samma
+> `"DELIVERED ..."`-rubrik som en vanlig leverans — går INTE att skilja på
+> text. Löst via `causeId`: `deliveries.ts`s `addDoomsday(ctx, ...,
+> deliveryId)` sätter leveransens eget id som `causeId` på det separata
+> `DOOMSDAY ...`-eventet, så en samturs `DOOMSDAY`-händelse vars `causeId`
+> pekar på en `DELIVERED`-händelse bevisar att just den leveransen var
+> restricted. Samma `causeId`-teknik generaliserad till `doomsdayDelta`-
+> fallbacken för alla kinds vars doomsday-effekt ligger i ett separat
+> nedströms-event (STAGE_INCIDENT/ASSASSINATE/BACK_CHANNEL, inte bara
+> restricted-leveranser). `appendChronicle()`: tak 80, äldsta
+> icke-spelarhändelse gallras först, med en overlag-fallback ("gallra äldst
+> överlag") när samtliga kvarvarande poster är spelarens egna — ordagrant
+> spec-texten. Ny `scenarioVerdict.ts` (härledd, aldrig lagrad, samma
+> princip som `bidEstimate`/`ActionPreview`): CAPITAL = `house.treasury` +
+> `Σ house.commodityHoldings` (redan i £, inget nytt värderingsformel
+> behövdes). REACH.buyers: spec avsnitt 9s egen öppna fråga ("verifiera
+> först om uppfyllda kontrakt ligger kvar i `state`") avgjord genom att
+> grepp:a `deliveries.ts` — `contract.status = 'fulfilled'` splice:as
+> ALDRIG bort ur `state.market.contracts`, så ingen ny `buyersServed`-mängd
+> behövdes, bara ett filter på befintlig data. REACH.continents: ingen
+> kontinentdata finns någonstans i kodbasen — löst med en liten,
+> UTTRYCKLIGEN provisorisk `THEATRE_CONTINENT`-lookup (`indochina`/`laos`
+> → `'Asia'`), ärligt continents=1 för `indochina-slice` i stället för en
+> gissad siffra. SHADOW tolkad brett (alla krönikeposter där
+> `actorIsPlayer`, inte bara de tre covert-op-kinderna DESIGN.md §17
+> nämner som exempel) — en dokumenterad tolkning, inte den enda möjliga.
+> Vändpunkter rankade efter `|doomsdayDelta|` fallande, samma skäl.
+> Kärnvapenepilogen (`NuclearEpilogue`, DESIGN.md §6.3 ordagrant) har ETT
+> ytterligare genuint fynd: `wire.ts`s rullande fönster är
+> `WIRE_WINDOW_TURNS=8`, inte de "sista tolv turerna" DESIGN.md ber om —
+> och en vanlig leverans hamnar aldrig i `chronicle` (bara
+> `restricted_delivery` gör). Löst genom att läsa vad som faktiskt finns
+> kvar i `state.wire` (upp till åtta turer bakåt, ärligt kortare än
+> specens text) i stället för att låtsas täcka tolv — dokumenterat, inte
+> tyst begränsat. Ny UI-skärm `EpilogueScreen.tsx` (`packages/app`), sista
+> steget i §5s arkitektur (`Front Page ──(slut)──► Epilogue ─► Title
+> Screen`): slutkortet, de fyra axlarna, vändpunkterna, kärnvapenepilogen
+> (villkorad på `NUCLEAR_EXCHANGE`) och en `BottomSheet`-historikskärm
+> (hela krönikan) — samma `.setup-screen`/`.setup-panel`-register som
+> `BriefingScreen.tsx` (P88) redan etablerade. Den redan befintliga
+> "ended"-bannern (i `App.tsx`, sedan tidigare) öppnar den nu i stället för
+> att gå direkt till Title Screen. Ny e2e-täckning (`enterEpilogue`/
+> `enterEpilogueHistory`, samma IndexedDB-injektionsteknik som P87s
+> `enterCrisis` — ett scenario slutar bara efter många turer i ett riktigt
+> parti): två nya skärmar i regel 18/11-loopen och i `npm run shots`.
+> Golden omfryst EN gång i den här commiten (`GameState.chronicle` är ett
+> nytt fält i det hashade sluttillståndet — ingen spelregel/balanssiffra
+> rörd, samma rena formändring som P48/P51/P59 m.fl.), ingen annanstans.
+> Nya tester: `chronicle.test.ts` (20), `scenarioVerdict.test.ts` (10),
+> `EpilogueScreen.test.tsx` (7). Fullt testsvep grönt: 863 tester
+> (826→863), lint, typecheck, build, e2e (46 tester efter de två nya
+> skärmarna, körd två gånger i rad). Se `docs/ANDRINGSLOGG.md`.
+
 **P90 — Paus, inställningar, sparplatser.** *Utökad efter P81 (P81-6):* bygger vidare på P81b:s överlag. En buggrapportknapp kopierar version, sparfil och kvartalets senaste händelser till urklipp, tillsammans med en länk till projektets ärendelista. Spelet gör ingen egen nätverkstrafik.
 
 **P91 — Handledning och ordlista.** *Utökad efter P81 (P81-20), delas i två commits:* **P91a, handledningen:** de tre första kvartalen i ett nytt parti leds steg för steg (välj land, lägg ett bud, fyll en handlingsplats, avsluta kvartalet, läs förstasidan). Den går att stänga av och att starta om från menyn. **P91b, handboken:** en uppslagsbok i spelet, nåbar från menyn och från varje info-ikon, med ett uppslag per mekanik (upphandling, produktion, styrelsen, doomsday, `heat`, underrättelse, politik, fronter). Texterna ligger som data i `packages/app`. *Klart när:* ett test underkänner om ett verb eller ett HUD-tal saknar uppslag.

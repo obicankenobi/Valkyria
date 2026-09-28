@@ -99,12 +99,70 @@ export interface GameState {
   // applyActions.ts, som kör FÖRST i pipelinen, läser och nollställer fältet.
   pendingCrisis: { turn: number; theatreId: TheatreId; restrictedRevenueThisTurn: Money } | null
   wire: WireEvent[] // rullande fönster, se 2.6
+  // P89 (ETAPP7_TEKNISK_SPEC.md §9/§13): "GameState.chronicle: ChronicleEntry[]
+  // — tak 80, äldsta icke-spelarhändelser gallras först." Till skillnad från
+  // `wire` (ett rullande 8-turersfönster, wire.ts) sträcker sig krönikan över
+  // HELA partiet — den är epilogens underlag (SHADOW, kärnvapenepilogens
+  // utlösande handling, vändpunkter), inget `wire` kan räkna fram efter fler
+  // än åtta turer. Byggd i resolveTurn() själv (resolve/index.ts), inte som
+  // ett PIPELINE-steg — samma "cross-cutting bokföring runt pipelinen, inte
+  // ett fjortonde steg"-princip som rngCursor/pruneWire redan följer, och av
+  // nödvändighet: ett steg kan bara SKRIVA via ctx.emit, aldrig LÄSA tillbaka
+  // den här turens redan emitterade händelser.
+  chronicle: ChronicleEntry[]
   status: GameStatus
 }
 
 export type GameStatus = { kind: 'active' } | { kind: 'ended'; ending: EndingCode; turn: number }
 
 export type EndingCode = 'INSOLVENCY' | 'BUYOUT' | 'EXPOSURE' | 'NUCLEAR_EXCHANGE' | 'SCENARIO_COMPLETE'
+
+// P89 (ETAPP7_TEKNISK_SPEC.md §9), ordagrant.
+export type ChronicleKind =
+  | 'coup'
+  | 'incident'
+  | 'assassination'
+  | 'leak'
+  | 'sabotage'
+  | 'crisis'
+  | 'exposure'
+  | 'bankruptcy'
+  | 'restricted_delivery'
+  | 'contract'
+  | 'ceasefire'
+
+export interface ChronicleEntry {
+  turn: number
+  kind: ChronicleKind
+  headline: string
+  actorIsPlayer: boolean
+  causeHeadlines: string[] // upp till tre led, kopierade vid skrivtillfället
+  doomsdayDelta: number
+}
+
+// P89 (ETAPP7_TEKNISK_SPEC.md §9, DESIGN.md §17, ordagrant): "Ett scenario
+// avslutas och betygsätts längs fyra axlar." Ren utdata, aldrig lagrad i
+// GameState — scenarioVerdict(state) räknar om den varje gång, samma
+// "härledd, inte lagrad"-princip som ActionPreview/BidEstimate.
+export interface ScenarioVerdict {
+  capital: Money // slutkassa + tillgångar (treasury + commodityHoldings)
+  reach: { buyers: number; continents: number } // antal köpare och kontinenter
+  shadow: number // kupper, incidenter, lönnmord m.fl. — hur mycket av världen som är ditt verk
+  restraint: Pct // doomsdayPeak, lägre är bättre
+  ending: { code: EndingCode; headline: string; turn: number } | null // null: scenariot pågår
+  turningPoints: ChronicleEntry[] // upp till tre, rankade efter |doomsdayDelta|
+  nuclearEpilogue: NuclearEpilogue | null // bara satt när ending.code === 'NUCLEAR_EXCHANGE'
+}
+
+// DESIGN.md §6.3, ordagrant: "vad ditt hus levererade under de sista tolv
+// turerna, vilka fronter som fanns, vilken enskild leverans som modellen kan
+// spåra som utlösande, och en dödsruna över huset."
+export interface NuclearEpilogue {
+  deliveriesLastTwelveTurns: string[] // headlines, senaste tolv turerna
+  frontNames: string[]
+  triggeringEntry: ChronicleEntry | null // sista spelarhändelsen med doomsdayDelta > 0
+  obituary: string
+}
 
 // ── 2.3 House ─────────────────────────────────────────────────────────────
 

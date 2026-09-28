@@ -16,6 +16,7 @@ import { cloneState } from '../state.js'
 import { createRng } from '../rng.js'
 import type { Rng } from '../rng.js'
 import { createWireEmitter, pruneWire } from '../wire.js'
+import { appendChronicle, classifyChronicleEntries } from '../chronicle.js'
 import type {
   GameState,
   TurnSubmission,
@@ -105,6 +106,11 @@ export function resolveTurn(state: Readonly<GameState>, submission: TurnSubmissi
   rng.next()
 
   draft.meta.rngCursor = rng.cursor()
+  // P89: krönikan byggs av EXAKT den här turens rå händelser (causeId-kedjor
+  // intakta), innan wire.ts:s 8-turersfönster beskär dem — se
+  // GameState.chronicle:s egen kommentar (types.ts) för varför det inte kan
+  // göras som ett PIPELINE-steg.
+  draft.chronicle = appendChronicle(draft.chronicle, classifyChronicleEntries(wireEmitter.thisTurnEvents()))
   draft.wire = pruneWire(wireEmitter.allEvents(), draft.meta.turn)
 
   return {

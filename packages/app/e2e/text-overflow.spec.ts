@@ -102,6 +102,80 @@ async function enterCrisis(page: Page): Promise<void> {
   await page.getByTestId('crisis-modal').waitFor()
 }
 
+// P89 (ETAPP7_TEKNISK_SPEC.md §9/§13): Epilogue — samma sannolikhetsproblem
+// som krisen (ett scenario slutar bara efter många turer i ett riktigt
+// parti), löst med exakt samma IndexedDB-injektionsteknik som enterCrisis
+// ovan. status: 'ended'/NUCLEAR_EXCHANGE ger den textmässigt tätaste
+// varianten (kärnvapenepilogens obituary/frontnamn/leveranslista utöver de
+// fyra axlarna och slutkortet) — samma "täta variant fångar mest"-princip
+// som enterContacts/enterCrisis redan följer.
+async function enterEpilogue(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
+  await page.getByTestId('hud').waitFor()
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise<{
+      state: {
+        meta: { turn: number }
+        doomsday: number
+        wire: { id: string; turn: number; headline: string; actorIsPlayer: boolean }[]
+        chronicle: unknown[]
+        status: unknown
+      }
+    }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    saved.state.doomsday = 100
+    saved.state.wire = [
+      { id: '1-0', turn: saved.state.meta.turn - 1, headline: 'DELIVERED 12× NAPALM CANISTERS TO RVN (+£240,000)', actorIsPlayer: true },
+    ]
+    saved.state.chronicle = [
+      {
+        turn: Math.max(0, saved.state.meta.turn - 2),
+        kind: 'coup',
+        headline: 'YOUR HOUSE FUNDS A SUCCESSFUL COUP IN LAOS',
+        actorIsPlayer: true,
+        causeHeadlines: [],
+        doomsdayDelta: 9,
+      },
+      {
+        turn: saved.state.meta.turn - 1,
+        kind: 'restricted_delivery',
+        headline: 'DELIVERED 12× NAPALM CANISTERS TO RVN (+£240,000)',
+        actorIsPlayer: true,
+        causeHeadlines: [],
+        doomsdayDelta: 18,
+      },
+    ]
+    saved.state.status = { kind: 'ended', ending: 'NUCLEAR_EXCHANGE', turn: saved.state.meta.turn }
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('ended-banner-epilogue').click()
+  await page.getByTestId('epilogue-screen').waitFor()
+}
+
+async function enterEpilogueHistory(page: Page): Promise<void> {
+  await enterEpilogue(page)
+  await page.getByTestId('epilogue-history-button').click()
+  await page.getByTestId('epilogue-history-sheet').waitFor()
+}
+
 const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -110,6 +184,8 @@ const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<voi
   { name: 'operations', path: '/', setup: enterOperations },
   { name: 'contacts', path: '/', setup: enterContacts },
   { name: 'crisis', path: '/', setup: enterCrisis },
+  { name: 'epilogue', path: '/', setup: enterEpilogue },
+  { name: 'epilogue-history', path: '/', setup: enterEpilogueHistory },
 ]
 
 for (const format of FORMATS) {

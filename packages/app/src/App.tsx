@@ -9,6 +9,7 @@ import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
 import { NewGameScreen } from './components/NewGameScreen.js'
 import { BriefingScreen } from './components/BriefingScreen.js'
+import { EpilogueScreen, ENDING_LABEL } from './components/EpilogueScreen.js'
 import { ActionDock, HudBar, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
 import type { ShellView } from './components/Shell.js'
 import { TheatreMap } from './components/TheatreMap.js'
@@ -30,15 +31,9 @@ import { playSound, setMuted as setSoundMuted } from './sound.js'
 // P88 (ETAPP7_TEKNISK_SPEC.md §5/§9/§13): "Title Screen ─► New Game ─►
 // Briefing ─► OPERATIONS." 'menu' är Title Screen (MainMenu.tsx, oförändrad
 // sedan P65); 'new-game'/'briefing' är de två nya mellanstegen.
-type View = 'menu' | 'new-game' | 'briefing' | ShellView
-
-const ENDING_LABEL: Record<string, string> = {
-  INSOLVENCY: 'Insolvent — the house is liquidated',
-  BUYOUT: 'Bought out — the board target was missed',
-  EXPOSURE: 'Exposed — licence revoked',
-  NUCLEAR_EXCHANGE: 'Nuclear exchange',
-  SCENARIO_COMPLETE: 'Scenario complete',
-}
+// P89 (§5/§9): "Front Page ──(slut)──► Epilogue ─► Title Screen" — 'epilogue'
+// är det sista steget, nått från den redan befintliga ended-bannern nedan.
+type View = 'menu' | 'new-game' | 'briefing' | 'epilogue' | ShellView
 
 // P73 (ETAPP7_TEKNISK_SPEC.md §11.3): komponentsidan nås via ?screen=components,
 // aldrig genom vanlig navigation i spelet — bara npm run shots och manuell
@@ -230,6 +225,13 @@ export function App() {
     return <BriefingScreen state={state} onBegin={() => setView('operations')} onBack={() => setView('menu')} />
   }
 
+  // P89 (§5/§9): sista steget innan Title Screen. Öppnas bara via bannerns
+  // egen "Epilogue"-knapp nedan — ingen egen autonavigering, samma "spelaren
+  // väljer när" som Quarter Replay redan har (Skip-knapp, aldrig tvingad).
+  if (view === 'epilogue') {
+    return <EpilogueScreen state={state} onTitleScreen={() => setView('menu')} />
+  }
+
   const ended = state.status.kind === 'ended'
 
   function handleEndTurn() {
@@ -256,12 +258,14 @@ export function App() {
               <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
             </div>
             <span className="tabs-spacer" />
-            {/* P88 (§5): "Epilogue ─► Title Screen" — the ended-game shortcut
-                now returns to the Title Screen (which offers New Game →
-                Briefing) rather than restarting instantly with the
-                previous house's choices carried over silently. */}
-            <button type="button" className="btn" onClick={() => setView('menu')}>
-              New Game
+            {/* P89 (§5): "Front Page ──(slut)──► Epilogue ─► Title Screen" —
+                the ended-game shortcut now opens the Epilogue (the four
+                axes, the ending card, turning points, the full chronicle)
+                instead of jumping straight to the Title Screen. Epilogue
+                itself offers the Title Screen button (which in turn offers
+                New Game → Briefing). */}
+            <button type="button" className="btn" onClick={() => setView('epilogue')} data-testid="ended-banner-epilogue">
+              Epilogue
             </button>
           </div>
         )}

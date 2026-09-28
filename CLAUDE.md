@@ -592,7 +592,29 @@ tidigare direkt till `hud` i sju e2e-specer och tretton `scripts/shots.mjs`-skä
 uppdaterade med de två nya klicken. Golden ORÖRD för scenariots default-körning. Fullt testsvep
 grönt: 826 tester (814→826), lint, typecheck, build, e2e (38 tester, körd två gånger i rad). Se
 `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P88-blockquote och `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P89, Krönikan och epilogen.**
+**P89 BYGGD 2026-09-28**: `GameState.chronicle: ChronicleEntry[]` byggs i `resolveTurn()`
+självt (`resolve/index.ts`), direkt efter `PIPELINE`-loopen, ur turens råa, opruade
+`WireEvent`-lista — INTE ett fjortonde steg (`ResolveContext` exponerar bara `ctx.emit`,
+aldrig en läsning tillbaka av samma turs egna händelser). Ny `chronicle.ts`
+(`classifyChronicleEntries`/`appendChronicle`, tak 80) mönstermatchar de elva
+`ChronicleKind`-värdena mot faktiska rubriktexter. Genuint fynd: en `restricted_delivery`
+delar ordagrant samma `"DELIVERED ..."`-rubrik som en vanlig leverans — löst via `causeId`
+(leveransens id som `addDoomsday`s `causeId`), samma teknik generaliserad till
+`doomsdayDelta`-fallbacken för alla kinds vars doomsday-effekt ligger i ett separat
+nedströms-event. Ny `scenarioVerdict.ts` (härledd, aldrig lagrad): REACH.buyers avgjorde
+specens egen öppna fråga i det negativa (uppfyllda kontrakt splice:as aldrig bort ur
+`state.market.contracts`, ingen ny `buyersServed`-mängd behövdes). REACH.continents:
+ingen kontinentdata finns i kodbasen — en liten, uttryckligen provisorisk
+`THEATRE_CONTINENT`-lookup ger ärligt continents=1 för `indochina-slice`. Kärnvapenepilogen
+har ett andra genuint fynd: `wire.ts`s fönster är 8 turer, inte DESIGN.md §6.3:s "sista
+tolv" — löst genom att läsa vad som faktiskt finns kvar (åtta turer), dokumenterat i stället
+för att låtsas täcka tolv. Ny UI-skärm `EpilogueScreen.tsx`, sista steget i §5:s arkitektur
+(Front Page → (slut) → Epilogue → Title Screen): slutkort, de fyra axlarna, vändpunkter,
+kärnvapenepilog och en `BottomSheet`-historikskärm. Golden omfryst EN gång i denna commit
+(pre-auktoriserat av promptens eget klart-när), ingen annanstans. Fullt testsvep grönt: 863
+tester (826→863), lint, typecheck, build, e2e (46 tester, körd två gånger i rad). Se
+`docs/ETAPP7_TEKNISK_SPEC.md` §13:s P89-blockquote och `docs/ANDRINGSLOGG.md`.
+**Nästa steg är P90, Paus, inställningar, sparplatser.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

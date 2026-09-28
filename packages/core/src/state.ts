@@ -499,6 +499,7 @@ export function createInitialState(scenarioId: string, seed: string, startChoice
     doomsday: 0,
     doomsdayPeak: 0,
     wire: [],
+    chronicle: [],
     status: { kind: 'active' },
     pendingCrisis: null,
   }
