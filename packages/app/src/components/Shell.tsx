@@ -89,7 +89,7 @@ export function actionSummary(state: GameState, action: PlayerAction): { icon: s
 
 export type ShellView = 'operations' | 'contracts' | 'company' | 'contacts' | 'news'
 
-const TABS: { view: ShellView; label: string; icon: string }[] = [
+export const TABS: { view: ShellView; label: string; icon: string }[] = [
   { view: 'operations', label: 'Operations', icon: '⌖' },
   { view: 'contracts', label: 'Contracts', icon: '▤' },
   { view: 'company', label: 'Company', icon: '⚙' },

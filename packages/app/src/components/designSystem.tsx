@@ -220,7 +220,15 @@ export function ActionSlot({
       )
     }
     return (
-      <button type="button" className="ds-action-slot is-empty" onClick={onOpen} data-testid={testId}>
+      // P94 (axe, button-name, critical): en ikonknapp (bara ett "+") utan
+      // tillgängligt namn — en skärmläsare kunde inte säga vad den gör.
+      <button
+        type="button"
+        className="ds-action-slot is-empty"
+        onClick={onOpen}
+        aria-label="Add an action"
+        data-testid={testId}
+      >
         <span className="ds-action-slot-plus" aria-hidden="true">
           +
         </span>

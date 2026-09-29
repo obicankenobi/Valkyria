@@ -47,7 +47,9 @@ import {
 } from './persistence.js'
 import type { MotionSetting, TextScaleSetting } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
-import { musicMode } from './musicDirector.js'
+import { isInGameView, musicMode } from './musicDirector.js'
+import { createFrameRateGuard } from './frameRateGuard.js'
+import { shortcutFor, shortcutKeyFromEvent } from './shortcuts.js'
 import {
   initAudioLifecycle,
   playSound,
@@ -424,6 +426,30 @@ export function App() {
     setAmbience(ambienceLayers({ view, replaying }))
   }, [view, replaying])
 
+  // P94 (§12 punkt 5): "Sjunker bildtakten stängs omgivningsrörelsen av
+  // automatiskt." Mäter bara medan en spelskärm är uppe och det finns någon
+  // rörelse att stänga av; vid prefers-reduced-motion eller Motion: Off finns
+  // ingen. Utlöser vakten sätts [data-ambient="off"] (styles.css) och mätningen
+  // slutar — kartan blir stilla men inget annat ändras.
+  const gameScreenUp = isInGameView(view)
+  useEffect(() => {
+    if (!gameScreenUp) return
+    const root = document.documentElement
+    if (root.dataset.ambient === 'off' || root.dataset.motion === 'off') return
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const guard = createFrameRateGuard()
+    let raf = 0
+    function frame(now: number) {
+      if (guard.feed(now)) {
+        root.dataset.ambient = 'off'
+        return
+      }
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+    return () => cancelAnimationFrame(raf)
+  }, [gameScreenUp])
+
   // Tillståndsdrivna effekter (kortplacering, stämpel, ny order, kris, radiobrus,
   // flikbyte...): en ren diff mellan förra och nuvarande ögonblicksbild
   // (soundCues.ts). Körs efter varje rendering — jämförelsen är billig, och en
@@ -468,6 +494,38 @@ export function App() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [view, replaying, settingsOpen])
+
+  // P94 (regel 16): "1–5 för skärmarna, Enter för End Quarter." Beslutet tas av
+  // den rena shortcuts.ts; utförandet är ett klick på den riktiga fliken/knappen,
+  // så att handledningssteg, ljud och spellogik går exakt som vid ett tryck (och
+  // en avstängd knapp — partiet slut — gör ingenting). Spelläget läses ur en ref
+  // så lyssnaren bara sätts upp en gång.
+  const shortcutState = useRef({ inGame: false, blocked: true })
+  useEffect(() => {
+    shortcutState.current = {
+      inGame: isInGameView(view),
+      blocked: paused || settingsOpen || handbookOpen || catalogOpen || replaying || crisisPending,
+    }
+  })
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      // Bottenark (landsakt, teckenförklaring, ...) håller egen state i sina
+      // komponenter — deras överlagg finns bara i DOM:en.
+      const sheetOpen = document.querySelector('.ds-sheet-overlay') !== null
+      const action = shortcutFor(shortcutKeyFromEvent(event), {
+        inGame: shortcutState.current.inGame,
+        blocked: shortcutState.current.blocked || sheetOpen,
+      })
+      if (!action) return
+      const selector = action.kind === 'view' ? `[data-testid="tab-${action.view}"]` : '[data-testid="end-quarter-button"]'
+      const button = document.querySelector<HTMLButtonElement>(selector)
+      if (!button || button.disabled) return
+      event.preventDefault()
+      button.click()
+    }
+    document.addEventListener('keydown', handleShortcut)
+    return () => document.removeEventListener('keydown', handleShortcut)
+  }, [])
 
   if (!hydrated) {
     return (

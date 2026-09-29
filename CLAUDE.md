@@ -675,7 +675,21 @@ MP3 (inte AAC — Playwrights Chromium saknar den codecen). Ny e2e `audio.spec.t
 titelmusiken SPELAS i en riktig webbläsare. Ingen lyssning på riktig telefon och inget
 `npm run shots` (ingen skärm ändrad). Golden ORÖRD. 963 tester, e2e 64 gröna två gånger i rad.
 Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P93-blockquote och `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P94, Tillgänglighet, prestanda och skrivbordsvarianten.**
+**P94 BYGGD 2026-09-29**: kortkommandona 1–5/Enter (regel 16, saknades — bara Esc fanns),
+bildfrekvensvakten (§12 punkt 5, saknades), fokusmarkering + tangentbordsbara kartmarkörer,
+axe-core mot alla skärmar (kontrast, `button-name`, `nested-interactive`), hovertillstånd
+för ~20 element (regel 3), och `play-20-turns.spec.ts` omskriven till kartflödet i telefon-
+och skrivbordsformat. Två av de fyra omgivningsanimationerna bröt mot "bara transform och
+opacity" (`stroke-dashoffset`, `r`) och är fixade; `ambientMotion.test.ts` binder regeln mot
+CSS-filen. **Prestandan är INTE mätt på riktiga telefoner** (går inte från sandlådan) — bara
+en syntetisk proxy i `scripts/perf.mjs` (1,68 s första inläsning, 60 bilder/s panorering,
+golvkontroll, inget godkännande). Nytt utvecklingsberoende `@axe-core/playwright`. Golden
+ORÖRD. 994 tester, e2e 136 gröna två gånger i rad. Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s
+P94-blockquote och `docs/ANDRINGSLOGG.md`.
+**HELA "kör P91–P94" ÄR DÄRMED KLAR.** Kvar av etapp 7 är **P95, Speltest (ingen kod)** — tre
+partier på telefon, frågan i §1 — som en kodsession inte kan göra, samt ägarens punkter:
+bildgenereringen (P92), ljudeffekterna i `audio-src/sfx/` (P93), mätning på en riktig telefon
+och en skärmläsargenomgång (P94).
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

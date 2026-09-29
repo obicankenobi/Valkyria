@@ -38,10 +38,15 @@
   /* Text — sepiabläck, aldrig rent svart */
   --ink: #241f18;
   --ink-dim: #51483b;
-  --ink-faint: #7d6f58;
+  --ink-faint: #65593f; /* P94: var #7d6f58 (3,3–4,3:1 mot papper) — nu ≥ 4,5:1 mot alla pappersytor */
 
   /* Accenter — fettkrita och ockra */
-  --amber: #b0700f; /* husets ockra, telexgults arvtagare (§10) */
+  --amber: #b0700f; /* husets ockra, telexgults arvtagare (§10) — fyllningar, kanter, ikoner */
+  /* P94 (tillgänglighet): ockra SOM TEXT på papper. --amber ger bara 2,7–3,6:1
+     mot pappersytorna, under WCAG AA:s 4,5:1 för brödtext — samma ton, mörkare,
+     5,4–6,2:1 (4,7:1 mot den mörkaste, ghost-selected). --amber förblir oförändrad
+     för fyllningar och för text på HUD:ens mörka stål, där den fungerar. */
+  --amber-ink: #7d4f08;
   --amber-soft: rgba(176, 112, 15, 0.14);
   --amber-glow: #f2b441; /* signallampa/glöd, inte text */
   --red: #b3302a; /* fettkrita, röd */
@@ -262,7 +267,7 @@ table th {
 
 .tab:disabled {
   /* "disabled" = vald flik här, inte otillgänglig. */
-  color: var(--amber);
+  color: var(--amber-ink);
   border-bottom-color: var(--amber);
   background: linear-gradient(180deg, var(--amber-soft), transparent);
   cursor: default;
@@ -437,7 +442,7 @@ table th {
 }
 
 .tag.is-amber {
-  color: var(--amber);
+  color: var(--amber-ink);
   border-color: rgba(176, 112, 15, 0.45);
   background: var(--amber-soft);
 }
@@ -791,7 +796,7 @@ td.is-key {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--amber);
+  color: var(--amber-ink);
   margin-bottom: 6px;
 }
 
@@ -903,7 +908,7 @@ td.is-key {
 
 .order-qty {
   font-family: var(--font-mono);
-  color: var(--amber);
+  color: var(--amber-ink);
 }
 
 .order-meta {
@@ -1051,7 +1056,7 @@ td.is-key {
 }
 
 .hint.is-warn {
-  color: var(--amber);
+  color: var(--amber-ink);
   border-left-color: var(--amber);
   background: var(--amber-soft);
 }
@@ -1097,7 +1102,7 @@ td.is-key {
   color: var(--green);
 }
 .is-thin .margin-value {
-  color: var(--amber);
+  color: var(--amber-ink);
 }
 .is-loss .margin-value {
   color: var(--red);
@@ -1602,7 +1607,8 @@ td.is-key {
 }
 
 .replay-item.is-flash .replay-text {
-  color: var(--red);
+  /* P94: --red på blixtradens rosa bakgrund gav 4,46:1 — precis under 4,5:1. */
+  color: #a32b25;
   font-weight: 700;
 }
 
@@ -1816,11 +1822,14 @@ td.is-key {
 }
 
 .research-category {
-  width: 40px;
+  /* P94: 40 px räckte när kategorierna var korta koder; nu hela ord (ELECTRONICS
+     är 79 px i 12 px monospace) — fångat av regel 18-testet när COMPANY lades
+     till i den delade skärmlistan. */
+  width: 88px;
   flex-shrink: 0;
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--amber);
+  color: var(--amber-ink);
 }
 
 .research-level {
@@ -2189,7 +2198,7 @@ td.is-key {
 .ds-button.is-ghost:active:not(:disabled),
 .ds-button.is-ghost.is-selected {
   background: var(--amber-soft);
-  color: var(--amber);
+  color: var(--amber-ink);
   border-color: var(--amber);
 }
 
@@ -2253,7 +2262,7 @@ td.is-key {
   position: relative;
 }
 .ds-tab.is-active {
-  color: var(--amber);
+  color: var(--amber-ink);
   border-top-color: var(--amber);
 }
 .ds-tab-icon {
@@ -2372,7 +2381,7 @@ td.is-key {
 .ds-action-slot-cost {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--amber);
+  color: var(--amber-ink);
 }
 .ds-action-slot-remove {
   /* Regel 11: träffytor minst 44×44 px. */
@@ -2627,7 +2636,9 @@ td.is-key {
   border-right: none;
 }
 .ds-segmented-opt.is-selected {
-  background: var(--amber);
+  /* P94: kräm på --amber gav 3,67:1 (WCAG AA kräver 4,5:1 för 12 px); den
+     mörkare ockran ger 5,2:1 med samma kräm. */
+  background: #8f5a0a;
   color: #fbf3e2;
 }
 
@@ -3146,7 +3157,7 @@ td.is-key {
   text-align: left;
 }
 .ds-quarterband-icon {
-  color: var(--amber);
+  color: var(--amber-ink);
   font-size: 14px;
 }
 .ds-quarterband-label {
@@ -3225,7 +3236,7 @@ td.is-key {
 }
 .ds-quarterband-item-icon {
   flex-shrink: 0;
-  color: var(--amber);
+  color: var(--amber-ink);
   font-size: 13px;
 }
 
@@ -3323,7 +3334,7 @@ td.is-key {
   position: relative;
 }
 .ds-tabbar-item.is-active {
-  color: var(--amber);
+  color: var(--amber-ink);
   border-top-color: var(--amber);
 }
 .ds-tabbar-icon {
@@ -3331,7 +3342,7 @@ td.is-key {
 }
 .ds-tabbar-label {
   font-family: var(--font-ui);
-  font-size: 9px;
+  font-size: 11px; /* P94: regel 14, etiketter minst 11 px — var 9 px */
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3577,7 +3588,7 @@ td.is-key {
 }
 .action-catalog-entry-icon {
   flex-shrink: 0;
-  color: var(--amber);
+  color: var(--amber-ink);
   font-size: 16px;
   width: 20px;
   text-align: center;
@@ -3633,7 +3644,6 @@ td.is-key {
   stroke-width: 2;
   stroke-dasharray: 5 4;
   pointer-events: none;
-  animation: map-supply-flow 1.2s linear infinite;
 }
 .map-supply-line.is-player {
   stroke: var(--amber);
@@ -3642,9 +3652,38 @@ td.is-key {
   stroke: var(--rival);
 }
 
+/* P94 (§12 punkt 5): flödet var tidigare ett stroke-dashoffset som marscherade
+   de streckade linjerna — en SVG-målningsegenskap som tvingar hela kartlagret
+   att ritas om varje bildruta, och därmed inte "bara transform och opacity".
+   Nu är linjen stilla och en liten prick färdas från avsändaren till målet med
+   transform: translate (per-linje-vektorn i --dx/--dy sätts av TheatreMap.tsx).
+   Ett test (ambientMotion.test.ts) binder regeln mot den här filen. */
+.map-supply-dot {
+  pointer-events: none;
+  /* Osynlig utan animation (reducerad rörelse, avstängd omgivningsrörelse):
+     linjen ensam bär informationen, en stillastående prick vid avsändaren vore
+     bara vilseledande. */
+  opacity: 0;
+  animation: map-supply-flow 2.4s linear infinite;
+}
+.map-supply-dot.is-player {
+  fill: var(--amber);
+}
+.map-supply-dot.is-rival {
+  fill: var(--rival);
+}
 @keyframes map-supply-flow {
-  to {
-    stroke-dashoffset: -18;
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
   }
 }
 
@@ -3702,16 +3741,20 @@ td.is-key {
    `* { animation: none !important }`-regeln längre upp i filen, samma
    mekanism resten av appen redan förlitar sig på). */
 .map-frontline-marker {
+  /* P94: skimret animerade tidigare cirkelns radie (r) — geometri, inte
+     transform. scale kring cirkelns egen mitt ger samma 4 → 4,8 (×1,2). */
+  transform-box: fill-box;
+  transform-origin: center;
   animation: map-frontline-shimmer 2.6s ease-in-out infinite;
 }
 @keyframes map-frontline-shimmer {
   0%,
   100% {
-    r: 4;
+    transform: scale(1);
     opacity: 1;
   }
   50% {
-    r: 4.8;
+    transform: scale(1.2);
     opacity: 0.75;
   }
 }
@@ -3921,7 +3964,7 @@ td.is-key {
   border-color: var(--blue);
 }
 .cf-tag.is-amber {
-  color: var(--amber);
+  color: var(--amber-ink);
   border-color: var(--amber);
 }
 .cf-tag.is-red {
@@ -4009,7 +4052,7 @@ td.is-key {
 .cf-verb-cost {
   font-size: 11px;
   font-weight: 700;
-  color: var(--amber);
+  color: var(--amber-ink);
 }
 .cf-verb-label {
   font-size: 13px;
@@ -4122,7 +4165,7 @@ td.is-key {
   color: var(--ink);
 }
 .cf-preview-row .is-amber {
-  color: var(--amber);
+  color: var(--amber-ink);
 }
 
 /* ── Skrivbordsvarianten (≥1024 px): flikraden blir en vänstermeny ────── */
@@ -4170,5 +4213,122 @@ td.is-key {
   .ds-end-quarter-fallback {
     right: calc(14px + env(safe-area-inset-right));
     bottom: 14px;
+  }
+}
+
+/* P94 (ETAPP7_TEKNISK_SPEC.md §13, tillgänglighet): synlig tangentbordsfokus på
+   ALLA interaktiva element. Tidigare hade bara reglagets grepp en egen fokusring
+   (.ds-slider-thumb:focus-visible); resten förlitade sig på webbläsarens
+   standardring, som varken följer pappersregistret (regel 8) eller syns på
+   HUD:ens mörka stål. Ringen är blå på ljusa ytor (kontrast mot papper ≈ 5:1) och
+   ockra på stålpanelen (`.ds-hud`); :focus-visible visas bara vid tangentbord,
+   aldrig vid mus- eller pekskärmstryck, så inget ändras för dem. Ingen glöd —
+   en solid ring (regel 8). */
+:root {
+  --focus-ring: var(--blue);
+}
+.ds-hud {
+  --focus-ring: var(--amber-glow);
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[role='radio']:focus-visible,
+[role='switch']:focus-visible,
+[role='tab']:focus-visible,
+[role='slider']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* P94 (ETAPP7_TEKNISK_SPEC.md §12 punkt 5): "Sjunker bildtakten stängs
+   omgivningsrörelsen av automatiskt." App.tsx:s bildfrekvensvakt sätter
+   [data-ambient="off"] när takten varaktigt ligger under 30 bilder/s. Bara de
+   fyra oändliga kartanimationerna (försörjningsflöde, frontlinjeskimmer,
+   heat-andning, stationspuls) stängs av — övergångar som svarar på en handling
+   (paneler, modaler, sifferräkning) är tillståndsbyten, inte omgivningsrörelse
+   (regel 15), och rör sig som förut. */
+:root[data-ambient='off'] .map-supply-dot,
+:root[data-ambient='off'] .map-frontline-marker,
+:root[data-ambient='off'] .map-heat-glow-circle,
+:root[data-ambient='off'] .map-station-exposure-ring {
+  animation: none !important;
+}
+
+/* P94 (ETAPP7_TEKNISK_SPEC.md §3 regel 3): "Varje interaktivt element har
+   fyra tillstånd: idle, pressed, selected, disabled (plus hover, bara på
+   skrivbord)." Granskningen hittade ett tjugotal interaktiva element utan något
+   hovertillstånd alls. Samlade här, och BARA för en enhet som faktiskt kan
+   hovra (mus): på en pekskärm sätter ett tryck annars kvar hovertillståndet
+   tills nästa tryck ("sticky hover", regel 13). e2e/hover.spec.ts bevisar båda
+   hälfterna. Val/aktiv-tillstånden lämnas orörda (:not(.is-selected/.is-active))
+   — hovring ska aldrig maskera att något är valt. */
+@media (hover: hover) and (pointer: fine) {
+  .ds-tabbar-item:not(.is-active):hover {
+    background: var(--amber-soft);
+    color: var(--ink);
+  }
+  .ds-segmented-opt:not(.is-selected):hover {
+    background: var(--panel-sunken);
+  }
+  .ds-tier:not(.is-selected):hover {
+    background: var(--panel-raised);
+    border-color: var(--ink-dim);
+  }
+  .cf-verb:not(:disabled):hover {
+    background: var(--panel-raised);
+    border-top-color: var(--amber);
+  }
+  .ds-action-slot.is-empty:hover {
+    border-color: var(--amber);
+    color: var(--amber-ink);
+  }
+  .ds-action-slot:not(.is-empty):hover {
+    border-color: var(--ink-dim);
+    background: var(--panel-raised);
+  }
+  .ds-toggle:hover .ds-toggle-track {
+    border-color: var(--ink-dim);
+  }
+  .ds-hud-menu-button:hover,
+  .ds-hud-row:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .ds-sheet-close:hover {
+    color: var(--ink);
+    background: var(--panel-sunken);
+  }
+  .ds-sheet-handle:hover .ds-sheet-grip {
+    background: var(--ink-dim);
+  }
+  .handbook-more:hover {
+    background: var(--panel-sunken);
+    border-color: var(--ink-dim);
+  }
+  .cf-back:hover {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: var(--ink);
+  }
+  .cf-officials:hover {
+    border-color: var(--amber);
+    background: var(--amber-soft);
+  }
+  .ds-quarterband-head:hover {
+    background: var(--amber-soft);
+  }
+  .ds-tooltip-trigger:hover .ds-tooltip-dot {
+    color: var(--ink);
+    border-color: var(--ink-dim);
+  }
+  .ds-stepper-btn:not(:disabled):hover {
+    background: linear-gradient(180deg, var(--steel-highlight), var(--steel));
+  }
+  .map-capital-marker:hover {
+    stroke-width: 2.5;
+  }
+  .map-country.is-selectable:hover {
+    fill: var(--panel-sunken);
   }
 }

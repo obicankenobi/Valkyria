@@ -9,7 +9,8 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "shots": "node scripts/shots.mjs",
-    "build:audio": "node scripts/build-audio.mjs"
+    "build:audio": "node scripts/build-audio.mjs",
+    "perf": "node scripts/perf.mjs"
   },
   "dependencies": {
     "@fontsource/archivo-narrow": "^5.3.0",
@@ -25,6 +26,7 @@
     "topojson-client": "^3.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@testing-library/react": "^16.3.3",
     "@turf/bbox-clip": "^7.4.0",
     "@turf/simplify": "^7.4.0",

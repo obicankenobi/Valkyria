@@ -68,6 +68,12 @@ async function setPriceSlider(page: Page, scope: Locator, testId: string, target
   const clamped = Math.min(max, Math.max(min, targetValue))
   const ratio = max > min ? (clamped - min) / (max - min) : 0
   const track = scope.locator(`[data-testid="${testId}"] .ds-slider-track`)
+  // P94: på telefonen ligger flikraden fast över innehållets nederkant, och
+  // `boundingBox()` scrollar inte — ett mappreglage under vecket gav koordinater
+  // som hamnade PÅ flikraden, och `mouse.click` bytte då flik (COMPANY, den
+  // tredje) i stället för att sätta priset. Mitt i vyn ligger reglaget fritt
+  // från både HUD och flikrad, precis som när en spelare scrollat fram det.
+  await track.evaluate((element) => element.scrollIntoView({ block: 'center' }))
   const box = await track.boundingBox()
   if (!box) throw new Error(`reglaget ${testId} hittades inte`)
   await page.mouse.click(box.x + box.width * ratio, box.y + box.height / 2)
@@ -116,6 +122,29 @@ async function startFreshGame(page: Page): Promise<void> {
   await expect(page.getByTestId('hud')).toBeVisible()
 }
 
+// P94 (ETAPP7_TEKNISK_SPEC.md §12 punkt 6): "play-20-turns.spec.ts skrivs om till
+// kartflödet." Kartflödet är §7.1:s väg för en handling: tryck på ett land på
+// kartan (huvudstadsmarkören — se operations-intel.spec.ts för varför markören
+// och inte landmassan), välj ett verb i landsakten, konfigurera, FILE. INFLUENCE
+// är det verb som passar en 20-tursgenomgång: alltid lyckat och utan
+// exponeringsrisk, så det rubbar inte den adaptiva STAGE_INCIDENT-regeln nedan
+// (EXPOSURE-slutet) och kostar bara MODEST-nivåns belopp. STAGE_INCIDENT/BRIBE
+// ligger kvar i CONTACTS eftersom det är den enda UI-vägen för dem (P86) — och
+// det är dem krisen bygger på. Två handlingar per tur, under taket på tre.
+async function queueInfluenceFromMap(page: Page): Promise<void> {
+  await page.getByTestId('tab-operations').click()
+  await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('country-file').waitFor()
+  await page.getByTestId('cf-verb-INFLUENCE').click()
+  await page.getByTestId('cf-influence-spend').getByRole('radio', { name: /MODEST/ }).click()
+  await page.getByTestId('cf-influence-file').click()
+  await page.getByTestId('country-file').waitFor({ state: 'hidden' })
+  // En väntande kris tar också en handlingsplats (dess val räknas som en
+  // handling), så INFLUENCE är inte alltid plats 0 — kontrollera att den ligger i
+  // NÅGON plats.
+  await expect(page.locator('[data-testid^="action-slot-"]').filter({ hasText: 'INFLUENCE' })).toHaveCount(1)
+}
+
 // Spelar upp till 20 turer. Returnerar true så fort en kris flaggats OCH lösts.
 async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
   let crisisHandled = false
@@ -149,6 +178,8 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     // timeouten slog till. Löst med ett stabilt INDEX (`.nth(i)`) i stället
     // — mappar varken tas bort eller byter ordning under en tur, så index i
     // förblir samma mapp genom hela varvet.
+    await queueInfluenceFromMap(page)
+
     await page.getByTestId('tab-contracts').click()
     const folderCount = await page.getByTestId('order-folder').count()
     for (let i = 0; i < folderCount; i++) {
@@ -216,19 +247,46 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
   return crisisHandled
 }
 
-test('spela 20 turer utan konsolfel, med executive actions varje tur och minst en hanterad kris', async ({ page }) => {
-  const errors: string[] = []
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text())
+// P94 (§12 punkt 6, ordagrant): "spelar fortsatt 20 turer utan konsolfel" — och
+// (P94:s egen rad) "e2e omskrivet till kartflödet i BÅDA formaten". Samma
+// genomspelning på en telefon (390×844, pekskärm) och ett skrivbord (1440×900).
+// Tidigare kördes den bara i Playwrights standardvy, ett ofrivilligt tredje
+// format som ingen spelare har.
+const FORMATS = [
+  { name: 'phone', viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
+  { name: 'desktop', viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false },
+]
+
+for (const format of FORMATS) {
+  test.describe(format.name, () => {
+    // actionTimeout: utan den väntar varje klick tills HELA testet timeoutar (nio
+    // minuter), så ett verkligt fel syns som ett hängande test i stället för som
+    // ett tydligt "klicket på X gick inte att utföra" efter 15 sekunder.
+    test.use({
+      viewport: format.viewport,
+      hasTouch: format.hasTouch,
+      isMobile: format.isMobile,
+      actionTimeout: 15_000,
+    })
+
+    test(`spela 20 turer utan konsolfel via kartflödet, med executive actions varje tur och minst en hanterad kris (${format.name})`, async ({
+      page,
+    }) => {
+      test.setTimeout(560_000)
+      const errors: string[] = []
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') errors.push(msg.text())
+      })
+      page.on('pageerror', (err) => errors.push(String(err)))
+
+      let crisisHandled = false
+      for (let attempt = 0; attempt < 5 && !crisisHandled; attempt++) {
+        await startFreshGame(page)
+        crisisHandled = await playUntilCrisisOrTurnLimit(page)
+      }
+
+      expect(crisisHandled).toBe(true)
+      expect(errors).toEqual([])
+    })
   })
-  page.on('pageerror', (err) => errors.push(String(err)))
-
-  let crisisHandled = false
-  for (let attempt = 0; attempt < 5 && !crisisHandled; attempt++) {
-    await startFreshGame(page)
-    crisisHandled = await playUntilCrisisOrTurnLimit(page)
-  }
-
-  expect(crisisHandled).toBe(true)
-  expect(errors).toEqual([])
-})
+}

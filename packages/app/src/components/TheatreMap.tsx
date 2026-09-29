@@ -23,6 +23,7 @@
 // hamnar/ordermarkörer (lager 8, P79), markering av valt föremål (lager 10,
 // P79) — samma "bygg inte runt en lucka" som P76 höll fast vid.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, KeyboardEvent } from 'react'
 import { geoMercator, geoPath } from 'd3-geo'
 import type { GeoPermissibleObjects } from 'd3-geo'
 import { select } from 'd3-selection'
@@ -70,6 +71,20 @@ const ZOOM_MIN = 0.5
 const ZOOM_MAX = 6
 
 type ZoomLevel = 1 | 2 | 3
+
+// P94: prickens färdvektor (--dx/--dy, läses av @keyframes map-supply-flow) och en
+// hastighet som är ungefär konstant över kartan: ~45 kartenheter per sekund, aldrig
+// snabbare än 1,6 s eller långsammare än 4 s per överfart.
+export function supplyDotStyle(dx: number, dy: number): CSSProperties {
+  const seconds = Math.min(4, Math.max(1.6, Math.hypot(dx, dy) / 45))
+  return { '--dx': `${dx}px`, '--dy': `${dy}px`, animationDuration: `${seconds}s` } as CSSProperties
+}
+
+// P94: skärmläsarnamn för en huvudstadsmarkör — namnet, plus antalet öppna
+// ordrar som badgen på kartan annars bara visar visuellt.
+export function capitalLabel(name: string, openOrders: number): string {
+  return openOrders > 0 ? `${name}, ${openOrders} open ${openOrders === 1 ? 'order' : 'orders'}` : name
+}
 
 function zoomLevelFor(k: number): ZoomLevel {
   if (k < ZOOM_LEVEL_1_MAX) return 1
@@ -464,7 +479,10 @@ export function TheatreMap({
         ref={svgRef}
         className="map-svg"
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-        role="img"
+        // P94 (axe, nested-interactive): role="img" förbjuder fokuserbara barn,
+        // men kartans huvudstadsmarkörer är nu knappar (tangentbord/skärmläsare).
+        // "group" är en behållare som får ha interaktiva barn.
+        role="group"
         aria-label="Theatre map"
         data-testid="theatre-map-svg"
         data-zoom-level={zoomLevel}
@@ -637,16 +655,30 @@ export function TheatreMap({
               const from = project([line.fromAnchor[1], line.fromAnchor[0]])
               const to = project([line.toAnchor[1], line.toAnchor[0]])
               if (!from || !to) return null
+              const kindClass = line.kind === 'player' ? 'is-player' : 'is-rival'
+              const dx = to[0] - from[0]
+              const dy = to[1] - from[1]
               return (
-                <line
-                  key={line.id}
-                  x1={from[0]}
-                  y1={from[1]}
-                  x2={to[0]}
-                  y2={to[1]}
-                  className={line.kind === 'player' ? 'map-supply-line is-player' : 'map-supply-line is-rival'}
-                  data-testid={`map-supply-line-${line.id}`}
-                />
+                <g key={line.id}>
+                  <line
+                    x1={from[0]}
+                    y1={from[1]}
+                    x2={to[0]}
+                    y2={to[1]}
+                    className={`map-supply-line ${kindClass}`}
+                    data-testid={`map-supply-line-${line.id}`}
+                  />
+                  {/* P94: flödet är en prick som färdas längs linjen med
+                      transform (§12 punkt 5), inte ett animerat streck. */}
+                  <circle
+                    cx={from[0]}
+                    cy={from[1]}
+                    r={2.6}
+                    className={`map-supply-dot ${kindClass}`}
+                    style={supplyDotStyle(dx, dy)}
+                    data-testid={`map-supply-dot-${line.id}`}
+                  />
+                </g>
               )
             })}
           </g>
@@ -691,6 +723,23 @@ export function TheatreMap({
                     r={6}
                     className={capital.factionId === selectedFactionId ? 'map-capital-marker is-selected' : 'map-capital-marker'}
                     onClick={onSelectCountry ? () => onSelectCountry(capital.factionId) : undefined}
+                    // P94 (tillgänglighet): markören är kartflödets huvudingång
+                    // (§7.1) men var varken fokuserbar eller tillgänglig för
+                    // tangentbord och skärmläsare — bara ett klickbart <circle>.
+                    {...(onSelectCountry
+                      ? {
+                          role: 'button',
+                          tabIndex: 0,
+                          'aria-label': capitalLabel(capital.name, openOrders),
+                          'aria-pressed': capital.factionId === selectedFactionId,
+                          onKeyDown: (event: KeyboardEvent<SVGCircleElement>) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              onSelectCountry(capital.factionId)
+                            }
+                          },
+                        }
+                      : {})}
                   />
                   {openOrders > 0 && (
                     <g transform={`translate(${x + 7},${y - 7})`} data-testid={`map-capital-orders-${capital.factionId}`}>

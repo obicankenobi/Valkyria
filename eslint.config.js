@@ -111,7 +111,9 @@ export default tseslint.config(
     // Node-scope — samma sorts scope-blandning som packages/app/public/sw.js
     // ovan, fast åt andra hållet (ett Node-skript med en inbäddad
     // webbläsarsträng, inte tvärtom).
-    files: ['packages/app/scripts/shots.mjs'],
+    // P94: scripts/perf.mjs har samma blandade scope — Node-skript, page.evaluate()-
+    // callbacks som körs i webbläsaren (window, requestAnimationFrame, document).
+    files: ['packages/app/scripts/shots.mjs', 'packages/app/scripts/perf.mjs'],
     languageOptions: {
       globals: { ...globals.node, ...globals.browser },
     },

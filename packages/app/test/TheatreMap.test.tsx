@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { createInitialState, DISPLAY_THRESHOLDS } from '@seventh-front/core'
-import { TheatreMap } from '../src/components/TheatreMap.js'
+import { TheatreMap, capitalLabel, supplyDotStyle } from '../src/components/TheatreMap.js'
 
 afterEach(cleanup)
 
@@ -280,6 +280,46 @@ describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
     expect(onSelectCountry).toHaveBeenCalledWith('rvn')
   })
 
+  // P94 (tillgänglighet): markören var kartflödets huvudingång men inte
+  // fokuserbar eller tillgänglig för tangentbord/skärmläsare.
+  it('huvudstadsmarkören är en tangentbordsbar knapp med namn och valt-läge', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-capital-a11y-seed')
+    const onSelectCountry = vi.fn()
+    render(<TheatreMap state={state} onSelectCountry={onSelectCountry} selectedFactionId="rvn" />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const rvn = document.querySelector('[data-testid="map-capital-rvn"] .map-capital-marker')!
+    expect(rvn.getAttribute('role')).toBe('button')
+    expect(rvn.getAttribute('tabindex')).toBe('0')
+    expect(rvn.getAttribute('aria-label')).toMatch(/\w/)
+    expect(rvn.getAttribute('aria-pressed')).toBe('true')
+    const laos = document.querySelector('[data-testid="map-capital-laos"] .map-capital-marker')!
+    expect(laos.getAttribute('aria-pressed')).toBe('false')
+
+    fireEvent.keyDown(laos, { key: 'Enter' })
+    expect(onSelectCountry).toHaveBeenLastCalledWith('laos')
+    fireEvent.keyDown(rvn, { key: ' ' })
+    expect(onSelectCountry).toHaveBeenLastCalledWith('rvn')
+    fireEvent.keyDown(laos, { key: 'a' })
+    expect(onSelectCountry).toHaveBeenCalledTimes(2)
+  })
+
+  it('utan onSelectCountry (t.ex. Briefing) är markören inte en falsk knapp', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-capital-passive-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const rvn = document.querySelector('[data-testid="map-capital-rvn"] .map-capital-marker')!
+    expect(rvn.getAttribute('role')).toBeNull()
+    expect(rvn.getAttribute('tabindex')).toBeNull()
+  })
+
+  it('capitalLabel nämner öppna ordrar i singular och plural, annars bara namnet', () => {
+    expect(capitalLabel('Saigon', 0)).toBe('Saigon')
+    expect(capitalLabel('Saigon', 1)).toBe('Saigon, 1 open order')
+    expect(capitalLabel('Saigon', 3)).toBe('Saigon, 3 open orders')
+  })
+
   it('valt land ritar en kontur (§6.3 lager 10), oval land inte', async () => {
     const state = createInitialState('indochina-slice', 'theatre-map-selected-seed')
     render(<TheatreMap state={state} selectedFactionId="rvn" />)
@@ -399,6 +439,25 @@ describe('TheatreMap (P82) — försörjningslinjer', () => {
     const line = document.querySelector('[data-testid="map-supply-line-player-front-1"]')
     expect(line).toBeTruthy()
     expect(line!.classList.contains('is-player')).toBe(true)
+
+    // P94 (§12 punkt 5): flödet är en prick med transform, inte ett animerat
+    // streck — pricken följer linjen från avsändaren (x1,y1) och bär vektorn
+    // till målet (x2,y2).
+    const dot = document.querySelector('[data-testid="map-supply-dot-player-front-1"]') as SVGCircleElement
+    expect(dot).toBeTruthy()
+    expect(dot.classList.contains('is-player')).toBe(true)
+    expect(Number(dot.getAttribute('cx'))).toBeCloseTo(Number(line!.getAttribute('x1')))
+    expect(Number(dot.getAttribute('cy'))).toBeCloseTo(Number(line!.getAttribute('y1')))
+    const dx = Number(line!.getAttribute('x2')) - Number(line!.getAttribute('x1'))
+    const dy = Number(line!.getAttribute('y2')) - Number(line!.getAttribute('y1'))
+    expect(dot.style.getPropertyValue('--dx')).toBe(`${dx}px`)
+    expect(dot.style.getPropertyValue('--dy')).toBe(`${dy}px`)
+  })
+
+  it('supplyDotStyle: färdtiden är ungefär proportionell mot sträckan men klampad till 1,6–4 s', () => {
+    expect(supplyDotStyle(1, 1).animationDuration).toBe('1.6s')
+    expect(supplyDotStyle(90, 0).animationDuration).toBe('2s')
+    expect(supplyDotStyle(0, 5000).animationDuration).toBe('4s')
   })
 
   it('utan aktiva försändelser eller rivalleveranser ritas ingen försörjningslinje', async () => {

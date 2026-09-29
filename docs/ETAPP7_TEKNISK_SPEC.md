@@ -1881,6 +1881,67 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P94 — Tillgänglighet, prestanda och skrivbordsvarianten.** Prestandabudgeten mätt på riktiga telefoner. Skrivbordslayouten genomgången med hovring och tangentbord. e2e omskrivet till kartflödet i båda formaten.
 
+> **P94 BYGGD 2026-09-29.** Premisskontroll mot koden gav nio genuina fynd, alla
+> åtgärdade utom det sista (som kräver en telefon). (1) **Kortkommandona 1–5 och
+> Enter (regel 16) fanns inte** — bara Esc, trots att `CLAUDE.md`/P81b skrev att
+> "Esc gör detsamma (regel 16)". Ny ren `shortcuts.ts` (beslut) + ett klick på den
+> riktiga fliken/knappen i `App.tsx` (så handledning, ljud och spellogik går som vid
+> ett tryck); blockeras av ett öppet överlagg, i fält, vid Ctrl/Cmd/Alt och vid
+> hållen Enter. (2) **§12 punkt 5:s "sjunker bildtakten stängs omgivningsrörelsen av
+> automatiskt" var aldrig byggd.** Ny ren `frameRateGuard.ts` (uppvärmning 1,5 s,
+> två sammanhängande fönster under 30 bilder/s, glapp över 1 s nollställer) +
+> `[data-ambient="off"]` i CSS. (3) **Två av de fyra oändliga kartanimationerna
+> bröt mot "bara transform och opacity"**: försörjningsflödet animerade
+> `stroke-dashoffset` och frontlinjeskimret `r`, båda SVG-målningsegenskaper som
+> tvingar kartlagret att ritas om varje bildruta. Skimret är nu `scale`;
+> försörjningsflödet är en prick som färdas längs den (nu stilla) streckade linjen
+> med `transform: translate` — riktningssignalen är alltså en rörlig prick i
+> stället för marscherande streck. `ambientMotion.test.ts` binder regeln mot
+> CSS-filen (röd före fixen, grön efter). (4) Flikradens etiketter var 9 px mot
+> regel 14:s 11 px. (5) **Kartans huvudstadsmarkörer — kartflödets huvudingång —
+> var varken fokuserbara eller tillgängliga**; nu `role="button"`, `tabIndex`,
+> `aria-label` (namn + öppna ordrar), `aria-pressed`, Enter/mellanslag, och kartans
+> SVG är `role="group"` i stället för `img` (axe `nested-interactive`). Global
+> synlig `:focus-visible` (blå ring, ockra på HUD:ens stål). (6) **`axe-core`**
+> (nytt utvecklingsberoende `@axe-core/playwright`) mot alla 16 skärmar × 2 format,
+> 24 av 32 föll: tomma handlingsplatsens `+`-knapp saknade tillgängligt namn
+> (`button-name`, kritisk — `aria-label="Add an action"`), och kontrast: `--ink-faint`
+> (3,3–4,3:1), ockra som text på papper (2,7–3,6:1; ny token `--amber-ink`, `--amber`
+> orörd för fyllningar och mörkt stål), valt `Segmented`-alternativ (3,67:1) och
+> blixtrader (4,46:1). Samtliga passerar nu. (7) Att lägga till `contracts`/
+> `company`/`news`/`country-file` i den nu delade skärmlistan (`e2e/screens.ts`,
+> flyttad ur `text-overflow.spec.ts`) avslöjade ett gammalt regel 18-brott:
+> `.research-category` var 40 px bred för ord som ELECTRONICS (79 px). (8) **~20
+> interaktiva element saknade hovertillstånd** (regel 3); nu ett samlat block
+> under `@media (hover: hover) and (pointer: fine)` — så en pekskärm aldrig får
+> kvarhängande hover — och `hover.spec.ts` bevisar båda hälfterna. Regel 13 granskad:
+> ingen information ligger bara vid hovring (`InfoTooltip` fungerar med tryck;
+> `MovementArrow`s `title` renderas inte någonstans). (9) **`play-20-turns.spec.ts`
+> kördes bara i Playwrights standardvy (1280×720)**, ett format ingen spelare har;
+> nu telefon (390×844, pekskärm) och skrivbord (1440×900), och varje tur lägger en
+> `INFLUENCE` via kartflödet (huvudstadsmarkör → landsakt → FILE). `STAGE_INCIDENT`/
+> `BRIBE` ligger kvar i CONTACTS eftersom det är deras enda UI-väg (P86) och det är
+> dem krisen bygger på. Tre testfynd: `setPriceSlider` klickade med `mouse.click`
+> på ett reglage under vecket, vilket på telefonen träffade den fasta flikraden
+> och bytte flik; `test.setTimeout` i testet åsidosatte kommandoradens timeout och
+> utan `actionTimeout` väntade varje klick tills hela testet timeoutade (ett fel
+> såg ut som ett hängande test); och min egen refaktorering tappade en import.
+> **Prestanda — det som INTE gick att göra:** "mätt på riktiga telefoner" kan
+> inte göras från den här miljön. `scripts/perf.mjs` mäter en syntetisk proxy
+> (emulerad Chromium, 4× CPU, "Slow 4G", byggd bunt): huvudmenyn användbar efter
+> 1,68 s median (tre kalla körningar 1,65–1,71 s; budget 3 s), 185 kB överfört,
+> panorering 60,0 bilder/s (p95 16,8 ms, 0 bildrutor över 50 ms, vakten löste inte
+> ut) mot budgeten 50/30. Det är en golvkontroll, **inte ett godkännande** — GPU,
+> minnestryck och termisk strypning finns inte i en emulering. Geodata 83,7 kB
+> (budget 300 kB, bunden i `budgets.test.ts`). **Kvarstår för ägaren:** mätning på
+> en riktig iPhone och en Android i mellanklass, samt en genomgång med en
+> skärmläsare (axe hittar det en maskin kan hitta; kartans geometri, färgkodning
+> och ljud kan det inte bedöma). Golden ORÖRD. Testsvep: 994 vitest (963→994),
+> lint, typecheck, build, e2e **136 gröna två gånger i rad** (64→136: ny
+> `keyboard`, `hover`, `performance`, `accessibility`, skärmlistan 12→16). `npm run
+> shots` körd; flikrad, inställningar och COMPANY granskade i telefonformat. Se
+> `docs/ANDRINGSLOGG.md`.
+
 **P95 — Speltest. Ingen kod.** Tre partier på telefon, frågan i §1.
 
 Tjugotre prompter, plus åtgärdspasset P81a–P81d efter speltestet. Skivan i 7B är det som avgör etappen: blir den godkänd vet du hur resten ska se ut, och 7C–7E är att upprepa samma kvalitet på fler ytor.
