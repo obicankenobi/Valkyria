@@ -17,7 +17,6 @@ import { POLICIES } from '@seventh-front/harness/dist/policies.js'
 import type { Policy } from '@seventh-front/harness/dist/policies.js'
 import { playScript } from './playScript.js'
 import { hashState } from './hashState.js'
-import type { GameState } from '../../src/types.js'
 import balanceLive from '../../src/data/balance.json' with { type: 'json' }
 import balanceFrozen from './fixtures/balance.frozen.json' with { type: 'json' }
 
@@ -206,22 +205,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // hittills tomt-vid-tur-0 fält som fylls på i takt med partiet) och
   // därför en ny hash, precis som P48/P51/P59 m.fl. tidigare rena
   // formändringar. headlines > 8 höll oförändrat.
+  //
+  // Omfryst IGEN i P96 (ETAPP8_FORSLAG.md §3.1/§9, beslut 8C — förhandsauktoriserat, egen
+  // commit efter koden). GameState.ledger är ett nytt fält (en rad per tur, skriven av de
+  // penningflyttande stegen), en ren formändring: INNAN omfrysningen verifierades att
+  // sluttillståndets hash UTAN ledger var bit-identisk med de gamla värdena i alla tre partier
+  // (passive 13410cbd5a4b, aggressive 32259821910dc, balanced 72f55dcef5b0c) — inget annat
+  // fält ändrades, ingen balanssiffra rördes (balance.frozen.json oförändrad). headlines > 8
+  // höll oförändrat.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '13410cbd5a4b' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '32259821910dc' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '72f55dcef5b0c' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '113da6660a841' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '15102b645ed08b' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '16561a24fce781' },
   ]
-
-  // P96 (ETAPP8_FORSLAG.md §3.1/§9, beslut 8C): GameState.ledger är ett nytt fält, men
-  // omfrysningen ligger i en EGEN commit efter den här. Till dess hashas sluttillståndet
-  // UTAN ledger mot de gamla, frysta värdena — det är bevisen för att INGET annat fält
-  // ändrats av huvudboken (bitvis identiskt, verifierat, inte antaget). Nästa commit
-  // byter tillbaka till att hasha hela tillståndet och tar bort den här hjälparen.
-  function withoutLedger(state: GameState): Partial<GameState> {
-    const copy = structuredClone(state) as Partial<GameState>
-    delete copy.ledger
-    return copy
-  }
 
   for (const { policyName, seed, expectedHash } of cases) {
     it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
@@ -231,7 +227,7 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
       const headlineCount = wireLog.filter((e) => e.severity === 'headline').length
       expect(headlineCount).toBeGreaterThan(8)
 
-      expect(hashState(withoutLedger(finalState))).toBe(expectedHash)
+      expect(hashState(finalState)).toBe(expectedHash)
     })
   }
 })
