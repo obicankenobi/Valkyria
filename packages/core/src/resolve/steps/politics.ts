@@ -41,11 +41,11 @@ const DECISION_FOR_AGENDA: Record<Agenda, PolicyDecision> = {
 export const politics: ResolveStep = (ctx) => {
   const { draft } = ctx
 
-  // Official.relationToPlayer startar på 0 för ALLA (state.ts) och stiger bara
-  // genom BRIBE/FUND_CAMPAIGN/FAVOUR riktat mot just henne — så "ohörsammad"
-  // (relationToPlayer < tröskeln) är annars sant för varenda tjänsteman med
-  // tillräcklig standing redan på tur 1, innan spelaren haft en enda tur att
-  // agera. Utan den här grinden bröt P57 flera av etapp 3/4:s redan gröna
+  // (Historik, P57: relationToPlayer startade på 0 för ALLA, så "ohörsammad" var sant för varenda
+  // tjänsteman med tillräcklig standing redan på tur 1. Sedan P99b startar den på tröskeln, så
+  // grinden nedan är inte längre det som skyddar ett nytt parti — men den behålls som en
+  // extra marginal för spelaren att hinna reagera på en relation som sjunkit.)
+  // Ursprunglig motivering: Utan den här grinden bröt P57 flera av etapp 3/4:s redan gröna
   // invarianttester (skyddsräcke 5) — en faktion kunde bli EMBARGO:ad tur 1,
   // innan den hunnit lägga en enda order. policyDecisionMinTurn (se
   // balance.json:s _p57_note) ger spelaren ett fönster att hinna reagera.
@@ -54,11 +54,72 @@ export const politics: ResolveStep = (ctx) => {
   for (const official of Object.values(draft.officials)) {
     if (official.status !== 'active') continue
     if (official.hasIssuedPolicyDecision) continue // en gång per tjänsteman, se types.ts:s kommentar
+
+    const warnedTurn = official.policyWarningTurn ?? null // ?? null: ett sparat parti från före P99b saknar fältet
+    const heeded = official.relationToPlayer >= BALANCE.policyDecisionRelationThreshold
+
+    // Varnad, men spelaren hann höja relationen: beslutet avvärjt. En synlig händelse (hård regel 4)
+    // och fältet nollställs, så en senare nedgång ger en NY varning i stället för ett direkt beslut.
+    if (warnedTurn !== null && heeded) {
+      averWarning(ctx, official)
+      continue
+    }
+
     if (official.standing < BALANCE.policyDecisionStandingThreshold) continue
-    if (official.relationToPlayer >= BALANCE.policyDecisionRelationThreshold) continue // hörsammad — inget beslut
+    if (heeded) continue // hörsammad — inget beslut
+
+    // P99b (ägarbeslut 2026-09-29, RAPPORT3 §6: "ingen förlust utan en varning i THE WIRE minst en
+    // tur innan"): första turen villkoren gäller varnas det — beslutet utfärdas turen efter, om
+    // villkoren fortfarande gäller.
+    if (warnedTurn === null) {
+      warnOfficial(ctx, official)
+      continue
+    }
 
     issuePolicyDecision(ctx, official)
   }
+}
+
+function decisionLabel(decision: PolicyDecision): string {
+  return decision.replace('_', ' ')
+}
+
+// Varningen är läsbar utan station (spelaren måste kunna agera på den): den namnger tjänstemannen
+// (redan synlig i landsakten), beslutet och vad som krävs — men aldrig integrity. Att beslutet
+// avslöjar agendan är avsiktligt; det är hela poängen med en varning.
+function warnOfficial(ctx: ResolveContext, official: Official): void {
+  const { draft, emit } = ctx
+  const faction = draft.factions[official.factionId]
+  if (!faction) return
+
+  official.policyWarningTurn = draft.meta.turn
+  const decision = decisionLabel(DECISION_FOR_AGENDA[official.agenda])
+  const threshold = BALANCE.policyDecisionRelationThreshold
+  emit({
+    severity: 'headline',
+    scope: 'faction',
+    headline: `${official.name.toUpperCase()} (${faction.name.toUpperCase()}) IS PREPARING ${decision} — RELATIONS BELOW ${threshold}; RAISE THEM TO ${threshold} OR MORE THIS QUARTER TO AVOID IT`,
+    causeId: null,
+    delta: {},
+    actorIsPlayer: false,
+    subjectId: faction.id,
+  })
+}
+
+function averWarning(ctx: ResolveContext, official: Official): void {
+  const { draft, emit } = ctx
+  const faction = draft.factions[official.factionId]
+  official.policyWarningTurn = null
+  if (!faction) return
+  emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${official.name.toUpperCase()} (${faction.name.toUpperCase()}) DROPS ${decisionLabel(DECISION_FOR_AGENDA[official.agenda])} — RELATIONS RESTORED`,
+    causeId: null,
+    delta: {},
+    actorIsPlayer: false,
+    subjectId: faction.id,
+  })
 }
 
 function issuePolicyDecision(ctx: ResolveContext, official: Official): void {
@@ -116,7 +177,7 @@ function issuePolicyDecision(ctx: ResolveContext, official: Official): void {
   emit({
     severity: 'headline',
     scope: 'faction',
-    headline: `${official.name.toUpperCase()} (${faction.name.toUpperCase()}) ISSUES ${decision.replace('_', ' ')}`,
+    headline: `${official.name.toUpperCase()} (${faction.name.toUpperCase()}) ISSUES ${decisionLabel(decision)}`,
     causeId: null,
     delta: {},
     actorIsPlayer: false,

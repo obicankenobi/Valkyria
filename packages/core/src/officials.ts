@@ -35,6 +35,8 @@ export function replaceOfficial(
     integrity: replacement.integrity,
     standing: replacement.standing,
     agenda: replacement.agenda,
+    // 0, inte startvärdet: en ersättare efter t.ex. ASSASSINATE står inte i någon skuld till spelaren
+    // (P54:s testade regel, oförändrad av P99b — startvärdet 30 gäller bara partistart).
     relationToPlayer: 0,
     status: 'active',
     // P56 (avsnitt 3.3): scandalRisk hör till PERSONEN (byggs upp av BRIBE mot

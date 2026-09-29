@@ -43,6 +43,10 @@ const FLASH_PATTERNS: RegExp[] = [
   /COUP ATTEMPT IN .+ FAILS/, // kupp, misslyckad
   /HAS .+ ASSASSINATED/, // lönnmord
   /ISSUES EMBARGO/, // embargo (politics.ts:s PolicyDecision-headline)
+  // P99b (ägarbeslut 2026-09-29, RAPPORT3 §6 "ingen förlust utan en varning i THE WIRE minst en tur
+  // innan"): varningen turen före ett policybeslut. Måste hamna på förstasidan — spelaren ska hinna
+  // agera på den. Bara headline-tier (isFlashEvent kräver det), precis som beslutet den varnar för.
+  / IS PREPARING .+ — RELATIONS BELOW \d+/,
   /BANKRUPT — ALL CONTRACTS VOIDED/, // faktionskonkurs (genuint fynd 3)
   /^CRISIS —/, // kris, spelarens val krävs
   /^CRISIS WATCH —/, // kris, förvarning

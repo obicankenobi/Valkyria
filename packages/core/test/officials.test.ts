@@ -1,3 +1,4 @@
+import balance from '../src/data/balance.json' with { type: 'json' }
 import { describe, expect, it } from 'vitest'
 import { findOfficial, officialId, replaceOfficial } from '../src/officials.js'
 import { createInitialState } from '../src/state.js'
@@ -21,7 +22,8 @@ describe('createInitialState — Official (avsnitt 3.1)', () => {
         expect(official!.factionId).toBe(factionId)
         expect(official!.post).toBe(post)
         expect(official!.status).toBe('active')
-        expect(official!.relationToPlayer).toBe(0)
+        // P99b: startvärdet är policyDecisionRelationThreshold (30), inte 0 — se politics.warning.test.ts.
+        expect(official!.relationToPlayer).toBe(balance.policyDecisionRelationThreshold)
       }
     }
   })
@@ -55,6 +57,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
       status: 'fallen',
       scandalRisk: 60, // P56: skandalen som fällde henne
       hasIssuedPolicyDecision: false,
+      policyWarningTurn: null,
     }
 
     const replaced = replaceOfficial(fallen, { name: 'Ly Thi Xuan', integrity: 20, standing: 50, agenda: 'AUSTERITY' })
@@ -85,6 +88,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
       status: 'dead',
       scandalRisk: 0,
       hasIssuedPolicyDecision: false,
+      policyWarningTurn: null,
     }
 
     const replaced = replaceOfficial(dead, { name: 'Vu Thi Hang', integrity: 65, standing: 45, agenda: 'NON_ALIGNMENT' })

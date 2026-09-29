@@ -18,6 +18,7 @@ import { writeFileSync } from 'node:fs'
 import { POLICIES } from './policies.js'
 import { runGame } from './runGame.js'
 import { toCsv } from './csv.js'
+import { formatSummary } from './summary.js'
 import type { GameMetrics } from './runGame.js'
 
 interface Args {
@@ -90,4 +91,6 @@ export function main(argv: readonly string[]): void {
     `${rows.length} parti(er) körda (${args.policyNames.join(', ')} × ${args.runs} styck) för scenario ` +
       `"${args.scenario}" — skrivna till ${args.outPath}`,
   )
+  // RAPPORT3 §4: slutfördelningen redovisas ALLTID, oavsett vad mätningen i övrigt gäller.
+  console.log(formatSummary(rows))
 }

@@ -304,5 +304,6 @@
   "advanceAbilityWeight": 0.4,
   "advanceRelationWeight": 0.15,
   "advanceUrgencyFullAt": 3,
-  "advanceCoverageFull": 5
+  "advanceCoverageFull": 5,
+  "_p99b_note": "Ägarbeslut 2026-09-29 (RAPPORT3_GRANSKNING.md §1/§5): Official.relationToPlayer startar på policyDecisionRelationThreshold (30, samma tal som gränsen i politics.ts — läses därifrån, inget andra tal) i stället för 0, och ett policybeslut föregås av en varning en tur innan (Official.policyWarningTurn). Skälet: med startvärde 0 var varje tjänsteman 'ohörsammad' från tur 1, så båda NON_ALIGNMENT-tjänstemännen (nlf defence, laos finance) utfärdade EMBARGO på tur 4 i varje parti och embargot hävs aldrig. Inga nya balanstal."
 }

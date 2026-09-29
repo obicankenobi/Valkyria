@@ -558,6 +558,10 @@ export interface Official {
   // ingen kadens) — hon har "använt sitt inflytande" en gång, sedan är hon
   // tyst tills en framtida prompt bygger en verklig återhämtning.
   hasIssuedPolicyDecision: boolean
+  // P99b (ägarbeslut 2026-09-29): turen tjänstemannen VARNADE för ett kommande policybeslut, annars
+  // null. Beslutet utfärdas först en tur efter varningen och bara om villkoren fortfarande gäller;
+  // höjs relationen över tröskeln i mellantiden nollställs fältet (varningen avvärjd).
+  policyWarningTurn: number | null
 }
 
 // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.4), tabellen ordagrant. Rent

@@ -47,17 +47,31 @@ function ignore(state: GameState, officialId: string): void {
   state.meta.turn = Math.max(state.meta.turn, balance.policyDecisionMinTurn)
 }
 
+// P99b (ETAPP8-uppföljning, RAPPORT3 §5): ett beslut utfärdas inte direkt — första turen villkoren
+// gäller emitteras en VARNING, och beslutet kommer turen efter (bara om villkoren fortfarande
+// gäller). Testerna som prövar själva beslutets EFFEKT kör därför steget två turer i rad, med
+// samma ctx-uppsättning; varningens egna regler prövas i politics.warning.test.ts.
+function politicsUntilDecision(state: GameState, seed: string): Omit<WireEvent, 'id' | 'turn'>[] {
+  const all: Omit<WireEvent, 'id' | 'turn'>[] = []
+  for (let i = 0; i < 2; i++) {
+    const { ctx, emitted } = makeCtx(state, seed)
+    politics(ctx)
+    all.push(...emitted)
+    state.meta.turn += 1
+  }
+  return all
+}
+
 describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
   it('(P57 klart-när) en ohörsammad agenda leder till ett PolicyDecision — hasIssuedPolicyDecision sätts, en headline emitteras', () => {
     const state = createInitialState('indochina-slice', 'seed')
     neutralizeAllOfficials(state)
     ignore(state, 'official-rvn-finance') // AUSTERITY -> PRICE_CAP
 
-    const { ctx, emitted } = makeCtx(state, 'politics-seed')
-    politics(ctx)
+    const emitted = politicsUntilDecision(state, 'politics-seed')
 
     expect(state.officials['official-rvn-finance']!.hasIssuedPolicyDecision).toBe(true)
-    expect(emitted.some((e) => e.headline.includes('PRICE CAP'))).toBe(true)
+    expect(emitted.some((e) => e.headline.includes('ISSUES PRICE CAP'))).toBe(true)
   })
 
   it('en tjänsteman med för låg standing fattar inget beslut', () => {
@@ -125,7 +139,7 @@ describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
     ignore(state, 'official-rvn-interior') // SELF_ENRICHMENT skulle annars ge PREFERRED_SUPPLIER — sätts om nedan
     state.officials['official-rvn-interior']!.agenda = 'NON_ALIGNMENT' // -> EMBARGO
 
-    politics(makeCtx(state, 'politics-seed').ctx)
+    politicsUntilDecision(state, 'politics-seed')
     expect(state.factions['rvn']!.embargoed).toBe(true)
 
     for (const category of Object.keys(state.factions['rvn']!.materielNeed) as (keyof GameState['factions'][string]['materielNeed'])[]) {
@@ -141,7 +155,7 @@ describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
     neutralizeAllOfficials(state)
     ignore(state, 'official-rvn-finance') // AUSTERITY
 
-    politics(makeCtx(state, 'politics-seed').ctx)
+    politicsUntilDecision(state, 'politics-seed')
 
     expect(state.factions['rvn']!.trueBudgetCapFactor).toBe(balance.policyPriceCapFactor)
   })
@@ -151,7 +165,7 @@ describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
     neutralizeAllOfficials(state)
     ignore(state, 'official-rvn-procurement') // REARM
 
-    politics(makeCtx(state, 'politics-seed').ctx)
+    politicsUntilDecision(state, 'politics-seed')
 
     expect(state.factions['rvn']!.weightsOverride).toEqual(balance.tenderReformWeights)
   })
@@ -164,7 +178,7 @@ describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
     const station = state.house.stations.find((s) => s.nation === 'rvn' && s.status === 'active')!
     const before = station.exposure
 
-    politics(makeCtx(state, 'politics-seed').ctx)
+    politicsUntilDecision(state, 'politics-seed')
 
     expect(station.exposure).toBe(before + balance.licenceReviewExposurePenalty)
   })
@@ -175,7 +189,7 @@ describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
     ignore(state, 'official-nlf-interior') // MODERNISE -> LICENCE_REVIEW; NLF har ingen station i indochina-slice
     const stationsBefore = JSON.parse(JSON.stringify(state.house.stations)) as typeof state.house.stations
 
-    politics(makeCtx(state, 'politics-seed').ctx)
+    politicsUntilDecision(state, 'politics-seed')
 
     expect(state.house.stations).toEqual(stationsBefore)
   })
@@ -185,7 +199,7 @@ describe('politics (isolerat steg, ETAPP5_TEKNISK_SPEC.md avsnitt 3.4)', () => {
     neutralizeAllOfficials(state)
     ignore(state, 'official-rvn-interior') // SELF_ENRICHMENT
 
-    politics(makeCtx(state, 'politics-seed').ctx)
+    politicsUntilDecision(state, 'politics-seed')
 
     const preferred = state.factions['rvn']!.preferredSupplier
     expect(preferred).not.toBe('player')

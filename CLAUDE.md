@@ -716,7 +716,13 @@ inte levererar i tid. Styrelsens `progressSnapshot` är opåverkad. Golden omfry
 Regimskifte (`FUND_COUP`) behåller förskottet — bekräftat av ägaren.
 **P99 BYGGD 2026-09-29:** villkoren i budmappen — förskottsstämpel och kreditstämpel (A/B/C, "?" utan
 underrättelse) i ordermappen och tre tal vid prisreglaget (vinstchans, marginal, "cash next quarter" =
-förskottet om budet vinner); `orderTerms`/`advanceAmount` i core (ren läsning). Golden orörd. P100 är inte påbörjad.
+förskottet om budet vinner); `orderTerms`/`advanceAmount` i core (ren läsning). Golden orörd.
+**P99b BYGGD 2026-09-29 (egen prompt, EMBARGO-fällan, RAPPORT3):** `Official.relationToPlayer` startar på
+30 (`policyDecisionRelationThreshold`) i stället för 0, och ett policybeslut föregås av en varning en tur
+innan (`Official.policyWarningTurn`, `politics.ts`). `passive` vinner nu 90/100 (var 0), övriga botar 1–7 —
+**`passive` är fortfarande den enda bot som vinner regelbundet**. Nytt spelbarhetstest
+(`harness/test/playability.test.ts`: minst en bot ≥ 30 % vinst). Golden omfryst i egen commit. Ingen kod
+sänker en tjänstemans relation, så varningen nås inte i vanligt spel — se ANDRINGSLOGG. P100 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

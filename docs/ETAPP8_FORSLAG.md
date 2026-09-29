@@ -36,7 +36,7 @@ verkligheten inte stämmer").
 | # | Påstående | Källa |
 |---|---|---|
 | 0.1 | Spelaren får betalt **först vid leverans**, proportionellt mot levererad mängd. Ingenting betalas när kontraktet tilldelas. | `resolve/steps/deliveries.ts` (`house.treasury += revenue`) |
-| 0.2 | De första turerna ger ingen intäkt medan de fasta kostnaderna redan löper (429 000 kr per tur när P53 mättes). Det var grundorsaken till `BUYOUT`-kaskaden. | CLAUDE.md, P53 |
+| 0.2 | De första turerna ger ingen intäkt medan de fasta kostnaderna redan löper (429 000 kr per tur när P53 mättes). Det är ett verkligt glapp i kassan — men **inte** orsaken till att partierna slutar på tur 10: den var EMBARGO (P57, se RAPPORT3 §1; rättad i P99b). *Ursprungligen skrivet här som "grundorsaken till `BUYOUT`-kaskaden" — fel diagnos, rättad 2026-09-29.* | CLAUDE.md, P53, RAPPORT3 §5 |
 | 0.3 | **Standing orders finns inte.** `StandingOrderChange` är en platshållare (`kind: string, payload: Record<string, unknown>`) som ingen kod läser sedan P2. DESIGN.md §4 beskriver dem som ett av turens tre beslutsslag. | `types.ts` rad ~760, DESIGN.md §4 |
 | 0.4 | En produktionslinje tillverkar vilken produkt som helst, och tilldelningen sker automatiskt. `capacityPct` är alltid 100 och ändras aldrig av någon kod. | P85-blockquoten, `state.ts`, `applyActions.ts` |
 | 0.5 | `BUY_FORWARD` är en platt pool med samma belopp in och ut, som inte är prisindexerad. Den kan därför aldrig bli olönsam. Ägaren beslutade 2026-09-16 att den platta poolen är avsedd. | CLAUDE.md, P52 |
@@ -155,10 +155,12 @@ Utfallet:
 - Nya balanstal i `balance.json`: `advancePctMin`, `advancePctMax` och tre vikter. Alla är
   provisoriska fram till P104.
 
-**Varför det här löser mer än P81-19:** Förskottet ger intäkt i tur 1–4, innan den första
-leveransen. Det är precis det glapp som P53 pekade ut som roten till kaskaden (0.2). Förskottet
-kan alltså göra styrelsemålet nåbart utan att målet självt behöver ändras. P104 mäter om det
-stämmer.
+**Varför förskottet ändå behövs:** Det ger intäkt i tur 1–4, innan den första leveransen, och
+tar bort ett verkligt glapp i kassan (0.2) — men det löser **inte** utköpet på tur 10. Den
+diagnosen (att glappet var orsaken) var fel: orsaken var EMBARGO, som två av tre köpare utfärdade
+på tur 4 i varje parti (RAPPORT3 §1/§5, rättat i P99b). P98 mätte det: förskottet flyttade kassan
+tidigare men knappt utfallet. Om förskottet gör styrelsemålet lättare att nå avgör P104, som nu
+mäter mot ett spel som faktiskt går att vinna.
 
 ### 4.2 Gränssnitt: villkoren i budmappen
 
@@ -555,6 +557,36 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > `screens.ts` ger regel 11/18/`axe` i båda formaten (den fanns bara i `npm run shots`). Golden
 > ORÖRD, `balance.json` orörd. Testsvep: 1 119 vitest, lint, typecheck, build, e2e 167 gröna,
 > shots granskade.
+
+> **P99b — EMBARGO-fällan rättad, 2026-09-29** (egen prompt efter ägarbeslut, före P100; se
+> `RAPPORT3_GRANSKNING.md` §1/§5). **A:** `Official.relationToPlayer` startar på
+> `policyDecisionRelationThreshold` (30, läst ur `balance.json`, samma tal som gränsen i `politics.ts`)
+> i stället för 0 — "ohörsammad" betyder nu att relationen sjunkit under startläget. **B:** en
+> varning turen innan: första turen villkoren gäller emittas en `headline` (`scope: 'faction'`,
+> `subjectId` faktionen) som namnger tjänstemannen, beslutet och vad som krävs ("… IS PREPARING
+> EMBARGO — RELATIONS BELOW 30; RAISE THEM TO 30 OR MORE THIS QUARTER TO AVOID IT"), läsbar utan
+> station och utan integrity; beslutet utfärdas turen efter, bara om villkoren fortfarande gäller
+> (`Official.policyWarningTurn`, nytt fält). Höjs relationen i mellantiden emittas en `ticker`
+> ("DROPS … — RELATIONS RESTORED"; hård regel 4: nollställningen är en synlig statsändring) och en
+> senare nedgång ger en NY varning. Varningsmönstret ligger i `newsClassification.ts` (förstasidan).
+> Embargots effekt i sig är orörd (beslut C).
+>
+> **Före → efter** (100 partier per bot, `npm run harness`, mätt vid `427684e`/efter A+B):
+>
+> | Bot | Vinster före | Vinster efter | Utgångar efter | Median slut | Median kontrakt |
+> |---|---|---|---|---|---|
+> | `passive` | 0/100 | **90/100** | SCENARIO_COMPLETE 90, BUYOUT 10 | 10 → 20 | 2 → 36 |
+> | `aggressive` | 0/100 | 7/100 | INSOLVENCY 55, BUYOUT 38, SCENARIO_COMPLETE 7 | 10 → 10 | 3 → 9,5 |
+> | `balanced` | 1/100 | 1/100 | INSOLVENCY 99, SCENARIO_COMPLETE 1 | 10 → 10 | 3 → 4 |
+> | `capacity` | 5/100 | 2/100 | BUYOUT 83, INSOLVENCY 15, SCENARIO_COMPLETE 2 | 10 → 10 | 3 → 5 |
+>
+> **Golden** omfryst i egen commit (förhandsauktoriserat i prompten). Före omfrysningen verifierat att
+> ändringen beror på exakt A, B och det nya fältet: med A och B temporärt återställda (start 0, gamla
+> `politics.ts`) är sluttillståndets hash, utan `policyWarningTurn`, bit-identisk med de frusna
+> värdena i alla tre partier. `balance.json` fick bara en anteckning (`_p99b_note`), inga nya tal.
+> **Spelbarhetstest:** `packages/harness/test/playability.test.ts` (30 partier per bot, kräver att
+> någon bot vinner ≥ 30 %; ≈ 6 s, i standardsviten; negativkontroll: med start 0 blir det rött,
+> `passive` 0/30).
 
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,

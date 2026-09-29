@@ -39,6 +39,8 @@ import type {
 // medan husets fasta kostnader redan löper från tur 1.
 interface Balance {
   orderTriggerThreshold: Record<TechCategory, number>
+  // P99b: startvärdet för Official.relationToPlayer, se buildOfficials nedan.
+  policyDecisionRelationThreshold: number
   // P59 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.1): startvärden för Faction.relations,
   // se buildFactions nedan.
   relationsAtWarStart: number
@@ -341,10 +343,13 @@ function buildFactions(scenario: ScenarioFile, fronts: Front[]): Record<FactionI
 // fyra poster (Post) per faktion, fullt specificerade i officials.json — samma
 // "createInitialState uppfinner inget eget" som resten av filen (huvudkommentaren
 // ovan): ingen rng finns här, så startintegritet/standing/agenda är fast
-// scenariodata, inte rullade tal. relationToPlayer startar på 0 (samma "du
-// känner ingen än"-premiss som Faction.relationToPlayer INTE delar, eftersom en
-// tjänsteman är en person, inte ett land — spelaren har inget existerande
-// förhållande till en namngiven individ vid partistart).
+// scenariodata, inte rullade tal. relationToPlayer startar på
+// policyDecisionRelationThreshold (30), inte 0 (P99b, ägarbeslut 2026-09-29,
+// RAPPORT3_GRANSKNING.md §1/§5): med 0 var "ohörsammad" (relation under tröskeln) sant för varje
+// tjänsteman redan på tur 1, så EMBARGO utfärdades på tur 4 i varje parti innan spelaren hunnit
+// göra något. Nu betyder "ohörsammad" att relationen sjunkit UNDER startläget — en följd av något
+// spelaren gjort. Startvärdet läses ur balance.json (samma tal som gränsen i politics.ts), inte
+// ett andra tal som kunde glida isär från den.
 interface OfficialSeed {
   post: Post
   name: string
@@ -369,7 +374,7 @@ function buildOfficials(scenario: ScenarioFile): Record<OfficialId, Official> {
         post: seed.post,
         integrity: seed.integrity,
         standing: seed.standing,
-        relationToPlayer: 0,
+        relationToPlayer: BALANCE.policyDecisionRelationThreshold,
         agenda: seed.agenda,
         status: 'active',
         // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): en spelregel (byggs upp av
@@ -377,6 +382,8 @@ function buildOfficials(scenario: ScenarioFile): Record<OfficialId, Official> {
         scandalRisk: 0,
         // P57 (avsnitt 3.4): ingen tjänsteman har fattat ett beslut vid start.
         hasIssuedPolicyDecision: false,
+        // P99b: ingen varning har utfärdats vid start.
+        policyWarningTurn: null,
       }
     }
   }
