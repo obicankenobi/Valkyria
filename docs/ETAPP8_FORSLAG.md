@@ -1,6 +1,12 @@
 # Etapp 8 — Kassaboken
 
-**THE SEVENTH FRONT** · förslag, inte antaget · skrivet 2026-09-29 mot `c660b90` (efter P94)
+**THE SEVENTH FRONT** · förslag · skrivet 2026-09-29 mot `c660b90` (efter P94)
+
+> **Status 2026-09-29:** ägarbesluten 8A–8G är fattade, samtliga enligt förslagets egna
+> rekommendationer (§2). Etappen är **inte startad**: den förutsätter att P95 (speltestet av
+> etapp 7) är genomfört, och P95 kan flytta punkter hit eller härifrån. Ordningen är etapp 8
+> före etapp 9 (forskningen). Först när P95 är gjort och specen har stämts av mot dess svar
+> räknas etappen som antagen.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
@@ -56,9 +62,9 @@ Tre delfrågor gör frågan mätbar:
 
 ---
 
-## 2. Ägarbeslut — loggas i `ANDRINGSLOGG.md` innan P96
+## 2. Ägarbeslut — fattade 2026-09-29, loggade i `ANDRINGSLOGG.md`
 
-| | Fråga | Rekommendation |
+| | Fråga | Beslut (2026-09-29) |
 |---|---|---|
 | **8A** | Etappens namn | "Kassaboken" |
 | **8B** | Ska standing orders (DESIGN.md §4) byggas här eller i en egen etapp? | **Här**, men bara tre av DESIGN.md:s fem slag (se §4). R&D-kön hör till etapp 9. |
@@ -345,9 +351,9 @@ Tio prompter. 8A och 8B är kärnan. Om etappen behöver kortas stryks 8D först
 
 ## 11. Öppna beslut för ägaren
 
-1. Besluten 8A–8G i §2.
-2. **Ordningen mellan etapp 8 och 9.** Forskningen kan gå före om P95 visar att den är det som
-   saknas mest. De två etapperna rör olika delar av koden och krockar inte.
+1. ~~Besluten 8A–8G i §2.~~ *Fattade 2026-09-29.*
+2. ~~**Ordningen mellan etapp 8 och 9.**~~ *Beslutat 2026-09-29: etapp 8 först.* Kan omprövas efter
+   P95. De två etapperna rör olika delar av koden och krockar inte.
 3. **Ljudeffekterna** (P93, fynd 1) saknas fortfarande. Huvudbokens bläddring, stämpeln och
    kassaapparaten vid förskottet är tre nya ljud som passar etappen, om du vill hämta dem i
    samma veva.
