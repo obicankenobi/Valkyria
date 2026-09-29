@@ -61,8 +61,7 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // P40:s namngivna ersättningsordrar, P40:s omkalibrerade förbandsroster
 // (indochina-slice.json) och P42:s egen invariant-bugfix (resolveFront synkar
 // nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
-// P99b: PAUSAD i den här commiten, aktiv igen i nästa (omfrysningen, beslut P99b/8C — egen commit).
-it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
@@ -222,15 +221,25 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // normaliseringskonstanter) — balance.frozen.json följer med, annars vore första testet här rött.
   // De nya hasharna: passive 529fc6b53f3ba, aggressive 14211565c40155, balanced 847bd7d7bbcd.
   // headlines > 8 höll oförändrat (passive 48, aggressive 56, balanced 43).
+  //
+  // Omfryst IGEN i P99b (ETAPP8_FORSLAG.md, P99b-blockquoten, ägarbeslut 2026-09-29 —
+  // förhandsauktoriserat, EN omfrysning, egen commit efter koden). EMBARGO-fällan rättas:
+  // Official.relationToPlayer startar på policyDecisionRelationThreshold (30) i stället för 0, och
+  // politics-steget varnar en tur före ett PolicyDecision (nytt fält Official.policyWarningTurn).
+  // INNAN omfrysningen verifierades att sluttillståndets hash UTAN policyWarningTurn och med
+  // A+B återställda var bit-identisk med P98:s (passive 529fc6b53f3ba, aggressive 14211565c40155,
+  // balanced 847bd7d7bbcd) — ändringen är alltså exakt A, B och det nya fältet, inget annat.
+  // balance.frozen.json speglar balance.json (bara en _p99b_note-sträng tillkom, inga tal).
+  // De nya hasharna: passive 789113d09a625, aggressive 6962667e8cdde, balanced 3e3e27ba64cd6.
+  // headlines > 8 höll oförändrat (passive 134, aggressive 61, balanced 39).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '529fc6b53f3ba' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '14211565c40155' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '847bd7d7bbcd' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '789113d09a625' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '6962667e8cdde' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '3e3e27ba64cd6' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
-    // P99b: PAUSAD i den här commiten (EMBARGO-rättelsen ändrar banan), omfryst i nästa commit.
-    it.skip(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
+    it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
       const { finalState, wireLog } = playScript(SCENARIO, seed, policy, TURNS)
 

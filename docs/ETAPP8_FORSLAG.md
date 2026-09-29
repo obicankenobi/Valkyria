@@ -584,6 +584,7 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > ändringen beror på exakt A, B och det nya fältet: med A och B temporärt återställda (start 0, gamla
 > `politics.ts`) är sluttillståndets hash, utan `policyWarningTurn`, bit-identisk med de frusna
 > värdena i alla tre partier. `balance.json` fick bara en anteckning (`_p99b_note`), inga nya tal.
+> Nya hashar: passive `789113d09a625`, aggressive `6962667e8cdde`, balanced `3e3e27ba64cd6`.
 > **Spelbarhetstest:** `packages/harness/test/playability.test.ts` (30 partier per bot, kräver att
 > någon bot vinner ≥ 30 %; ≈ 6 s, i standardsviten; negativkontroll: med start 0 blir det rött,
 > `passive` 0/30).
