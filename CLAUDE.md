@@ -722,7 +722,9 @@ förskottet om budet vinner); `orderTerms`/`advanceAmount` i core (ren läsning)
 innan (`Official.policyWarningTurn`, `politics.ts`). `passive` vinner nu 90/100 (var 0), övriga botar 1–7 —
 **`passive` är fortfarande den enda bot som vinner regelbundet**. Nytt spelbarhetstest
 (`harness/test/playability.test.ts`: minst en bot ≥ 30 % vinst). Golden omfryst i egen commit. Ingen kod
-sänker en tjänstemans relation, så varningen nås inte i vanligt spel — se ANDRINGSLOGG. P100 är inte påbörjad.
+sänker en tjänstemans relation, så varningen nås inte i vanligt spel — se ANDRINGSLOGG; skärmen `policy-warning`
+(e2e/shots) når den via IndexedDB-injektion. Fullt svep grönt: 1 135 tester, lint, typecheck, build, e2e (173,
+körd två gånger i rad). P100 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

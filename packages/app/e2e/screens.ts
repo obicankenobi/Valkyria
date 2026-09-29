@@ -287,6 +287,52 @@ export async function enterContractsBidOpen(page: Page): Promise<void> {
   await page.getByTestId('bid-form').waitFor()
 }
 
+// P99b (EMBARGO-fällan): varningen turen före ett policybeslut. Ett riktigt parti når den inte
+// (ingen mekanik sänker en tjänstemans relation, se ANDRINGSLOGG P99b), så samma IndexedDB-
+// injektion som enterCrisis: sänk NLF-försvarstjänstemannens relation till 0 vid tur 4 och
+// avsluta ett kvartal — varningen hamnar på NEWS DESK:s förstasida som en blixt.
+export async function enterPolicyWarning(page: Page): Promise<void> {
+  await page.getByTestId('menu-new-game').click()
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
+  await page.getByTestId('hud').waitFor()
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise<{
+      state: { meta: { turn: number }; officials: Record<string, { relationToPlayer: number; standing: number; agenda: string }> }
+    }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    saved.state.meta.turn = 4
+    for (const o of Object.values(saved.state.officials)) {
+      if (o.agenda === 'NON_ALIGNMENT') {
+        o.relationToPlayer = 0
+        o.standing = 80
+      }
+    }
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.getByTestId('end-quarter-button').click()
+  await page.getByText('IS PREPARING').first().waitFor({ state: 'attached', timeout: 5000 })
+  await page.getByTestId('tab-news').click()
+  await page.getByText('IS PREPARING').first().waitFor()
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -308,4 +354,5 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'company-ledger', path: '/', setup: enterCompanyLedger },
   { name: 'ledger-vouchers', path: '/', setup: enterLedgerVouchers },
   { name: 'board-memo', path: '/', setup: enterBoardMemo },
+  { name: 'policy-warning', path: '/', setup: enterPolicyWarning },
 ]

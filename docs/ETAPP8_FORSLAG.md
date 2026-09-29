@@ -588,6 +588,9 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > **Spelbarhetstest:** `packages/harness/test/playability.test.ts` (30 partier per bot, kräver att
 > någon bot vinner ≥ 30 %; ≈ 6 s, i standardsviten; negativkontroll: med start 0 blir det rött,
 > `passive` 0/30).
+> **UI:** varningen syns redan som blixt på NEWS DESK:s förstasida (mönstret i `newsClassification.ts`); ny
+> skärm `policy-warning` i `e2e/screens.ts` och `scripts/shots.mjs` (IndexedDB-injektion, samma teknik som
+> krisen) täcks av regel 11/18 och axe.
 
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,

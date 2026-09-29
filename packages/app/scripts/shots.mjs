@@ -478,6 +478,57 @@ const APP_SCREENS = [
     },
   },
   {
+    // P99b: varningen turen före ett policybeslut (ingen referensskiss). Ingen mekanik sänker en
+    // tjänstemans relation i ett riktigt parti, så samma IndexedDB-injektion som "crisis".
+    name: 'policy-warning',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti.
+      }
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
+      await page.getByTestId('hud').waitFor()
+      await page.evaluate(async () => {
+        const dbReq = indexedDB.open('seventh-front', 1)
+        const db = await new Promise((resolve, reject) => {
+          dbReq.onsuccess = () => resolve(dbReq.result)
+          dbReq.onerror = () => reject(dbReq.error)
+        })
+        const tx = db.transaction('saves', 'readwrite')
+        const store = tx.objectStore('saves')
+        const getReq = store.get('save:default')
+        const saved = await new Promise((resolve, reject) => {
+          getReq.onsuccess = () => resolve(getReq.result)
+          getReq.onerror = () => reject(getReq.error)
+        })
+        saved.state.meta.turn = 4
+        for (const o of Object.values(saved.state.officials)) {
+          if (o.agenda === 'NON_ALIGNMENT') {
+            o.relationToPlayer = 0
+            o.standing = 80
+          }
+        }
+        await new Promise((resolve, reject) => {
+          const putReq = store.put(saved, 'save:default')
+          putReq.onsuccess = () => resolve(undefined)
+          putReq.onerror = () => reject(putReq.error)
+        })
+      })
+      await page.reload()
+      await page.getByTestId('menu-continue').click()
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.getByTestId('end-quarter-button').click()
+      await page.getByTestId('tab-news').click()
+      await page.getByText('IS PREPARING').first().waitFor()
+    },
+  },
+  {
     // P97: styrelsens PM från THE SYNDICATE vid första granskningen (tur 6).
     name: 'board-memo',
     path: '/',
