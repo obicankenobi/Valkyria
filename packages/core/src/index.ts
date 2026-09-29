@@ -18,6 +18,8 @@ export {
   bidEstimate,
   playerWinCurve,
   boardReviewOutlook,
+  boardReviewRequirement,
+  boardMemo,
   DISPLAY_THRESHOLDS,
   BOT_BALANCE,
   INFLUENCE_BALANCE,
@@ -29,7 +31,7 @@ export {
   researchOutlook,
   estimateLineCompletionTurn,
 } from './queries.js'
-export type { PlayerWinCurvePoint, BoardReviewOutlook, ProjectedQuarter, CategoryResearchOutlook } from './queries.js'
+export type { PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, ProjectedQuarter, CategoryResearchOutlook } from './queries.js'
 // getProduct/allProducts: paketets ENDA väg till produktkatalogen (avsnitt 6) för
 // extern kod — packages/harness (P9) behöver getProduct för att avgöra om en order
 // gäller en restricted-produkt (Order har bara productId, inte en kopia av

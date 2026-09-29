@@ -14,6 +14,7 @@ import { ActionDock, HudBar, QuarterBand, RejectedBanner, TabBar } from './compo
 import type { ShellView } from './components/Shell.js'
 import { TheatreMap } from './components/TheatreMap.js'
 import { CountryFile } from './components/CountryFile.js'
+import { boardMemo } from '@seventh-front/core'
 import type { FactionId } from '@seventh-front/core'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
@@ -704,6 +705,7 @@ export function App() {
           state={state}
           fullReplay={fullReplay}
           onToggleFullReplay={handleToggleFullReplay}
+          memo={boardMemo(state, state.meta.turn - 1)}
           onDone={() => {
             setReplaying(false)
             setView('news') // NEWS DESK (f.d. THE WIRE) är startvyn varje tur (avsnitt 8)

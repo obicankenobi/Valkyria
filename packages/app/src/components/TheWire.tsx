@@ -111,7 +111,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
         {anchor && <span className="wire-anchor">{anchor}</span>}
         {event.actorIsPlayer && <Tag tone="amber">YOU</Tag>}
         {chain.length > 0 && (
-          <button type="button" className="btn btn-ghost" onClick={() => setExpanded((v) => !v)}>
+          <button type="button" className="btn btn-ghost wire-cause-toggle" onClick={() => setExpanded((v) => !v)}>
             {expanded ? 'hide cause' : `cause ×${chain.length}`}
           </button>
         )}

@@ -9,8 +9,8 @@
 > (forskningen). Beslut 8C gäller: golden får frysas om **bara** i P96, P98, P100 och P102,
 > var och en i egen commit. Filen behåller namnet `ETAPP8_FORSLAG.md`.
 >
-> **Byggstatus:** P96 **BYGGD 2026-09-29** (formen utökad med tre rader efter ägarbeslut, se
-> §3.1 och blockquoten under P96 i §9). P97 är inte påbörjad.
+> **Byggstatus:** P96 **BYGGD** och P97 **BYGGD 2026-09-29** (se blockquoterna under P96 och P97
+> i §9). P98 är inte påbörjad.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
@@ -393,6 +393,58 @@ styrelsens PM vid granskningsturerna. *Klart när:* varje granskningstur visar e
 klarar regel 18 i båda formaten. Golden orörd.
 
 **8B — Förskottet**
+
+> **P97 — BYGGD 2026-09-29.** *Core (ren läsning, golden orörd):* `boardReviewRequirement(target,
+> reviewTurn)` utbruten ur `boardReviewOutlook` (bitvis identisk) och ny `boardMemo(state,
+> reviewedTurn)` — prognos mot mål (`bookMoney` = `progressSnapshot` × `foundingCapital` mot kravet
+> i kronor), godkänd/underkänd, `reviewsFailed`, de tre största posterna ur huvudboken (bara intäkter
+> och kostnader, störst först; lån räknas inte som post) och nästa krav ur `boardReviewOutlook`.
+> *Huvudboken (`LedgerChart.tsx`, panelen "General ledger" i THE COMPANY):* blyertsstaplar
+> (intäkter uppåt, snedstreckade kostnader nedåt) på grönlinjerat papper, kassan (`treasuryEnd`) som
+> blå kurva, styrelsens krav som röd streckad linje med en ring per granskningstur, och en fylld
+> röd punkt "BOOK NOW". Hela diagrammet är EN knapp (21 kvartal à ~14 px vore långt under regel
+> 11:s 44 px): tryckets x-läge väljer närmaste bokförda kvartal och öppnar verifikationerna
+> (`BottomSheet`), där en `Stepper` bläddrar mellan kvartalen; tangentbord (Enter) öppnar senaste
+> kvartalet. Verifikationerna är huvudbokens egna rader, gruppade Income / Expenses / Financing,
+> med förändring i kassa, kassa, skuld och kreditgräns vid kvartalets slut. Diagramdatan är ren
+> och testad (`ledgerChart.ts`). *Styrelsens PM (`BoardMemo.tsx`, i `QuarterReplay`):* ett
+> maskinskrivet, stencilerat PM från THE SYNDICATE med stämpel (On track / Behind schedule),
+> prognos mot krav, tre största poster och en mening om vad styrelsen vill se (fast mönster per
+> läge, ingen ny formel). **Ett PM stänger aldrig uppspelningen av sig självt** och överlever både
+> `prefers-reduced-motion` och ett tyst kvartal (annars hade "varje granskningstur visar ett PM"
+> inte gällt de spelare som har rörelse avstängd); spelaren kvitterar med Continue, och Skip
+> hoppar först till PM:et.
+>
+> **Tolkningsval, dokumenterat.** Specen säger "styrelsens mål som en röd streckad linje" på en
+> kronaxel. Målet är ingen kassasiffra: `progressSnapshot` är (bokförd intäkt + orderbok) ÷
+> `foundingCapital`, och kravet vid en granskning är `boardReviewRequirement` på samma skala.
+> Linjen ritas därför som kravet på KUMULATIV BOK i kronor (`× foundingCapital`), och "BOOK NOW"
+> är samma storhet i dag (`progressSnapshot × foundingCapital`), så punkt och linje är direkt
+> jämförbara. Kassan och boken är två olika saker på samma kronaxel och är därför olika ritade och
+> benämnda ("Treasury" resp. "Book now" i teckenförklaringen). Linjen sträcker sig bara till nästa
+> granskning: längre än så dominerar kravet axeln och krymper staplarna till streck.
+>
+> **Genuina fynd.** (1) *Regel 18/11 hittade två latenta brott i NEWS DESK* så fort den
+> nya `board-memo`-skärmen spelade sju kvartal (de tidigare skärmarna visar alltid ett tomt, nytt
+> parti): en händelserad med orsakskedja (`.wire-row`: stämpel + text + ankare + YOU + orsaksknapp)
+> gav `.wire-text` bredd 0 på telefon — rubriktexten var oläsbar — och orsaksknappen "cause ×N" var
+> 26 px hög. Fixat (raden får radbrytas, `.wire-text` har en bas, `.wire-cause-toggle` är 44×44).
+> (2) `axe` underkände `.replay-list` (scrollbar region utan tangentbordsåtkomst) — nu `tabIndex=0`
+> med `aria-label`. (3) Ett tryck mäts mot SVG:ns egen ruta, inte knappens (på skrivbord är
+> knappen bredare än en skalad SVG). (4) Ett sparat parti som migrerats efter P96 har en huvudbok
+> som börjar mitt i partiet: diagrammet ritar den med `xMin` 0 och steppern stannar vid första
+> bokförda kvartalet (testat).
+>
+> **Test:** 39 nya vitest (1 036 → 1 075) — `boardMemo`/kravformeln (7, inkl. att godkänd/underkänd stämmer med
+> den `WireEvent` `board.ts` faktiskt emitterade, varje granskningstur × alla fyra policyer × 12
+> frön), diagramdata (11), `LedgerChart` (9), `BoardMemo` (7), `QuarterReplay` med PM (5) — och en
+> e2e-spec (`ledger.spec.ts`: tryck → verifikationer med kassan från HUD:en; PM vid T6 och T10,
+> stänger inte av sig självt; PM efter listan utan reducerad rörelse). Tre nya skärmar i
+> `screens.ts` (`company-ledger`, `ledger-vouchers`, `board-memo`) ger dem regel 11, regel 18 och
+> `axe` i båda formaten, och i `npm run shots`. `play-20-turns.spec.ts` fick kvittera PM:et med
+> Continue vid granskningsturerna (annars ligger överlagret kvar över nästa tur — beteendet är avsett).
+> Golden ORÖRD, `balance.frozen.json` orörd. Testsvep: 1 075 vitest, lint, typecheck (alla tre
+> paket), build, e2e 158 gröna (körd två gånger i rad efter fixen), shots granskade.
 
 **P98 — Betalningsvillkor.** `advancePct`, betalning vid tilldelning, förskottet behålls vid
 konkurs och återbetalas vid annullering. *Klart när:* varje utfall i §4.1 har ett test, och

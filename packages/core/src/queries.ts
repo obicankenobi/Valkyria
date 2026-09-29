@@ -16,6 +16,7 @@ import { computeLineThroughput } from './resolve/steps/production.js'
 import { round } from './money.js'
 import type {
   BidEstimate,
+  BoardTarget,
   Formation,
   FormationDisplay,
   Front,
@@ -89,6 +90,14 @@ export interface BoardReviewOutlook {
   isLastTurnBeforeReview: boolean // P81-8: "en varning i kvartalsbandet" turen INNAN en granskning spelaren ligger under
 }
 
+// P97: pass mark för EN granskningstur, på progressSnapshot-skalan. Utbruten ur
+// boardReviewOutlook (bitvis identisk) så att styrelsens PM (boardMemo nedan) och
+// huvudbokens målkurva delar exakt den formel board.ts:s runReview() dömer efter.
+export function boardReviewRequirement(target: BoardTarget, reviewTurn: number): number {
+  const expectedProgress = computeExpectedProgress(target.threshold, reviewTurn, target.dueTurn)
+  return expectedProgress * (1 - DISPLAY_THRESHOLDS.boardReviewTolerance)
+}
+
 export function boardReviewOutlook(state: GameState): BoardReviewOutlook {
   const target = state.house.boardTarget
   const nextReviewTurn = target.reviewTurns.find((t) => t > state.meta.turn) ?? null
@@ -98,8 +107,7 @@ export function boardReviewOutlook(state: GameState): BoardReviewOutlook {
     return { nextReviewTurn: null, turnsUntil: null, required: 0, current, onTrack: true, isLastTurnBeforeReview: false }
   }
 
-  const expectedProgress = computeExpectedProgress(target.threshold, nextReviewTurn, target.dueTurn)
-  const required = expectedProgress * (1 - DISPLAY_THRESHOLDS.boardReviewTolerance)
+  const required = boardReviewRequirement(target, nextReviewTurn)
   const turnsUntil = nextReviewTurn - state.meta.turn
 
   return {
@@ -109,6 +117,63 @@ export function boardReviewOutlook(state: GameState): BoardReviewOutlook {
     current,
     onTrack: current >= required,
     isLastTurnBeforeReview: turnsUntil === 1 && current < required,
+  }
+}
+
+// P97 (ETAPP8_FORSLAG.md §3.2): styrelsens kvartalsrapport — "prognos mot mål, de tre
+// största posterna och en mening om vad styrelsen vill se", bara siffrorna här (texten
+// är presentation, appens ansvar). Anropas med tillståndet EFTER att granskningsturen
+// `reviewedTurn` avgjorts (då är meta.turn = reviewedTurn + 1, progressSnapshot är
+// granskningens egen, och boardReviewOutlook pekar på NÄSTA granskning). Läser bara —
+// ingen ny formel: kravet är boardReviewRequirement, nästa krav är boardReviewOutlook.
+export interface BoardMemoItem {
+  kind: 'income' | 'expense'
+  row: string // nyckeln i LedgerEntry.income/expenses
+  amount: Money
+}
+
+export interface BoardMemo {
+  reviewTurn: number
+  current: number // progressSnapshot, samma skala som kravet
+  required: number
+  bookMoney: Money // current × foundingCapital: bokförd intäkt + orderbok, i kronor
+  requiredMoney: Money
+  passed: boolean
+  reviewsFailed: number
+  topItems: BoardMemoItem[] // högst tre, störst först
+  next: { turn: number; required: number; requiredMoney: Money } | null
+}
+
+export function boardMemo(state: GameState, reviewedTurn: number): BoardMemo | null {
+  const target = state.house.boardTarget
+  if (!target.reviewTurns.includes(reviewedTurn)) return null
+
+  const capital = state.house.foundingCapital
+  const required = boardReviewRequirement(target, reviewedTurn)
+  const current = target.progressSnapshot
+
+  const ledgerEntry = state.ledger.find((e) => e.turn === reviewedTurn)
+  const items: BoardMemoItem[] = []
+  if (ledgerEntry) {
+    for (const [row, amount] of Object.entries(ledgerEntry.income)) if (amount > 0) items.push({ kind: 'income', row, amount })
+    for (const [row, amount] of Object.entries(ledgerEntry.expenses)) if (amount > 0) items.push({ kind: 'expense', row, amount })
+  }
+  items.sort((a, b) => b.amount - a.amount) // stabil sortering: lika belopp behåller raden ordning
+
+  const outlook = boardReviewOutlook(state)
+  return {
+    reviewTurn: reviewedTurn,
+    current,
+    required,
+    bookMoney: round(current * capital),
+    requiredMoney: round(required * capital),
+    passed: current >= required,
+    reviewsFailed: target.reviewsFailed,
+    topItems: items.slice(0, 3),
+    next:
+      outlook.nextReviewTurn === null
+        ? null
+        : { turn: outlook.nextReviewTurn, required: outlook.required, requiredMoney: round(outlook.required * capital) },
   }
 }
 

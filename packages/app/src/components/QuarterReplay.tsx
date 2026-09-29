@@ -22,9 +22,10 @@
 // egen leverans) + vem (spelarmarkering) — samma information, utan att
 // uppfinna en kartanimationsmotor P82+ inte bett om.
 import { useEffect, useState } from 'react'
-import type { GameState, WireEvent } from '@seventh-front/core'
+import type { BoardMemo as BoardMemoData, GameState, WireEvent } from '@seventh-front/core'
 import { anchorLabel, wireAnchor } from '../wireAnchor.js'
 import { isFlashEvent } from '../newsClassification.js'
+import { BoardMemo } from './BoardMemo.js'
 import { DsToggle } from './designSystem.js'
 import { Tag } from './ui.js'
 
@@ -40,30 +41,44 @@ export function QuarterReplay({
   state,
   fullReplay,
   onToggleFullReplay,
+  memo = null,
   onDone,
 }: {
   wire: readonly WireEvent[]
   state: GameState
   fullReplay: boolean
   onToggleFullReplay: (value: boolean) => void
+  // P97 (ETAPP8_FORSLAG.md §3.2): styrelsens PM vid en granskningstur. Ett PM stänger
+  // ALDRIG uppspelningen av sig självt och överlever både prefers-reduced-motion och ett
+  // tyst kvartal — det ska visas vid varje granskningstur, så spelaren kvitterar det med
+  // "Continue" i stället för att det försvinner med tidsgränsen.
+  memo?: BoardMemoData | null
   onDone: () => void
 }) {
   const events = fullReplay ? wire : wire.filter((e) => e.severity === 'headline')
   const reduced = prefersReducedMotion()
+  const hasMemo = memo !== null
+  const nothingToAnimate = reduced || events.length === 0
   const [shown, setShown] = useState(0)
+  const [memoVisible, setMemoVisible] = useState(hasMemo && nothingToAnimate)
 
   // "Omedelbar vid prefers-reduced-motion" (§8, ordagrant) — inget att titta
   // igenom, inget att vänta på. Samma princip för ett kvartal utan
   // rubrikhändelser alls (t.ex. ett tyst kvartal utan strid eller leverans).
+  // Med ett PM avslutas inget: överlagret visas med PM:et i stället.
   useEffect(() => {
-    if (reduced || events.length === 0) {
+    if (nothingToAnimate && !hasMemo) {
       onDone()
     }
   }, [])
 
   useEffect(() => {
-    if (reduced || events.length === 0) return
+    if (nothingToAnimate) return
     if (shown >= events.length) {
+      if (hasMemo) {
+        setMemoVisible(true) // listan är slut: PM:et kommer fram och stannar tills spelaren kvitterar
+        return
+      }
       const timer = setTimeout(onDone, REPLAY_INTERVAL_MS)
       return () => clearTimeout(timer)
     }
@@ -71,9 +86,20 @@ export function QuarterReplay({
     return () => clearTimeout(timer)
   }, [shown])
 
-  if (reduced || events.length === 0) return null
+  if (nothingToAnimate && !hasMemo) return null
 
-  const visible = events.slice(0, shown)
+  // Reducerad rörelse (eller ett tyst kvartal): hela listan direkt, ingen sekvens.
+  const visible = nothingToAnimate ? events : events.slice(0, shown)
+
+  function handleSkip() {
+    // Skip hoppar först till PM:et (om det finns och inte syns än), stänger sedan.
+    if (hasMemo && !memoVisible) {
+      setShown(events.length)
+      setMemoVisible(true)
+      return
+    }
+    onDone()
+  }
 
   return (
     <div className="modal-overlay" data-testid="quarter-replay">
@@ -87,7 +113,7 @@ export function QuarterReplay({
             testId="replay-full-toggle"
           />
         </div>
-        <ol className="replay-list" data-testid="replay-list">
+        <ol className="replay-list" data-testid="replay-list" tabIndex={0} aria-label="Quarter events">
           {visible.map((event) => {
             const anchor = wireAnchor(state, event)
             const label = anchorLabel(state, anchor)
@@ -107,8 +133,9 @@ export function QuarterReplay({
             )
           })}
         </ol>
-        <button type="button" className="ds-button is-secondary replay-skip" onClick={onDone} data-testid="replay-skip">
-          Skip
+        {memo && memoVisible && <BoardMemo memo={memo} />}
+        <button type="button" className="ds-button is-secondary replay-skip" onClick={handleSkip} data-testid="replay-skip">
+          {memo && memoVisible ? 'Continue' : 'Skip'}
         </button>
       </div>
     </div>

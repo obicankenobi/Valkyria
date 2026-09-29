@@ -704,7 +704,11 @@ penningflyttande gren och förseglad i `resolveTurn()`; formen utökad efter äg
 `income.fileSale`, `expenses.clawback` och `financing` (lån/återbetalning). Balanstest över 500
 botpartier + 200 fuzz-partier. Golden omfryst i egen commit efter att alla andra fält verifierats
 bit-identiska. Öppna fynd (se blockquoten under P96 i specen): `applyInfluence` drar kassa utan att
-emitta när effekten är noll, och sparade partier från före P96 saknar `ledger`. P97 är inte påbörjad.
+emitta när effekten är noll, och sparade partier från före P96 saknar `ledger` — **båda åtgärdade** (ägarbeslut, golden orörd).
+**P97 BYGGD 2026-09-29:** huvudboken i THE COMPANY (`LedgerChart.tsx`: blyertsstaplar, kassakurva, röd
+streckad kravkurva, verifikationer per kvartal) och styrelsens PM från THE SYNDICATE i
+`QuarterReplay` vid varje granskningstur (`boardMemo` i `queries.ts`, ren läsning). Ett PM stänger
+aldrig uppspelningen av sig självt. Golden orörd. P98 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

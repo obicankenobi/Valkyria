@@ -677,8 +677,14 @@ td.is-key {
 
 .wire-row {
   display: flex;
+  flex-wrap: wrap; /* P97: en rad med stämpel + text + ankare + YOU + orsaksknapp fick text-bredd 0 på telefon (regel 18) */
   align-items: baseline;
   gap: 10px;
+}
+
+.wire-cause-toggle {
+  min-width: 44px;
+  min-height: 44px; /* regel 11 */
 }
 
 .wire-stamp {
@@ -708,7 +714,7 @@ td.is-key {
 }
 
 .wire-text {
-  flex: 1;
+  flex: 1 1 140px;
   min-width: 0;
   font-size: 13px;
   color: var(--ink-dim);
@@ -4330,5 +4336,320 @@ summary:focus-visible,
   }
   .map-country.is-selectable:hover {
     fill: var(--panel-sunken);
+  }
+}
+
+/* ── P97: huvudboken (ETAPP8_FORSLAG.md §3.2) ──────────────────────────────
+   Grönlinjerat bokföringspapper: blyertsstaplar (intäkter uppåt, snedstreckade
+   kostnader nedåt), kassan i blått fettkrita, styrelsens krav som röd streckad linje.
+   Hela diagrammet är en enda knapp (regel 11: 21 kvartal à ~14 px vore långt under
+   44 px) — se LedgerChart.tsx. Bara transform/opacity animeras i appen; här animeras
+   ingenting alls. */
+.ledger-chart-hit {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ledger-chart {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  margin: 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.ledger-rule {
+  stroke: var(--green);
+  stroke-opacity: 0.3;
+  stroke-width: 1;
+}
+
+.ledger-zero {
+  stroke: var(--ink-dim);
+  stroke-width: 1.4;
+}
+
+.ledger-axis-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--ink-dim);
+}
+
+.ledger-bar-income {
+  fill: var(--ink-dim);
+  fill-opacity: 0.55;
+}
+
+.ledger-bar-expense {
+  fill: url(#ledger-hatch);
+  stroke: var(--ink-dim);
+  stroke-width: 0.8;
+}
+
+.ledger-cash {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ledger-target {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.ledger-review-dot {
+  fill: var(--panel);
+  stroke: var(--red);
+  stroke-width: 2;
+}
+
+.ledger-book-now {
+  fill: var(--red);
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+
+.ledger-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.ledger-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ledger-key {
+  display: inline-block;
+  width: 18px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.ledger-key.is-income {
+  background: var(--ink-dim);
+  opacity: 0.55;
+}
+
+.ledger-key.is-expense {
+  background: repeating-linear-gradient(45deg, var(--ink-dim) 0 1.5px, transparent 1.5px 4px);
+  border: 1px solid var(--ink-dim);
+}
+
+.ledger-key.is-cash {
+  height: 0;
+  border-top: 3px solid var(--blue);
+}
+
+.ledger-key.is-target {
+  height: 0;
+  border-top: 2px dashed var(--red);
+}
+
+.ledger-key.is-book {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+.ledger-summary {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+/* Verifikationen: ett maskinskrivet kvitto, prickade ledare mellan post och belopp. */
+.voucher {
+  display: grid;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.voucher-group-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.voucher-lines {
+  margin: 0;
+}
+
+.voucher-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--line-strong);
+}
+
+.voucher-line dt,
+.voucher-line dd {
+  margin: 0;
+}
+
+.voucher-line dd {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.voucher-line dd.is-negative {
+  color: #a32b25;
+}
+
+.voucher-totals {
+  padding-top: 6px;
+  border-top: 2px solid var(--ink-dim);
+}
+
+.voucher-totals .voucher-line:first-child {
+  font-weight: 700;
+}
+
+.voucher-none {
+  margin: 0;
+  color: var(--ink-faint);
+}
+
+/* ── P97: styrelsens PM (stencilerat, från THE SYNDICATE) ──────────────────
+   Ett maskinskrivet PM på manillapapper. Stämpeln ligger i normalt flöde (regel 8/18,
+   samma val som .order-stamp). */
+.board-memo {
+  flex: none;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 2px solid var(--ink-dim);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.board-memo-head {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ink-dim);
+}
+
+.board-memo-from {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.2em;
+}
+
+.board-memo-kind {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+.board-memo-stamp {
+  justify-self: start;
+  padding: 2px 9px;
+  border: 2px solid var(--green);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+  transform: rotate(-2deg);
+}
+
+.board-memo-stamp.is-failed {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.board-memo-forecast,
+.board-memo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-memo-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  border-bottom: 1px dotted var(--line-strong);
+}
+
+.board-memo-line dt,
+.board-memo-line dd {
+  margin: 0;
+}
+
+.board-memo-line dd.is-ahead {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.board-memo-line dd.is-short {
+  color: #a32b25;
+  font-weight: 700;
+}
+
+.board-memo-subhead {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.board-memo-none {
+  margin: 0;
+  color: var(--ink-faint);
+}
+
+.board-memo-sentence {
+  margin: 0;
+  font-weight: 700;
+}
+
+.replay-list {
+  flex: 1 1 auto;
+  min-height: 72px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ledger-chart-hit:hover .ledger-chart {
+    border-color: var(--ink-dim);
   }
 }

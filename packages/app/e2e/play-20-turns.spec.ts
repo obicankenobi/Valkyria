@@ -151,6 +151,13 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
   const failureTurns: number[] = []
 
   for (let turn = 0; turn < 20; turn++) {
+    // P97 (ETAPP8_FORSLAG.md §3.2): vid en granskningstur (T6/T10/T14/T18) visar
+    // kvartalsuppspelningen styrelsens PM och stänger aldrig av sig självt — spelaren
+    // kvitterar med Continue. Utan det ligger överlagret kvar över hela nästa tur.
+    if (await page.getByTestId('board-memo').isVisible().catch(() => false)) {
+      await page.getByTestId('replay-skip').click()
+      await expect(page.getByTestId('board-memo')).toBeHidden()
+    }
     const crisisModal = page.getByTestId('crisis-modal')
     if (await crisisModal.isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /SELL THE FILE/ }).click()

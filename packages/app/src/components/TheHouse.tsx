@@ -31,6 +31,7 @@ import {
 } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, ProductionLine, TurnSubmission } from '@seventh-front/core'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
+import { LedgerChart } from './LedgerChart.js'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
 
 function contractMargin(contract: Contract, commodities: Record<Commodity, number>): { marginPct: number | null; unitCostNow: number } {
@@ -257,6 +258,8 @@ export function TheHouse({
           </p>
         </Panel>
       </div>
+
+      <LedgerChart state={state} />
 
       <NextQuarterPanel state={state} />
 

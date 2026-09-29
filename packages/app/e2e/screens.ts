@@ -226,6 +226,48 @@ export async function enterCountryFile(page: Page): Promise<void> {
   await page.getByTestId('country-file').waitFor()
 }
 
+// P97 (ETAPP8_FORSLAG.md §3.2): huvudboken och styrelsens PM. Båda kräver ett parti som
+// spelats några kvartal (ledger-raderna finns först efter End Quarter; styrelsens PM kommer
+// vid första granskningsturen, tur 6). Reducerad rörelse gör kvartalsuppspelningen
+// omedelbar — utom vid en granskningstur, där PM:et ALDRIG försvinner av sig självt och
+// spelaren kvitterar med Continue (QuarterReplay.tsx).
+export async function endQuarters(page: Page, count: number): Promise<void> {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (let i = 0; i < count; i++) {
+    await page.getByTestId('end-quarter-button').click()
+    await page.waitForTimeout(150)
+  }
+}
+
+export async function enterCompanyLedger(page: Page): Promise<void> {
+  await enterOperations(page)
+  await endQuarters(page, 4)
+  await page.getByTestId('tab-company').click()
+  await page.getByTestId('ledger-chart').waitFor()
+}
+
+export async function enterLedgerVouchers(page: Page): Promise<void> {
+  await enterCompanyLedger(page)
+  await page.getByTestId('ledger-chart').click()
+  await page.getByTestId('ledger-vouchers').waitFor()
+}
+
+// Spelar tills PM:et visas (turn 6 resolveras av End Quarter nummer 7).
+export async function enterBoardMemo(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (let i = 0; i < 9; i++) {
+    await page.getByTestId('end-quarter-button').click()
+    try {
+      await page.getByTestId('board-memo').waitFor({ state: 'visible', timeout: 400 })
+      return
+    } catch {
+      // Ingen granskningstur än.
+    }
+  }
+  throw new Error('styrelsens PM visades aldrig inom nio kvartal')
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -243,4 +285,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'settings', path: '/', setup: enterSettings },
   { name: 'tutorial', path: '/', setup: enterTutorial },
   { name: 'handbook', path: '/', setup: enterHandbook },
+  { name: 'company-ledger', path: '/', setup: enterCompanyLedger },
+  { name: 'ledger-vouchers', path: '/', setup: enterLedgerVouchers },
+  { name: 'board-memo', path: '/', setup: enterBoardMemo },
 ]

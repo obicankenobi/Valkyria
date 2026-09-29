@@ -32,6 +32,27 @@ const REFERENCE_PORT = 4187
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
 
+// P97: ett nytt parti spelat `quarters` kvartal med reducerad rörelse (uppspelningen
+// omedelbar, PM:et undantaget — se QuarterReplay.tsx). Samma New Game-väg som övriga skärmar.
+async function enterOperationsAndPlay(page, quarters) {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.getByTestId('menu-new-game').click()
+  const confirmYes = page.getByTestId('new-game-confirm-yes')
+  try {
+    await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+    await confirmYes.click()
+  } catch {
+    // Inget sparat parti.
+  }
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
+  await page.getByTestId('hud').waitFor()
+  for (let i = 0; i < quarters; i++) {
+    await page.getByTestId('end-quarter-button').click()
+    await page.waitForTimeout(150)
+  }
+}
+
 // Skärmar denna prompt bygger. `path` är appens query-styrda ingång (samma
 // ?screen=-mönster som App.tsx:s wantsComponentLibrary()). En skärm utan egen
 // query-ingång (huvudmenyn ligger redan på '/', OPERATIONS kräver att man
@@ -431,6 +452,47 @@ const APP_SCREENS = [
       await page.getByTestId('menu-continue').click()
       await page.getByTestId('tab-news').click()
       await page.getByTestId('crisis-modal').waitFor()
+    },
+  },
+  {
+    // P97 (ETAPP8_FORSLAG.md §3.2): huvudboken i THE COMPANY — fyra spelade kvartal så att
+    // diagrammet har staplar, kassakurva, målkurva och BOOK NOW (ingen referensskiss).
+    name: 'company-ledger',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 4)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('ledger-chart').waitFor()
+      await page.getByTestId('ledger-chart').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P97: kvartalets verifikationer — bottenarket som ett tryck på diagrammet öppnar.
+    name: 'ledger-vouchers',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 4)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('ledger-chart').click()
+      await page.getByTestId('ledger-vouchers').waitFor()
+    },
+  },
+  {
+    // P97: styrelsens PM från THE SYNDICATE vid första granskningen (tur 6).
+    name: 'board-memo',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      for (let i = 0; i < 9; i++) {
+        await page.getByTestId('end-quarter-button').click()
+        try {
+          await page.getByTestId('board-memo').waitFor({ state: 'visible', timeout: 400 })
+          return
+        } catch {
+          // Ingen granskningstur än.
+        }
+      }
+      throw new Error('styrelsens PM visades aldrig inom nio kvartal')
     },
   },
   {
