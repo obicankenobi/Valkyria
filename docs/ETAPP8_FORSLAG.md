@@ -2,11 +2,15 @@
 
 **THE SEVENTH FRONT** · förslag · skrivet 2026-09-29 mot `c660b90` (efter P94)
 
-> **Status 2026-09-29:** ägarbesluten 8A–8G är fattade, samtliga enligt förslagets egna
-> rekommendationer (§2). Etappen är **inte startad**: den förutsätter att P95 (speltestet av
-> etapp 7) är genomfört, och P95 kan flytta punkter hit eller härifrån. Ordningen är etapp 8
-> före etapp 9 (forskningen). Först när P95 är gjort och specen har stämts av mot dess svar
-> räknas etappen som antagen.
+> **Status 2026-09-29 (uppdaterad):** etappen är **ANTAGEN och aktiv** (ägarbeslut
+> 2026-09-29, `ANDRINGSLOGG.md`). Besluten 8A–8G är fattade, samtliga enligt förslagets egna
+> rekommendationer (§2). **P95 (speltestet av etapp 7) är uppskjutet** — etapp 8 körs före det.
+> P95 kan fortfarande flytta punkter hit eller härifrån. Ordningen är etapp 8 före etapp 9
+> (forskningen). Beslut 8C gäller: golden får frysas om **bara** i P96, P98, P100 och P102,
+> var och en i egen commit. Filen behåller namnet `ETAPP8_FORSLAG.md`.
+>
+> **Byggstatus:** P96 **stannad vid premisskontrollen** (2026-09-29) — se blockquoten under P96
+> i §9. Inget byggt; väntar på ägarbeslut om fyra flöden som inte passar huvudbokens form.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
@@ -291,6 +295,30 @@ i etappen**, samma praxis som P22.
 Bygg sedan fältet, skrivningarna i varje penningflyttande steg och balanstestet. *Klart när:*
 balanstestet är grönt i 500 härnesspartier över alla policyer, och golden är omfryst med alla
 andra fält verifierat identiska.
+
+> **P96 — STANNAD vid premisskontrollen, 2026-09-29 (inget byggt).** Punkterna 0.1–0.9 och 0.11
+> stämmer mot koden på `c660b90` (0.11: sökning efter `investigat` ger noll träffar i `core/src`;
+> `chiefOfStaff` ger fjärde handlingen, den andra halvan saknas). **0.10 stämmer bara till hälften:**
+> `state.wire` beskär till 8 turer, men `house.revenueByTurn` är redan en intäktshistorik över hela
+> partiet — det som saknas är kostnadssidan och uppdelningen per post. Påverkar inte P96.
+>
+> **Alla skrivningar till `house.treasury`/`house.debt` i `packages/core/src`:**
+> `economy.ts` (fasta kostnader → `expenses.fixedCosts`, ränta → `expenses.interest`);
+> `production.ts` (styckkostnad netto efter forward-innehav → `expenses.production`);
+> `deliveries.ts` (leveransintäkt → `income.contracts`, eller `income.broker` för `contract-broker-*`);
+> `applyActions.ts` (BUILD_LINE → `lines`, HIRE → `hiring`, EXPAND/RECRUIT/LEAK/SABOTAGE/TURN → `intel`,
+> `BUY_FORWARD` → `commodityPurchase`, `RELEASE` → `income.commodityRelease`);
+> `political.ts` (BRIBE, FUND_CAMPAIGN, INFLUENCE, STAGE_INCIDENT, BACK_CHANNEL, FUND_COUP, ASSASSINATE → `political`);
+> **passar ingen rad:** `applyActions.ts` `TAKE_LOAN`/`REPAY` (kassa och skuld rör sig lika mycket åt
+> samma håll — finansiering, inte intäkt/kostnad) samt `crisis.ts` `resolveBackDown` (−`restrictedRevenueThisTurn`,
+> ett återtagande av redan bokförd leveransintäkt) och `resolveSellTheFile` (+`crisisSellFileRevenue`,
+> en engångsintäkt som varken är kontrakt, förskott, broker eller råvaruförsäljning).
+> `factions.ts` rör bara en FAKTIONS kassa (`embargoTreasuryDrainPerTurn`), inte huset. `BROKER`
+> flyttar inga pengar själv; dess intäkt är en vanlig leverans.
+>
+> **Frågor till ägaren innan P96 byggs** (formen är det golden fryser; en tillagd rad efteråt kostar en
+> omfrysning som 8C inte förhandsgodkänner): se `ANDRINGSLOGG.md` 2026-09-29, P96-raden, och
+> sessionens rapport.
 
 **P97 — Huvudboken och styrelsens PM.** Grafen i THE COMPANY, kvartalets verifikationer och
 styrelsens PM vid granskningsturerna. *Klart när:* varje granskningstur visar ett PM, och grafen

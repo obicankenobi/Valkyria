@@ -690,6 +690,18 @@ P94-blockquote och `docs/ANDRINGSLOGG.md`.
 partier på telefon, frågan i §1 — som en kodsession inte kan göra, samt ägarens punkter:
 bildgenereringen (P92), ljudeffekterna i `audio-src/sfx/` (P93), mätning på en riktig telefon
 och en skärmläsargenomgång (P94).
+Etapp 8, "Kassaboken", `docs/ETAPP8_FORSLAG.md` (P96–P105, **antagen 2026-09-29**, ägarbesluten 8A–8G
+loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) körs **före** P95 — speltestet av etapp 7 är
+uppskjutet. Den gör om hur pengarna känns, i fem delar: huvudboken (`GameState.ledger`, P96–P97),
+förskottet och betalningsrisken (`advancePct`, P98–P99), stående order i tre slag (linjeuppdrag,
+leverantörsavtal, stationsläge, P100–P101), belopp som köper odds för `STAGE_INCIDENT`/`BACK_CHANNEL`/
+`FUND_COUP`/`ASSASSINATE` (P102) och balans mot en spelarlik bot (`human`, P103–P104), avslutad av ett
+speltest utan kod (P105). **Golden får frysas om av kodsessionen bara i P96, P98, P100 och P102** (beslut
+8C, var och en i egen commit, och bara när ändringen är den som prompten beskriver) — i alla andra
+prompter är golden orörd och "stanna och fråga" gäller som vanligt. `bidEstimate.winBand` och botpolicyn
+`balanced` rörs inte (golden läser båda). **P96 stannad vid premisskontrollen 2026-09-29:** fyra
+penningflöden (`TAKE_LOAN`, `REPAY`, `BACK_DOWN`s återtagande, `SELL_THE_FILE`) passar ingen rad i
+huvudbokens form och väntar på ägarbeslut — se blockquoten under P96 i specen.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
