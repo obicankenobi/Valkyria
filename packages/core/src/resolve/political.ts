@@ -330,6 +330,21 @@ export function computeInfluenceAfter(kind: 'publicSupport' | 'relations', befor
   const costPerPoint = kind === 'publicSupport' ? BALANCE.influencePublicSupportCostPerPoint : BALANCE.influenceRelationsCostPerPoint
   return clamp(before + (spend / costPerPoint) * sign, 0, 100)
 }
+// En INFLUENCE som inte flyttar något (måltalet redan på taket/golvet) kostar ändå
+// pengarna — kassan är redan debiterad. Hård regel 4: en statsändring emittar alltid en
+// händelse. (Före P96-uppföljningen return:ade grenen tyst, sedan P60.)
+function emitNoEffectInfluence(ctx: ResolveContext, targetName: string, spend: number, what: string, subjectId: string): void {
+  ctx.emit({
+    severity: 'ticker',
+    scope: 'faction',
+    headline: `${ctx.draft.house.name.toUpperCase()} RUNS AN INFLUENCE CAMPAIGN IN ${targetName.toUpperCase()} — NO EFFECT ON ${what} (−£${spend.toLocaleString('en-GB')})`,
+    causeId: null,
+    delta: { treasury: -spend },
+    actorIsPlayer: true,
+    subjectId,
+  })
+}
+
 function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'INFLUENCE' }>): void {
   const { draft, emit } = ctx
   const house = draft.house
@@ -342,7 +357,10 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
     house.treasury -= action.spend
     recordExpense(draft, 'political', action.spend)
     target.publicSupport = after
-    if (after === before) return
+    if (after === before) {
+      emitNoEffectInfluence(ctx, target.name, action.spend, 'PUBLIC SUPPORT', target.id)
+      return
+    }
 
     emit({
       severity: 'ticker',
@@ -364,7 +382,10 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
   house.treasury -= action.spend
   recordExpense(draft, 'political', action.spend)
   target.relations[towardId] = after
-  if (after === before) return
+  if (after === before) {
+    emitNoEffectInfluence(ctx, target.name, action.spend, `RELATIONS WITH ${toward.name.toUpperCase()}`, target.id)
+    return
+  }
 
   emit({
     severity: 'ticker',

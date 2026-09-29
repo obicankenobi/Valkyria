@@ -401,27 +401,39 @@ describe('ledger — ett test per penningflyttande steg (varje flöde skriver si
       expectBooked(state, before, (e) => expect(e.expenses.political).toBe(30000))
     })
 
-    it('INFLUENCE som inte ändrar något (publicSupport redan på taket) drar ÄNDÅ kassa utan att emitta — huvudboken bokför den tysta utgiften', () => {
-      // Fynd P96: applyInfluence gör `treasury -= spend` INNAN `if (after === before) return`,
-      // så en verkningslös kampanj kostar pengar men emittar ingen WireEvent (hård regel 4
-      // brutet sedan P60). Huvudboken ska ändå balansera — det är hela poängen med kontrollen.
-      const state = createInitialState('indochina-slice', 'seed')
-      state.factions['rvn']!.publicSupport = 100
-      const before = state.house.treasury
-      const ctx = makeCtx(state, [
-        {
-          type: 'POLITICAL',
-          op: 'INFLUENCE',
-          targetFactionId: 'rvn',
-          spend: 30000,
-          direction: 'up',
-          effect: { kind: 'publicSupport' },
-        },
-      ])
-      applyActions(ctx)
-      expect(ctx.rejected).toEqual([])
-      expectBooked(state, before, (e) => expect(e.expenses.political).toBe(30000))
-    })
+    // Fynd P96, åtgärdat efteråt: applyInfluence drog kassa och return:ade utan att emitta när
+    // effekten var noll (hård regel 4 brutet sedan P60). Nu emittas en händelse, och
+    // huvudboken balanserar som förut.
+    for (const [label, effect, prepare] of [
+      ['publicSupport redan på taket', { kind: 'publicSupport' } as const, (st: GameState) => { st.factions['rvn']!.publicSupport = 100 }],
+      [
+        'relationen redan på taket',
+        { kind: 'relations', towardFactionId: 'nlf' } as const,
+        (st: GameState) => { st.factions['rvn']!.relations['nlf'] = 100 },
+      ],
+    ] as const) {
+      it(`INFLUENCE utan effekt (${label}) drar kassa OCH emittar en händelse med treasury-delta (hård regel 4)`, () => {
+        const state = createInitialState('indochina-slice', 'seed')
+        prepare(state)
+        const before = state.house.treasury
+        const ctx = makeCtx(state, [
+          { type: 'POLITICAL', op: 'INFLUENCE', targetFactionId: 'rvn', spend: 30000, direction: 'up', effect },
+        ])
+        const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
+        const inner = ctx.emit
+        ctx.emit = (e) => {
+          emitted.push(e)
+          return inner(e)
+        }
+        applyActions(ctx)
+        expect(ctx.rejected).toEqual([])
+        expect(state.house.treasury).toBe(before - 30000)
+        const event = emitted.find((e) => e.headline.includes('NO EFFECT'))
+        expect(event, 'ingen händelse för den verkningslösa kampanjen').toBeDefined()
+        expect(event!.delta).toEqual({ treasury: -30000 })
+        expectBooked(state, before, (e) => expect(e.expenses.political).toBe(30000))
+      })
+    }
 
     it('FAVOUR kostar marginal, inte kassa — ingen huvudboksrad alls', () => {
       const state = createInitialState('indochina-slice', 'seed')

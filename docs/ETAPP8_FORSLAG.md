@@ -380,6 +380,14 @@ andra fält verifierat identiska.
 > `balance.frozen.json` bit-identisk med `balance.json` (ingen balanssiffra rörd).
 > Testsvep: 1 032 vitest (994→1 032), lint, typecheck (alla tre paket), build, e2e.
 
+> **P96-uppföljning, 2026-09-29 (ägarbeslut: fixa båda).** Fynd 2 åtgärdat: `applyInfluence`
+> emittar nu en `… NO EFFECT ON …`-händelse (`delta: { treasury: -spend }`) i båda grenarna när
+> effekten är noll, så kassaändringen inte längre är tyst (hård regel 4). Golden ORÖRD — vägen
+> nås inte i de tre golden-partierna (verifierat: hasharna oförändrade). Fynd 3 åtgärdat:
+> `persistence.ts` `migrate()` (nu exporterad) ger ett sparat parti utan `ledger` en tom huvudbok
+> i stället för att låta nästa `resolveTurn` krascha. En migrerad huvudbok börjar därför på
+> inläsningsturen, inte tur 0 — P97-grafen ska tåla det.
+
 **P97 — Huvudboken och styrelsens PM.** Grafen i THE COMPANY, kvartalets verifikationer och
 styrelsens PM vid granskningsturerna. *Klart när:* varje granskningstur visar ett PM, och grafen
 klarar regel 18 i båda formaten. Golden orörd.

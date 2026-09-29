@@ -65,9 +65,16 @@ export async function saveGame(slot: string, saved: SavedGame): Promise<void> {
 // Migrerar ett inläst sparat parti till CURRENT_SCHEMA_VERSION, eller ger
 // null om det är en version det inte finns en migrering för än — säkrare att
 // börja om än att köra vidare på ett state som kan ha fel form.
-function migrate(saved: SavedGame): SavedGame | null {
+//
+// P96: GameState.ledger (huvudboken) tillkom utan att schemaversionen höjdes — ett sparat
+// parti från före P96 saknar fältet och skulle krascha vid nästa resolveTurn. Det får en
+// tom huvudbok; historiken före inläsningen går inte att återskapa. (Exporterad för test.)
+export function migrate(saved: SavedGame): SavedGame | null {
   switch (saved.state.meta.version) {
     case CURRENT_SCHEMA_VERSION:
+      if (!Array.isArray((saved.state as Partial<GameState>).ledger)) {
+        return { ...saved, state: { ...saved.state, ledger: [] } }
+      }
       return saved
     default:
       return null
