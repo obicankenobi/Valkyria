@@ -1812,6 +1812,27 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P92 — Porträtt och händelsebilder.** Promptdokument först, bilderna genereras av ägaren, kopplas sedan in.
 
+> **P92 LEVERERAD 2026-09-29 (endast dokument, ingen kod).** Nytt
+> `docs/GRAFISKA_TILLGANGAR_ETAPP7.md`, samma arbetsgång som
+> `GRAFISKA_TILLGANGAR.md`: 18 porträtt (12 startuppsättningstjänstemän ur
+> `officials.json` + 6 ersättare ur `successors.json`) och 10 händelsebilder
+> (ur `ChronicleKind` och blixtmönstren i `newsClassification.ts`), med två
+> LÅSTA stilprompter (porträtt: svartvit ID-akt 1964; händelser: halvtonsplåt
+> med bara fettkritsrött/-blått) så att alla bilder i en grupp ser ut att
+> komma från samma hand. Premisskontroll mot koden: `packages/app` har inget
+> porträtt- eller händelsebildsfält (sökt), så det finns inget att koppla in
+> än — inkopplingen är beskriven som en egen, senare uppgift. GENUINT FYND:
+> ersättarna i `successors.json` behöver egna porträtt, och de hör till
+> fraktion + ersättarnummer, inte till en post (`replaceOfficial` tar den
+> avlidnes post); specens "porträtt av tjänstemännen" nämner dem inte, men
+> utan dem skulle en ersättare visas utan bild. Personbeskrivningarna bygger
+> på post/ålder, aldrig på de dolda talen `integrity`/`agenda` —
+> `officialDisplay` grindar dem bakom underrättelse, och ett "korrupt" eller
+> "ärligt" uttryck i bilden hade läckt dem. Inkopplingen föreslås testad med
+> samma mönster som `handbook.test.ts`: ett test som underkänner om en
+> tjänsteman saknar porträtt. Golden ORÖRD (ingen kod). Ägarens
+> generering av bilderna återstår.
+
 **P93 — Ljudpass.**
 
 **P94 — Tillgänglighet, prestanda och skrivbordsvarianten.** Prestandabudgeten mätt på riktiga telefoner. Skrivbordslayouten genomgången med hovring och tangentbord. e2e omskrivet till kartflödet i båda formaten.

@@ -661,7 +661,11 @@ e2e 60 gröna två gånger i rad, shots granskade. **P91 (a+b) är därmed helt 
 uppdrag var "kör P91–P94", men P92 påbörjades INTE — ägaren bad uttryckligen om det:
 P92 (Porträtt och händelsebilder, promptdokument), P93 (Ljudpass) och P94 (Tillgänglighet,
 prestanda, skrivbordsvarianten) återstår.**
-**Nästa steg är P92, Porträtt och händelsebilder.**
+**P92 LEVERERAD 2026-09-29** (endast dokument): `docs/GRAFISKA_TILLGANGAR_ETAPP7.md` — 18
+porträtt (12 tjänstemän + 6 ersättare) och 10 händelsebilder med låsta stilprompter. Ingen kod,
+golden ORÖRD; ägarens bildgenerering och den senare inkopplingen återstår (beskrivna i
+dokumentet). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P92-blockquote och `docs/ANDRINGSLOGG.md`.
+**Nästa steg är P93, Ljudpass.** (`docs/LJUDTILLGANGAR.md` finns redan sedan etapp 6.)
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
