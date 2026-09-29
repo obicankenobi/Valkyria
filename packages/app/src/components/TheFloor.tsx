@@ -5,7 +5,7 @@
 // inspectorIntegrity/weights visas ALDRIG (avsnitt 4.3) — BidForm.tsx äger
 // själva reglaget, den här filen äger bara mappen den öppnas ur.
 import { useState } from 'react'
-import { getProduct } from '@seventh-front/core'
+import { getProduct, orderTerms } from '@seventh-front/core'
 import type { Bid, GameState, Order, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
@@ -27,6 +27,9 @@ function OrderFolder({
   const [open, setOpen] = useState(false)
   const product = getProduct(order.productId)
   const buyer = state.factions[order.buyerId]
+  // P99: villkoren — förskottet är ett villkor i affären (alltid synligt), köparens kreditstämpel
+  // grindas genom underrättelse (skyddsräcke 4): utan station "?".
+  const terms = orderTerms(state, order)
   const turnsLeft = order.expiresTurn - state.meta.turn
   // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "en order utan frontId ska
   // inte krascha vyn" — SCRIPTED-ordrar och krisköp har frontId: null.
@@ -35,7 +38,20 @@ function OrderFolder({
 
   return (
     <div className="order-folder" data-testid="order-folder">
-      <div className="order-folder-tab">{buyer ? buyer.name : order.buyerId}</div>
+      <div className="order-folder-tab">
+        <span>{buyer ? buyer.name : order.buyerId}</span>
+        <span className="credit-stamp-group">
+          <span className="credit-stamp-label">Credit</span>
+          <span
+            className={`credit-stamp is-${terms.credit ?? 'unknown'}`}
+            data-testid="credit-stamp"
+            role="img"
+            aria-label={terms.credit ? `Buyer credit rating ${terms.credit}` : 'Buyer credit rating unknown: no intelligence on this buyer'}
+          >
+            {terms.credit ?? '?'}
+          </span>
+        </span>
+      </div>
 
       <div className="order-head">
         <span className="order-product">{product.name}</span>
@@ -49,6 +65,9 @@ function OrderFolder({
           <Tag>{frontLabel}</Tag>
           <span className={`order-stamp${turnsLeft <= 1 ? ' is-urgent' : ''}`} data-testid="order-deadline-stamp">
             {deadlineLabel}
+          </span>
+          <span className="order-stamp is-advance" data-testid="order-advance-stamp">
+            {terms.advancePct > 0 ? `Advance ${terms.advancePct} %` : 'No advance'}
           </span>
           {existingBid && <Tag tone="green">Bid {formatMoney(existingBid.price)}</Tag>}
           {/* "quote"/"close", not "bid" — "bid" is a substring of "Place Bid"/"Update Bid"/

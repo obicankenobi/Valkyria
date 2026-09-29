@@ -4653,3 +4653,125 @@ summary:focus-visible,
     border-color: var(--ink-dim);
   }
 }
+
+/* ── P99: betalningsvillkoren i budmappen (ETAPP8_FORSLAG.md §4.2) ─────────────
+   Kreditstämpeln (A/B/C, "?" utan underrättelse) sitter i mappens flik, förskottet är en stämpel
+   i samma register som fristen (.order-stamp, P84), och tre avläsningar (vinstchans, marginal,
+   pengar nästa kvartal) sitter tillsammans vid prisreglaget så att avvägningen syns i ett enda
+   ögonkast. Stämplarna ligger i normalt flöde (regel 8/18). */
+.order-folder-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.credit-stamp-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.credit-stamp-label {
+  font-size: 11px;
+}
+
+.credit-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border: 2px solid var(--ink-faint);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  transform: rotate(-4deg);
+}
+
+.credit-stamp.is-A {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.credit-stamp.is-B {
+  border-color: var(--amber);
+  color: var(--amber-ink);
+}
+
+.credit-stamp.is-C {
+  border-color: var(--red);
+  color: #a32b25;
+}
+
+.credit-stamp.is-unknown {
+  border-style: dashed;
+}
+
+.order-stamp.is-advance {
+  font-size: 11px;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.bid-readouts {
+  display: grid;
+  /* Vinstchans och marginal delar en rad; kassatalet (förskottet) får hela bredden. Tre lika
+     kolumner klippte "+£33,695" på 390 px (regel 18) och hade klippt varje förskott över en
+     miljon på skrivbordet. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.bid-readout:last-child {
+  grid-column: 1 / -1;
+}
+
+.bid-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.bid-readout-label,
+.bid-readout-sub {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.bid-readout-sub {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.bid-readout-value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap; /* "+£33,695" ska inte brytas efter plustecknet */
+}
+
+.bid-readout-value.is-loss {
+  color: #a32b25;
+}
+
+.bid-readout-value.is-thin {
+  color: var(--amber-ink);
+}
+
+.bid-readout-value.is-good {
+  color: var(--green);
+}

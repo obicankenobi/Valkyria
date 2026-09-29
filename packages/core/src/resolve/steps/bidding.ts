@@ -1,7 +1,7 @@
 // bidding — avgör anbud som löper ut denna tur. Se ETAPP1_TEKNISK_SPEC.md avsnitt
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
-import { round } from '../../money.js'
+import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
@@ -239,7 +239,7 @@ export const bidding: ResolveStep = (ctx) => {
         frontId: order.frontId,
         // P98 (ETAPP8_FORSLAG.md §4.1): förskottet, fryst på ordern och betalt vid tilldelning.
         advancePct: order.advancePct,
-        advancePaid: round((winner.price * order.advancePct) / 100),
+        advancePaid: advanceAmount(winner.price, order.advancePct),
       }
       draft.market.contracts.push(contract)
 

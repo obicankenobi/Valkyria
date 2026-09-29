@@ -55,6 +55,13 @@ export function computeAdvancePct(input: AdvanceInputs): Pct {
   return Math.round(BALANCE.advancePctMin + (BALANCE.advancePctMax - BALANCE.advancePctMin) * score)
 }
 
+// Förskottet i kronor för ett kontrakt till `price`. EN formel för bidding.ts (betalningen vid
+// tilldelning) och budformuläret (P99, "pengar i kassan nästa kvartal") — formuläret kan aldrig
+// visa ett annat belopp än det som faktiskt betalas.
+export function advanceAmount(price: Money, advancePct: Pct): Money {
+  return round((price * advancePct) / 100)
+}
+
 // Betalningen för `units` levererade enheter: det som återstår av kontraktsvärdet efter
 // förskottet, proportionellt mot levererad andel. EN formel för leveransen (deliveries.ts) och
 // prognosen (queries.ts projectedQuarter) — för ett kontrakt utan förskott är den bitvis den

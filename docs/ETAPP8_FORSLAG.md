@@ -9,8 +9,8 @@
 > (forskningen). Beslut 8C gäller: golden får frysas om **bara** i P96, P98, P100 och P102,
 > var och en i egen commit. Filen behåller namnet `ETAPP8_FORSLAG.md`.
 >
-> **Byggstatus:** P96, P97 och P98 **BYGGDA 2026-09-29** (se blockquoterna under respektive
-> prompt i §9). P99 är inte påbörjad.
+> **Byggstatus:** P96–P99 **BYGGDA 2026-09-29** (se blockquoterna under respektive prompt i §9).
+> P100 är inte påbörjad.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
@@ -470,7 +470,7 @@ golden är omfryst.
 > annullerar också kontrakt, men specen nämner bara konkurs och sen leverans. Förskottet
 > **behålls**: det är inte spelarens leveransfel, och principen i §4.1 är "återbetala när
 > spelaren sviker". Att spelaren behåller ett förskott på ett kontrakt hen själv gjort värdelöst
-> med en kupp är alltså en följd — **ägaren bör bekräfta**. (2) *Bokföringen av återbetalningen
+> med en kupp är alltså en följd — **bekräftat av ägaren 2026-09-29** (behålls). (2) *Bokföringen av återbetalningen
 > behöver ingen ny huvudboksrad:* hela beloppet är ett återtagande av redan bokförd intäkt
 > (`expenses.clawback`, `revenueByTurn` minskas i innevarande tur) och den del kassan inte täcker
 > är skuld som bokförs som `financing.loans` — så både kassa- och skuldidentiteten håller. (3)
@@ -512,6 +512,49 @@ golden är omfryst.
 nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×844. Golden orörd.
 
 **8C — Stående order**
+
+> **P99 — BYGGD 2026-09-29.** *Core (ren läsning, golden orörd):* `orderTerms(state, order)` →
+> `{ advancePct, known, credit: A|B|C|null, drivers }` och `advanceAmount(price, pct)`, den formel
+> `bidding.ts` nu betalar med (refaktorerad hit) och budformuläret visar — formuläret kan aldrig visa
+> ett annat belopp än det som betalas. Kreditstämpeln läser samma `advanceFactors().ability` som
+> förskottsformeln (tredjedelar av 0..1: hög = A, mellan = B, låg = C), så den kan aldrig säga
+> något annat än det som drev procenten; ingen ny balanssiffra, `balance.json` orörd. *Gränssnittet:*
+> en **förskottsstämpel** ("ADVANCE 23 %", `.order-stamp` som fristen, eller "No advance") och en
+> **kreditstämpel** i mappens flik (A grön, B ockra, C röd, "?" streckad); i `BidForm` en **remsa
+> med tre tal direkt under prisreglaget**: vinstchans, marginal och **"cash next quarter"**
+> (`+£34 500`, "23 % advance, if won") som följer reglaget. En rad "Buyer now: need LOW · funds
+> HIGH · relationship LOW" visar faktorerna (låg/mellan/hög). *Skyddsräcke 4:* förskottets procent
+> är ett villkor i affären och syns alltid; kreditstämpeln och faktorerna grindas med
+> `effectiveDepth` (samma grind som `formationDisplay`) — utan station "?" och "unknown", ingen
+> bokstav eller nivå läcker (testat mot en köpare som annars hade varit A).
+>
+> **Tolkningsval.** (1) Marginalen visades redan längre ned i formuläret; den flyttades till
+> remsan vid reglaget (specen: "tre tal vid prisreglaget") och dubbletten togs bort — kostnadsblocket
+> behåller sin förklarande rad ("£X after £Y in unit cost"). (2) Faktorerna är köparens läge NU,
+> inte vid utlysningen (`advancePct` fryses, men faktorerna sparas inte — att spara dem hade
+> ändrat `Order`, alltså golden); därför "Buyer now". (3) "If won": förskottet betalas bara om
+> budet vinner, så talet är villkorat, inte ett förväntat värde. (4) Klart-när "utan att mappen
+> scrollas på 390×844" är tolkat som: med mappen överst i innehållsytan ligger alla tre
+> (stämplarna och kassatalet) inom ytan — mätt: kassatalet slutar 164 px före nederkanten.
+>
+> **Genuina fynd.** (1) **Regel 18 fångade ett verkligt brott i första layouten:** tre lika kolumner
+> klippte "+£33 695" på 390 px och hade klippt varje förskott över en miljon på skrivbord. Remsan
+> är nu vinstchans + marginal på en rad och kassatalet över hela bredden (det är det nya, viktiga
+> talet). (2) Ett första försök gav `+` och beloppet på olika rader (radbrytning efter plustecknet)
+> — `white-space: nowrap`. (3) **Avvägning 2 i §1 ("ett lägre pris för ett bättre förskott") är
+> smalare än specen låter:** förskottets *procent* är fast per order, så ett lägre pris ger ett
+> lägre förskott i kronor, inte ett bättre — formuläret visar det ärligt (talet sjunker med
+> reglaget). Avvägningen som finns är vinstchans/marginal mot ett större belopp i kassan;
+> "bättre förskott" som villkor att förhandla om finns inte i mekaniken. Värt att ta med i P105
+> (speltestet).
+>
+> **Test:** 9 nya i `queries.orderTerms.test.ts` (gränsen, tredjedelarna, båda inmatningarna, chief
+> salesman-glimten), 12 i `Contracts.terms.test.tsx` (stämplar, remsa, belopp = `advanceAmount`,
+> inget läckage utan station, dolda fält), och `bid-terms.spec.ts` (e2e i båda formaten: alla tre
+> inom innehållsytan utan skroll; kassatalet följer reglaget). Ny skärm `contracts-bid-open` i
+> `screens.ts` ger regel 11/18/`axe` i båda formaten (den fanns bara i `npm run shots`). Golden
+> ORÖRD, `balance.json` orörd. Testsvep: 1 119 vitest, lint, typecheck, build, e2e 167 gröna,
+> shots granskade.
 
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,

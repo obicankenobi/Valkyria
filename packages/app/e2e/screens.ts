@@ -268,6 +268,25 @@ export async function enterBoardMemo(page: Page): Promise<void> {
   throw new Error('styrelsens PM visades aldrig inom nio kvartal')
 }
 
+// P99 (ETAPP8_FORSLAG.md §4.2): en öppen ordermapp med förskotts- och kreditstämpel och de tre
+// talen vid prisreglaget. Ordrar utlyses först efter ett avslutat kvartal och köpare/tur varierar
+// inte här (samma seed-oberoende väntloop som scripts/shots.mjs:s contracts-bid-open), så spelas
+// högst tio kvartal fram tills en order finns. Reducerad rörelse: kvartalsuppspelningen omedelbar
+// — utom en granskningstur (tur 6), där PM:et kvitteras med Continue.
+export async function enterContractsBidOpen(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (let i = 0; i < 10; i++) {
+    await page.getByTestId('tab-contracts').click()
+    if ((await page.getByRole('button', { name: 'quote' }).count()) > 0) break
+    await page.getByTestId('end-quarter-button').click()
+    await page.waitForTimeout(150)
+    if (await page.getByTestId('board-memo').isVisible().catch(() => false)) await page.getByTestId('replay-skip').click()
+  }
+  await page.getByRole('button', { name: 'quote' }).first().click()
+  await page.getByTestId('bid-form').waitFor()
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -285,6 +304,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'settings', path: '/', setup: enterSettings },
   { name: 'tutorial', path: '/', setup: enterTutorial },
   { name: 'handbook', path: '/', setup: enterHandbook },
+  { name: 'contracts-bid-open', path: '/', setup: enterContractsBidOpen },
   { name: 'company-ledger', path: '/', setup: enterCompanyLedger },
   { name: 'ledger-vouchers', path: '/', setup: enterLedgerVouchers },
   { name: 'board-memo', path: '/', setup: enterBoardMemo },

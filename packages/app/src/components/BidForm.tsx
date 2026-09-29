@@ -6,7 +6,8 @@
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useEffect, useMemo, useState } from 'react'
-import { bidEstimate, playerWinCurve } from '@seventh-front/core'
+import { advanceAmount, bidEstimate, orderTerms, playerWinCurve } from '@seventh-front/core'
+import type { DriverLevel } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
 import { Button, DsSlider, Segmented, Stepper } from './designSystem.js'
@@ -34,6 +35,17 @@ export function interpolateConfidence(curve: PlayerWinCurvePoint[], price: numbe
     }
   }
   return last.confidence
+}
+
+function levelWord(level: DriverLevel): string {
+  return level === 'high' ? 'HIGH' : level === 'mid' ? 'MID' : 'LOW'
+}
+
+function marginTone(marginPct: number | null): string {
+  if (marginPct === null) return ''
+  if (marginPct <= 0) return 'is-loss'
+  if (marginPct < 20) return 'is-thin'
+  return 'is-good'
 }
 
 function marginClass(marginPct: number | null): string {
@@ -81,6 +93,8 @@ export function BidForm({
   const [bribe, setBribe] = useState<number>(existingBid?.bribe ?? 0)
 
   const yourWinChance = interpolateConfidence(winCurve, price)
+  const terms = useMemo(() => orderTerms(state, order), [state, order])
+  const advanceCash = advanceAmount(price, order.advancePct)
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
   // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste därför skalas med
@@ -111,8 +125,30 @@ export function BidForm({
           format={formatMoney}
           testId="bid-price"
         />
-        <p className="cf-hint" data-testid="your-win-chance">
-          Win chance at this price: <strong>{yourWinChance}%</strong>
+        {/* P99 (ETAPP8_FORSLAG.md §4.2): tre tal vid prisreglaget — vinstchans, marginal och
+            pengar i kassan nästa kvartal (förskottet) — så avvägningen syns i ett enda ögonkast
+            utan att formuläret scrollas. Förskottet är advanceAmount(pris, orderns fasta
+            advancePct): exakt den formel bidding.ts betalar ut med; det betalas bara om budet
+            vinner, därav "if won". */}
+        <div className="bid-readouts" data-testid="bid-readouts">
+          <div className="bid-readout" data-testid="your-win-chance">
+            <span className="bid-readout-label">Win chance</span>
+            <span className="bid-readout-value">{yourWinChance}%</span>
+          </div>
+          <div className="bid-readout" data-testid="readout-margin">
+            <span className="bid-readout-label">Margin</span>
+            <span className={`bid-readout-value ${marginTone(marginPct)}`}>{marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}</span>
+          </div>
+          <div className="bid-readout" data-testid="readout-cash">
+            <span className="bid-readout-label">Cash next quarter</span>
+            <span className="bid-readout-value">{`+${formatMoney(advanceCash)}`}</span>
+            <span className="bid-readout-sub">{order.advancePct}% advance, if won</span>
+          </div>
+        </div>
+        <p className="cf-hint" data-testid="advance-drivers">
+          {terms.drivers
+            ? `Buyer now: need ${levelWord(terms.drivers.urgency)} · funds ${levelWord(terms.drivers.funds)} · relationship ${levelWord(terms.drivers.relationship)}`
+            : 'What drives the advance is unknown — no intelligence on this buyer.'}
         </p>
       </div>
 
@@ -150,7 +186,6 @@ export function BidForm({
               {formatMoney(grossProfit)} after {formatMoney(totalCost)} in unit cost ({order.quantity} units)
             </div>
           </div>
-          <div className="margin-value">{marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}</div>
         </div>
       </div>
 

@@ -10,7 +10,7 @@ import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
-import { deliveryPayment } from './resolve/advance.js'
+import { advanceFactors, deliveryPayment } from './resolve/advance.js'
 import { computeFixedCostsBreakdown, computeQuarterlyInterest } from './resolve/steps/economy.js'
 import type { FixedCostsBreakdown } from './resolve/steps/economy.js'
 import { computeLineThroughput } from './resolve/steps/production.js'
@@ -118,6 +118,49 @@ export function boardReviewOutlook(state: GameState): BoardReviewOutlook {
     current,
     onTrack: current >= required,
     isLastTurnBeforeReview: turnsUntil === 1 && current < required,
+  }
+}
+
+// P99 (ETAPP8_FORSLAG.md §4.2, skyddsräcke 4): villkoren ordermappen visar. Förskottets
+// procent är ett villkor i affären och syns alltid. Köparens kreditstämpel och faktorerna
+// bakom förskottet är information om köparen och grindas genom underrättelse — EXAKT samma
+// effectiveDepth-grind som formationDisplay/bidEstimate ("utan station: ?"). Stämpeln och
+// nivåerna läser samma advanceFactors som förskottsformeln (advance.ts), så de kan aldrig
+// säga något annat än det som drev procenten. OBS: faktorerna är köparens läge NU; procenten
+// frystes vid utlysningen (Order.advancePct) — därför "buyer now" i gränssnittet.
+export type CreditGrade = 'A' | 'B' | 'C'
+export type DriverLevel = 'low' | 'mid' | 'high'
+
+export interface OrderTerms {
+  advancePct: Pct
+  known: boolean
+  credit: CreditGrade | null // null = okänd ("?")
+  drivers: { urgency: DriverLevel; funds: DriverLevel; relationship: DriverLevel } | null
+}
+
+// Tredjedelar av 0..1 — en presentationsindelning, inget balanstal.
+function driverLevel(value: number): DriverLevel {
+  return value >= 2 / 3 ? 'high' : value >= 1 / 3 ? 'mid' : 'low'
+}
+
+export function orderTerms(state: GameState, order: Order): OrderTerms {
+  const known = effectiveDepth(state, order.buyerId) > 0
+  const faction = state.factions[order.buyerId]
+  const official = state.officials[order.officialId]
+  if (!known || !faction || !official) return { advancePct: order.advancePct, known, credit: null, drivers: null }
+
+  const factors = advanceFactors({
+    faction,
+    official,
+    category: getProduct(order.productId).category,
+    referencePrice: order.referencePrice,
+  })
+  const funds = driverLevel(factors.ability)
+  return {
+    advancePct: order.advancePct,
+    known,
+    credit: funds === 'high' ? 'A' : funds === 'mid' ? 'B' : 'C',
+    drivers: { urgency: driverLevel(factors.urgency), funds, relationship: driverLevel(factors.relation) },
   }
 }
 
