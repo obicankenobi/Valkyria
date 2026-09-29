@@ -34,7 +34,7 @@ describe('projectedQuarter (P85)', () => {
         dueTurn: state.meta.turn + 5,
         status: 'active',
         lateEventId: null,
-        frontId: null,
+        frontId: null, advancePct: 0, advancePaid: 0,
       },
       {
         id: 'contract-later',
@@ -48,7 +48,7 @@ describe('projectedQuarter (P85)', () => {
         dueTurn: state.meta.turn + 5,
         status: 'active',
         lateEventId: null,
-        frontId: null,
+        frontId: null, advancePct: 0, advancePaid: 0,
       },
     ]
     state.market.shipments = [

@@ -570,7 +570,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
       dueTurn: 999,
       status: 'active',
       lateEventId: null,
-      frontId: null,
+      frontId: null, advancePct: 0, advancePaid: 0,
     }
   }
 

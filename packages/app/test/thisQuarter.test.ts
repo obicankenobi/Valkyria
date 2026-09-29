@@ -20,6 +20,7 @@ function makeOrder(overrides: Partial<Order>): Order {
     officialId: 'official-rvn-procurement',
     reason: { kind: 'SCRIPTED' },
     frontId: null,
+    advancePct: 0,
     ...overrides,
   }
 }
@@ -79,7 +80,7 @@ describe('deriveThisQuarter (P83, §7.7)', () => {
       dueTurn: state.meta.turn + 1,
       status: 'active',
       lateEventId: null,
-      frontId: null,
+      frontId: null, advancePct: 0, advancePaid: 0,
     })
     expect(deriveThisQuarter(state).some((i) => i.kind === 'contract' && i.id === 'contract-c1')).toBe(true)
 

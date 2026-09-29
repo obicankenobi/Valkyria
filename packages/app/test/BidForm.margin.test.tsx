@@ -40,7 +40,7 @@ function makeOrder(state: GameState): Order {
     // för att anta vilken faktion det blir.
     officialId: officialId(buyerId, 'procurement'),
     reason: { kind: 'PEACETIME_REPLACEMENT' },
-    frontId: 'front-1',
+    frontId: 'front-1', advancePct: 0,
   }
 }
 

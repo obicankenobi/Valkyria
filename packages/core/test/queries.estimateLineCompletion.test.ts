@@ -42,7 +42,7 @@ describe('estimateLineCompletionTurn (P85)', () => {
         dueTurn: state.meta.turn + 10,
         status: 'active',
         lateEventId: null,
-        frontId: null,
+        frontId: null, advancePct: 0, advancePaid: 0,
       },
     ]
     const line: ProductionLine = { ...idleLine(), productId: 'm1_rifle', assignedContractId: 'contract-eta', status: 'running' }
@@ -67,7 +67,7 @@ describe('estimateLineCompletionTurn (P85)', () => {
         dueTurn: state.meta.turn + 10,
         status: 'active',
         lateEventId: null,
-        frontId: null,
+        frontId: null, advancePct: 0, advancePaid: 0,
       },
     ]
     const line: ProductionLine = { ...idleLine(), productId: 'm1_rifle', assignedContractId: 'contract-done', status: 'running' }

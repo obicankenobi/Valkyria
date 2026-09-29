@@ -48,6 +48,7 @@ function dueOrder(overrides: Partial<Order> = {}): Order {
     officialId: 'official-rvn-procurement',
     reason: { kind: 'PEACETIME_REPLACEMENT' },
     frontId: 'front-1',
+    advancePct: 0,
     ...overrides,
   }
 }

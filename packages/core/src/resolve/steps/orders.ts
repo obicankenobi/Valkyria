@@ -17,6 +17,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForFront, computeReferencePrice, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
+import { computeAdvancePct } from '../advance.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
 import type { Agenda, Faction, FactionId, FrontId, GameState, Official, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
 
@@ -67,7 +68,9 @@ interface NewOrderParams {
   // order (det tidigare inspectorIntegrity). Anropsplatsen slår upp den (alltid
   // 'procurement' — den enda post en anbudsaffär rör, se avsnitt 3.1), inte
   // buildOrder, av samma skäl som frontId redan slås upp av anroparen.
-  officialId: string
+  official: Official
+  // P98 (ETAPP8_FORSLAG.md §4.1): köparen, för advancePct (brådska och betalningsförmåga).
+  faction: Faction
   reason: OrderReason
   // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): vilken front leveransen är avsedd
   // för — null om ingen känd/vald (SCRIPTED).
@@ -109,9 +112,11 @@ function buildOrder(p: NewOrderParams): Order {
     expiresTurn: p.currentTurn + BALANCE.orderBiddingWindowTurns,
     competingRivals: p.competingRivals,
     weights: p.weights,
-    officialId: p.officialId,
+    officialId: p.official.id,
     reason: p.reason,
     frontId: p.frontId,
+    // P98: fryst här, som referencePrice — räknas aldrig om (se advance.ts).
+    advancePct: computeAdvancePct({ faction: p.faction, official: p.official, category: p.product.category, referencePrice }),
   }
 }
 
@@ -265,7 +270,8 @@ export const orders: ResolveStep = (ctx) => {
         supplyCostIndex: draft.market.supplyCostIndex,
         weights: weightsForOrder(pressure, official.agenda, buyer.weightsOverride),
         rng,
-        officialId: official.id,
+        official,
+        faction: buyer,
         reason: { kind: 'SCRIPTED' },
         frontId: null,
         trueBudgetCapFactor: buyer.trueBudgetCapFactor ?? null,
@@ -436,7 +442,8 @@ function tryIssueOrder(
     supplyCostIndex: draft.market.supplyCostIndex,
     weights,
     rng,
-    officialId: official.id,
+    official,
+    faction,
     reason,
     frontId,
     trueBudgetCapFactor: faction.trueBudgetCapFactor ?? null,

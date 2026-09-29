@@ -12,7 +12,7 @@
 // P12:s klart när-villkor ("ett parti kan stängas och återupptas MITT I en tur
 // utan förlust") kräver det uttryckligen; att bara spara efter resolveTurn hade
 // tappat ett halvifyllt anbud vid en omladdning.
-import type { GameState, TurnSubmission } from '@seventh-front/core'
+import type { Contract, GameState, Order, TurnSubmission } from '@seventh-front/core'
 import type { TutorialState } from './tutorial.js'
 
 const DB_NAME = 'seventh-front'
@@ -71,11 +71,29 @@ export async function saveGame(slot: string, saved: SavedGame): Promise<void> {
 // tom huvudbok; historiken före inläsningen går inte att återskapa. (Exporterad för test.)
 export function migrate(saved: SavedGame): SavedGame | null {
   switch (saved.state.meta.version) {
-    case CURRENT_SCHEMA_VERSION:
-      if (!Array.isArray((saved.state as Partial<GameState>).ledger)) {
-        return { ...saved, state: { ...saved.state, ledger: [] } }
+    case CURRENT_SCHEMA_VERSION: {
+      let state = saved.state
+      if (!Array.isArray((state as Partial<GameState>).ledger)) state = { ...state, ledger: [] }
+      // P98: förskottsfälten tillkom på Order och Contract. Ett sparat parti från före P98 har
+      // dem inte, och leveransbetalningen (price − advancePaid) hade blivit NaN. Gamla ordrar
+      // och kontrakt är förskottslösa: 0.
+      if (state.market.openOrders.some((o) => typeof (o as Partial<Order>).advancePct !== 'number') ||
+          state.market.contracts.some((c) => typeof (c as Partial<Contract>).advancePaid !== 'number')) {
+        state = {
+          ...state,
+          market: {
+            ...state.market,
+            openOrders: state.market.openOrders.map((o) => ({ ...o, advancePct: (o as Partial<Order>).advancePct ?? 0 })),
+            contracts: state.market.contracts.map((c) => ({
+              ...c,
+              advancePct: (c as Partial<Contract>).advancePct ?? 0,
+              advancePaid: (c as Partial<Contract>).advancePaid ?? 0,
+            })),
+          },
+        }
       }
-      return saved
+      return state === saved.state ? saved : { ...saved, state }
+    }
     default:
       return null
   }

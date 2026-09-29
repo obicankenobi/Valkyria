@@ -577,6 +577,8 @@ export const applyActions: ResolveStep = (ctx) => {
         dueTurn: draft.meta.turn + BALANCE.brokerDeliveryTurns,
         status: 'active',
         lateEventId: null,
+        advancePct: 0, // P98: inget förskott utan en Order
+        advancePaid: 0,
         // Går inte via en Order — samma fallback som crisis.ts:s krisköp.
         frontId: null,
       }

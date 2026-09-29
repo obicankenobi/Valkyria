@@ -454,6 +454,19 @@ function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { o
         actorIsPlayer: false,
         subjectId: target.id,
       })
+      // P98: ett regimskifte är inte spelarens leveransfel — förskottet behålls, som vid en
+      // köparkonkurs (specen nämner bara de två andra utfallen; se P98-blockquoten).
+      if (contract.advancePaid > 0) {
+        emit({
+          severity: 'report',
+          scope: 'market',
+          headline: `ADVANCE OF £${contract.advancePaid.toLocaleString('en-GB')} ON ${contract.id} RETAINED — NEW REGIME IN ${target.name.toUpperCase()}`,
+          causeId: coupId,
+          delta: {},
+          actorIsPlayer: false,
+          subjectId: target.id,
+        })
+      }
     }
     for (const rival of Object.values(draft.rivals)) {
       for (const contract of rival.contracts) {

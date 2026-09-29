@@ -9,8 +9,8 @@
 > (forskningen). Beslut 8C gäller: golden får frysas om **bara** i P96, P98, P100 och P102,
 > var och en i egen commit. Filen behåller namnet `ETAPP8_FORSLAG.md`.
 >
-> **Byggstatus:** P96 **BYGGD** och P97 **BYGGD 2026-09-29** (se blockquoterna under P96 och P97
-> i §9). P98 är inte påbörjad.
+> **Byggstatus:** P96, P97 och P98 **BYGGDA 2026-09-29** (se blockquoterna under respektive
+> prompt i §9). P99 är inte påbörjad.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
@@ -449,6 +449,62 @@ klarar regel 18 i båda formaten. Golden orörd.
 **P98 — Betalningsvillkor.** `advancePct`, betalning vid tilldelning, förskottet behålls vid
 konkurs och återbetalas vid annullering. *Klart när:* varje utfall i §4.1 har ett test, och
 golden är omfryst.
+
+> **P98 — BYGGD 2026-09-29.** *Härledningen (`resolve/advance.ts`, ren och exporterad så P99/P103
+> läser samma):* `advancePct` = `advancePctMin` + (`advancePctMax` − `advancePctMin`) × (0,45 ×
+> brådska + 0,40 × betalningsförmåga + 0,15 × relation), avrundat till hela procent. Brådska =
+> köparens `materielNeed` mot `orderTriggerThreshold` (0 vid tröskeln, 1 vid tre gånger den);
+> betalningsförmåga = `min(militaryBudget, treasury)` i antal ordrar av referenspriset (1 vid fem);
+> relation = procurement-tjänstemannens `relationToPlayer`/100. 10–40 % (beslut 8D). Sätts i
+> `buildOrder` och fryses på `Order` (som `referencePrice`); gäller både ordinarie, namngivna och
+> scriptade ordrar. *Betalningsflödet:* vid tilldelning (`bidding.ts`) betalas `advancePct ×
+> kontraktsvärde` in — kassa, `revenueByTurn` och `ledger.income.advances`, med en händelse
+> vars `causeId` är vinsthändelsen; vid leverans (`deliveries.ts`) betalas `(price − advancePaid) ×
+> levererad andel` (`deliveryPayment`, en formel också för `projectedQuarter`); förskott +
+> leveranser summerar exakt till kontraktsvärdet. *Utfallen:* **köparen i konkurs** — kontraktet
+> annulleras, förskottet behålls (en `RETAINED`-händelse, inget flyttas); **spelaren levererar
+> inte i tid** (`deliveries.ts`, nådaperioden passerad) — hela förskottet betalas tillbaka: kassan
+> tas till noll och det som saknas blir skuld.
+>
+> **Tolkningsval, dokumenterade (inget av dem står i specen).** (1) *Regimskifte* (`FUND_COUP`)
+> annullerar också kontrakt, men specen nämner bara konkurs och sen leverans. Förskottet
+> **behålls**: det är inte spelarens leveransfel, och principen i §4.1 är "återbetala när
+> spelaren sviker". Att spelaren behåller ett förskott på ett kontrakt hen själv gjort värdelöst
+> med en kupp är alltså en följd — **ägaren bör bekräfta**. (2) *Bokföringen av återbetalningen
+> behöver ingen ny huvudboksrad:* hela beloppet är ett återtagande av redan bokförd intäkt
+> (`expenses.clawback`, `revenueByTurn` minskas i innevarande tur) och den del kassan inte täcker
+> är skuld som bokförs som `financing.loans` — så både kassa- och skuldidentiteten håller. (3)
+> *Förskottet ändrar inte styrelsens `progressSnapshot`:* det bokförs som intäkt när det betalas
+> och dras ur orderbokens restpost (`board.ts`: `(price − advancePaid) × orörd andel`), så bokvärdet
+> är detsamma med och utan förskott — det som flyttas är bara kassan, i tid. Bevisat i test. (4)
+> *Två normaliseringskonstanter* (`advanceUrgencyFullAt` 3, `advanceCoverageFull` 5) tillkom utöver
+> specens min/max/tre vikter — formeln kräver dem; alla åtta tal är provisoriska till P104. (5)
+> BROKER-kontrakt och krisköp går inte via en `Order` och har inget förskott. (6) `BACK_DOWN`s
+> återtagande av "kvartalets restricted-intäkt" rör bara leveransintäkt, aldrig förskott. (7) Ett
+> sparat parti från före P98 saknar förskottsfälten (leveransbetalningen hade blivit `NaN`):
+> `migrate()` sätter dem till 0.
+>
+> **Genuina fynd.** (1) **Förskottet flyttar kassan, inte utfallet — än.** Mätt över 500 partier
+> (125 frön × fyra policyer), före → efter: första intäktsturen går från 3,5–3,9 till 1,0
+> (`aggressive`/`balanced`/`capacity`) och från 7,9 till 5,0 (`passive`); förskottet är 27–37 % av
+> all intäkt; men slutresultaten rör sig knappt: `balanced` INSOLVENCY 124 → 121 av 125 (2
+> `SCENARIO_COMPLETE`), `aggressive` BUYOUT 74 → 71, `capacity`/`passive` oförändrade. Botarna
+> lägger 200 000 kr per tur på intel ovanpå 309–429 000 kr fasta kostnader, så tidigare intäkt
+> räcker inte — påståendet i §4.1 att förskottet "kan göra styrelsemålet nåbart" är alltså inte
+> bevisat med dagens botar; `human` (P103) och balanspasset (P104) avgör det. (2) Ett äldre
+> harnesstest (`officialsReplaced > 0` över 60 aggressive-partier) hade bara passerat på en enda
+> lyckträff (1/60 före, 0/400 efter): ersatt av en dokumenterad kommentar, samma linje som redan
+> gällde `factionsChangedAlignment` (P64/P75). (3) `Order` och `Contract` fick nya obligatoriska
+> fält, så cirka trettio testliteraler i alla tre paket uppdaterades.
+>
+> **Test:** 23 nya i `advance.test.ts`, ett eller flera per utfall i §4.1 (härledningen och var
+> och en av de tre drivarna, fryst på ordern, tilldelning, leverans, konkurs, sen leverans med
+> kassa som räcker / inte räcker / redan negativ, regimskifte, `progressSnapshot`-invarians,
+> prognosen), 1 ny migreringstest, och huvudbokens balanstest över 500 + 200 fuzz-partier gäller
+> med förskott (`income.advances` nu även i täckningsbeviset). Mutationsprov: att stänga av
+> återbetalningen eller ta bort restpostsjusteringen i `board.ts` gör respektive tester röda.
+> Golden omfryst i en egen commit efter koden (beslut 8C); `balance.frozen.json` följer med
+> eftersom `balance.json` fick nya tal.
 
 **P99 — Villkoren i budmappen.** Förskottsstämpeln, kreditstämpeln och talet för pengar i kassan
 nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×844. Golden orörd.

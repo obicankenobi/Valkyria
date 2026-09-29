@@ -53,6 +53,7 @@ function activeContract(overrides: Partial<Contract> = {}): Contract {
     // fallbacken" (findFrontForBuyer). Ett eget, explicit test nedan täcker
     // VALET när frontId faktiskt är satt och det finns flera fronter.
     frontId: null,
+    advancePct: 0, advancePaid: 0,
     ...overrides,
   }
 }

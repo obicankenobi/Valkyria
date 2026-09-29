@@ -23,13 +23,13 @@
 // hinna se den (heat.ts läser och nollställer Theatre.deliveriesIntoActiveWar-
 // ThisTurn i samma passage, innan rivals.ts någonsin körs).
 import balanceData from '../../data/balance.json' with { type: 'json' }
-import { round } from '../../money.js'
-import { BROKER_CONTRACT_ID_PREFIX, recordIncome } from '../../ledger.js'
+import { deliveryPayment } from '../advance.js'
+import { BROKER_CONTRACT_ID_PREFIX, recordExpense, recordFinancing, recordIncome } from '../../ledger.js'
 import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type { Commodity, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
+import type { Commodity, Contract, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
 
 interface Balance {
   reliabilityLatePenalty: number
@@ -154,6 +154,43 @@ function resolveDeliveryFront(fronts: GameState['fronts'], buyerId: string, fron
   return findFrontForBuyer(fronts, buyerId)
 }
 
+// P98 (ETAPP8_FORSLAG.md §4.1): "Spelaren levererar inte i tid och kontraktet annulleras:
+// förskottet ska betalas tillbaka. Räcker inte kassan blir resten skuld. Det ger en ny väg in i
+// INSOLVENCY, och det är avsiktligt." Bara den här vägen betalar tillbaka — köparens konkurs
+// (factions.ts) och regimskifte (political.ts) är inte spelarens leveransfel, förskottet behålls.
+//
+// Bokföring: hela beloppet är ett återtagande av redan bokförd intäkt (expenses.clawback,
+// revenueByTurn minskas). Kassan täcker det den räcker till; resten blir skuld och bokförs som
+// ett lån (financing.loans) — så både kassa- och skuldidentiteten i huvudboken håller utan en
+// ny rad. Kassa under noll räknas som noll: ingen "återbetalning" ur ett underskott.
+function refundAdvance(ctx: ResolveContext, contract: Contract, buyerName: string, causeId: string): void {
+  const { draft, emit } = ctx
+  const house = draft.house
+  const refund = contract.advancePaid
+  if (refund <= 0) return
+
+  const cashPart = Math.min(refund, Math.max(0, house.treasury))
+  const debtPart = refund - cashPart
+  house.treasury -= cashPart
+  house.debt += debtPart
+  house.revenueByTurn[draft.meta.turn] = (house.revenueByTurn[draft.meta.turn] ?? 0) - refund
+  recordExpense(draft, 'clawback', refund)
+  if (debtPart > 0) recordFinancing(draft, 'loans', debtPart)
+
+  emit({
+    severity: 'report',
+    scope: 'house',
+    headline:
+      debtPart > 0
+        ? `${house.name.toUpperCase()} MUST REFUND ${buyerName}'S ADVANCE OF £${refund.toLocaleString('en-GB')} — £${debtPart.toLocaleString('en-GB')} OF IT BECOMES DEBT`
+        : `${house.name.toUpperCase()} REFUNDS ${buyerName}'S ADVANCE OF £${refund.toLocaleString('en-GB')}`,
+    causeId,
+    delta: debtPart > 0 ? { treasury: -cashPart, debt: debtPart } : { treasury: -cashPart },
+    actorIsPlayer: true,
+    subjectId: contract.buyerId,
+  })
+}
+
 export const deliveries: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
@@ -193,7 +230,7 @@ export const deliveries: ResolveStep = (ctx) => {
 
     contract.unitsDelivered += shipment.units
     // Betalning bokförs proportionellt mot levererad andel (spec 5).
-    const revenue = round(contract.price * (shipment.units / contract.quantity))
+    const revenue = deliveryPayment(contract, shipment.units)
     house.treasury += revenue
     // P96: BROKER-kontrakt (id-prefix satt i applyActions.ts) skiljs ut från
     // vanliga anbudskontrakt — båda betalas här, men huvudboken visar dem var för sig.
@@ -325,7 +362,7 @@ export const deliveries: ResolveStep = (ctx) => {
       const buyer = draft.factions[contract.buyerId]
       if (buyer) buyer.relationToPlayer = Math.max(0, buyer.relationToPlayer - BALANCE.voidedContractRelationPenalty)
 
-      emit({
+      const voidedId = emit({
         severity: 'headline',
         scope: 'market',
         headline: `CONTRACT ${contract.id} VOIDED — TOO LATE TO SALVAGE, NO FURTHER PAYMENT`,
@@ -334,6 +371,7 @@ export const deliveries: ResolveStep = (ctx) => {
         actorIsPlayer: true,
         subjectId: contract.buyerId,
       })
+      refundAdvance(ctx, contract, buyer ? buyer.name.toUpperCase() : contract.buyerId.toUpperCase(), voidedId)
       continue
     }
 

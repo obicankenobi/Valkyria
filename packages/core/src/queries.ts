@@ -10,6 +10,7 @@ import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
+import { deliveryPayment } from './resolve/advance.js'
 import { computeFixedCostsBreakdown, computeQuarterlyInterest } from './resolve/steps/economy.js'
 import type { FixedCostsBreakdown } from './resolve/steps/economy.js'
 import { computeLineThroughput } from './resolve/steps/production.js'
@@ -623,7 +624,7 @@ export function projectedQuarter(state: GameState): ProjectedQuarter {
     if (shipment.arrivalTurn !== nextTurn) continue
     const contract = state.market.contracts.find((c) => c.id === shipment.contractId)
     if (!contract) continue
-    expectedRevenueNextTurn += round(contract.price * (shipment.units / contract.quantity))
+    expectedRevenueNextTurn += deliveryPayment(contract, shipment.units)
   }
 
   const fixedCosts = computeFixedCostsBreakdown(state.house)

@@ -19,6 +19,7 @@ function makeContract(overrides: Partial<Contract>): Contract {
     status: 'active',
     lateEventId: null,
     frontId: 'front-1',
+    advancePct: 0, advancePaid: 0,
     ...overrides,
   }
 }

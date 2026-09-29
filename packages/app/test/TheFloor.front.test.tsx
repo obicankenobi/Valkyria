@@ -29,7 +29,7 @@ function makeOrder(state: GameState, frontId: string | null): Order {
     // (Object.keys ovan) — officialId() i stället för att anta vilken faktion.
     officialId: officialId(buyerId, 'procurement'),
     reason: { kind: 'PEACETIME_REPLACEMENT' },
-    frontId,
+    frontId, advancePct: 0,
   }
 }
 
@@ -72,7 +72,7 @@ describe('TheFloor — P46 klart-når: fronten synlig på order- och kontraktsra
         dueTurn: 10,
         status: 'active',
         lateEventId: null,
-        frontId: 'front-1',
+        frontId: 'front-1', advancePct: 0, advancePaid: 0,
       },
       {
         id: 'contract-without-front',
@@ -86,7 +86,7 @@ describe('TheFloor — P46 klart-når: fronten synlig på order- och kontraktsra
         dueTurn: 10,
         status: 'active',
         lateEventId: null,
-        frontId: null,
+        frontId: null, advancePct: 0, advancePaid: 0,
       },
     ]
 

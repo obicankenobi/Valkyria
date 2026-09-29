@@ -131,7 +131,7 @@ export interface LedgerEntry {
   turn: number
   income: {
     contracts: Money // leveranser av kontrakt vunna på anbud
-    advances: Money // alltid 0 till P98 (förskottet byggs inte i P96)
+    advances: Money // förskott vid tilldelning (P98)
     broker: Money // leveranser av BROKER-kontrakt (contract-broker-*)
     commodityRelease: Money // MARKET/RELEASE
     fileSale: Money // krisvalet SELL_THE_FILE
@@ -391,6 +391,10 @@ export interface Order {
   // deliveries.ts faller tillbaka på findFrontForBuyer när den är null (samma
   // funktion, oförändrad — se avsnitt 3.2:s tabell).
   frontId: FrontId | null
+  // P98 (ETAPP8_FORSLAG.md §4.1): andelen av kontraktsvärdet köparen betalar vid
+  // TILLDELNING. Sätts när ordern utlyses och fryses där, som referencePrice — härledd ur
+  // köparens brådska, betalningsförmåga och procurement-tjänstemannens relation (advance.ts).
+  advancePct: Pct
 }
 
 // P40 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.4), ordagrant.
@@ -426,6 +430,13 @@ export interface Contract {
   // signering (bidding.ts). null för kontrakt som inte går via en Order (t.ex.
   // crisis.ts:s krisköp) — samma fallback-princip som Order.frontId.
   frontId: FrontId | null
+  // P98 (ETAPP8_FORSLAG.md §4.1): förskottet, ärvt av Order.advancePct vid tilldelning. 0/0 för
+  // kontrakt utan Order (BROKER, krisköp). advancePaid är det som faktiskt betalades in;
+  // leveranserna betalar (price − advancePaid) proportionellt, och förskottet betalas tillbaka
+  // om SPELAREN annullerar kontraktet (deliveries.ts) men behålls om köparen försvinner
+  // (konkurs, regimskifte).
+  advancePct: Pct
+  advancePaid: Money
 }
 
 // Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när

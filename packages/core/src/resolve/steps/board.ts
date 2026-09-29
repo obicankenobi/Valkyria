@@ -45,7 +45,9 @@ function updateProgressSnapshot(house: House, contracts: Contract[]): void {
   const cumulativeRevenue = house.revenueByTurn.reduce((sum, r) => sum + r, 0)
   const backlog = contracts
     .filter((c) => c.status === 'active' || c.status === 'late')
-    .reduce((sum, c) => sum + c.price * (1 - c.unitsDelivered / c.quantity), 0)
+    // P98: förskottet är redan bokfört som intäkt (revenueByTurn) — orderboken är bara det
+    // som ÅTERSTÅR att få betalt vid leverans, annars räknas förskottet två gånger.
+    .reduce((sum, c) => sum + (c.price - c.advancePaid) * (1 - c.unitsDelivered / c.quantity), 0)
   target.progressSnapshot = house.foundingCapital > 0 ? (cumulativeRevenue + backlog) / house.foundingCapital : 0
 }
 

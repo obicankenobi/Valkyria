@@ -53,7 +53,7 @@ describe('TheHouse — produktionslinjebanden (P85, P81-16)', () => {
         dueTurn: state.meta.turn + 10,
         status: 'active',
         lateEventId: null,
-        frontId: null,
+        frontId: null, advancePct: 0, advancePaid: 0,
       },
     ]
     state.house.lines = [

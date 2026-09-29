@@ -265,6 +265,19 @@ function processEconomicDistress(faction: Faction, draft: GameState, emit: Resol
       actorIsPlayer: false,
       subjectId: faction.id,
     })
+    // P98 (ETAPP8_FORSLAG.md §4.1): "Köparen går i konkurs: förskottet behålls. Det här är
+    // förskottets egentliga värde, en försäkring mot köparen." Inget flyttas — bara synligt.
+    if (contract.advancePaid > 0) {
+      emit({
+        severity: 'report',
+        scope: 'market',
+        headline: `ADVANCE OF £${contract.advancePaid.toLocaleString('en-GB')} ON ${contract.id} RETAINED — ${faction.name.toUpperCase()} BANKRUPT`,
+        causeId: bankruptcyId,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: faction.id,
+      })
+    }
   }
 }
 

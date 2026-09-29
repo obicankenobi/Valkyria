@@ -352,7 +352,7 @@ describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
       weights: { price: 0.5, delivery: 0.3, relationship: 0.2 },
       officialId: 'official-rvn-procurement',
       reason: { kind: 'SCRIPTED' },
-      frontId: null,
+      frontId: null, advancePct: 0,
     })
     cleanup()
     render(<TheatreMap state={state} />)
@@ -429,7 +429,7 @@ describe('TheatreMap (P82) — försörjningslinjer', () => {
       dueTurn: 5,
       status: 'active',
       lateEventId: null,
-      frontId: 'front-1',
+      frontId: 'front-1', advancePct: 0, advancePaid: 0,
     })
     state.market.shipments.push({ id: 's1', contractId: 'c1', units: 5, arrivalTurn: 3 })
 

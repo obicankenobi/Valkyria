@@ -1,6 +1,8 @@
 // bidding — avgör anbud som löper ut denna tur. Se ETAPP1_TEKNISK_SPEC.md avsnitt
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
+import { round } from '../../money.js'
+import { recordIncome } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
 
@@ -235,6 +237,9 @@ export const bidding: ResolveStep = (ctx) => {
         lateEventId: null,
         // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): ärvt rakt av vid signering.
         frontId: order.frontId,
+        // P98 (ETAPP8_FORSLAG.md §4.1): förskottet, fryst på ordern och betalt vid tilldelning.
+        advancePct: order.advancePct,
+        advancePaid: round((winner.price * order.advancePct) / 100),
       }
       draft.market.contracts.push(contract)
 
@@ -243,7 +248,7 @@ export const bidding: ResolveStep = (ctx) => {
         faction.relationToPlayer = Math.min(100, faction.relationToPlayer + boost)
       }
 
-      emit({
+      const winId = emit({
         severity: 'headline',
         scope: 'market',
         headline: `${draft.house.name.toUpperCase()} WINS CONTRACT: ${product.name.toUpperCase()} × ${order.quantity} TO ${buyerName}`,
@@ -252,6 +257,25 @@ export const bidding: ResolveStep = (ctx) => {
         actorIsPlayer: true,
         subjectId: order.buyerId,
       })
+
+      // P98: förskottet betalas nu, innan första leveransen — bokförd intäkt (revenueByTurn,
+      // så styrelsens progressSnapshot och kreditgränsen ser den) och en huvudboksrad. Resten
+      // av kontraktsvärdet betalas vid leverans (deliveries.ts, deliveryPayment).
+      if (contract.advancePaid > 0) {
+        const house = draft.house
+        house.treasury += contract.advancePaid
+        house.revenueByTurn[draft.meta.turn] = (house.revenueByTurn[draft.meta.turn] ?? 0) + contract.advancePaid
+        recordIncome(draft, 'advances', contract.advancePaid)
+        emit({
+          severity: 'report',
+          scope: 'market',
+          headline: `${buyerName} PAYS AN ADVANCE OF £${contract.advancePaid.toLocaleString('en-GB')} (${contract.advancePct}%) ON ${contract.id}`,
+          causeId: winId,
+          delta: { treasury: contract.advancePaid },
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
+      }
     } else {
       const rival = draft.rivals[winner.source]
       const rivalName = rival ? rival.name.toUpperCase() : winner.source.toUpperCase()

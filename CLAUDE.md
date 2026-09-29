@@ -708,7 +708,12 @@ emitta när effekten är noll, och sparade partier från före P96 saknar `ledge
 **P97 BYGGD 2026-09-29:** huvudboken i THE COMPANY (`LedgerChart.tsx`: blyertsstaplar, kassakurva, röd
 streckad kravkurva, verifikationer per kvartal) och styrelsens PM från THE SYNDICATE i
 `QuarterReplay` vid varje granskningstur (`boardMemo` i `queries.ts`, ren läsning). Ett PM stänger
-aldrig uppspelningen av sig självt. Golden orörd. P98 är inte påbörjad.
+aldrig uppspelningen av sig självt. Golden orörd.
+**P98 BYGGD 2026-09-29:** förskottet (`Order.advancePct`, `resolve/advance.ts`) — 10–40 % av kontraktsvärdet,
+härlett ur köparens brådska, betalningsförmåga och tjänstemannens relation, fryst på ordern, betalt vid
+tilldelning, behållet vid köparens konkurs, återbetalat (kassan till noll, resten skuld) om spelaren
+inte levererar i tid. Styrelsens `progressSnapshot` är opåverkad. Golden omfryst i egen commit (8C).
+Öppet för ägaren: regimskifte (`FUND_COUP`) behåller förskottet — specen nämner inte utfallet. P99 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

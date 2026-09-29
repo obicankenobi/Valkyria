@@ -31,6 +31,24 @@ describe('migrate (P96-uppföljning)', () => {
     expect(migrated!.state.ledger).toBe(withLedger.ledger)
   })
 
+  it('(P98) ger gamla ordrar och kontrakt utan förskottsfält advancePct/advancePaid 0, så leveransbetalningen inte blir NaN', () => {
+    const save = oldSave()
+    const state = save.state as GameState
+    // Så här såg en order/ett kontrakt ut före P98: inga förskottsfält.
+    state.market.openOrders = [
+      { id: 'o1', buyerId: 'rvn', productId: 'm1_rifle', quantity: 10, statedBudget: 1, trueBudget: 1, referencePrice: 1, requiredDeliveryTurns: 2, expiresTurn: 3, competingRivals: [], weights: { price: 0.5, delivery: 0.3, relationship: 0.2 }, officialId: 'official-rvn-procurement', reason: { kind: 'SCRIPTED' }, frontId: null },
+    ] as unknown as GameState['market']['openOrders']
+    state.market.contracts = [
+      { id: 'c1', buyerId: 'rvn', productId: 'm1_rifle', quantity: 10, unitsDelivered: 0, price: 1000, unitCostAtSigning: 50, grade: 'A', dueTurn: 9, status: 'active', lateEventId: null, frontId: null },
+    ] as unknown as GameState['market']['contracts']
+
+    const migrated = migrate(save)!
+    expect(migrated.state.market.openOrders[0]!.advancePct).toBe(0)
+    expect(migrated.state.market.contracts[0]!.advancePct).toBe(0)
+    expect(migrated.state.market.contracts[0]!.advancePaid).toBe(0)
+    expect(save.state.market.contracts[0]).not.toHaveProperty('advancePaid') // indata muteras inte
+  })
+
   it('en okänd schemaversion ger fortfarande null', () => {
     const save = oldSave()
     save.state.meta.version = 999

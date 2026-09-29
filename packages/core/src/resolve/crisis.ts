@@ -106,6 +106,8 @@ function resolvePush(ctx: ResolveContext, pending: PendingCrisis): void {
     dueTurn: draft.meta.turn + 20, // "femårskontrakt" — 20 turer, ett kvartal per tur
     status: 'active',
     lateEventId: null,
+    advancePct: 0, // P98: inget förskott utan en Order
+    advancePaid: 0,
     // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): krisköpet går inte via en Order —
     // ingen naturlig källa att härleda frontId ur. null, samma fallback
     // (findFrontForBuyer i deliveries.ts) som gällde för alla kontrakt innan P44.

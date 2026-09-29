@@ -177,7 +177,7 @@ function fuzzPolicy(state: GameState): TurnSubmission {
 
 describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
   it(
-    '200 partier med slumpade handlingar ur alla verb balanserar exakt varje tur, och varje huvudboksrad (utom advances och clawback) skrivs i minst ett parti',
+    '200 partier med slumpade handlingar ur alla verb balanserar exakt varje tur, och varje huvudboksrad (utom clawback) skrivs i minst ett parti',
     () => {
       const failures: string[] = []
       const seen = new Set<string>()
@@ -206,9 +206,11 @@ describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
       expect(failures).toEqual([])
       // Täckningsbeviset: ett balanstest som aldrig rör en gren bevisar ingenting om den.
       // clawback kräver en kris OCH en restricted-leverans samma kvartal (mätt: nås inte
-      // av fuzzen) och ligger därför bara i de riktade enhetstesterna; advances är 0 till P98.
+      // av fuzzen) och ligger därför bara i de riktade enhetstesterna. (Förskottsåterbetalningen
+      // hamnar också på clawback — P98, se advance.test.ts.)
       const expectedRows = [
         'income.contracts',
+        'income.advances',
         'income.broker',
         'income.commodityRelease',
         'income.fileSale',

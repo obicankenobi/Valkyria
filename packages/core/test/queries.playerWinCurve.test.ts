@@ -26,7 +26,7 @@ function orderFor(state: GameState): Order {
     weights: { price: 0.55, delivery: 0.3, relationship: 0.15 },
     officialId: 'official-rvn-procurement',
     reason: { kind: 'PEACETIME_REPLACEMENT' },
-    frontId: 'front-1',
+    frontId: 'front-1', advancePct: 0,
   }
 }
 

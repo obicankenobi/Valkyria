@@ -365,7 +365,7 @@ function orderFor(state: GameState): Order {
     // procurement-tjänsteman finns garanterat i state byggd av createInitialState.
     officialId: 'official-rvn-procurement',
     reason: { kind: 'PEACETIME_REPLACEMENT' },
-    frontId: 'front-1',
+    frontId: 'front-1', advancePct: 0,
   }
 }
 
@@ -736,6 +736,8 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
         status: 'active' as const,
         lateEventId: null,
         frontId: null,
+        advancePct: 0,
+        advancePaid: 0,
       }
       state.market.contracts = [playerContract]
       const rival = state.rivals['brandt']!

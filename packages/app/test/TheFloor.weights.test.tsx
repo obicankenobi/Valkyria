@@ -35,7 +35,7 @@ function makeOrder(state: GameState): Order {
     // (Object.keys ovan) — officialId() i stället för att anta vilken faktion.
     officialId: officialId(buyerId, 'procurement'),
     reason: { kind: 'PEACETIME_REPLACEMENT' },
-    frontId: 'front-1',
+    frontId: 'front-1', advancePct: 0,
   }
 }
 

@@ -23,7 +23,7 @@ function orderFor(state: GameState): Order {
     // state:er byggda av createInitialState (officials.json).
     officialId: 'official-rvn-procurement',
     reason: { kind: 'PEACETIME_REPLACEMENT' },
-    frontId: 'front-1',
+    frontId: 'front-1', advancePct: 0,
   }
 }
 

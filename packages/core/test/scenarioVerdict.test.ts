@@ -14,6 +14,7 @@ function baseContract(overrides: Partial<Contract> & Pick<Contract, 'id' | 'buye
     dueTurn: 5,
     lateEventId: null,
     frontId: null,
+    advancePct: 0, advancePaid: 0,
     ...overrides,
   }
 }

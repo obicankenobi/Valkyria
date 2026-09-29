@@ -173,7 +173,8 @@ describe('board (isolerat steg, spec avsnitt 5 "Board")', () => {
       status: 'active',
       lateEventId: null,
       frontId: null,
-      ...overrides,
+      advancePct: 0, advancePaid: 0,
+    ...overrides,
     }
   }
 
