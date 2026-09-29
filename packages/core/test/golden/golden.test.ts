@@ -61,8 +61,7 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // P40:s namngivna ersättningsordrar, P40:s omkalibrerade förbandsroster
 // (indochina-slice.json) och P42:s egen invariant-bugfix (resolveFront synkar
 // nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
-// P98: PAUSAD i den här commiten, aktiv igen i nästa (omfrysningen, beslut 8C — egen commit).
-it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
@@ -214,15 +213,22 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // (passive 13410cbd5a4b, aggressive 32259821910dc, balanced 72f55dcef5b0c) — inget annat
   // fält ändrades, ingen balanssiffra rördes (balance.frozen.json oförändrad). headlines > 8
   // höll oförändrat.
+  //
+  // Omfryst IGEN i P98 (ETAPP8_FORSLAG.md §4.1/§9, beslut 8C — förhandsauktoriserat, egen
+  // commit efter koden). Förskottet ändrar banan (Order.advancePct/Contract.advancePaid är nya
+  // fält OCH kassan får 27–37 % av intäkten redan vid tilldelning, så kassa-, kredit- och
+  // ordervägen förskjuts). balance.json fick åtta nya tal (advancePctMin/-Max, tre vikter, två
+  // normaliseringskonstanter) — balance.frozen.json följer med, annars vore första testet här rött.
+  // De nya hasharna: passive 529fc6b53f3ba, aggressive 14211565c40155, balanced 847bd7d7bbcd.
+  // headlines > 8 höll oförändrat (passive 48, aggressive 56, balanced 43).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '113da6660a841' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '15102b645ed08b' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '16561a24fce781' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '529fc6b53f3ba' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '14211565c40155' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '847bd7d7bbcd' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
-    // P98: PAUSAD i den här commiten (förskottet ändrar banan), omfryst i nästa commit.
-    it.skip(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
+    it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
       const { finalState, wireLog } = playScript(SCENARIO, seed, policy, TURNS)
 

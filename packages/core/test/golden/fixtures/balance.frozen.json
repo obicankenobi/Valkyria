@@ -296,5 +296,13 @@
   "successorIntegrityMin": 30,
   "successorIntegrityMax": 80,
   "successorStandingMin": 40,
-  "successorStandingMax": 70
+  "successorStandingMax": 70,
+  "_p98_note": "ETAPP8_FORSLAG.md §4.1, beslut 8D: förskottet är 10-40 % av kontraktsvärdet (advancePctMin/advancePctMax, ägarens startvärden för balanspasset i P104). advancePct härleds vid ordergenerering ur tre saker som redan finns i staten och fryses på ordern: brådska (köparens materielNeed mot orderTriggerThreshold, 0 vid tröskeln och 1 vid advanceUrgencyFullAt gånger tröskeln), betalningsförmåga (min(militaryBudget, treasury) i antal ordrar av referenspriset, 1 vid advanceCoverageFull ordrar) och relation (procurement-tjänstemannens relationToPlayer/100). De tre vikterna summerar till 1; relationen är den minsta ('en liten bonus'). ALLA åtta tal är PROVISORISKA fram till P104. advanceUrgencyFullAt och advanceCoverageFull är normaliseringskonstanter specen inte anger men formeln kräver.",
+  "advancePctMin": 10,
+  "advancePctMax": 40,
+  "advanceUrgencyWeight": 0.45,
+  "advanceAbilityWeight": 0.4,
+  "advanceRelationWeight": 0.15,
+  "advanceUrgencyFullAt": 3,
+  "advanceCoverageFull": 5
 }

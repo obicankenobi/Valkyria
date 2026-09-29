@@ -503,8 +503,10 @@ golden är omfryst.
 > prognosen), 1 ny migreringstest, och huvudbokens balanstest över 500 + 200 fuzz-partier gäller
 > med förskott (`income.advances` nu även i täckningsbeviset). Mutationsprov: att stänga av
 > återbetalningen eller ta bort restpostsjusteringen i `board.ts` gör respektive tester röda.
-> Golden omfryst i en egen commit efter koden (beslut 8C); `balance.frozen.json` följer med
-> eftersom `balance.json` fick nya tal.
+> **Golden** omfryst i en egen commit efter koden (beslut 8C): passive `529fc6b53f3ba`, aggressive
+> `14211565c40155`, balanced `847bd7d7bbcd` (alla tre slutar som förut: BUYOUT/BUYOUT/INSOLVENCY vid
+> tur 10; 48/56/43 rubriker). `balance.frozen.json` följer med eftersom `balance.json` fick nya tal —
+> P104 ändrar balansen igen och måste därför frysa om den (specen: "sist i etappen").
 
 **P99 — Villkoren i budmappen.** Förskottsstämpeln, kreditstämpeln och talet för pengar i kassan
 nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×844. Golden orörd.
