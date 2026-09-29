@@ -1835,6 +1835,50 @@ En prompt per commit. Varje UI-prompt har samma villkor utöver sina egna: regle
 
 **P93 — Ljudpass.**
 
+> **P93 BYGGD 2026-09-29.** `docs/LJUDTILLGANGAR.md` föreslog att P93 delas i
+> P93a (före P81) och P93b; eftersom alla skärmar redan finns är delningen
+> överspelad och P93 byggdes i ett stycke. `sound.ts` skrevs om enligt
+> dokumentets avsnitt 5: två motorer (korta effekter som `AudioBuffer`, musik
+> strömmad genom `HTMLAudioElement` → `MediaElementAudioSourceNode`), en
+> `GainNode` per kanal (master/sfx/music/ambience), övertoning över 3,5 s,
+> 20–60 s paus mellan spår, `resume()` vid första tryck, paus vid
+> `visibilitychange`. P72:s regel består: saknad fil, avkodningsfel och
+> webbläsare utan Web Audio ger tystnad, aldrig ett fel. Två nya rena moduler:
+> `musicDirector.ts` (speltillstånd → musikläge, samma
+> `DISPLAY_THRESHOLDS.doomsdayCrisisWatch` som HUD:en; inga nya balanstal) och
+> `soundCues.ts` (diff mellan två ögonblicksbilder → vilka effekter som ska
+> spelas). Nitton effekter och två miljöljud har krokar: tio tillståndsdrivna
+> via `soundCues` (kortplacering/-borttagning, backchannel, stämpel, kartval,
+> ny order, kris, radiobrus, flikbyte, nyhetssignatur), resten där
+> interaktionen sker (`BottomSheet`, `TierPicker`, `BidForm`, HUD-räknaren,
+> mushovring, samt P72:s tre befintliga). `scripts/build-audio.mjs`
+> (ffmpeg) konverterar `audio-src/` till `public/music/` (12 MB, budget 15) och
+> `public/sounds/`; uppmätt ljudnivå −14,4 till −15,9 LUFS mot målet −16.
+> `sw.js` släpper `/music/` förbi (206-svar får inte till `cache.put`).
+> GENUINA FYND: (1) **effekterna saknas fortfarande** — `audio-src/sfx/` finns
+> inte, bara de åtta musikspåren; ägaren hämtar effekterna från CC0-källorna i
+> `LJUDTILLGANGAR.md` avsnitt 1, och jag hämtade inga själv eftersom licensen
+> inte går att verifiera härifrån. Alla krokar är på plats och tiger tills
+> filerna finns; `npm run build:audio` plockar upp dem. (2) **MP3, inte
+> AAC/.m4a** som dokumentet föreslog: Playwrights Chromium saknar proprietära
+> codecs, och MP3 spelas överallt; 128 kbps håller budgeten. (3)
+> `newsreel-sting.mp3` är 61 s, inte en signatur — klippt till 5,5 s och
+> hanterad som effekt, inte musikspår. (4) Utan vakt hade `soundCues` spelat
+> spöksignaler (ny order, kris, radiobrus) varje gång ett sparat parti laddades
+> eller spelaren kom från titelskärmen; `soundCuesFor` returnerar nu tomt vid
+> byte till/från icke-spelskärm och vid turhopp (≠ +1). (5) Hovring spelas bara
+> för `pointerType === 'mouse'` — `mouseover` hade spelat den vid varje tryck på
+> en pekskärm (regel 13). (6) Kanalvolymer har API men inget eget reglage —
+> P90:s Settings har fortfarande bara en volym. Ny e2e `audio.spec.ts` bevisar i
+> en riktig webbläsare att inget ljud begärs före första trycket, att titelmusiken
+> faktiskt SPELAS (tiden går framåt), att kartmusik och rumsljud begärs i spelet,
+> och att inget ger konsolfel. **Inte gjort:** ingen lyssning på en riktig telefon
+> (högtalare, iOS tyst läge) och inget `npm run shots` — P93 ändrar ingen skärm.
+> Golden ORÖRD (ingen `packages/core`-fil rörd). Nya tester: `musicDirector`
+> (12), `soundCues` (22), `sound` (+10), `buildAudio` (6), e2e `audio` (4).
+> Testsvep: 963 vitest, lint, typecheck, build, e2e 64 gröna två gånger i rad.
+> Se `docs/ANDRINGSLOGG.md`.
+
 **P94 — Tillgänglighet, prestanda och skrivbordsvarianten.** Prestandabudgeten mätt på riktiga telefoner. Skrivbordslayouten genomgången med hovring och tangentbord. e2e omskrivet till kartflödet i båda formaten.
 
 **P95 — Speltest. Ingen kod.** Tre partier på telefon, frågan i §1.

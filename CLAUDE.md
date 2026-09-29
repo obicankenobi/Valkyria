@@ -665,7 +665,17 @@ prestanda, skrivbordsvarianten) återstår.**
 porträtt (12 tjänstemän + 6 ersättare) och 10 händelsebilder med låsta stilprompter. Ingen kod,
 golden ORÖRD; ägarens bildgenerering och den senare inkopplingen återstår (beskrivna i
 dokumentet). Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P92-blockquote och `docs/ANDRINGSLOGG.md`.
-**Nästa steg är P93, Ljudpass.** (`docs/LJUDTILLGANGAR.md` finns redan sedan etapp 6.)
+**P93 BYGGD 2026-09-29**: ljudmotorn (`sound.ts` omskriven: kanaler, strömmad musik, ambience,
+övertoning, pauser, första-tryck-upplåsning), `musicDirector.ts` + `soundCues.ts` (rena),
+`scripts/build-audio.mjs` (ffmpeg → `public/music/` 12 MB + `public/sounds/`), `sw.js`-rättelse
+för 206. Nitton effektkrokar + två miljöljud. **Effektfilerna saknas fortfarande**
+(`audio-src/sfx/` finns inte — ägaren hämtar dem från CC0-källor enligt
+`docs/LJUDTILLGANGAR.md`; krokarna tiger tills de finns, sedan `npm run build:audio`). Musiken är
+MP3 (inte AAC — Playwrights Chromium saknar den codecen). Ny e2e `audio.spec.ts` bevisar att
+titelmusiken SPELAS i en riktig webbläsare. Ingen lyssning på riktig telefon och inget
+`npm run shots` (ingen skärm ändrad). Golden ORÖRD. 963 tester, e2e 64 gröna två gånger i rad.
+Se `docs/ETAPP7_TEKNISK_SPEC.md` §13:s P93-blockquote och `docs/ANDRINGSLOGG.md`.
+**Nästa steg är P94, Tillgänglighet, prestanda och skrivbordsvarianten.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

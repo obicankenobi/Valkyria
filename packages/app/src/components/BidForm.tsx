@@ -5,11 +5,12 @@
 // spelarens dolda information, hela poängen med bidEstimate/winBand
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { bidEstimate, playerWinCurve } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
 import { Button, DsSlider, Segmented, Stepper } from './designSystem.js'
+import { playSound } from '../sound.js'
 
 const GRADES: Grade[] = ['A', 'B', 'C']
 
@@ -61,6 +62,10 @@ export function BidForm({
   onSubmit: (bid: Bid) => void
   onRemove: () => void
 }) {
+  // P93: "3–4 snabba skrivmaskinsslag" när ett formulär öppnas.
+  useEffect(() => {
+    void playSound('typewriter')
+  }, [])
   const [grade, setGrade] = useState<Grade>(existingBid?.grade ?? 'A')
 
   // bidEstimate/playerWinCurve drar aldrig ur huvud-Rng:n (hash-seedade, se

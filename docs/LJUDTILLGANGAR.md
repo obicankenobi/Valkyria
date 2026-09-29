@@ -13,6 +13,21 @@ kopplar in dem i P93 (eller tidigare, se avsnitt 6).
 > loggad i `audio-src/LICENSER.md`. Ingen bearbetning gjord än — det är P93a:s jobb enligt
 > avsnitt 5/6 nedan. Effekterna i avsnitt 3 är fortfarande inte hämtade.
 
+> **Status 2026-09-29 (P93 byggd):** Motorn, kanalerna, musikregissören, `sw.js`-rättelsen och
+> krokarna för alla effekter i avsnitt 3 är klara, och musiken är konverterad till
+> `packages/app/public/music/` (12 MB) med `npm run build:audio`. **Det som återstår för ägaren är
+> effekterna:** lägg dem i `audio-src/sfx/` med exakt namnen i avsnitt 3 (plus `room-tone` och
+> `telex-loop`), skriv in dem i `audio-src/LICENSER.md`, och kör `npm run build:audio` — inget mer
+> behöver ändras i koden. Avvikelser från avsnitt 5: MP3 i stället för AAC/`.m4a`, och
+> `newsreel-sting` klipptes till 5,5 s och behandlas som effekt. Avsnitt 0 nedan beskriver läget
+> INNAN P93.
+>
+> **Lyssna efter på telefonen** (ingen riktig telefon fanns i bygget): att musiken inte startar
+> förrän första trycket; att den tonas över (inte klipps) när du går från menyn till kartan;
+> att den sänks under kvartalsuppspelningen; att `ops-tension` tar över när Doomsday når 60;
+> att kriskortet får `crisis.mp3` och att kriskortet inte drunknar i den; att en iPhone i tyst
+> läge är tyst (avsett); att musiken pausar när du byter app och fortsätter när du kommer tillbaka.
+
 ---
 
 ## 0. Läget i koden

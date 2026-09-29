@@ -38,3 +38,16 @@ LUFS-målet.
 
 Inga uppladdade än. Se `docs/LJUDTILLGANGAR.md` avsnitt 1 och 3 för källor
 (Kenney/Freesound/Sonniss, CC0) och den 18-radiga listan.
+
+## Bearbetning (P93, 2026-09-29)
+
+`npm run build:audio --workspace=packages/app` (`packages/app/scripts/build-audio.mjs`, ffmpeg)
+konverterar källfilerna ovan till det appen serverar. Källfilerna i `audio-src/` ändras inte.
+
+| Källa | Utdata | Bearbetning |
+|---|---|---|
+| `music/*.mp3` (sju spår) | `packages/app/public/music/*.mp3` | MP3 128 kbps, loudnorm ≈ −16 LUFS (uppmätt −14,4 till −15,9), metadata borttagen |
+| `music/newsreel-sting.mp3` | `packages/app/public/sounds/newsreel-sting.mp3` | klippt från 61 s till 5,5 s, 1 s fade ut, ≈ −18 LUFS (uppmätt −17,6) |
+| `sfx/*` | `packages/app/public/sounds/*.mp3` | **inga källfiler finns ännu** — se `docs/LJUDTILLGANGAR.md` avsnitt 3–4 |
+
+Effekter skrivs in här (filnamn, källa, länk, licens) när de läggs till i `audio-src/sfx/`.

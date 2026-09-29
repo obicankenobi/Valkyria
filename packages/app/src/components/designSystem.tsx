@@ -9,8 +9,9 @@
 // Fyra tillstånd — idle/pressed/selected/disabled, plus hover bara på skrivbord
 // (regel 3). Träffytor minst 44×44 px (regel 11). Ingen information bara vid
 // hovring — allt som visas vid hovring på skrivbord nås med tryck på mobil (regel 13).
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { playSound } from '../sound.js'
 
 // ── Panel — samma ram för alla paneler: rubrikband, hörnmarkeringar, textur ──
 // (regel 6). Byggd separat från ui.tsx:s Panel eftersom den befintliga saknar
@@ -266,6 +267,13 @@ export function BottomSheet({
   testId?: string
 }) {
   const [expanded, setExpanded] = useState(false)
+  // P93: "Manillamapp dras över bordet" — ett bottenark som öppnas eller stängs.
+  // Ett ark som monteras redan öppet (CountryFile) räknas också som en öppning.
+  const wasOpen = useRef(false)
+  useEffect(() => {
+    if (open !== wasOpen.current) void playSound(open ? 'sheet-open' : 'sheet-close')
+    wasOpen.current = open
+  }, [open])
   if (!open) return null
   return (
     <div className="ds-sheet-overlay" onClick={onClose}>
@@ -485,7 +493,10 @@ export function TierPicker({
           role="radio"
           aria-checked={tier.key === value}
           className={tier.key === value ? 'ds-tier is-selected' : 'ds-tier'}
-          onClick={() => onChange(tier.key)}
+          onClick={() => {
+            if (tier.key !== value) void playSound('tier-select') // P93: blyerts som ringar in
+            onChange(tier.key)
+          }}
         >
           <span className="ds-tier-label">{tier.label}</span>
           <span className="ds-tier-amount">{tier.amount}</span>

@@ -13,6 +13,7 @@ import { ActionSlot, InfoTooltip } from './designSystem.js'
 import type { RejectedEntry } from '../useGame.js'
 import { deriveQuarterlyNotice, deriveThisQuarter } from '../thisQuarter.js'
 import type { ThisQuarterTarget } from '../thisQuarter.js'
+import { playSound } from '../sound.js'
 import { HANDBOOK, hudNumberTopic } from '../handbook.js'
 import type { HandbookTopicId } from '../handbook.js'
 
@@ -117,6 +118,9 @@ function useCountUp(value: number, durationMs = 500): number {
       fromRef.current = to
       return
     }
+    // P93: "mekaniskt räkneverk" — ett tick när en räkning börjar (sound.ts
+    // stryper fem HUD-tal som startar samtidigt till ett enda ljud).
+    void playSound('counter-tick')
     let raf = 0
     const start = performance.now()
     function tick(now: number) {

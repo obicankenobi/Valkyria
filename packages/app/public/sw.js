@@ -24,6 +24,11 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
+  // P93: musik hämtas med Range-förfrågningar som svarar 206 Partial Content, och
+  // cache.put avvisar 206 (ett kastat fel mitt i uppspelningen). /music/ går
+  // förbi service workern helt; spelet fungerar offline utan musik om den inte
+  // redan hunnit hämtas, precis som docs/LJUDTILLGANGAR.md avsnitt 5 föreskriver.
+  if (url.pathname.startsWith('/music/')) return
 
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {

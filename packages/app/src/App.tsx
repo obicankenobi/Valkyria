@@ -4,7 +4,7 @@
 // (TheFloor.tsx m.fl.) rörs INTE av namnbytet — bara det spelaren ser här i
 // skalet. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10 för den ursprungliga
 // arkitekturen detta bygger vidare på.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
 import { NewGameScreen } from './components/NewGameScreen.js'
@@ -47,7 +47,17 @@ import {
 } from './persistence.js'
 import type { MotionSetting, TextScaleSetting } from './persistence.js'
 import { SAVE_SLOT } from './game.js'
-import { playSound, setMuted as setSoundMuted, setVolume as setSoundVolume } from './sound.js'
+import { musicMode } from './musicDirector.js'
+import {
+  initAudioLifecycle,
+  playSound,
+  setAmbience,
+  setMusicDuck,
+  setMusicMode,
+  setMuted as setSoundMuted,
+  setVolume as setSoundVolume,
+} from './sound.js'
+import { ambienceLayers, soundCuesFor, type SoundSnapshot } from './soundCues.js'
 import {
   INITIAL_TUTORIAL_STATE,
   completeTutorialStep,
@@ -373,9 +383,69 @@ export function App() {
         void playSound('button-press')
       }
     }
+    // P93 ("hovring"): bara en riktig mus — pekskärmar skickar pointerType
+    // 'touch', så ett tryck spelar aldrig hovringsljudet (regel 13: hovring är
+    // aldrig den enda vägen till något). En knapp räknas en gång per inträde,
+    // inte för varje barnelement musen passerar.
+    function handleHover(event: PointerEvent) {
+      if (event.pointerType !== 'mouse') return
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const button = target.closest('button')
+      if (!button || button.disabled) return
+      const from = event.relatedTarget instanceof Element ? event.relatedTarget.closest('button') : null
+      if (button !== from) void playSound('hover')
+    }
     document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
+    document.addEventListener('pointerover', handleHover)
+    return () => {
+      document.removeEventListener('click', handleClick)
+      document.removeEventListener('pointerover', handleHover)
+    }
   }, [])
+
+  // P93 (ETAPP7_TEKNISK_SPEC.md §10/§13, docs/LJUDTILLGANGAR.md): första tryck
+  // startar ljudet, appen i bakgrunden pausar det.
+  useEffect(() => initAudioLifecycle(), [])
+
+  // Musikläget följer speltillståndet (musicDirector.ts, ren). Slutorsaken
+  // behövs bara för epilogens val mellan de två spåren.
+  const endingCode = state.status.kind === 'ended' ? state.status.ending : null
+  const crisisPending = state.pendingCrisis !== null
+  useEffect(() => {
+    setMusicMode(musicMode({ view, doomsday: state.doomsday, pendingCrisis: crisisPending, endingCode }))
+  }, [view, state.doomsday, crisisPending, endingCode])
+
+  useEffect(() => {
+    setMusicDuck(replaying) // "pågående spår sänks 6 dB" under uppspelningen (musicDirector.musicDuck)
+  }, [replaying])
+
+  useEffect(() => {
+    setAmbience(ambienceLayers({ view, replaying }))
+  }, [view, replaying])
+
+  // Tillståndsdrivna effekter (kortplacering, stämpel, ny order, kris, radiobrus,
+  // flikbyte...): en ren diff mellan förra och nuvarande ögonblicksbild
+  // (soundCues.ts). Körs efter varje rendering — jämförelsen är billig, och en
+  // signal kommer bara när något faktiskt ändrats.
+  const previousSnapshot = useRef<SoundSnapshot | null>(null)
+  useEffect(() => {
+    const next: SoundSnapshot = {
+      view,
+      actionTypes: draft.actions.map((action) => action.type),
+      bidCount: draft.bids.length,
+      openOrderCount: state.market.openOrders.length,
+      pendingCrisis: crisisPending,
+      selectedFactionId,
+      replaying,
+      turn: state.meta.turn,
+      wireHeadlines: lastTurnWire.map((event) => event.headline),
+    }
+    const previous = previousSnapshot.current
+    previousSnapshot.current = next
+    if (!previous) return
+    for (const cue of soundCuesFor(previous, next)) void playSound(cue)
+  })
 
   // Regel 16 (CLAUDE.md, "Spelgränssnitt — regler (etapp 7)"): "Esc för
   // paus." Guardas mot menyn/uppspelningen — ett pausöverlag ovanpå
