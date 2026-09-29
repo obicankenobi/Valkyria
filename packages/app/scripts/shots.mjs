@@ -529,6 +529,59 @@ const APP_SCREENS = [
     },
   },
   {
+    // P101: anslagstavlan i THE COMPANY (ingen referensskiss) — ett nytt-avtal-kort vänt.
+    name: 'standing-orders',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('standing-flip-supply-new').click()
+      await page.getByTestId('standing-back-supply-new').waitFor()
+      await page.getByTestId('standing-card-supply-new').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P101: larmvarianten — avtal med förlustföljd och en station på aktiv över tröskeln (IndexedDB-injektion),
+    // och This Quarter-raden som hoppar till kortet.
+    name: 'standing-alarm',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.evaluate(async () => {
+        const dbReq = indexedDB.open('seventh-front', 1)
+        const db = await new Promise((resolve, reject) => {
+          dbReq.onsuccess = () => resolve(dbReq.result)
+          dbReq.onerror = () => reject(dbReq.error)
+        })
+        const tx = db.transaction('saves', 'readwrite')
+        const store = tx.objectStore('saves')
+        const getReq = store.get('save:default')
+        const saved = await new Promise((resolve, reject) => {
+          getReq.onsuccess = () => resolve(getReq.result)
+          getReq.onerror = () => reject(getReq.error)
+        })
+        saved.state.meta.turn = 8
+        saved.state.house.standingOrders.supply = [
+          { id: 'supply-steel-1', commodity: 'steel', volumePerTurn: 40000, lockedIndex: 100, startTurn: 1, endTurn: 20, lossStreak: 3 },
+        ]
+        const station = saved.state.house.stations[0]
+        station.exposure = 90
+        saved.state.house.standingOrders.stations[station.id] = { mode: 'active', sinceTurn: 1, activeTurns: 0 }
+        await new Promise((resolve, reject) => {
+          const putReq = store.put(saved, 'save:default')
+          putReq.onsuccess = () => resolve(undefined)
+          putReq.onerror = () => reject(putReq.error)
+        })
+      })
+      await page.reload()
+      await page.getByTestId('menu-continue').click()
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('quarterband-toggle').click()
+      await page.getByTestId('quarterband-item-standing-supply-steel').click()
+      await page.getByTestId('standing-back-supply-steel').waitFor()
+    },
+  },
+  {
     // P97: styrelsens PM från THE SYNDICATE vid första granskningen (tur 6).
     name: 'board-memo',
     path: '/',

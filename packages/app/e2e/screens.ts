@@ -333,6 +333,62 @@ export async function enterPolicyWarning(page: Page): Promise<void> {
   await page.getByText('IS PREPARING').first().waitFor()
 }
 
+// P101 (ETAPP8_FORSLAG.md §5.2): anslagstavlan i THE COMPANY. Densaste varianten: ett nytt-avtal-kort
+// vänt (två Stepper och en Segmented med fem alternativ) bredvid linje- och stationskorten.
+export async function enterStandingOrders(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('tab-company').click()
+  await page.getByTestId('standing-flip-supply-new').click()
+  await page.getByTestId('standing-back-supply-new').waitFor()
+}
+
+// P101: larmvarianten — ett avtal som gått med förlust tre turer i rad och en station på aktiv över
+// tröskeln, injicerade via IndexedDB (ett riktigt parti når dem inte utan att spelas långt), och This
+// Quarter-raden som hoppar till kortet.
+export async function enterStandingAlarm(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise<{
+      state: {
+        meta: { turn: number }
+        house: {
+          standingOrders: { supply: unknown[]; stations: Record<string, unknown> }
+          stations: { id: string; exposure: number }[]
+        }
+      }
+    }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    saved.state.meta.turn = 8
+    saved.state.house.standingOrders.supply = [
+      { id: 'supply-steel-1', commodity: 'steel', volumePerTurn: 40000, lockedIndex: 100, startTurn: 1, endTurn: 20, lossStreak: 3 },
+    ]
+    const station = saved.state.house.stations[0]!
+    station.exposure = 90
+    saved.state.house.standingOrders.stations[station.id] = { mode: 'active', sinceTurn: 1, activeTurns: 0 }
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+  await page.getByTestId('quarterband-toggle').click()
+  await page.getByTestId('quarterband-item-standing-supply-steel').click()
+  await page.getByTestId('standing-back-supply-steel').waitFor()
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -355,4 +411,6 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'ledger-vouchers', path: '/', setup: enterLedgerVouchers },
   { name: 'board-memo', path: '/', setup: enterBoardMemo },
   { name: 'policy-warning', path: '/', setup: enterPolicyWarning },
+  { name: 'standing-orders', path: '/', setup: enterStandingOrders },
+  { name: 'standing-alarm', path: '/', setup: enterStandingAlarm },
 ]

@@ -11,14 +11,16 @@
 // att bli sena, kreditgränsen nära, pågående kris.
 import type { FactionId, GameState } from '@seventh-front/core'
 import { DISPLAY_THRESHOLDS, getProduct } from '@seventh-front/core'
+import { standingOrderAlarms } from './standingOrderBoard.js'
 
-export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis'
+export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing'
 
 export type ThisQuarterTarget =
   | { view: 'contracts' }
   | { view: 'operations'; factionId: FactionId }
   | { view: 'contacts' }
-  | { view: 'company' }
+  // focus (P101): id på ett kort på anslagstavlan som ska öppnas och rullas fram när vyn visas.
+  | { view: 'company'; focus?: string }
   | { view: 'news' }
 
 export interface ThisQuarterItem {
@@ -99,6 +101,17 @@ export function deriveThisQuarter(state: GameState): ThisQuarterItem[] {
       icon: '£',
       label: 'The credit limit is nearly reached',
       target: { view: 'company' },
+    })
+  }
+
+  // P101 (ETAPP8_FORSLAG.md §5.2): ett stående-order-larm ger en rad som hoppar till kortet på tavlan.
+  for (const alarm of standingOrderAlarms(state)) {
+    items.push({
+      id: `standing-${alarm.cardId}`,
+      kind: 'standing',
+      icon: '⚠',
+      label: `Standing order ${alarm.cardId.replace(/^supply-/, '')}: ${alarm.text.toLowerCase()}`,
+      target: { view: 'company', focus: alarm.cardId },
     })
   }
 

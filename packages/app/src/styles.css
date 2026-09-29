@@ -1810,6 +1810,185 @@ td.is-key {
   color: var(--ink-dim);
 }
 
+/* ── Anslagstavlan (P101, ETAPP8_FORSLAG.md §5.2): stående order som registerkort under tumstift på en
+   korktavla. Regel 8: ett föremål från 1965 (kork, papper, mässingstumstift, röd fettkrita). Bara transform
+   och opacity animeras (ambientMotion.test.ts), och den globala prefers-reduced-motion-regeln stänger av det. ── */
+
+.standing-board {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: #c9a86c; /* kork: en platt ton, inga gradienter */
+  border: 3px solid #7a5c30; /* träram */
+  border-radius: var(--radius);
+}
+
+.standing-group {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3d2d14;
+}
+
+.standing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.standing-card {
+  position: relative;
+  padding: 16px 12px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  box-shadow: 1px 3px 4px rgba(36, 31, 24, 0.3);
+  color: var(--ink);
+  min-width: 0;
+}
+
+.standing-card.is-open {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px var(--amber-soft), 1px 3px 4px rgba(36, 31, 24, 0.3);
+}
+
+.standing-pin {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: var(--red);
+  border: 1px solid #6e1a16;
+  border-radius: 50%;
+}
+
+.standing-flip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 2px;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed var(--line-strong);
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.standing-flip:active {
+  background: var(--panel-sunken);
+}
+
+.standing-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.standing-flip-hint {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+
+.standing-front,
+.standing-back {
+  padding-top: 8px;
+  min-width: 0;
+}
+
+.standing-back {
+  animation: standing-flip-in 200ms ease-out;
+}
+
+@keyframes standing-flip-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.standing-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.standing-kv {
+  margin: 0;
+}
+
+.standing-pending {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.standing-pending-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.standing-undo {
+  min-height: 44px;
+}
+
+/* Larmet: ett rött fettkritsstreck över kortets överkant, och en rad med förklaringen (aldrig bara färg). */
+.standing-card.has-alarm {
+  border-color: var(--red);
+}
+
+.standing-card.has-alarm::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 40px;
+  height: 4px;
+  background: var(--red);
+  transform: rotate(-1.4deg);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.standing-alarm {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .standing-flip:hover {
+    background: var(--panel-raised);
+  }
+}
+
 /* ── R&D-utsikten (P85, P81-17): "vad varje område låser upp och när",
    visat ärligt — inget nytt forskningssystem (etapp 9). ────────────────── */
 

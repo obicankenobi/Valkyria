@@ -8,6 +8,7 @@ import type { Bid, GameState, PlayerAction, StandingOrderChange, StartChoices, T
 import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
 import { crossedDoomsdayThreshold, playSound } from './sound.js'
+import { standingOrderKey } from './standingOrderBoard.js'
 
 // P72 (ETAPP6_TEKNISK_SPEC.md §5): "doomsday-tröskelpassage" läst som en av
 // de tre nivåer THE WORLD redan visar spelaren (Meter-märkena i TheWorld.tsx)
@@ -39,6 +40,8 @@ export interface UseGameResult {
   removeBid: (orderId: string) => void
   addAction: (action: PlayerAction) => void
   removeAction: (index: number) => void
+  setStandingOrder: (change: StandingOrderChange) => void
+  removeStandingOrder: (key: string) => void
   setCrisisChoice: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
   endTurn: () => void
   restart: (startChoices?: StartChoices) => void
@@ -111,6 +114,20 @@ export function useGame(): UseGameResult {
     setDraft((prev) => ({ ...prev, actions: [...prev.actions, action] }))
   }, [])
 
+  // P101 (ETAPP8_FORSLAG.md §5.2): stående order kostar ingen handling — de köas i draften och gäller från
+  // nästa tur. En ny ändring för samma linje/station/råvara ersätter en tidigare köad (samma nyckel).
+  const setStandingOrder = useCallback((change: StandingOrderChange) => {
+    const key = standingOrderKey(change)
+    setDraft((prev) => ({
+      ...prev,
+      standingOrders: [...prev.standingOrders.filter((c) => standingOrderKey(c) !== key), change],
+    }))
+  }, [])
+
+  const removeStandingOrder = useCallback((key: string) => {
+    setDraft((prev) => ({ ...prev, standingOrders: prev.standingOrders.filter((c) => standingOrderKey(c) !== key) }))
+  }, [])
+
   const removeAction = useCallback((index: number) => {
     setDraft((prev) => ({ ...prev, actions: prev.actions.filter((_, i) => i !== index) }))
   }, [])
@@ -177,6 +194,8 @@ export function useGame(): UseGameResult {
     removeBid,
     addAction,
     removeAction,
+    setStandingOrder,
+    removeStandingOrder,
     setCrisisChoice,
     endTurn,
     restart,

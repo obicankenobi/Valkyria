@@ -54,4 +54,15 @@ describe('migrate (P96-uppföljning)', () => {
     save.state.meta.version = 999
     expect(migrate(save)).toBeNull()
   })
+
+  it('(P99d/P100) ger ett gammalt sparat parti utan favourMarginOwed/standingOrders en skuldfri, tom standard och det går att spela vidare', () => {
+    const save = oldSave()
+    const house = save.state.house as Partial<GameState['house']>
+    delete house.favourMarginOwed
+    delete house.standingOrders
+    const migrated = migrate(save)!
+    expect(migrated.state.house.favourMarginOwed).toBe(0)
+    expect(migrated.state.house.standingOrders).toEqual({ lines: {}, supply: [], stations: {} })
+    expect(() => resolveTurn(migrated.state, migrated.draft)).not.toThrow()
+  })
 })

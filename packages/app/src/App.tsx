@@ -100,6 +100,8 @@ export function App() {
     removeBid,
     addAction,
     removeAction,
+    setStandingOrder,
+    removeStandingOrder,
     setCrisisChoice,
     endTurn,
     restart,
@@ -112,6 +114,8 @@ export function App() {
   // stänger den implicit (renderas bara när view === 'operations').
   const [selectedFactionId, setSelectedFactionId] = useState<FactionId | null>(null)
   const [catalogOpen, setCatalogOpen] = useState(false)
+  // P101: This Quarter-larm hoppar till ett kort på anslagstavlan (THE COMPANY) med kortet öppet.
+  const [focusCard, setFocusCard] = useState<string | null>(null)
   const [muted, setMuted] = useState(false) // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
   // P80 (ETAPP7_TEKNISK_SPEC.md §8): kvartalsuppspelningen visas mellan End
   // Quarter och NEWS DESK. `replaying` styr ÖVERLAGET, oberoende av `view` —
@@ -600,6 +604,7 @@ export function App() {
         state={state}
         onNavigate={(target: ThisQuarterTarget) => {
           if (target.view === 'operations') setSelectedFactionId(target.factionId)
+          setFocusCard(target.view === 'company' ? (target.focus ?? null) : null)
           setView(target.view)
         }}
       />
@@ -655,7 +660,15 @@ export function App() {
         )}
         {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
         {view === 'company' && (
-          <TheHouse state={state} draft={draft} onAddAction={addAction} onRemoveAction={removeAction} />
+          <TheHouse
+            state={state}
+            draft={draft}
+            onAddAction={addAction}
+            onRemoveAction={removeAction}
+            onSetStandingOrder={setStandingOrder}
+            onRemoveStandingOrder={removeStandingOrder}
+            focusCard={focusCard}
+          />
         )}
         {view === 'contacts' && <ThePolitics state={state} onAddAction={addAction} />}
         {view === 'news' && (

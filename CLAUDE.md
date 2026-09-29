@@ -738,7 +738,10 @@ balanced 63 (var 81), capacity 1.
 **P100 BYGGD 2026-09-29:** stående order i kärnan (`standingOrders.ts`, `House.standingOrders`) — linjeuppdrag (kategori + skift,
 `capacityPct` 125 på övertid), leverantörsavtal (låst index, betalas varje tur) och stationsläge (tyst/normal/aktiv), tre larm
 med causeId. Kostar ingen handling, gäller från nästa tur. Befintliga botar oförändrade (hash utan det nya fältet identisk
-med P99d:s). Golden omfryst i egen commit. P101 (anslagstavlan, UI) är inte påbörjad.
+med P99d:s). Golden omfryst i egen commit. **P101 BYGGD 2026-09-29:** anslagstavlan i THE COMPANY (`StandingOrdersBoard.tsx`, `standingOrderBoard.ts`) — ett registerkort per
+linje, avtal och station; Segmented/Stepper, köas i `draft.standingOrders`, gäller nästa kvartal. Linjekorten återanvänder P85:s
+`ProductionLineBand`. De tre larmen ger rött fettkritsstreck och en This Quarter-rad som hoppar till kortet (öppnat). Golden orörd.
+P102 (belopp som köper odds) är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

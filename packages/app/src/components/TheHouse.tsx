@@ -24,14 +24,14 @@
 import {
   DISPLAY_THRESHOLDS,
   computeUnitCostNow,
-  estimateLineCompletionTurn,
   getProduct,
   projectedQuarter,
   researchOutlook,
 } from '@seventh-front/core'
-import type { Commodity, Contract, GameState, PlayerAction, ProductionLine, TurnSubmission } from '@seventh-front/core'
+import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { LedgerChart } from './LedgerChart.js'
+import { StandingOrdersBoard } from './StandingOrdersBoard.js'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
 
 function contractMargin(contract: Contract, commodities: Record<Commodity, number>): { marginPct: number | null; unitCostNow: number } {
@@ -95,42 +95,6 @@ function ExecutiveActions({
   )
 }
 
-// P85 (ETAPP7_TEKNISK_SPEC.md §13, P81-16): "produktionslinjer som visuella
-// band... per linje vilka produkter den kan tillverka, takt per kvartal,
-// beläggning mot kapacitet och när pågående kontrakt blir klara." GENUINT
-// FYND: en linje kan tillverka VILKEN produkt som helst — den ärver bara
-// productId/grade från vilket kontrakt production.ts (steg 2) råkar tilldela
-// den (ingen kod begränsar en linje till en fast produktlista, se
-// docs/ANDRINGSLOGG.md) — visas därför ärligt som "Any product" i idle-läge,
-// i stället för att hitta på en linje-specifik produktlista som inte finns i
-// datamodellen. capacityPct är i dagens balans alltid 100 (ingen mekanik
-// någonsin ändrar den, se production.ts/applyActions.ts BUILD_LINE) — bandet
-// visar den ändå, ärligt statisk, snarare än att fejka en variation som inte
-// finns.
-function ProductionLineBand({ state, line }: { state: GameState; line: ProductionLine }) {
-  const product = line.productId ? getProduct(line.productId) : null
-  const completionTurn = estimateLineCompletionTurn(state, line)
-  const running = line.status === 'running'
-
-  return (
-    <div className="line-band" data-testid="production-line-band">
-      <div className="line-band-head">
-        <span className="line-band-id">{line.id.toUpperCase()}</span>
-        <span className="line-band-product">{product ? product.name : 'Any product — idle'}</span>
-        {line.status === 'running' && <Tag tone="green">Running</Tag>}
-        {line.status === 'idle' && <Tag>Idle</Tag>}
-        {line.status === 'retooling' && <Tag tone="amber">Retooling</Tag>}
-        {line.status === 'blocked' && <Tag tone="red">{line.blockedReason ?? 'Blocked'}</Tag>}
-      </div>
-      <Bar ratio={running ? line.capacityPct / 100 : 0} tone={running ? 'green' : line.status === 'blocked' ? 'red' : 'neutral'} />
-      <div className="line-band-meta">
-        <span>{product ? `${product.unitsPerLineTurn.toLocaleString('en-GB')} units/quarter at full capacity` : `${line.capacityPct}% capacity, unassigned`}</span>
-        {completionTurn !== null && <span>Completes contract T{completionTurn}</span>}
-      </div>
-    </div>
-  )
-}
-
 // P85 (P81-14/15): "innevarande kvartals intäkter och kostnader per post, en
 // prognos för nästa kvartal ur accepterade kontrakt och fasta kostnader."
 // projectedQuarter (queries.ts) är den enda källan för alla fem talen nedan —
@@ -174,11 +138,18 @@ export function TheHouse({
   draft,
   onAddAction,
   onRemoveAction,
+  onSetStandingOrder = () => {},
+  onRemoveStandingOrder = () => {},
+  focusCard = null,
 }: {
   state: GameState
   draft: TurnSubmission
   onAddAction: (action: PlayerAction) => void
   onRemoveAction: (index: number) => void
+  // P101: anslagstavlan. Valfria så att en rendering utan tavla (äldre tester) fortsätter fungera.
+  onSetStandingOrder?: (change: StandingOrderChange) => void
+  onRemoveStandingOrder?: (key: string) => void
+  focusCard?: string | null
 }) {
   const house = state.house
   const target = house.boardTarget
@@ -317,13 +288,15 @@ export function TheHouse({
         )}
       </Panel>
 
-      <Panel title="Production lines">
-        {house.lines.length === 0 ? (
-          <p className="empty">No production lines yet.</p>
-        ) : (
-          house.lines.map((line) => <ProductionLineBand key={line.id} state={state} line={line} />)
-        )}
-      </Panel>
+      {/* P101: produktionslinjerna bor nu på anslagstavlan — linjekorten visar SAMMA ProductionLineBand
+          (en linje, en sanning), plus det stående uppdraget. */}
+      <StandingOrdersBoard
+        state={state}
+        draft={draft}
+        onSet={onSetStandingOrder}
+        onRemove={onRemoveStandingOrder}
+        focusCard={focusCard}
+      />
 
       <Panel title="R&D and staff">
         {researchOutlook(state).map((r) => (

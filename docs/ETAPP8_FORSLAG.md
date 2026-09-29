@@ -621,6 +621,10 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,
 och golden är omfryst.
 
+> **P101 BYGGD 2026-09-29 — anslagstavlan.** Se ANDRINGSLOGG-raden med samma datum. Klart-när: alla tre slag går
+> att sätta och ändra från tavlan (`e2e/standing-orders.spec.ts`), och ett larm hoppar från This Quarter till rätt
+> kort, som öppnas. Golden orörd.
+
 **P101 — Anslagstavlan.** *Klart när:* alla tre slag går att sätta och ändra från tavlan, och
 ett larm hoppar från This Quarter till rätt kort. Golden orörd.
 

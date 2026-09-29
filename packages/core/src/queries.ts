@@ -53,6 +53,10 @@ interface ThresholdBalance {
   crisisPushExchangePct: number
   exposureBurnThreshold: number
   boardReviewTolerance: number
+  supplyLossStreakTurns: number
+  supplyAgreementMinTurns: number
+  supplyAgreementMaxTurns: number
+  overtimeCapacityPct: number
 }
 const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
 
@@ -73,6 +77,12 @@ export const DISPLAY_THRESHOLDS = {
   // P81c (§13, P81-blockquoten): boardReviewOutlook nedan behöver EXAKT samma
   // tolerans board.ts:s runReview() faktiskt dömer efter, inte en gissning.
   boardReviewTolerance: THRESHOLD_BALANCE.boardReviewTolerance,
+  // P101 (ETAPP8_FORSLAG.md §5.2): anslagstavlan ritar larmet vid samma tre-turers förlustföljd som
+  // settleSupplyAgreements faktiskt larmar vid, avtalets tillåtna löptid och övertidens kapacitet.
+  supplyLossStreakTurns: THRESHOLD_BALANCE.supplyLossStreakTurns,
+  supplyAgreementMinTurns: THRESHOLD_BALANCE.supplyAgreementMinTurns,
+  supplyAgreementMaxTurns: THRESHOLD_BALANCE.supplyAgreementMaxTurns,
+  overtimeCapacityPct: THRESHOLD_BALANCE.overtimeCapacityPct,
 } as const
 
 // P81c (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten, P81-8): "utkastad tur 10
