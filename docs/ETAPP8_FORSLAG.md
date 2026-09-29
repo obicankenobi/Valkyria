@@ -603,7 +603,7 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > | + botarna uppvaktar | 0 | 0 | 0 | 1 |
 > | + `spendOnlyFromSurplus` | **0** | **65** | **81** | **1** |
 >
-> **Golden** omfryst i egen commit. Nya hashar: se P99c-blocket i `golden.test.ts`. **Spelbarhetstestet** kräver
+> **Golden** omfryst i egen commit. Nya hashar: passive `19da60a7a4ce76`, aggressive `5d7419dee6d16`, balanced `79da51ef1da3a`. **Spelbarhetstestet** kräver
 > nu även att en aktiv bot (inte `passive`) vinner ≥ 20 % (≈ 8 s, i standardsviten).
 
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.

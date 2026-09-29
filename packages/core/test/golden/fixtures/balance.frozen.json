@@ -305,5 +305,9 @@
   "advanceRelationWeight": 0.15,
   "advanceUrgencyFullAt": 3,
   "advanceCoverageFull": 5,
-  "_p99b_note": "Ägarbeslut 2026-09-29 (RAPPORT3_GRANSKNING.md §1/§5): Official.relationToPlayer startar på policyDecisionRelationThreshold (30, samma tal som gränsen i politics.ts — läses därifrån, inget andra tal) i stället för 0, och ett policybeslut föregås av en varning en tur innan (Official.policyWarningTurn). Skälet: med startvärde 0 var varje tjänsteman 'ohörsammad' från tur 1, så båda NON_ALIGNMENT-tjänstemännen (nlf defence, laos finance) utfärdade EMBARGO på tur 4 i varje parti och embargot hävs aldrig. Inga nya balanstal."
+  "_p99b_note": "Ägarbeslut 2026-09-29 (RAPPORT3_GRANSKNING.md §1/§5): Official.relationToPlayer startar på policyDecisionRelationThreshold (30, samma tal som gränsen i politics.ts — läses därifrån, inget andra tal) i stället för 0, och ett policybeslut föregås av en varning en tur innan (Official.policyWarningTurn). Skälet: med startvärde 0 var varje tjänsteman 'ohörsammad' från tur 1, så båda NON_ALIGNMENT-tjänstemännen (nlf defence, laos finance) utfärdade EMBARGO på tur 4 i varje parti och embargot hävs aldrig. Inga nya balanstal.",
+  "_p99c_note": "Ägarbeslut 2026-09-29 (alternativ A efter P99b): efter P99b fanns ingen mekanik som SÄNKTE en tjänstemans relationToPlayer, så P57:s tryck (varning -> PolicyDecision) var i praktiken avstängt. Nu förfaller relationen om spelaren inte uppvaktar tjänstemannen (ett lyckat BRIBE, FAVOUR eller TURN stämplar Official.lastCourtedTurn). officialRelationGraceTurns: antal turer efter senaste uppvaktning (eller partistart) utan förfall. officialRelationDecayPerTurn: relationspoäng per tur efter det. officialRelationDecayFloor: golv. Alla tre PROVISORISKA, kalibreras mot harnessen (se ANDRINGSLOGG).",
+  "officialRelationGraceTurns": 6,
+  "officialRelationDecayPerTurn": 2,
+  "officialRelationDecayFloor": 0
 }
