@@ -279,6 +279,9 @@ export interface House {
   // lägger poängen den faktiskt köpte × favourRelationCostPerPoint här; deliveries.ts drar den från
   // intäkten på husets nästa leveranser tills den är noll ("kostnaden bokförs i marginal", spec 3.3).
   favourMarginOwed: Money
+  // P100 (ETAPP8_FORSLAG.md §5.1): det gällande läget för de tre slagen stående order. Ett sparat parti
+  // från före P100 saknar fältet — standingOrders.ts läser det defensivt.
+  standingOrders: StandingOrders
 }
 
 export interface BoardTarget {
@@ -820,19 +823,50 @@ export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN
 // handlingspoäng. Se spec 3.1. ASSASSINATE finns inte i IntelOp i etapp 1 och ska
 // inte läggas till (spec 3.1, DESIGN.md avsnitt 9).
 
-// StandingOrderChange nämns i TurnSubmission (spec 3, "standingOrders:
-// StandingOrderChange[]") men definieras aldrig — varken formen eller vilken prompt
-// som ska bearbeta den anges i avsnitt 10:s promptsekvens. Se ANDRINGSLOGG.md
-// 2026-09-13 "StandingOrderChange saknar definition". applyActions är ett no-op i
-// P2 och läser aldrig innehållet, så den här platshållaren låser bara typen
-// tillräckligt för att TurnSubmission ska gå att bygga och skicka ett tomt fält —
-// den riktiga formen (troligen en diskriminerad union per DESIGN.md §4:
-// produktionslinjer, R&D-kö, leverantörsavtal, prisgolv, stationers
-// underhållsläge) är en design­fråga som ska beslutas separat innan en prompt
-// faktiskt bearbetar standing orders.
-export interface StandingOrderChange {
-  kind: string
-  payload: Record<string, unknown>
+// P100 (ETAPP8_FORSLAG.md §5.1): stående order i tre slag — de tre av DESIGN.md §4:s fem som är ekonomi.
+// En ändring kostar INGEN handling (skyddsräcke 6), gäller från NÄSTA tur och ligger kvar tills den ändras.
+export type LineShift = 'normal' | 'overtime'
+export type StationMode = 'quiet' | 'normal' | 'active'
+
+export type StandingOrderChange =
+  // Linjeuppdrag: en produktkategori (null = "fritt", dagens automatiska tilldelning) och ett skift.
+  | { kind: 'LINE'; lineId: string; category: TechCategory | null; shift: LineShift }
+  // Leverantörsavtal: SET (råvara, volym per tur, löptid 4–8 turer) eller CANCEL.
+  | { kind: 'SUPPLY'; op: 'SET'; commodity: Commodity; volumePerTurn: Money; durationTurns: number }
+  | { kind: 'SUPPLY'; op: 'CANCEL'; commodity: Commodity }
+  // Stationsläge: tyst, normal eller aktiv.
+  | { kind: 'STATION'; stationId: string; mode: StationMode }
+
+// Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
+export interface LineStandingOrder {
+  category: TechCategory | null
+  shift: LineShift
+  sinceTurn: number
+}
+
+export interface SupplyAgreement {
+  id: string
+  commodity: Commodity
+  volumePerTurn: Money
+  // Råvaruindexet när avtalet slöts — "låser priset till dagens råvaruindex".
+  lockedIndex: number
+  startTurn: number // första betalda turen
+  endTurn: number // sista betalda turen
+  // Antal turer i följd avtalet gått med förlust (index under låst index) — larmet vid supplyLossStreakTurns.
+  lossStreak: number
+}
+
+export interface StationStandingOrder {
+  mode: StationMode
+  sinceTurn: number
+  // Antal turer i följd på aktiv sedan senaste djupsteget (stationActiveDepthTurns → +1 djup).
+  activeTurns: number
+}
+
+export interface StandingOrders {
+  lines: Record<string, LineStandingOrder>
+  supply: SupplyAgreement[]
+  stations: Record<string, StationStandingOrder>
 }
 
 export interface TurnSubmission {
@@ -844,7 +878,7 @@ export interface TurnSubmission {
 export interface TurnResult {
   state: GameState
   wire: WireEvent[] // endast denna turs händelser
-  rejected: { action: PlayerAction | Bid; reason: string }[]
+  rejected: { action: PlayerAction | Bid | StandingOrderChange; reason: string }[]
 }
 
 // P78 (ETAPP7_TEKNISK_SPEC.md §7.4), ordagrant: "validateAction(state, draft,

@@ -2,8 +2,9 @@
 // Utbruten ur applyActions.ts i P23 (ETAPP2_TEKNISK_SPEC.md avsnitt 7) —
 // oförändrad logik, bara flyttad. Se ANDRINGSLOGG.md.
 import balanceData from '../data/balance.json' with { type: 'json' }
+import { standingStationMode } from '../standingOrders.js'
 import type { ResolveContext } from './index.js'
-import type { RndProject, TechCategory, WireEvent } from '../types.js'
+import type { RndProject, Station, TechCategory, WireEvent } from '../types.js'
 
 type Emit = (e: Omit<WireEvent, 'id' | 'turn'>) => string
 
@@ -11,6 +12,9 @@ interface Balance {
   intelDormantExposureDecay: number
   exposureBurnThreshold: number
   stationBurnChancePct: number
+  stationActiveExposurePerTurn: number
+  stationQuietExposureDecay: number
+  stationActiveDepthTurns: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -58,6 +62,8 @@ export function advanceStations(ctx: ResolveContext): void {
   const house = draft.house
 
   for (const station of house.stations) {
+    applyStationMode(ctx, station)
+
     if (station.status === 'dormant') {
       station.exposure = Math.max(0, station.exposure - BALANCE.intelDormantExposureDecay)
     }
@@ -84,6 +90,58 @@ export function advanceStations(ctx: ResolveContext): void {
       scope: 'house',
       headline: `STATION ${station.city.toUpperCase()} UNDER SURVEILLANCE — EXPOSURE ${station.exposure.toFixed(0)}`,
       causeId: null,
+      delta: {},
+      actorIsPlayer: false,
+      subjectId: station.nation,
+    })
+  }
+}
+
+// P100 (ETAPP8_FORSLAG.md §5.1): stationsläget. Bara en station med status 'active' har ett läge — en
+// vilande sköter dormancy-regeln ovan, en bränd är slut. Aktiv bygger exponering varje tur och växer ett
+// djupsteg var stationActiveDepthTurns:e tur; tyst sänker exponeringen och växer inte; normal rör ingenting
+// (då styr bara INTEL-handlingarna, som förut). En station på aktiv vars exponering passerar
+// exposureBurnThreshold ger ett larm med causeId = exponeringshändelsen (DESIGN.md §4, ordagrant).
+function applyStationMode(ctx: ResolveContext, station: Station): void {
+  const { draft, emit } = ctx
+  if (station.status !== 'active') return
+  const mode = standingStationMode(draft.house, station.id, draft.meta.turn)
+  if (mode === 'normal') return
+  const order = draft.house.standingOrders.stations[station.id]!
+
+  const exposureBefore = station.exposure
+  const depthBefore = station.depth
+
+  if (mode === 'active') {
+    station.exposure = Math.min(100, exposureBefore + BALANCE.stationActiveExposurePerTurn)
+    order.activeTurns += 1
+    if (order.activeTurns >= BALANCE.stationActiveDepthTurns) {
+      station.depth = Math.min(5, station.depth + 1) as Station['depth']
+      order.activeTurns = 0
+    }
+  } else {
+    if (exposureBefore <= 0) return
+    station.exposure = Math.max(0, exposureBefore - BALANCE.stationQuietExposureDecay)
+  }
+
+  const riseId = emit({
+    severity: 'ticker',
+    scope: 'house',
+    headline: `STATION ${station.city.toUpperCase()} (${mode.toUpperCase()}): EXPOSURE ${exposureBefore.toFixed(0)} → ${station.exposure.toFixed(0)}${
+      station.depth !== depthBefore ? `, DEPTH ${depthBefore} → ${station.depth}` : ''
+    }`,
+    causeId: null,
+    delta: { exposure: station.exposure - exposureBefore, ...(station.depth !== depthBefore ? { depth: station.depth - depthBefore } : {}) },
+    actorIsPlayer: true,
+    subjectId: station.nation,
+  })
+
+  if (mode === 'active' && exposureBefore <= BALANCE.exposureBurnThreshold && station.exposure > BALANCE.exposureBurnThreshold) {
+    emit({
+      severity: 'headline',
+      scope: 'house',
+      headline: `STATION ${station.city.toUpperCase()} ON ACTIVE DUTY PASSES THE BURN THRESHOLD — EXPOSURE ${station.exposure.toFixed(0)}`,
+      causeId: riseId,
       delta: {},
       actorIsPlayer: false,
       subjectId: station.nation,

@@ -4,7 +4,7 @@
 // hanteringsbibliotek — bara useState, exakt som specen ber om.
 import { useCallback, useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS, createInitialState, resolveTurn } from '@seventh-front/core'
-import type { Bid, GameState, PlayerAction, StartChoices, TurnSubmission, WireEvent } from '@seventh-front/core'
+import type { Bid, GameState, PlayerAction, StandingOrderChange, StartChoices, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
 import { crossedDoomsdayThreshold, playSound } from './sound.js'
@@ -20,7 +20,7 @@ const DOOMSDAY_SOUND_THRESHOLDS = [
 ]
 
 export interface RejectedEntry {
-  action: PlayerAction | Bid
+  action: PlayerAction | Bid | StandingOrderChange
   reason: string
 }
 

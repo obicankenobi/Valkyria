@@ -14,6 +14,7 @@
 import balance from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
+import { standingStationMode } from '../../standingOrders.js'
 import type { ResolveStep } from '../index.js'
 import type { House, Money } from '../../types.js'
 
@@ -30,6 +31,8 @@ interface Balance {
   creditMultiple: number
   chiefOfStaffActionBonusThreshold: number
   scandalCreditPenalty: number
+  stationQuietUpkeepFactor: number
+  stationActiveUpkeepFactor: number
 }
 
 const BALANCE = balance as unknown as Balance
@@ -65,17 +68,27 @@ export interface FixedCostsBreakdown {
 // post") i stället för bara en enda ihopslagen summa — samma "en formel, en
 // källa"-princip som computeLineThroughput (production.ts). computeFixedCosts
 // nedan blir en ren summering av den här, bitvis identisk med tidigare.
-export function computeFixedCostsBreakdown(house: House): FixedCostsBreakdown {
+export function computeFixedCostsBreakdown(house: House, turn?: number): FixedCostsBreakdown {
   const extraLines = Math.max(0, house.lines.length - BASE_LINES_INCLUDED_IN_PAYROLL)
   const payroll = BALANCE.fixedCosts.payrollBase + BALANCE.fixedCosts.payrollPerExtraLine * extraLines
   const lineUpkeep = BALANCE.fixedCosts.lineUpkeep * house.lines.length
-  const stationUpkeep = BALANCE.fixedCosts.stationUpkeep * house.stations.filter((s) => s.status !== 'burned').length
+  // P100: stationsläget (tyst/normal/aktiv) skalar upphållet per station. Utan `turn` ignoreras lägena
+  // (och ett hus utan stående order räknar exakt som förut).
+  const stationUpkeep = round(
+    house.stations
+      .filter((s) => s.status !== 'burned')
+      .reduce((sum, s) => {
+        const mode = turn === undefined ? 'normal' : standingStationMode(house, s.id, turn)
+        const factor = mode === 'quiet' ? BALANCE.stationQuietUpkeepFactor : mode === 'active' ? BALANCE.stationActiveUpkeepFactor : 1
+        return sum + BALANCE.fixedCosts.stationUpkeep * factor
+      }, 0),
+  )
   const rndOverhead = BALANCE.fixedCosts.rndOverhead * house.rnd.length
   return { payroll, lineUpkeep, stationUpkeep, rndOverhead }
 }
 
-function computeFixedCosts(house: House): Money {
-  const b = computeFixedCostsBreakdown(house)
+function computeFixedCosts(house: House, turn: number): Money {
+  const b = computeFixedCostsBreakdown(house, turn)
   return b.payroll + b.lineUpkeep + b.stationUpkeep + b.rndOverhead
 }
 
@@ -115,7 +128,7 @@ export const economy: ResolveStep = (ctx) => {
   const { draft, emit } = ctx
   const house = draft.house
 
-  const fixedCosts = computeFixedCosts(house)
+  const fixedCosts = computeFixedCosts(house, draft.meta.turn)
   house.treasury -= fixedCosts
   recordExpense(draft, 'fixedCosts', fixedCosts)
   emit({

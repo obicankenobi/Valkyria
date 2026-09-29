@@ -734,7 +734,11 @@ inte gör det.** `FAVOUR` är gratis och obegränsad (förfallet kan slås ut f�
 inte åtgärdad. Golden omfryst i egen commit. Fullt svep grönt: 1 161 tester, lint, typecheck, build, e2e (173, två gånger i rad). **P99d BYGGD 2026-09-29 (ägarbeslut):** FAVOUR har en verklig kostnad — poängen den köper × `favourRelationCostPerPoint`
 blir en marginalskuld (`House.favourMarginOwed`) som `deliveries.ts` drar från nästa leveransers intäkt
 (`settleFavourMargin`, även i `projectedQuarter`). Vinster per 100 partier: passive 0, aggressive 36 (var 65),
-balanced 63 (var 81), capacity 1. P100 är inte påbörjad.
+balanced 63 (var 81), capacity 1.
+**P100 BYGGD 2026-09-29:** stående order i kärnan (`standingOrders.ts`, `House.standingOrders`) — linjeuppdrag (kategori + skift,
+`capacityPct` 125 på övertid), leverantörsavtal (låst index, betalas varje tur) och stationsläge (tyst/normal/aktiv), tre larm
+med causeId. Kostar ingen handling, gäller från nästa tur. Befintliga botar oförändrade (hash utan det nya fältet identisk
+med P99d:s). Golden omfryst i egen commit. P101 (anslagstavlan, UI) är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

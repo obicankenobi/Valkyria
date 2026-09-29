@@ -289,6 +289,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     commodityHoldings: uniformCommodityRecord(0),
     favourMarginSpent: 0,
     favourMarginOwed: 0,
+    standingOrders: { lines: {}, supply: [], stations: {} },
   }
 }
 

@@ -691,7 +691,7 @@ export function projectedQuarter(state: GameState): ProjectedQuarter {
   // P99d: FAVOUR-skulden betalas ur just de leveranserna — prognosen räknar nettot.
   expectedRevenueNextTurn = settleFavourMargin(state.house.favourMarginOwed, expectedRevenueNextTurn).revenue
 
-  const fixedCosts = computeFixedCostsBreakdown(state.house)
+  const fixedCosts = computeFixedCostsBreakdown(state.house, state.meta.turn)
   const interest = computeQuarterlyInterest(state.house)
   const totalFixedCosts = fixedCosts.payroll + fixedCosts.lineUpkeep + fixedCosts.stationUpkeep + fixedCosts.rndOverhead
   const netChange = expectedRevenueNextTurn - totalFixedCosts - interest

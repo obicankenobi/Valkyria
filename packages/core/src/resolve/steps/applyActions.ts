@@ -52,6 +52,7 @@ import { deriveSupplyCostIndex } from './supply.js'
 import { computeUnitCostNow, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
 import { validateAction } from '../../validateAction.js'
+import { applyStandingOrders } from '../../standingOrders.js'
 import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Contract, GameState, OfficialId, ProductionLine, RndProject, Station, TechCategory } from '../../types.js'
@@ -160,6 +161,8 @@ export const applyActions: ResolveStep = (ctx) => {
 
   advanceRndQueue(house, emit)
   advanceStations(ctx)
+  // P100: stående order (kostar ingen handling, gäller från nästa tur) — före handlingsloopen.
+  applyStandingOrders(ctx)
   resolvePendingCrisis(ctx)
 
   let rndSeq = 0

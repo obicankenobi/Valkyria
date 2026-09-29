@@ -611,6 +611,12 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > som dras från nästa leveransers intäkt. **Före → efter (100 partier/bot, vinster):** passive 0 → 0, aggressive
 > 65 → 36, balanced 81 → 63, capacity 1 → 1. Detaljer och golden-verifieringen står i ANDRINGSLOGG-raden med samma datum. Golden omfryst i egen commit: passive `4b56386427578`, aggressive `174dd1a878059d`, balanced `aaf7115caebdf`.
 
+> **P100 BYGGD 2026-09-29 — stående order i kärnan.** Se ANDRINGSLOGG-raden med samma datum för mekaniken, de elva
+> nya (provisoriska) balanstalen och de tre larmen. Klart-när: varje slag och varje larm har ett test
+> (`packages/core/test/standingOrders.test.ts`, 31 tester); befintliga botar oförändrade (hash utan det nya fältet
+> bit-identisk med P99d:s); golden omfryst i egen commit — passive `11ad870a249092`, aggressive `6a1a16e93ce0a`,
+> balanced `7cd16075822ce`. Tavlan (gränssnittet) är P101.
+
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,
 och golden är omfryst.

@@ -11,6 +11,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { computeUnitCostNow, getProduct, materialCostPerUnit } from '../../pricing.js'
 import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
+import { settleSupplyAgreements, standingLineOrder } from '../../standingOrders.js'
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 
@@ -18,6 +19,9 @@ interface Balance {
   deliveryDelayMinTurns: number
   deliveryDelayMaxTurns: number
   retoolingTurns: number
+  overtimeCapacityPct: number
+  overtimeUnitCostFactor: number
+  overtimeBreakdownChancePct: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -47,6 +51,16 @@ export const production: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
 
+  // P100 (ETAPP8_FORSLAG.md §5.1): leverantörsavtalen avräknas FÖRST, så innehavet redan är krediterat
+  // när den här turens produktion räknar sin materialkostnad. Linjeuppdragens skift sätter capacityPct
+  // (fältets första skrivare) — bara för linjer med en gällande order, så ett hus utan stående order
+  // räknar exakt som förut.
+  settleSupplyAgreements(ctx)
+  for (const line of house.lines) {
+    const order = standingLineOrder(house, line.id, draft.meta.turn)
+    if (order) line.capacityPct = order.shift === 'overtime' ? BALANCE.overtimeCapacityPct : 100
+  }
+
   // 0) Linjer vars omställning (P27, avsnitt 3.2) är klar den här turen återgår
   //    till normal drift innan resten av steget hinner röra dem.
   for (const line of house.lines) {
@@ -70,6 +84,20 @@ export const production: ResolveStep = (ctx) => {
     const stillNeeded = needsProduction(contract) && remainingToProduce(contract, draft.market.shipments) > 0
     if (stillNeeded) continue
 
+    // P100 LARM 1: en linje med ett stående uppdrag som tillverkade mot ett annullerat kontrakt
+    // varnar — annars frigörs den tyst. causeId = kontraktets sena-/annulleringshändelse.
+    if (contract?.status === 'voided' && house.standingOrders?.lines[line.id]) {
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `${line.id.toUpperCase()} WAS BUILDING FOR A VOIDED CONTRACT (${contract.id}) — FREED`,
+        causeId: contract.lateEventId,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: null,
+      })
+    }
+
     line.assignedContractId = null
     line.productId = null
     line.status = 'idle'
@@ -82,8 +110,15 @@ export const production: ResolveStep = (ctx) => {
   for (const line of house.lines) {
     if (line.status !== 'idle') continue
 
+    // P100: ett linjeuppdrag med en kategori tar bara kontrakt i den kategorin; "fritt" (null) och en
+    // linje utan order behåller den automatiska tilldelningen.
+    const wantedCategory = standingLineOrder(house, line.id, draft.meta.turn)?.category ?? null
     const contract = draft.market.contracts.find(
-      (c) => needsProduction(c) && !claimed.has(c.id) && remainingToProduce(c, draft.market.shipments) > 0,
+      (c) =>
+        needsProduction(c) &&
+        !claimed.has(c.id) &&
+        remainingToProduce(c, draft.market.shipments) > 0 &&
+        (wantedCategory === null || getProduct(c.productId).category === wantedCategory),
     )
     if (!contract) continue
 
@@ -137,7 +172,23 @@ export const production: ResolveStep = (ctx) => {
     const plannedUnits = Math.min(remaining, Math.floor(lineThroughput))
     if (plannedUnits <= 0) continue
 
-    const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.commodities)
+    // P100: övertid = högre styckkostnad + en liten slitagerisk (rng dras BARA för en linje på övertid).
+    const overtime = standingLineOrder(house, line.id, draft.meta.turn)?.shift === 'overtime'
+    if (overtime && rng.chance(BALANCE.overtimeBreakdownChancePct)) {
+      line.status = 'blocked'
+      line.blockedReason = 'overtime breakdown'
+      emit({
+        severity: 'report',
+        scope: 'house',
+        headline: `${line.id.toUpperCase()} BREAKS DOWN UNDER OVERTIME — NO PRODUCTION THIS TURN`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: false,
+        subjectId: null,
+      })
+      continue
+    }
+    const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.commodities) * (overtime ? BALANCE.overtimeUnitCostFactor : 1)
     // affordableUnits räknas mot RÅ unitCostNow, inte mot kostnaden EFTER ett
     // BUY_FORWARD-innehav — en medveten förenkling (P51, avsnitt 4.5): ett
     // stort innehav sänker vad du FAKTISKT betalar, men relaxar inte hur

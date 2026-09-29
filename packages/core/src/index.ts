@@ -3,6 +3,8 @@
 // Fler exports läggs till allteftersom respektive prompt i
 // ETAPP1_TEKNISK_SPEC.md avsnitt 10 bygger dem.
 export * from './types.js'
+// P100: stående order — validering och läsare som gränssnittet (P101) återanvänder i stället för att upprepa reglerna.
+export { emptyStandingOrders, standingLineOrder, standingStationMode, validateStandingOrderChange } from './standingOrders.js'
 export * from './rng.js'
 export { round } from './money.js'
 export { createInitialState, cloneState } from './state.js'
