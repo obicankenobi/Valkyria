@@ -84,7 +84,7 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
         case 'FUND_CAMPAIGN':
           return preview(finiteOrNull(action.spend), null) // avvisas aldrig av rng, bara klippt vinst
         case 'FAVOUR':
-          return preview(null, null) // "kostar inga pengar" (avsnitt 3.3)
+          return preview(null, null) // ingen kassa dras (avsnitt 3.3) — kostnaden är en marginalskuld (P99d), se favourMarginOwed
         case 'INFLUENCE': {
           // "lyckas alltid" (avsnitt 4.3) — successPct null, men det ENDA
           // verbet i P79 som visar en beräknad effekt (se filens huvudkommentar).

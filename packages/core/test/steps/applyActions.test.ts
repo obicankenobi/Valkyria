@@ -452,7 +452,7 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
     expect(ctx.rejected.length).toBe(1)
   })
 
-  it('(P56 klart-når) FAVOUR kostar marginal (house.favourMarginSpent), INTE kassa — höjer relationToPlayer', () => {
+  it('(P56 klart-når, P99d) FAVOUR kostar marginal (house.favourMarginSpent/-Owed), INTE kassa — höjer relationToPlayer', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const official = state.officials['official-rvn-procurement']!
     official.relationToPlayer = 40

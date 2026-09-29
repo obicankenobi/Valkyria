@@ -10,7 +10,7 @@ import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
-import { advanceFactors, deliveryPayment } from './resolve/advance.js'
+import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
 import { computeFixedCostsBreakdown, computeQuarterlyInterest } from './resolve/steps/economy.js'
 import type { FixedCostsBreakdown } from './resolve/steps/economy.js'
 import { computeLineThroughput } from './resolve/steps/production.js'
@@ -687,6 +687,9 @@ export function projectedQuarter(state: GameState): ProjectedQuarter {
     if (!contract) continue
     expectedRevenueNextTurn += deliveryPayment(contract, shipment.units)
   }
+
+  // P99d: FAVOUR-skulden betalas ur just de leveranserna — prognosen räknar nettot.
+  expectedRevenueNextTurn = settleFavourMargin(state.house.favourMarginOwed, expectedRevenueNextTurn).revenue
 
   const fixedCosts = computeFixedCostsBreakdown(state.house)
   const interest = computeQuarterlyInterest(state.house)

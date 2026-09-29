@@ -400,8 +400,8 @@ function OfficialPointSpendForm({
   )
 }
 
-// FAVOUR — "det enda verbet i spelet som inte kostar pengar" (political.ts,
-// avsnitt 3.3). marginCost, aldrig spend.
+// FAVOUR — kostar ingen kassa (political.ts, avsnitt 3.3) men en verklig MARGINAL (P99d): beloppet blir
+// en skuld som dras från intäkten på nästa leveranser. marginCost, aldrig spend.
 function FavourForm({ state, official, onQueue }: { state: GameState; official: Official; onQueue: (action: PlayerAction) => void }) {
   const [tier, setTier] = useState<Tier['key']>('modest')
   const marginCost = FAVOUR_TIER_POINTS[tier] * 5000
@@ -419,8 +419,7 @@ function FavourForm({ state, official, onQueue }: { state: GameState; official: 
     <div className="cf-body" data-testid={`contacts-form-FAVOUR-${official.id}`}>
       <h3 className="cf-form-title">FAVOUR</h3>
       <p className="cf-hint">
-        Costs margin on future deals with her (house.favourMarginSpent), not treasury — the only verb that doesn't spend
-        cash.
+        Costs margin, not cash now: the amount is deducted from what your next deliveries pay, until it is settled.
       </p>
       <div className="cf-field">
         <span className="cf-field-label">MARGIN COST</span>
@@ -436,6 +435,10 @@ function FavourForm({ state, official, onQueue }: { state: GameState; official: 
         <div className="cf-preview-row">
           <span>MARGIN COST</span>
           <span className="is-amber">{formatMoney(marginCost)}</span>
+        </div>
+        <div className="cf-preview-row" data-testid={`contacts-FAVOUR-owed-${official.id}`}>
+          <span>ALREADY OWED</span>
+          <span className="is-amber">{formatMoney(state.house.favourMarginOwed ?? 0)}</span>
         </div>
       </div>
       <Button variant="primary" disabled={!validation.ok} onClick={() => onQueue(action)} testId={`contacts-FAVOUR-file-${official.id}`}>

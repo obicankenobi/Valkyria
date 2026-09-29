@@ -272,11 +272,13 @@ export interface House {
   // tillbaka det, samma kurs.
   commodityHoldings: Record<Commodity, Money>
   // P56 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.3): FAVOUR "kostar marginal, inte
-  // kassa" — en löpande summa, bara för att bevisa (testbart, synligt) att
-  // treasury verkligen förblir orört. Skriver INGEN annan del av ekonomin
-  // (grossMarginPct, board.ts:s progressSnapshot m.fl.) — se applyPolitical.ts:s
-  // egen kommentar om varför.
+  // kassa" — den kumulativa summan av all marginal som lämnats i favörer (statistik).
+  // Själva skulden som betalas är favourMarginOwed nedan (P99d).
   favourMarginSpent: Money
+  // P99d (ägarbeslut 2026-09-29): den del av favourMarginSpent som ännu inte betalats. Varje FAVOUR
+  // lägger poängen den faktiskt köpte × favourRelationCostPerPoint här; deliveries.ts drar den från
+  // intäkten på husets nästa leveranser tills den är noll ("kostnaden bokförs i marginal", spec 3.3).
+  favourMarginOwed: Money
 }
 
 export interface BoardTarget {

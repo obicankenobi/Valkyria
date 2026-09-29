@@ -19,6 +19,7 @@ import successorsData from '../data/successors.json' with { type: 'json' }
 import { addDoomsday } from './doomsdayGate.js'
 import { replaceOfficial } from '../officials.js'
 import { recordExpense } from '../ledger.js'
+import { round } from '../money.js'
 import type { ResolveContext } from './index.js'
 import type { Agenda, FactionId, GameState, OfficialId, PlayerAction } from '../types.js'
 
@@ -247,20 +248,23 @@ function applyOfficialTargetedPolitical(
   const official = draft.officials[action.officialId]!
 
   if (action.op === 'FAVOUR') {
-    // P56 (avsnitt 3.3): "det enda verbet i spelet som inte kostar pengar" —
-    // treasury rörs ALDRIG här. house.favourMarginSpent är den enda bokföringen
-    // (types.ts:s egen kommentar) — kostnaden mäts i utebliven marginal, inte i
-    // en post board.ts/economy.ts redan läser, så ingen av dem rörs.
+    // P56 (avsnitt 3.3): treasury rörs ALDRIG här — kostnaden bokförs i marginal, inte i kassa.
+    // (P56 lät det stanna vid en räknare, favourMarginSpent, som inget läste; sedan P99d blir den
+    // en skuld, favourMarginOwed, som deliveries.ts drar från intäkten.)
     const gain = Math.min(action.marginCost / BALANCE.favourRelationCostPerPoint, 100 - official.relationToPlayer)
     official.relationToPlayer += gain
     if (gain > 0) official.lastCourtedTurn = draft.meta.turn // P99c: bara en verklig uppvaktning nollställer förfallet
-    house.favourMarginSpent += action.marginCost
+    // P99d (ägarbeslut 2026-09-29): en VERKLIG kostnad. Man betalar för de poäng man faktiskt fick
+    // (aldrig för klampad överskottsvilja), i marginal: skulden dras från husets nästa leveransers intäkt.
+    const charged = round(gain * BALANCE.favourRelationCostPerPoint)
+    house.favourMarginSpent += charged
+    house.favourMarginOwed = (house.favourMarginOwed ?? 0) + charged
     emit({
       severity: 'ticker',
       scope: 'faction',
-      headline: `${house.name.toUpperCase()} DOES ${official.name.toUpperCase()} A FAVOUR (MARGIN COST £${action.marginCost.toLocaleString('en-GB')})`,
+      headline: `${house.name.toUpperCase()} DOES ${official.name.toUpperCase()} A FAVOUR (MARGIN OWED £${charged.toLocaleString('en-GB')}, DEDUCTED FROM THE NEXT DELIVERIES)`,
       causeId: null,
-      delta: { relationToPlayer: gain, favourMarginSpent: action.marginCost },
+      delta: { relationToPlayer: gain, favourMarginSpent: charged, favourMarginOwed: charged },
       actorIsPlayer: true,
       subjectId: official.factionId,
     })

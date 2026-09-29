@@ -23,7 +23,7 @@
 // hinna se den (heat.ts läser och nollställer Theatre.deliveriesIntoActiveWar-
 // ThisTurn i samma passage, innan rivals.ts någonsin körs).
 import balanceData from '../../data/balance.json' with { type: 'json' }
-import { deliveryPayment } from '../advance.js'
+import { deliveryPayment, settleFavourMargin } from '../advance.js'
 import { BROKER_CONTRACT_ID_PREFIX, recordExpense, recordFinancing, recordIncome } from '../../ledger.js'
 import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
@@ -230,13 +230,28 @@ export const deliveries: ResolveStep = (ctx) => {
 
     contract.unitsDelivered += shipment.units
     // Betalning bokförs proportionellt mot levererad andel (spec 5).
-    const revenue = deliveryPayment(contract, shipment.units)
+    // P99d: FAVOUR:s marginalskuld dras först — kassa, huvudbok och revenueByTurn får NETTOT.
+    const gross = deliveryPayment(contract, shipment.units)
+    const { revenue, settled: favourSettled } = settleFavourMargin(house.favourMarginOwed, gross)
+    house.favourMarginOwed = (house.favourMarginOwed ?? 0) - favourSettled
     house.treasury += revenue
     // P96: BROKER-kontrakt (id-prefix satt i applyActions.ts) skiljs ut från
     // vanliga anbudskontrakt — båda betalas här, men huvudboken visar dem var för sig.
     recordIncome(draft, contract.id.startsWith(BROKER_CONTRACT_ID_PREFIX) ? 'broker' : 'contracts', revenue)
     house.revenueByTurn[draft.meta.turn] = (house.revenueByTurn[draft.meta.turn] ?? 0) + revenue
     if (product.restricted) draft.market.restrictedRevenueThisTurn += revenue
+
+    if (favourSettled > 0) {
+      emit({
+        severity: 'ticker',
+        scope: 'market',
+        headline: `FAVOUR MARGIN SETTLED: £${favourSettled.toLocaleString('en-GB')} OF THE DELIVERY TO ${buyerName} GOES TO OFFICIALS (£${house.favourMarginOwed.toLocaleString('en-GB')} STILL OWED)`,
+        causeId: null,
+        delta: { favourMarginOwed: -favourSettled },
+        actorIsPlayer: true,
+        subjectId: contract.buyerId,
+      })
+    }
 
     const deliveryId = emit({
       severity: 'report',

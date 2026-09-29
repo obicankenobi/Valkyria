@@ -108,7 +108,7 @@ export const HANDBOOK: readonly HandbookEntry[] = [
     title: 'Politics',
     summary: 'Influence individual officials (BRIBE, FUND_CAMPAIGN, FAVOUR, ASSASSINATE) or whole nations (INFLUENCE, STAGE_INCIDENT, BACK_CHANNEL, FUND_COUP, BROKER) — reached in CONTACTS and country files.',
     body: [
-      'Each buying faction has named officials with their own agenda, standing, and relation to you. BRIBE and FUND_CAMPAIGN buy improved relations directly; FAVOUR spends a margin against a specific favour; ASSASSINATE removes an official permanently (a successor is appointed, always with relation to you reset to zero).',
+      'Each buying faction has named officials with their own agenda, standing, and relation to you. BRIBE and FUND_CAMPAIGN buy improved relations directly; FAVOUR costs margin, not cash — the price becomes a debt deducted from what your next deliveries pay; ASSASSINATE removes an official permanently (a successor is appointed, always with relation to you reset to zero).',
       'Against whole nations: INFLUENCE shifts public support or relations in a direction; STAGE_INCIDENT and BACK_CHANNEL target a front opponent (lowering or raising relations between the two countries respectively); FUND_COUP attempts to change a faction\'s regime; BROKER strikes a direct contract past normal bidding, decided by the official\'s relation and integrity.',
       'An official\'s agenda can trigger a PolicyDecision if it is ignored for too long — anything from trade tariffs to an embargo against you. See a country\'s file to read an official\'s current agenda.',
     ],

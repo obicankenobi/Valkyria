@@ -345,6 +345,13 @@ order framför en mer lönsam: kostnaden bokförs i **marginal**, inte i kassa. 
 annat verb prissätts i pund är det den enda handling som prissätts i det spelaren faktiskt mäts
 på av styrelsen. Föreslås som etappens mest intressanta enskilda handling.
 
+> **Ändrat 2026-09-29 (P99d, ägarbeslut):** "kostnaden bokförs i marginal" var i P56 bara en räknare
+> (`house.favourMarginSpent`) som ingenting läste — FAVOUR var i praktiken gratis, och tjänstemäns
+> relationsförfall (P99c) kunde slås ut för en handlingspoäng. Nu är kostnaden verklig: poängen FAVOUR
+> faktiskt köpte × `favourRelationCostPerPoint` blir en skuld (`House.favourMarginOwed`) som dras från
+> intäkten på husets nästa leveranser tills den är betald. Kassan rörs fortfarande inte när FAVOUR
+> utförs — men den bokförda intäkten, det styrelsen mäter, blir lägre. Se `docs/ANDRINGSLOGG.md`, 2026-09-29.
+
 ### 3.4 Beslutet — när politiken slår tillbaka
 
 En tjänsteman med tillräcklig `standing` vars agenda är ohörsammad fattar ett `PolicyDecision`

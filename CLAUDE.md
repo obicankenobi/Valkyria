@@ -731,7 +731,10 @@ Botarna: `courtOfficialAtRisk` (aggressive/balanced) och `spendOnlyFromSurplus` 
 överskott över grundkapitalet). Vinster per 100 partier: passive 0 (var 90), aggressive 65 (var 7), balanced 81
 (var 1), capacity 1. **`passive` är inte längre den enda som vinner; `capacity` är den enda som fortfarande
 inte gör det.** `FAVOUR` är gratis och obegränsad (förfallet kan slås ut för en handlingspoäng) — öppen fråga,
-inte åtgärdad. Golden omfryst i egen commit. Fullt svep grönt: 1 161 tester, lint, typecheck, build, e2e (173, två gånger i rad). P100 är inte påbörjad.
+inte åtgärdad. Golden omfryst i egen commit. Fullt svep grönt: 1 161 tester, lint, typecheck, build, e2e (173, två gånger i rad). **P99d BYGGD 2026-09-29 (ägarbeslut):** FAVOUR har en verklig kostnad — poängen den köper × `favourRelationCostPerPoint`
+blir en marginalskuld (`House.favourMarginOwed`) som `deliveries.ts` drar från nästa leveransers intäkt
+(`settleFavourMargin`, även i `projectedQuarter`). Vinster per 100 partier: passive 0, aggressive 36 (var 65),
+balanced 63 (var 81), capacity 1. P100 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

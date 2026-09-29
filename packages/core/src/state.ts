@@ -288,6 +288,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     scandalUntilTurn: null,
     commodityHoldings: uniformCommodityRecord(0),
     favourMarginSpent: 0,
+    favourMarginOwed: 0,
   }
 }
 

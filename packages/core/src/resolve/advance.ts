@@ -69,3 +69,11 @@ export function advanceAmount(price: Money, advancePct: Pct): Money {
 export function deliveryPayment(contract: Pick<Contract, 'price' | 'advancePaid' | 'quantity'>, units: number): Money {
   return round((contract.price - contract.advancePaid) * (units / contract.quantity))
 }
+
+// P99d (ägarbeslut 2026-09-29): FAVOUR:s marginalskuld (House.favourMarginOwed) dras från intäkten på
+// nästa leverans, hela eller så mycket som räcker. En formel, en källa — deliveries.ts betalar med den
+// och queries.ts:s prognos läser samma funktion. `owed` kan saknas i ett sparat parti från före P99d.
+export function settleFavourMargin(owed: Money | undefined, gross: Money): { revenue: Money; settled: Money } {
+  const settled = Math.min(Math.max(owed ?? 0, 0), gross)
+  return { revenue: gross - settled, settled }
+}
