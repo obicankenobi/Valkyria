@@ -609,7 +609,7 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > **P99d — FAVOUR får en verklig kostnad, 2026-09-29** (ägarbeslut, svar på den öppna frågan efter P99c; före
 > P100). En FAVOUR kostar poängen den köpte × `favourRelationCostPerPoint` som en skuld (`House.favourMarginOwed`)
 > som dras från nästa leveransers intäkt. **Före → efter (100 partier/bot, vinster):** passive 0 → 0, aggressive
-> 65 → 36, balanced 81 → 63, capacity 1 → 1. Detaljer och golden-verifieringen står i ANDRINGSLOGG-raden med samma datum.
+> 65 → 36, balanced 81 → 63, capacity 1 → 1. Detaljer och golden-verifieringen står i ANDRINGSLOGG-raden med samma datum. Golden omfryst i egen commit: passive `4b56386427578`, aggressive `174dd1a878059d`, balanced `aaf7115caebdf`.
 
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,

@@ -243,15 +243,23 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // aggressive 6962667e8cdde, balanced 3e3e27ba64cd6). balance.frozen.json speglar balance.json (tre
   // nya tal och en anteckning). De nya hasharna: passive 19da60a7a4ce76, aggressive 5d7419dee6d16,
   // balanced 79da51ef1da3a. headlines > 8 höll oförändrat (passive 72, aggressive 163, balanced 146).
+  //
+  // Omfryst IGEN i P99d (ägarbeslut 2026-09-29: FAVOUR får en verklig kostnad; omfrysningen bekräftad av
+  // ägaren i samma veva, egen commit efter koden). House.favourMarginOwed är ett nytt fält och FAVOUR:s
+  // kostnad dras nu från leveransintäkten (deliveries.ts). INNAN omfrysningen verifierades att passive —
+  // som aldrig skickar FAVOUR — bara ändras av det nya fältet: utan favourMarginOwed är hashen bit-identisk
+  // med P99c:s (19da60a7a4ce76). aggressive och balanced skickar FAVOUR (26 respektive 41 favörer och 14
+  // avräkningar per golden-parti) och förskjuts därför på riktigt. balance.frozen.json oförändrad (inget nytt
+  // balanstal). De nya hasharna: passive 4b56386427578, aggressive 174dd1a878059d, balanced aaf7115caebdf.
+  // headlines > 8 höll oförändrat (passive 72, aggressive 172, balanced 155).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '19da60a7a4ce76' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '5d7419dee6d16' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '79da51ef1da3a' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '4b56386427578' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '174dd1a878059d' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'aaf7115caebdf' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
-    // P99d: PAUSAD i den här commiten (FAVOUR:s marginalskuld ändrar banan), omfrysning väntar på ägarens svar.
-    it.skip(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
+    it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
       const { finalState, wireLog } = playScript(SCENARIO, seed, policy, TURNS)
 
