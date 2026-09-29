@@ -17,6 +17,7 @@ import { createRng } from '../rng.js'
 import type { Rng } from '../rng.js'
 import { createWireEmitter, pruneWire } from '../wire.js'
 import { appendChronicle, classifyChronicleEntries } from '../chronicle.js'
+import { sealLedger } from '../ledger.js'
 import type {
   GameState,
   TurnSubmission,
@@ -98,6 +99,12 @@ export function resolveTurn(state: Readonly<GameState>, submission: TurnSubmissi
   for (const step of PIPELINE) {
     step(ctx)
   }
+
+  // P96: huvudbokens slutsaldon förseglas här, efter SISTA steget och före
+  // advanceTurn (raden hittas på den ännu ostegade draft.meta.turn). Ren
+  // avläsning av house — inte ett fjortonde steg (hård regel 7), samma
+  // "bokföring runt pipelinen"-princip som chronicle nedan.
+  sealLedger(draft)
 
   advanceTurn(draft)
 

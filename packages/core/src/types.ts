@@ -110,7 +110,50 @@ export interface GameState {
   // nödvändighet: ett steg kan bara SKRIVA via ctx.emit, aldrig LÄSA tillbaka
   // den här turens redan emitterade händelser.
   chronicle: ChronicleEntry[]
+  // P96 (ETAPP8_FORSLAG.md §3.1): huvudboken. En rad per spelad tur (kvartal) över
+  // hela partiet — `wire` glömmer efter åtta turer, `revenueByTurn` har bara
+  // intäkterna. Rent underlag för LÄSNING: inget resolve-steg får fatta ett beslut
+  // ur den. Till skillnad från `chronicle` skrivs den av de penningflyttande
+  // stegen själva (ledger.ts), i samma anrop som de flyttar pengarna och emittar
+  // sin WireEvent (hård regel 4); resolveTurn() förseglar bara slutsaldona.
+  ledger: LedgerEntry[]
   status: GameStatus
+}
+
+// P96 (ETAPP8_FORSLAG.md §3.1) — formen utökad av ägaren 2026-09-29 med tre rader
+// utöver specens ursprungliga: `income.fileSale` (SELL_THE_FILE), `expenses.clawback`
+// (BACK_DOWNs återtagande av restricted-intäkt) och `financing` (lån/återbetalning:
+// varken intäkt eller kostnad, kassa och skuld rör sig lika mycket). Alla belopp är
+// positiva heltal (Money); tecknet ligger i vilken rad beloppet står på.
+// Identiteten som testas varje tur: Δ house.treasury = Σ income − Σ expenses
+// + financing.loans − financing.repayments, exakt.
+export interface LedgerEntry {
+  turn: number
+  income: {
+    contracts: Money // leveranser av kontrakt vunna på anbud
+    advances: Money // alltid 0 till P98 (förskottet byggs inte i P96)
+    broker: Money // leveranser av BROKER-kontrakt (contract-broker-*)
+    commodityRelease: Money // MARKET/RELEASE
+    fileSale: Money // krisvalet SELL_THE_FILE
+  }
+  expenses: {
+    fixedCosts: Money
+    production: Money // kontant styckkostnad (efter forward-innehav)
+    interest: Money
+    political: Money // alla POLITICAL-verb som kostar kassa
+    intel: Money // INTEL-verb (EXPAND/RECRUIT/LEAK/SABOTAGE/TURN)
+    commodityPurchase: Money // MARKET/BUY_FORWARD
+    hiring: Money // INTERNAL/HIRE
+    lines: Money // INTERNAL/BUILD_LINE
+    clawback: Money // krisvalet BACK_DOWN: kvartalets restricted-intäkt tas tillbaka
+  }
+  financing: {
+    loans: Money // INTERNAL/TAKE_LOAN
+    repayments: Money // INTERNAL/REPAY
+  }
+  treasuryEnd: Money
+  debtEnd: Money
+  creditLimitEnd: Money
 }
 
 export type GameStatus = { kind: 'active' } | { kind: 'ended'; ending: EndingCode; turn: number }

@@ -9,6 +9,7 @@
 // som anropas utifrån (från applyActions.ts).
 import balanceData from '../data/balance.json' with { type: 'json' }
 import { addDoomsday } from './doomsdayGate.js'
+import { recordExpense, recordIncome } from '../ledger.js'
 import { computeReferencePrice, computeUnitCostNow, getProduct } from '../pricing.js'
 import type { ResolveContext } from './index.js'
 import type { Contract, Faction, GameState, PlayerAction, TheatreId } from '../types.js'
@@ -143,6 +144,7 @@ function resolveBackDown(ctx: ResolveContext, pending: PendingCrisis, wasAutomat
 
   if (pending.restrictedRevenueThisTurn > 0) {
     house.treasury -= pending.restrictedRevenueThisTurn
+    recordExpense(draft, 'clawback', pending.restrictedRevenueThisTurn)
     house.revenueByTurn[pending.turn] = (house.revenueByTurn[pending.turn] ?? 0) - pending.restrictedRevenueThisTurn
     emit({
       severity: 'report',
@@ -194,6 +196,7 @@ function resolveSellTheFile(ctx: ResolveContext): void {
   if (doomsdayDelta !== 0) addDoomsday(ctx, doomsdayDelta, sellId)
 
   house.treasury += BALANCE.crisisSellFileRevenue
+  recordIncome(draft, 'fileSale', BALANCE.crisisSellFileRevenue)
   house.revenueByTurn[draft.meta.turn] = (house.revenueByTurn[draft.meta.turn] ?? 0) + BALANCE.crisisSellFileRevenue
   emit({
     severity: 'headline',

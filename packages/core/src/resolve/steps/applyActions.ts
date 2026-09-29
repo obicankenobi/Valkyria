@@ -47,6 +47,7 @@ import { advanceRndQueue, advanceStations } from '../upkeep.js'
 import { resolvePendingCrisis } from '../crisis.js'
 import { applyPolitical } from '../political.js'
 import { round } from '../../money.js'
+import { BROKER_CONTRACT_ID_PREFIX, recordExpense, recordFinancing, recordIncome } from '../../ledger.js'
 import { deriveSupplyCostIndex } from './supply.js'
 import { computeUnitCostNow, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
@@ -193,6 +194,7 @@ export const applyActions: ResolveStep = (ctx) => {
           const amount = round(payload.amount)
           house.debt += amount
           house.treasury += amount
+          recordFinancing(draft, 'loans', amount)
           emit({
             severity: 'ticker',
             scope: 'house',
@@ -210,6 +212,7 @@ export const applyActions: ResolveStep = (ctx) => {
           const amount = round(payload.amount)
           house.treasury -= amount
           house.debt -= amount
+          recordFinancing(draft, 'repayments', amount)
           emit({
             severity: 'ticker',
             scope: 'house',
@@ -225,6 +228,7 @@ export const applyActions: ResolveStep = (ctx) => {
         case 'BUILD_LINE': {
           const cost = BALANCE.buildLineCost
           house.treasury -= cost
+          recordExpense(draft, 'lines', cost)
           const line: ProductionLine = {
             id: `line-${house.lines.length + 1}`,
             productId: null,
@@ -253,6 +257,7 @@ export const applyActions: ResolveStep = (ctx) => {
           const payload = action.payload as { role: HirableRole }
           const cost = BALANCE.hireCost
           house.treasury -= cost
+          recordExpense(draft, 'hiring', cost)
           const role = payload.role
           const before = house.staff[role]
           house.staff[role] = Math.min(100, before + BALANCE.hireGain)
@@ -306,6 +311,7 @@ export const applyActions: ResolveStep = (ctx) => {
         case 'EXPAND': {
           const station = house.stations.find((s) => s.id === action.stationId)!
           house.treasury -= BALANCE.intelExpandCost
+          recordExpense(draft, 'intel', BALANCE.intelExpandCost)
           const depthBefore = station.depth
           station.depth = Math.min(5, station.depth + 1) as Station['depth']
           // P60 (avsnitt 4.3): exposure-rullningen skalas nu av landets
@@ -331,6 +337,7 @@ export const applyActions: ResolveStep = (ctx) => {
           // targetId återanvänds som nationen — se filens huvudkommentar.
           const nation = action.targetId!
           house.treasury -= BALANCE.intelRecruitCost
+          recordExpense(draft, 'intel', BALANCE.intelRecruitCost)
           const faction = draft.factions[nation]!
           const station: Station = {
             id: `station-${house.stations.length + 1}`,
@@ -379,6 +386,7 @@ export const applyActions: ResolveStep = (ctx) => {
           const rivalId = action.targetId!
           const rival = draft.rivals[rivalId]!
           house.treasury -= BALANCE.intelCovertOpCost
+          recordExpense(draft, 'intel', BALANCE.intelCovertOpCost)
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             // "billiga mot ett land med svag tjänst" — leaker en rivals
             // relations[nation] (den rivalens ställning hos DEN köparen), inte
@@ -415,6 +423,7 @@ export const applyActions: ResolveStep = (ctx) => {
           const rivalId = action.targetId!
           const rival = draft.rivals[rivalId]!
           house.treasury -= BALANCE.intelCovertOpCost
+          recordExpense(draft, 'intel', BALANCE.intelCovertOpCost)
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             // Samma fält rivals.ts:s egen "misslyckad incident sabbar rivalen
             // SJÄLV" redan skriver (avsnitt 2.5) — bidding.ts hoppar redan
@@ -449,6 +458,7 @@ export const applyActions: ResolveStep = (ctx) => {
           const station = house.stations.find((s) => s.id === action.stationId)!
           const official = draft.officials[action.targetId!]!
           house.treasury -= BALANCE.intelCovertOpCost
+          recordExpense(draft, 'intel', BALANCE.intelCovertOpCost)
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             const before = official.relationToPlayer
             official.relationToPlayer = Math.min(100, before + BALANCE.turnRelationGain)
@@ -497,6 +507,7 @@ export const applyActions: ResolveStep = (ctx) => {
         // mekaniken, se balance.json:s _p51_note — inget eget balanstal behövs
         // för BUY_FORWARD.
         house.treasury -= spend
+        recordExpense(draft, 'commodityPurchase', spend)
         house.commodityHoldings[commodity] += spend
         emit({
           severity: 'ticker',
@@ -514,6 +525,7 @@ export const applyActions: ResolveStep = (ctx) => {
         // bara RELEASE nämns "trycka ner priset ... hjälper dina konkurrenter".
         house.commodityHoldings[commodity] -= spend
         house.treasury += spend
+        recordIncome(draft, 'commodityRelease', spend)
 
         const commodityBefore = draft.market.commodities[commodity]
         const commodityAfter = clamp(
@@ -554,7 +566,7 @@ export const applyActions: ResolveStep = (ctx) => {
 
       const product = getProduct(action.productId)
       const contract: Contract = {
-        id: `contract-broker-${action.buyerId}-${draft.meta.turn}-${actionsUsed}`,
+        id: `${BROKER_CONTRACT_ID_PREFIX}${action.buyerId}-${draft.meta.turn}-${actionsUsed}`,
         buyerId: action.buyerId,
         productId: action.productId,
         quantity: action.quantity,

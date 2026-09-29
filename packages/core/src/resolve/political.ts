@@ -18,6 +18,7 @@ import balanceData from '../data/balance.json' with { type: 'json' }
 import successorsData from '../data/successors.json' with { type: 'json' }
 import { addDoomsday } from './doomsdayGate.js'
 import { replaceOfficial } from '../officials.js'
+import { recordExpense } from '../ledger.js'
 import type { ResolveContext } from './index.js'
 import type { Agenda, FactionId, GameState, OfficialId, PlayerAction } from '../types.js'
 
@@ -155,6 +156,7 @@ function applyFactionTargetedPolitical(
 
   if (action.op === 'STAGE_INCIDENT') {
     house.treasury -= action.spend
+    recordExpense(draft, 'political', action.spend)
     const succeeded = rng.chance(BALANCE.stageIncidentSuccessPct)
 
     if (succeeded) {
@@ -217,6 +219,7 @@ function applyFactionTargetedPolitical(
 
   // BACK_CHANNEL
   house.treasury -= action.spend
+  recordExpense(draft, 'political', action.spend)
   const channelId = emit({
     severity: 'ticker',
     scope: 'faction',
@@ -266,6 +269,7 @@ function applyOfficialTargetedPolitical(
   // BRIBE / FUND_CAMPAIGN — kostar treasury (spend).
   if (action.op === 'FUND_CAMPAIGN') {
     house.treasury -= action.spend
+    recordExpense(draft, 'political', action.spend)
     const gain = Math.min(action.spend / BALANCE.fundCampaignStandingCostPerPoint, 100 - official.standing)
     official.standing += gain
     emit({
@@ -283,6 +287,7 @@ function applyOfficialTargetedPolitical(
   // BRIBE. Taket (bribeRelationMaxPerTurn) är PER TJÄNSTEMAN nu, inte per
   // faktion (avsnitt 3.3, ordagrant) — bribeGainThisTurn nycklas på officialId.
   house.treasury -= action.spend
+  recordExpense(draft, 'political', action.spend)
   const alreadyGained = bribeGainThisTurn.get(official.id) ?? 0
   const roomLeftThisTurn = Math.max(0, BALANCE.bribeRelationMaxPerTurn - alreadyGained)
   // "relationsvinsten skalas mot personens integrity (låg integritet -> mer för
@@ -335,6 +340,7 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
     const before = target.publicSupport
     const after = computeInfluenceAfter('publicSupport', before, action.spend, action.direction)
     house.treasury -= action.spend
+    recordExpense(draft, 'political', action.spend)
     target.publicSupport = after
     if (after === before) return
 
@@ -356,6 +362,7 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
   const before = target.relations[towardId] ?? 0
   const after = computeInfluenceAfter('relations', before, action.spend, action.direction)
   house.treasury -= action.spend
+  recordExpense(draft, 'political', action.spend)
   target.relations[towardId] = after
   if (after === before) return
 
@@ -390,6 +397,7 @@ function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { o
   const target = draft.factions[action.targetFactionId]!
   target.coupAttempted = true
   house.treasury -= action.spend
+  recordExpense(draft, 'political', action.spend)
   const successPct = fundCoupSuccessPct(target)
 
   if (rng.chance(successPct)) {
@@ -511,6 +519,7 @@ function applyAssassinate(ctx: ResolveContext, action: Extract<PoliticalAction, 
   const official = draft.officials[action.officialId]!
   const target = draft.factions[official.factionId]
   house.treasury -= action.spend
+  recordExpense(draft, 'political', action.spend)
   official.status = 'dead'
 
   const names = SUCCESSOR_NAMES[official.factionId] ?? []

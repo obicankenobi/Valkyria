@@ -13,6 +13,7 @@
 //    inget, den är inte längre i drift).
 import balance from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
+import { recordExpense } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
 import type { House, Money } from '../../types.js'
 
@@ -116,6 +117,7 @@ export const economy: ResolveStep = (ctx) => {
 
   const fixedCosts = computeFixedCosts(house)
   house.treasury -= fixedCosts
+  recordExpense(draft, 'fixedCosts', fixedCosts)
   emit({
     severity: 'ticker',
     scope: 'house',
@@ -129,6 +131,7 @@ export const economy: ResolveStep = (ctx) => {
   const interest = computeQuarterlyInterest(house)
   if (interest > 0) {
     house.treasury -= interest
+    recordExpense(draft, 'interest', interest)
     emit({
       severity: 'ticker',
       scope: 'house',

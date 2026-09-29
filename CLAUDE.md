@@ -699,9 +699,12 @@ leverantörsavtal, stationsläge, P100–P101), belopp som köper odds för `STA
 speltest utan kod (P105). **Golden får frysas om av kodsessionen bara i P96, P98, P100 och P102** (beslut
 8C, var och en i egen commit, och bara när ändringen är den som prompten beskriver) — i alla andra
 prompter är golden orörd och "stanna och fråga" gäller som vanligt. `bidEstimate.winBand` och botpolicyn
-`balanced` rörs inte (golden läser båda). **P96 stannad vid premisskontrollen 2026-09-29:** fyra
-penningflöden (`TAKE_LOAN`, `REPAY`, `BACK_DOWN`s återtagande, `SELL_THE_FILE`) passar ingen rad i
-huvudbokens form och väntar på ägarbeslut — se blockquoten under P96 i specen.
+`balanced` rörs inte (golden läser båda). **P96 BYGGD 2026-09-29:** `GameState.ledger` (`ledger.ts`) — en rad per tur, skriven av varje
+penningflyttande gren och förseglad i `resolveTurn()`; formen utökad efter ägarbeslut med
+`income.fileSale`, `expenses.clawback` och `financing` (lån/återbetalning). Balanstest över 500
+botpartier + 200 fuzz-partier. Golden omfryst i egen commit efter att alla andra fält verifierats
+bit-identiska. Öppna fynd (se blockquoten under P96 i specen): `applyInfluence` drar kassa utan att
+emitta när effekten är noll, och sparade partier från före P96 saknar `ledger`. P97 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

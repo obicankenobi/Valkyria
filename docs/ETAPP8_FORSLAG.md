@@ -9,8 +9,8 @@
 > (forskningen). Beslut 8C gäller: golden får frysas om **bara** i P96, P98, P100 och P102,
 > var och en i egen commit. Filen behåller namnet `ETAPP8_FORSLAG.md`.
 >
-> **Byggstatus:** P96 **stannad vid premisskontrollen** (2026-09-29) — se blockquoten under P96
-> i §9. Inget byggt; väntar på ägarbeslut om fyra flöden som inte passar huvudbokens form.
+> **Byggstatus:** P96 **BYGGD 2026-09-29** (formen utökad med tre rader efter ägarbeslut, se
+> §3.1 och blockquoten under P96 i §9). P97 är inte påbörjad.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
@@ -90,16 +90,24 @@ beslut:
 ```
 LedgerEntry {
   turn
-  income:   { contracts, advances, broker, commodityRelease }
-  expenses: { fixedCosts, production, interest, political, intel, commodityPurchase, hiring, lines }
+  income:   { contracts, advances, broker, commodityRelease, fileSale }
+  expenses: { fixedCosts, production, interest, political, intel, commodityPurchase, hiring, lines, clawback }
+  financing: { loans, repayments }
   treasuryEnd, debtEnd, creditLimitEnd
 }
 ```
 
+> **Formen utökad 2026-09-29 (ägarbeslut vid P96:s premisskontroll).** Tre rader tillagda
+> jämfört med förslagets ursprungliga form: `income.fileSale`, `expenses.clawback` och
+> `financing: { loans, repayments }`. De rymmer de fyra flöden som inte passade någon rad
+> (`SELL_THE_FILE`, `BACK_DOWN`s återtagande, `TAKE_LOAN`, `REPAY`), utan en "övrigt"-rad.
+> Kontrollen nedan blir därmed: Δ`house.treasury` = Σ`income` − Σ`expenses` + `financing.loans`
+> − `financing.repayments`.
+
 - Varje befintligt steg som flyttar pengar skriver sin rad i samma anrop som det redan emittar
   sin `WireEvent` (hård regel 4). Inga nya penningflöden, bara bokföring av de befintliga, och
   allt räknas genom `money.ts` (hård regel 8).
-- **Kontroll:** summan av kvartalets rader ska vara exakt lika med förändringen i
+- **Kontroll:** summan av kvartalets rader (med formeln ovan) ska vara exakt lika med förändringen i
   `house.treasury`. Ett test underkänner varje tur där de skiljer sig med så mycket som en
   krona. Testet fångar alla penningflöden som i dag går förbi en `WireEvent`.
 - Fältet ändrar statens form, så golden-hashen ändras (**8C, P96**). Alla andra fält ska vara
@@ -319,6 +327,58 @@ andra fält verifierat identiska.
 > **Frågor till ägaren innan P96 byggs** (formen är det golden fryser; en tillagd rad efteråt kostar en
 > omfrysning som 8C inte förhandsgodkänner): se `ANDRINGSLOGG.md` 2026-09-29, P96-raden, och
 > sessionens rapport.
+
+> **P96 — BYGGD 2026-09-29** (efter ägarbeslutet att utöka formen, se stoppet ovan och §3.1).
+> Ny `ledger.ts` (`recordIncome`/`recordExpense`/`recordFinancing`/`sealLedger`), `GameState.ledger`,
+> `LedgerEntry` (types.ts). Varje penningflyttande gren skriver sin rad på raden intill sin
+> `house.treasury +=/-=`; `resolveTurn()` förseglar `treasuryEnd`/`debtEnd`/`creditLimitEnd` efter
+> sista steget och före `advanceTurn` (samma "bokföring runt pipelinen" som krönikan — inget
+> fjortonde steg, stegordningen orörd). Raden hittas på `draft.meta.turn`; en tur utan
+> penningflytt får ändå en rad (förseglingen skapar den).
+>
+> **Flödena och deras rad:** `economy.ts` → `fixedCosts`/`interest`; `production.ts` → `production`
+> (kontant kostnad, forward-innehavet är ingen kassarörelse); `deliveries.ts` → `contracts`, eller
+> `broker` för `contract-broker-*` (prefixet är nu en exporterad konstant, `BROKER_CONTRACT_ID_PREFIX`,
+> som både `applyActions.ts` och `deliveries.ts` läser); `applyActions.ts` → `lines`, `hiring`,
+> `intel` (EXPAND/RECRUIT/LEAK/SABOTAGE/TURN), `commodityPurchase`, `commodityRelease`,
+> `financing.loans`/`repayments`; `political.ts` → `political` (alla åtta ställen där `spend`
+> dras: BRIBE, FUND_CAMPAIGN, STAGE_INCIDENT, BACK_CHANNEL, INFLUENCE ×2, FUND_COUP, ASSASSINATE;
+> FAVOUR kostar marginal, inte kassa, och skriver ingenting); `crisis.ts` → `clawback`
+> (BACK_DOWN) och `fileSale` (SELL_THE_FILE). `advances` är alltid 0 till P98.
+>
+> **Test:** 35 enhetstester (`test/ledger.test.ts`, minst ett per gren, varje med exakt balans) +
+> `test/invariants/ledger-balance.test.ts`: (a) 500 hela partier (125 frön × fyra policyer), varje
+> tur balanserar till kronan, en rad per spelad tur; (b) en kontroll av kontrollen (en dopad krona
+> gör den röd); (c) 200 fuzz-partier med slumpade handlingar ur alla verb. Mutationsprov: att ta bort
+> `recordExpense(..., 'interest', ...)` gör både enhetstestet och balanstestet röda (diff −6 801 kr på
+> tur 7 i första partiet), återställt därefter.
+>
+> **Genuina fynd.** (1) **De 500 botpartierna täcker bara sju rader** (mätt: `fixedCosts`, `production`,
+> `contracts`, `interest`, `loans`, `political`, `intel`) — inget parti rör `REPAY`, `BUILD_LINE`,
+> `HIRE`, MARKET, BROKER eller krisvalen. Balanstestet över botpartierna ensamt hade alltså missat en
+> läcka i de grenarna; därför fuzz-testet (c), som med ett assertat täckningsbevis når alla rader
+> utom `advances` (0 till P98) och `clawback` (kräver en kris OCH en restricted-leverans samma
+> kvartal, nås inte av fuzzen, ligger bara i enhetstestet). (2) **`applyInfluence` (`political.ts`) drar kassa och sedan
+> `return`:ar utan att emitta** när effekten är noll (t.ex. `publicSupport` redan på taket) — en
+> tyst statsändring, hård regel 4 brutet sedan P60. Huvudboken bokför den (kassan rörde sig
+> faktiskt) och ett test pinnar det. **Inte fixad här:** en tillagd `WireEvent` ändrar `state.wire`,
+> alltså golden-hashen, och P96 lovar att inget annat fält ändras. Kräver ett eget beslut.
+> (3) **Ett sparat parti från före P96 saknar `ledger`** och kraschar i `recordX` vid nästa
+> `resolveTurn` (`persistence.ts` `migrate()` känner bara `meta.version` 1, och versionen höjdes
+> inte — samma läge som `chronicle` efter P89). Inte åtgärdat (utanför P96:s mandat); en
+> `ledger: []`-migrering vore trivial, men P97-grafen måste då tåla en huvudbok som inte börjar på
+> tur 0. (4) **Punkt 0.10 stämde bara till hälften:** `state.wire` beskär till 8 turer, men
+> `house.revenueByTurn` är redan en intäktshistorik över hela partiet. Kontroll: huvudbokens
+> `contracts + broker + fileSale − clawback`, summerat över partiet, är exakt lika med summan av
+> `revenueByTurn` i alla tre golden-partier (per tur gäller det inte: `clawback` skriver om den
+> FLAGGADE, tidigare turens `revenueByTurn`).
+>
+> **Golden.** Före omfrysningen: hashen av sluttillståndet UTAN `ledger` är bit-identisk med de gamla
+> frysta värdena i alla tre partier (`13410cbd5a4b`, `32259821910dc`, `72f55dcef5b0c`) — inget
+> annat fält ändrades. Omfrysningen ligger i en egen commit (beslut 8C); nya hashar `113da6660a841`
+> (passive), `15102b645ed08b` (aggressive), `16561a24fce781` (balanced), 11 huvudboksrader vardera.
+> `balance.frozen.json` bit-identisk med `balance.json` (ingen balanssiffra rörd).
+> Testsvep: 1 032 vitest (994→1 032), lint, typecheck (alla tre paket), build, e2e.
 
 **P97 — Huvudboken och styrelsens PM.** Grafen i THE COMPANY, kvartalets verifikationer och
 styrelsens PM vid granskningsturerna. *Klart när:* varje granskningstur visar ett PM, och grafen

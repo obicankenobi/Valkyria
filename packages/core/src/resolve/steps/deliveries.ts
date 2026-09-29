@@ -24,6 +24,7 @@
 // ThisTurn i samma passage, innan rivals.ts någonsin körs).
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
+import { BROKER_CONTRACT_ID_PREFIX, recordIncome } from '../../ledger.js'
 import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
@@ -194,6 +195,9 @@ export const deliveries: ResolveStep = (ctx) => {
     // Betalning bokförs proportionellt mot levererad andel (spec 5).
     const revenue = round(contract.price * (shipment.units / contract.quantity))
     house.treasury += revenue
+    // P96: BROKER-kontrakt (id-prefix satt i applyActions.ts) skiljs ut från
+    // vanliga anbudskontrakt — båda betalas här, men huvudboken visar dem var för sig.
+    recordIncome(draft, contract.id.startsWith(BROKER_CONTRACT_ID_PREFIX) ? 'broker' : 'contracts', revenue)
     house.revenueByTurn[draft.meta.turn] = (house.revenueByTurn[draft.meta.turn] ?? 0) + revenue
     if (product.restricted) draft.market.restrictedRevenueThisTurn += revenue
 

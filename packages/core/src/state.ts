@@ -500,6 +500,7 @@ export function createInitialState(scenarioId: string, seed: string, startChoice
     doomsdayPeak: 0,
     wire: [],
     chronicle: [],
+    ledger: [],
     status: { kind: 'active' },
     pendingCrisis: null,
   }

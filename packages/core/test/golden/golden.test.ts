@@ -17,6 +17,7 @@ import { POLICIES } from '@seventh-front/harness/dist/policies.js'
 import type { Policy } from '@seventh-front/harness/dist/policies.js'
 import { playScript } from './playScript.js'
 import { hashState } from './hashState.js'
+import type { GameState } from '../../src/types.js'
 import balanceLive from '../../src/data/balance.json' with { type: 'json' }
 import balanceFrozen from './fixtures/balance.frozen.json' with { type: 'json' }
 
@@ -211,6 +212,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
     { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '72f55dcef5b0c' },
   ]
 
+  // P96 (ETAPP8_FORSLAG.md §3.1/§9, beslut 8C): GameState.ledger är ett nytt fält, men
+  // omfrysningen ligger i en EGEN commit efter den här. Till dess hashas sluttillståndet
+  // UTAN ledger mot de gamla, frysta värdena — det är bevisen för att INGET annat fält
+  // ändrats av huvudboken (bitvis identiskt, verifierat, inte antaget). Nästa commit
+  // byter tillbaka till att hasha hela tillståndet och tar bort den här hjälparen.
+  function withoutLedger(state: GameState): Partial<GameState> {
+    const copy = structuredClone(state) as Partial<GameState>
+    delete copy.ledger
+    return copy
+  }
+
   for (const { policyName, seed, expectedHash } of cases) {
     it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
@@ -219,7 +231,7 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
       const headlineCount = wireLog.filter((e) => e.severity === 'headline').length
       expect(headlineCount).toBeGreaterThan(8)
 
-      expect(hashState(finalState)).toBe(expectedHash)
+      expect(hashState(withoutLedger(finalState))).toBe(expectedHash)
     })
   }
 })

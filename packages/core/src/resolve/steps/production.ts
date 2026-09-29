@@ -10,6 +10,7 @@
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { computeUnitCostNow, getProduct, materialCostPerUnit } from '../../pricing.js'
 import { round } from '../../money.js'
+import { recordExpense } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 
@@ -164,6 +165,7 @@ export const production: ResolveStep = (ctx) => {
 
     const cost = Math.max(0, round(unitCostNow * actualUnits - holdingsDiscount))
     house.treasury -= cost
+    recordExpense(draft, 'production', cost)
 
     if (actualUnits < plannedUnits) {
       // Saknas täckning: producera så mycket kassan räcker till, aldrig gratis
