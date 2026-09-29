@@ -61,8 +61,7 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // P40:s namngivna ersättningsordrar, P40:s omkalibrerade förbandsroster
 // (indochina-slice.json) och P42:s egen invariant-bugfix (resolveFront synkar
 // nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
-// P100: PAUSAD i den här commiten, aktiv igen i nästa (omfrysningen, beslut 8C — egen commit).
-it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
@@ -253,15 +252,23 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // avräkningar per golden-parti) och förskjuts därför på riktigt. balance.frozen.json oförändrad (inget nytt
   // balanstal). De nya hasharna: passive 4b56386427578, aggressive 174dd1a878059d, balanced aaf7115caebdf.
   // headlines > 8 höll oförändrat (passive 72, aggressive 172, balanced 155).
+  //
+  // Omfryst IGEN i P100 (ETAPP8_FORSLAG.md §5.1/§9, beslut 8C — förhandsauktoriserat, egen commit efter
+  // koden). House.standingOrders är ett nytt fält (tre stående order-slag: linjeuppdrag, leverantörsavtal,
+  // stationsläge). Ingen botpolicy skickar en stående order, så INNAN omfrysningen verifierades att
+  // sluttillståndets hash UTAN det nya fältet är bit-identisk med P99d:s i alla tre partier (passive
+  // 4b56386427578, aggressive 174dd1a878059d, balanced aaf7115caebdf) — befintliga botars beteende är
+  // oförändrat, och omfrysningen speglar bara den nya fältformen. balance.frozen.json följer med (elva nya
+  // tal). De nya hasharna: passive 11ad870a249092, aggressive 6a1a16e93ce0a, balanced 7cd16075822ce.
+  // headlines > 8 höll oförändrat (passive 72, aggressive 172, balanced 155).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '4b56386427578' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '174dd1a878059d' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'aaf7115caebdf' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '11ad870a249092' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '6a1a16e93ce0a' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '7cd16075822ce' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
-    // P100: PAUSAD i den här commiten (nytt fält House.standingOrders), omfryst i nästa commit.
-    it.skip(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
+    it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
       const { finalState, wireLog } = playScript(SCENARIO, seed, policy, TURNS)
 

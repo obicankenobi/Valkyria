@@ -309,5 +309,17 @@
   "_p99c_note": "Ägarbeslut 2026-09-29 (alternativ A efter P99b): efter P99b fanns ingen mekanik som SÄNKTE en tjänstemans relationToPlayer, så P57:s tryck (varning -> PolicyDecision) var i praktiken avstängt. Nu förfaller relationen om spelaren inte uppvaktar tjänstemannen (ett lyckat BRIBE, FAVOUR eller TURN stämplar Official.lastCourtedTurn). officialRelationGraceTurns: antal turer efter senaste uppvaktning (eller partistart) utan förfall. officialRelationDecayPerTurn: relationspoäng per tur efter det. officialRelationDecayFloor: golv. Alla tre PROVISORISKA, kalibreras mot harnessen (se ANDRINGSLOGG).",
   "officialRelationGraceTurns": 6,
   "officialRelationDecayPerTurn": 2,
-  "officialRelationDecayFloor": 0
+  "officialRelationDecayFloor": 0,
+  "_p100_note": "ETAPP8_FORSLAG.md §5.1: stående order i tre slag. Elva nya, PROVISORISKA balanstal. overtimeCapacityPct (125): specens ordagranna tal, linjens FÖRSTA skrivare av capacityPct. overtimeUnitCostFactor (1,2): 'högre styckkostnad' — 20 % dyrare per enhet, alltså en enhet till 125 % kapacitet kostar mer än en till 100 %, så övertid är ett beslut och inte en gratisförbättring (1,25 gäller 25 % fler enheter till samma totalkostnad per enhet; 1,2 ger en liten nettoförtjänst per tur men kostar mer per enhet). overtimeBreakdownChancePct (6): 'en liten slitagerisk' — en av sexton övertidsturer per linje ger ett haveri (linjen står stilla den turen). supplyAgreementMinTurns/MaxTurns (4/8): specens löptid. supplyLossStreakTurns (3): specens 'tre turer i rad' för larmet. stationQuietUpkeepFactor (0,5)/stationActiveUpkeepFactor (1,5): 'lägre'/'högre' upphållskostnad, symmetriskt kring normal. stationActiveExposurePerTurn (3)/stationQuietExposureDecay (4): aktiv bygger exponering varje tur (i dag finns ingen passiv exponeringsökning alls), tyst sänker den — något snabbare än en vilande stations intelDormantExposureDecay (5) räknat per station-mode men inte lika hårt. stationActiveDepthTurns (4): en aktiv station växer ett djupsteg var fjärde tur (i dag växer djupet bara av EXPAND, så 'tyst = långsammare djup' är här 'inget alls'; normal rör det inte heller).",
+  "overtimeCapacityPct": 125,
+  "overtimeUnitCostFactor": 1.2,
+  "overtimeBreakdownChancePct": 6,
+  "supplyAgreementMinTurns": 4,
+  "supplyAgreementMaxTurns": 8,
+  "supplyLossStreakTurns": 3,
+  "stationQuietUpkeepFactor": 0.5,
+  "stationActiveUpkeepFactor": 1.5,
+  "stationActiveExposurePerTurn": 3,
+  "stationQuietExposureDecay": 4,
+  "stationActiveDepthTurns": 4
 }
