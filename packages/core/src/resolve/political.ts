@@ -253,6 +253,7 @@ function applyOfficialTargetedPolitical(
     // en post board.ts/economy.ts redan läser, så ingen av dem rörs.
     const gain = Math.min(action.marginCost / BALANCE.favourRelationCostPerPoint, 100 - official.relationToPlayer)
     official.relationToPlayer += gain
+    if (gain > 0) official.lastCourtedTurn = draft.meta.turn // P99c: bara en verklig uppvaktning nollställer förfallet
     house.favourMarginSpent += action.marginCost
     emit({
       severity: 'ticker',
@@ -297,6 +298,7 @@ function applyOfficialTargetedPolitical(
   const rawGain = (action.spend / BALANCE.bribeRelationCostPerPoint) * integrityMultiplier
   const gain = Math.min(rawGain, roomLeftThisTurn, 100 - official.relationToPlayer)
   official.relationToPlayer += gain
+  if (gain > 0) official.lastCourtedTurn = draft.meta.turn // P99c: bara en verklig uppvaktning nollställer förfallet
   bribeGainThisTurn.set(official.id, alreadyGained + gain)
 
   // "... och höjer hennes scandalRisk."

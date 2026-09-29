@@ -17,6 +17,10 @@ import type { GameMetrics } from '../src/runGame.js'
 const SCENARIO = 'indochina-slice'
 const GAMES_PER_BOT = 30
 const MIN_WIN_PCT = 30
+// P99c (ägarbeslut 2026-09-29): 'passive' gör ingenting alls och vann 90 % när ingenting kunde straffa den.
+// Efter att tjänstemännens relation förfaller ska en AKTIV bot klara sig — annars är spelet bara vinnbart
+// genom att inte spela.
+const MIN_ACTIVE_WIN_PCT = 20
 
 describe('spelbarhet (RAPPORT3 §4)', () => {
   it(
@@ -34,6 +38,9 @@ describe('spelbarhet (RAPPORT3 §4)', () => {
       const detail = summaries.map((s) => `${s.policy} ${s.wins}/${s.games} (${s.winPct.toFixed(0)} %)`).join(', ')
       const best = Math.max(...summaries.map((s) => s.winPct))
       expect(best, `ingen bot vinner ≥ ${MIN_WIN_PCT} %: ${detail}`).toBeGreaterThanOrEqual(MIN_WIN_PCT)
+
+      const bestActive = Math.max(...summaries.filter((s) => s.policy !== 'passive').map((s) => s.winPct))
+      expect(bestActive, `ingen AKTIV bot vinner ≥ ${MIN_ACTIVE_WIN_PCT} %: ${detail}`).toBeGreaterThanOrEqual(MIN_ACTIVE_WIN_PCT)
     },
     60_000,
   )

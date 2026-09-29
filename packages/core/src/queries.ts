@@ -248,6 +248,14 @@ interface BotTuningBalance {
   brokerRelationThreshold: number
   brokerIntegrityThreshold: number
   fundCoupCost: number
+  intelCovertOpCost: number
+  fixedCosts: { rndOverhead: number }
+  rndProjectTurns: number
+  policyDecisionStandingThreshold: number
+  policyDecisionRelationThreshold: number
+  officialRelationGraceTurns: number
+  officialRelationDecayPerTurn: number
+  favourRelationCostPerPoint: number
 }
 const BOT_TUNING_BALANCE = balanceData as unknown as BotTuningBalance
 
@@ -267,6 +275,16 @@ export const BOT_BALANCE = {
   // kostnad political.ts:s FUND_COUP-gren faktiskt drar — policies.ts
   // budgeterar mot EXAKT samma tal, inte en separat bot-gissning.
   fundCoupCost: BOT_TUNING_BALANCE.fundCoupCost,
+  intelCovertOpCost: BOT_TUNING_BALANCE.intelCovertOpCost,
+  // Vad ett R&D-projekt faktiskt kostar: rndOverhead varje tur under hela rndProjectTurns (economy.ts).
+  rndProjectCost: BOT_TUNING_BALANCE.fixedCosts.rndOverhead * BOT_TUNING_BALANCE.rndProjectTurns,
+  // P99c (ägarbeslut 2026-09-29): relationen förfaller, så en bot som vill undvika P57:s beslut
+  // måste veta EXAKT samma tal förfallet och politics.ts läser — inte gissa dem.
+  policyDecisionStandingThreshold: BOT_TUNING_BALANCE.policyDecisionStandingThreshold,
+  policyDecisionRelationThreshold: BOT_TUNING_BALANCE.policyDecisionRelationThreshold,
+  officialRelationGraceTurns: BOT_TUNING_BALANCE.officialRelationGraceTurns,
+  officialRelationDecayPerTurn: BOT_TUNING_BALANCE.officialRelationDecayPerTurn,
+  favourRelationCostPerPoint: BOT_TUNING_BALANCE.favourRelationCostPerPoint,
 } as const
 
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per

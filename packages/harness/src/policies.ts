@@ -101,6 +101,32 @@ function favourBestRelationOfficial(state: GameState, actions: PlayerAction[]): 
   actions.push({ type: 'POLITICAL', op: 'FAVOUR', officialId: best.id, marginCost: FAVOUR_MARGIN_COST })
 }
 
+// P99c (ägarbeslut 2026-09-29): en tjänstemans relation FÖRFALLER om den inte uppvaktas
+// (politics.ts), så P57:s tryck är på igen. En bot som vill undvika ett policybeslut uppvaktar den
+// tjänsteman som är närmast förfall — bland dem vars standing är hög nog att utfärda ett beslut
+// (annars är hon ingen risk) och som inte redan har utfärdat sitt. Bara EN per tur (handlingspoängen
+// är knappa, P64), den med lägst relation. FAVOUR kostar ingen kassa; marginCost väljs så att
+// relationen räcker en hel förfallscykel (tröskeln + GRACE × DECAY), inte bara nästa tur.
+export function courtOfficialAtRisk(state: GameState, actions: PlayerAction[]): void {
+  const grace = BOT_BALANCE.officialRelationGraceTurns
+  const target = BOT_BALANCE.policyDecisionRelationThreshold + BOT_BALANCE.officialRelationDecayPerTurn * grace
+  const due = Object.values(state.officials).filter(
+    (o) =>
+      o.status === 'active' &&
+      !o.hasIssuedPolicyDecision &&
+      o.standing >= BOT_BALANCE.policyDecisionStandingThreshold &&
+      o.relationToPlayer < target &&
+      state.meta.turn - (o.lastCourtedTurn ?? 0) >= grace - 1,
+  )
+  if (due.length === 0) return
+  let chosen = due[0]!
+  for (const official of due.slice(1)) {
+    if (official.relationToPlayer < chosen.relationToPlayer) chosen = official
+  }
+  const marginCost = Math.ceil(target - chosen.relationToPlayer) * BOT_BALANCE.favourRelationCostPerPoint
+  actions.push({ type: 'POLITICAL', op: 'FAVOUR', officialId: chosen.id, marginCost })
+}
+
 // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.5/6, GK-A/skyddsräcke 4): "ingen bot har
 // någonsin anropat BROKER" (avsnitt 1.10) — samma genomgående krav som P56:s
 // FUND_CAMPAIGN/FAVOUR. Prövar mot EXAKT samma två trösklar som applyActions.ts:s
@@ -276,6 +302,36 @@ function reprioritiseArtilleryIfNeeded(state: GameState, actions: PlayerAction[]
   actions.push({ type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'artillery' } })
 }
 
+// P99c (mätt, se ANDRINGSLOGG): GK-A-verben (kampanjer, underrättelseoperationer, R&D, INFLUENCE, ...)
+// skickades varje tur ur grundkapitalet, medan inga intäkter ännu kommit och de fasta kostnaderna
+// redan löpte — det var DET som gjorde aggressive/balanced till BUYOUT/INSOLVENCY, inte politiken.
+// Ur ett överskott betalar de sig: en kostsam handling släpps igenom bara om kassan EFTER kostnaden
+// fortfarande ligger över grundkapitalet. Gratis handlingar (FAVOUR, BACK_CHANNEL, ...), lån och
+// BROKER (ger intäkt) rörs inte.
+function costOfAction(action: PlayerAction): number | null {
+  switch (action.type) {
+    case 'POLITICAL':
+      if (action.op === 'FUND_CAMPAIGN' || action.op === 'FUND_COUP' || action.op === 'ASSASSINATE' || action.op === 'INFLUENCE') {
+        return action.spend
+      }
+      return null
+    case 'INTEL':
+      return action.op === 'LEAK' || action.op === 'SABOTAGE' || action.op === 'TURN' ? BOT_BALANCE.intelCovertOpCost : null
+    case 'INTERNAL':
+      return action.op === 'REPRIORITISE_RND' ? BOT_BALANCE.rndProjectCost : null
+    default:
+      return null
+  }
+}
+
+export function spendOnlyFromSurplus(state: GameState, actions: PlayerAction[]): PlayerAction[] {
+  return actions.filter((action) => {
+    const cost = costOfAction(action)
+    if (cost === null) return true
+    return state.house.treasury - cost >= state.house.foundingCapital
+  })
+}
+
 // ── passive ──────────────────────────────────────────────────────────────
 // Bjuder bara vid marginal > 20 %, aldrig restricted. Grade väljs dynamiskt
 // (P31, avsnitt 6.1 — se chooseGrade). Tar TAKE_LOAN bara när treasury < 0
@@ -340,6 +396,7 @@ export const aggressive: Policy = (state) => {
 
   // Investerar INTE i R&D (P28) — se reprioritiseArtilleryIfNeeded:s motivering.
   const actions: PlayerAction[] = []
+  courtOfficialAtRisk(state, actions) // P99c: först — handlingspoängen är knappa, och ett beslut kostar mer
   stageIncidentIfCool(state, actions)
   fundCampaignForWeakestOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
   brokerFavourableDeal(state, actions) // P57, GK-A: nytt verb, minst en bot
@@ -349,7 +406,7 @@ export const aggressive: Policy = (state) => {
   assassinateWeakestRelationOfficial(state, actions) // P62, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit, actions)
 
-  return { standingOrders: [], bids, actions }
+  return { standingOrders: [], bids, actions: spendOnlyFromSurplus(state, actions) }
 }
 
 // ── balanced ─────────────────────────────────────────────────────────────
@@ -372,6 +429,7 @@ export const balanced: Policy = (state) => {
   }
 
   const actions: PlayerAction[] = []
+  courtOfficialAtRisk(state, actions) // P99c: först — handlingspoängen är knappa, och ett beslut kostar mer
   reprioritiseArtilleryIfNeeded(state, actions)
   backChannelIfHot(state, actions)
   favourBestRelationOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
@@ -379,7 +437,7 @@ export const balanced: Policy = (state) => {
   turnFirstStationsProcurementOfficial(state, actions) // P60, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit * BALANCED_LOAN_SHARE, actions)
 
-  return { standingOrders: [], bids, actions }
+  return { standingOrders: [], bids, actions: spendOnlyFromSurplus(state, actions) }
 }
 
 // ── capacity ─────────────────────────────────────────────────────────────

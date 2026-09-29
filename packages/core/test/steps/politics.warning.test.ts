@@ -55,7 +55,8 @@ describe('A — startvärdet', () => {
 
   it('en tjänsteman på startvärdet är "hörsammad": inget beslut och ingen varning, oavsett tur', () => {
     const state = createInitialState('indochina-slice', 'start-seed')
-    for (const turn of [balance.policyDecisionMinTurn, 6, 12, 19]) {
+    // Inom officialRelationGraceTurns förfaller ingenting (P99c) — därefter är relationen inte längre "startvärdet".
+    for (const turn of [balance.policyDecisionMinTurn, balance.officialRelationGraceTurns]) {
       state.meta.turn = turn
       expect(step(state)).toEqual([])
     }
@@ -181,20 +182,27 @@ describe('B — varning turen innan', () => {
   })
 })
 
-describe('utan spelaråtgärd utfärdas inga policybeslut under ett helt parti', () => {
-  it('passive-boten (ingen åtgärd alls): 20 turer, noll beslut, noll varningar, inget embargo', () => {
+describe('utan uppvaktning fungerar trycket, och aldrig utan förvarning (P99c)', () => {
+  it('passive-boten (ingen åtgärd alls): relationerna förfaller, varningar kommer, och varje beslut föregås av en varning tidigare tur', () => {
     const passive = POLICIES.passive as Policy
+    let warnings = 0
     for (const seed of ['nopolicy-1', 'nopolicy-2', 'nopolicy-3']) {
       let state = createInitialState('indochina-slice', seed)
-      const headlines: string[] = []
+      const events: { turn: number; headline: string }[] = []
       for (let t = 0; t < 21 && state.status.kind !== 'ended'; t++) {
         const result = resolveTurn(state, passive(state))
-        headlines.push(...result.wire.map((e) => e.headline))
+        events.push(...result.wire.map((e) => ({ turn: e.turn, headline: e.headline })))
         state = result.state
       }
-      expect(headlines.filter((h) => / ISSUES (EMBARGO|PRICE CAP|TENDER REFORM|LICENCE REVIEW|PREFERRED SUPPLIER)/.test(h))).toEqual([])
-      expect(headlines.filter((h) => h.includes('IS PREPARING'))).toEqual([])
-      expect(Object.values(state.factions).some((f) => f.embargoed)).toBe(false)
+      const warned = events.filter((e) => e.headline.includes('IS PREPARING'))
+      warnings += warned.length
+      const decisions = events.filter((e) => / ISSUES (EMBARGO|PRICE CAP|TENDER REFORM|LICENCE REVIEW|PREFERRED SUPPLIER)/.test(e.headline))
+      for (const decision of decisions) {
+        const name = decision.headline.split(' (')[0]!
+        const earlier = warned.find((w) => w.headline.startsWith(name) && w.turn < decision.turn)
+        expect(earlier, `${decision.headline} (tur ${decision.turn}) saknar en tidigare varning`).toBeDefined()
+      }
     }
+    expect(warnings).toBeGreaterThan(0)
   })
 })

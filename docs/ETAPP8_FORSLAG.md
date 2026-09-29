@@ -592,6 +592,20 @@ nästa kvartal. *Klart när:* alla tre syns utan att mappen scrollas på 390×84
 > skärm `policy-warning` i `e2e/screens.ts` och `scripts/shots.mjs` (IndexedDB-injektion, samma teknik som
 > krisen) täcks av regel 11/18 och axe.
 
+> **P99c — tjänstemäns relation förfaller, botarna spenderar ur överskott, 2026-09-29** (egen prompt efter
+> ägarbeslut A på frågan efter P99b; före P100). Mekaniken och siffrorna står i ANDRINGSLOGG-raden med samma
+> datum. **Före → efter (100 partier/bot, vinster):**
+>
+> | Läge | passive | aggressive | balanced | capacity |
+> |---|---|---|---|---|
+> | efter P99b | 90 | 7 | 1 | 2 |
+> | + förfall (grace 6, decay 2), botar oförändrade | 0 | 0 | 1 | 1 |
+> | + botarna uppvaktar | 0 | 0 | 0 | 1 |
+> | + `spendOnlyFromSurplus` | **0** | **65** | **81** | **1** |
+>
+> **Golden** omfryst i egen commit. Nya hashar: se P99c-blocket i `golden.test.ts`. **Spelbarhetstestet** kräver
+> nu även att en aktiv bot (inte `passive`) vinner ≥ 20 % (≈ 8 s, i standardsviten).
+
 **P100 — Stående order i kärnan.** Unionen, lagringen och de tre slagen med sina tre larm.
 *Klart när:* varje slag och varje larm har ett test, befintliga botars beteende är oförändrat,
 och golden är omfryst.

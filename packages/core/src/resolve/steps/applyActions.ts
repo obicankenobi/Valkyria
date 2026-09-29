@@ -462,6 +462,7 @@ export const applyActions: ResolveStep = (ctx) => {
           if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
             const before = official.relationToPlayer
             official.relationToPlayer = Math.min(100, before + BALANCE.turnRelationGain)
+            official.lastCourtedTurn = draft.meta.turn // P99c: uppvaktning, relationen förfaller inte på ett tag
             emit({
               severity: 'headline',
               scope: 'faction',

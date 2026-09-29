@@ -22,6 +22,9 @@ interface Balance {
   policyDecisionStandingThreshold: number
   policyDecisionRelationThreshold: number
   policyDecisionMinTurn: number
+  officialRelationGraceTurns: number
+  officialRelationDecayPerTurn: number
+  officialRelationDecayFloor: number
   policyPriceCapFactor: number
   tenderReformWeights: { price: number; delivery: number; relationship: number }
   licenceReviewExposurePenalty: number
@@ -40,6 +43,10 @@ const DECISION_FOR_AGENDA: Record<Agenda, PolicyDecision> = {
 
 export const politics: ResolveStep = (ctx) => {
   const { draft } = ctx
+
+  // P99c (ägarbeslut 2026-09-29): relationen förfaller FÖRE grinden och beslutsloopen, så en
+  // tjänsteman som just sjunkit under tröskeln varnas samma tur (inte en tur senare).
+  decayOfficialRelations(ctx)
 
   // (Historik, P57: relationToPlayer startade på 0 för ALLA, så "ohörsammad" var sant för varenda
   // tjänsteman med tillräcklig standing redan på tur 1. Sedan P99b startar den på tröskeln, så
@@ -77,6 +84,44 @@ export const politics: ResolveStep = (ctx) => {
     }
 
     issuePolicyDecision(ctx, official)
+  }
+}
+
+// En aktiv tjänsteman som inte uppvaktats (Official.lastCourtedTurn) på mer än
+// officialRelationGraceTurns turer tappar officialRelationDecayPerTurn relationspoäng per tur, ned
+// till officialRelationDecayFloor. Ett ticker-event per faktion (hård regel 4) med varje
+// tjänstemans faktiska delta — inte ett per tjänsteman, för att inte översvämma NEWS DESK.
+function decayOfficialRelations(ctx: ResolveContext): void {
+  const { draft, emit } = ctx
+  const byFaction = new Map<Faction['id'], { name: string; delta: number }[]>()
+
+  for (const official of Object.values(draft.officials)) {
+    if (official.status !== 'active') continue
+    const lastCourted = official.lastCourtedTurn ?? 0 // ?? 0: ett sparat parti från före P99c saknar fältet
+    if (draft.meta.turn - lastCourted <= BALANCE.officialRelationGraceTurns) continue
+    const next = Math.max(BALANCE.officialRelationDecayFloor, official.relationToPlayer - BALANCE.officialRelationDecayPerTurn)
+    const change = next - official.relationToPlayer
+    if (change === 0) continue
+    official.relationToPlayer = next
+    const list = byFaction.get(official.factionId) ?? []
+    list.push({ name: official.id, delta: change })
+    byFaction.set(official.factionId, list)
+  }
+
+  for (const [factionId, changes] of byFaction) {
+    const faction = draft.factions[factionId]
+    if (!faction) continue
+    const delta: Record<string, number> = {}
+    for (const change of changes) delta[`${change.name}.relationToPlayer`] = change.delta
+    emit({
+      severity: 'ticker',
+      scope: 'faction',
+      headline: `${faction.name.toUpperCase()}: ${changes.length} OFFICIAL${changes.length === 1 ? '' : 'S'} COOL${changes.length === 1 ? 'S' : ''} TOWARDS ${draft.house.name.toUpperCase()} — NOT COURTED`,
+      causeId: null,
+      delta,
+      actorIsPlayer: false,
+      subjectId: faction.id,
+    })
   }
 }
 

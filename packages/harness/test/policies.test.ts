@@ -39,6 +39,14 @@ function withOrders(state: GameState, overridesList: readonly Partial<Order>[]):
   return state
 }
 
+// P99c: aggressive och balanced spenderar på de kostsamma GK-A-verben bara ur ÖVERSKOTT över
+// grundkapitalet (spendOnlyFromSurplus) — ett fräscht parti har exakt grundkapitalet och därmed inget
+// överskott, så verb-täckningen prövas mot ett parti som gått med vinst.
+function withSurplus(state: GameState): GameState {
+  state.house.treasury = state.house.foundingCapital + 3_000_000
+  return state
+}
+
 describe('passive (marginalfiltret, spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
   it('bjuder INTE när hela kontraktspriset ligger under styckkostnaden × kvantiteten + 20 %', () => {
     // m1_rifle: unitCost 210 grade A. 100 enheter ⇒ 21 000 i verklig kostnad.
@@ -193,7 +201,7 @@ describe('balanced (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
   })
 
   it('(P28 klart-når) investerar i REPRIORITISE_RND(artillery) en gång, så länge tekniknivån inte redan räcker till mk9', () => {
-    const state = createInitialState('indochina-slice', 'balanced-rnd-seed')
+    const state = withSurplus(createInitialState('indochina-slice', 'balanced-rnd-seed'))
     state.market.openOrders = []
     expect(state.house.techLevel.artillery).toBe(7) // under mk9:s 8
 
@@ -256,7 +264,7 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
 // (P18), bara omriktad.
 describe('skyddsräcke 4 (avsnitt 6, GK-A): FUND_CAMPAIGN och FAVOUR förekommer i minst en botpolicy', () => {
   it('minst en policy skickar en FUND_CAMPAIGN-handling på ett fräscht parti', () => {
-    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const state = withSurplus(createInitialState('indochina-slice', 'gk-a-seed'))
     const usesFundCampaign = Object.values(POLICIES).some((policy) =>
       policy(state).actions.some((a) => a.type === 'POLITICAL' && a.op === 'FUND_CAMPAIGN'),
     )
@@ -294,7 +302,7 @@ describe('skyddsräcke 4 (avsnitt 6, GK-A): BROKER förekommer i minst en botpol
 // faktiskt byggda — samma GK-A-krav som en ny handling.
 describe('skyddsräcke 4 (avsnitt 6, GK-A): INFLUENCE/LEAK/SABOTAGE/TURN förekommer i minst en botpolicy', () => {
   it('minst en policy skickar en INFLUENCE-handling på ett fräscht parti', () => {
-    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const state = withSurplus(createInitialState('indochina-slice', 'gk-a-seed'))
     const usesInfluence = Object.values(POLICIES).some((policy) =>
       policy(state).actions.some((a) => a.type === 'POLITICAL' && a.op === 'INFLUENCE'),
     )
@@ -302,13 +310,13 @@ describe('skyddsräcke 4 (avsnitt 6, GK-A): INFLUENCE/LEAK/SABOTAGE/TURN föreko
   })
 
   it('minst en policy skickar en LEAK-handling på ett fräscht parti', () => {
-    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const state = withSurplus(createInitialState('indochina-slice', 'gk-a-seed'))
     const usesLeak = Object.values(POLICIES).some((policy) => policy(state).actions.some((a) => a.type === 'INTEL' && a.op === 'LEAK'))
     expect(usesLeak).toBe(true)
   })
 
   it('minst en policy skickar en SABOTAGE-handling på ett fräscht parti', () => {
-    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const state = withSurplus(createInitialState('indochina-slice', 'gk-a-seed'))
     const usesSabotage = Object.values(POLICIES).some((policy) =>
       policy(state).actions.some((a) => a.type === 'INTEL' && a.op === 'SABOTAGE'),
     )
@@ -316,7 +324,7 @@ describe('skyddsräcke 4 (avsnitt 6, GK-A): INFLUENCE/LEAK/SABOTAGE/TURN föreko
   })
 
   it('minst en policy skickar en TURN-handling på ett fräscht parti', () => {
-    const state = createInitialState('indochina-slice', 'gk-a-seed')
+    const state = withSurplus(createInitialState('indochina-slice', 'gk-a-seed'))
     const usesTurn = Object.values(POLICIES).some((policy) => policy(state).actions.some((a) => a.type === 'INTEL' && a.op === 'TURN'))
     expect(usesTurn).toBe(true)
   })

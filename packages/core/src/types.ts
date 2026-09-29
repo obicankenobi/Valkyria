@@ -562,6 +562,9 @@ export interface Official {
   // null. Beslutet utfärdas först en tur efter varningen och bara om villkoren fortfarande gäller;
   // höjs relationen över tröskeln i mellantiden nollställs fältet (varningen avvärjd).
   policyWarningTurn: number | null
+  // P99c (ägarbeslut 2026-09-29): turen spelaren senast uppvaktade tjänstemannen (lyckat BRIBE,
+  // FAVOUR eller TURN); 0 = aldrig. Relationen förfaller först officialRelationGraceTurns efter den.
+  lastCourtedTurn: number
 }
 
 // P57 (ETAPP5_TEKNISK_SPEC.md avsnitt 3.4), tabellen ordagrant. Rent

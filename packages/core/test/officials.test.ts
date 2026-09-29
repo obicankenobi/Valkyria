@@ -58,6 +58,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
       scandalRisk: 60, // P56: skandalen som fällde henne
       hasIssuedPolicyDecision: false,
       policyWarningTurn: null,
+      lastCourtedTurn: 0,
     }
 
     const replaced = replaceOfficial(fallen, { name: 'Ly Thi Xuan', integrity: 20, standing: 50, agenda: 'AUSTERITY' })
@@ -89,6 +90,7 @@ describe('replaceOfficial (avsnitt 3.1, klart-når)', () => {
       scandalRisk: 0,
       hasIssuedPolicyDecision: false,
       policyWarningTurn: null,
+      lastCourtedTurn: 0,
     }
 
     const replaced = replaceOfficial(dead, { name: 'Vu Thi Hang', integrity: 65, standing: 45, agenda: 'NON_ALIGNMENT' })

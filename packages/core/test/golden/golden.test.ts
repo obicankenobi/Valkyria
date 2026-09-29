@@ -61,7 +61,8 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // P40:s namngivna ersättningsordrar, P40:s omkalibrerade förbandsroster
 // (indochina-slice.json) och P42:s egen invariant-bugfix (resolveFront synkar
 // nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
-it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+// P99c: PAUSAD i den här commiten, aktiv igen i nästa (omfrysningen, ägarbeslut P99c — egen commit).
+it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
@@ -239,7 +240,8 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
-    it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
+    // P99c: PAUSAD i den här commiten (förfallet och botarna ändrar banan), omfryst i nästa commit.
+    it.skip(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
       const { finalState, wireLog } = playScript(SCENARIO, seed, policy, TURNS)
 

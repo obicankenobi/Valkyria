@@ -384,6 +384,7 @@ function buildOfficials(scenario: ScenarioFile): Record<OfficialId, Official> {
         hasIssuedPolicyDecision: false,
         // P99b: ingen varning har utfärdats vid start.
         policyWarningTurn: null,
+        lastCourtedTurn: 0,
       }
     }
   }

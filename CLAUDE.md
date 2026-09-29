@@ -724,7 +724,14 @@ innan (`Official.policyWarningTurn`, `politics.ts`). `passive` vinner nu 90/100 
 (`harness/test/playability.test.ts`: minst en bot ≥ 30 % vinst). Golden omfryst i egen commit. Ingen kod
 sänker en tjänstemans relation, så varningen nås inte i vanligt spel — se ANDRINGSLOGG; skärmen `policy-warning`
 (e2e/shots) når den via IndexedDB-injektion. Fullt svep grönt: 1 135 tester, lint, typecheck, build, e2e (173,
-körd två gånger i rad). P100 är inte påbörjad.
+körd två gånger i rad).
+**P99c BYGGD 2026-09-29 (ägarbeslut A på frågan efter P99b):** en tjänstemans `relationToPlayer` FÖRFALLER
+(6 turer utan uppvaktning, sedan −2/tur, `Official.lastCourtedTurn`, `politics.ts`) — P57:s tryck är på igen.
+Botarna: `courtOfficialAtRisk` (aggressive/balanced) och `spendOnlyFromSurplus` (kostsamma GK-A-verb bara ur
+överskott över grundkapitalet). Vinster per 100 partier: passive 0 (var 90), aggressive 65 (var 7), balanced 81
+(var 1), capacity 1. **`passive` är inte längre den enda som vinner; `capacity` är den enda som fortfarande
+inte gör det.** `FAVOUR` är gratis och obegränsad (förfallet kan slås ut för en handlingspoäng) — öppen fråga,
+inte åtgärdad. Golden omfryst i egen commit. P100 är inte påbörjad.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
