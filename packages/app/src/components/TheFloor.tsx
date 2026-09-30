@@ -10,6 +10,7 @@ import type { Bid, GameState, Order, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
 import { Panel, Tag, formatMoney } from './ui.js'
+import { wearClass } from '../stampWear.js'
 
 function OrderFolder({
   state,
@@ -63,10 +64,10 @@ function OrderFolder({
         <span className="order-meta">
           <span className="meter-label">Stated budget {formatMoney(order.statedBudget)}</span>
           <Tag>{frontLabel}</Tag>
-          <span className={`order-stamp${turnsLeft <= 1 ? ' is-urgent' : ''}`} data-testid="order-deadline-stamp">
+          <span className={`order-stamp${turnsLeft <= 1 ? ' is-urgent' : ''} ${wearClass(`${order.id}-deadline`)}`} data-testid="order-deadline-stamp">
             {deadlineLabel}
           </span>
-          <span className="order-stamp is-advance" data-testid="order-advance-stamp">
+          <span className={`order-stamp is-advance ${wearClass(`${order.id}-advance`)}`} data-testid="order-advance-stamp">
             {terms.advancePct > 0 ? `Advance ${terms.advancePct} %` : 'No advance'}
           </span>
           {existingBid && <Tag tone="green">Bid {formatMoney(existingBid.price)}</Tag>}

@@ -4954,3 +4954,54 @@ summary:focus-visible,
 .bid-readout-value.is-good {
   color: var(--green);
 }
+
+/* ── Tillgångsfabrikens grafik: verbikoner och stämpelslitage ──────────────────────────────────────
+   (art-director-skillen, scripts/build-art.mjs → public/art/). Regel 8: stämplar och ikoner är föremål
+   från 1965, inte glödande skärmsymboler. */
+
+/* Verbikon: SVG:n (stroke="currentColor") ritas som en mask över bakgrundsfärgen currentColor, så att
+   ikonen följer textfärgen på papper, stål och röd stämpel. Elementet har ingen text — regel 18:s
+   scrollWidth-test har inget att mäta — och är aria-hidden; etiketten bredvid är det som läses upp. */
+.verb-icon {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.22em;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask: var(--verb-icon) center / contain no-repeat;
+  mask: var(--verb-icon) center / contain no-repeat;
+}
+
+/* Ett okänt verb: en tom, ritad ruta i stället för en trasig mask. */
+.verb-icon.is-unknown {
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  width: 0.9em;
+  height: 0.9em;
+}
+
+/* Stämpelslitage: public/art/wear/ink-wear-N.svg som mask på stämpeln (text OCH ram nöts ned, som
+   bläck som inte fastnat). Masken är svart/vit — vitt = bläck, svarta prickar = hål — så den läses som
+   luminans, inte som alfa (standardläget för en SVG-bild). Varianten väljs per stämpel med en stabil
+   hash av stämpelns id (src/stampWear.ts, wearClass), aldrig slumpat vid rendering. Stämplarna
+   ligger kvar i normalt flöde; masken ändrar bara hur de ritas, inte hur stora de är (regel 18). */
+.datestamp.wear-1, .datestamp.wear-2, .datestamp.wear-3, .datestamp.wear-4, .datestamp.wear-5, .datestamp.wear-6,
+.wire-stamp.wear-1, .wire-stamp.wear-2, .wire-stamp.wear-3, .wire-stamp.wear-4, .wire-stamp.wear-5, .wire-stamp.wear-6,
+.order-stamp.wear-1, .order-stamp.wear-2, .order-stamp.wear-3, .order-stamp.wear-4, .order-stamp.wear-5, .order-stamp.wear-6 {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mask-mode: luminance;
+  -webkit-mask-source-type: luminance;
+}
+.wear-1 { -webkit-mask-image: url(/art/wear/ink-wear-1.svg); mask-image: url(/art/wear/ink-wear-1.svg); }
+.wear-2 { -webkit-mask-image: url(/art/wear/ink-wear-2.svg); mask-image: url(/art/wear/ink-wear-2.svg); }
+.wear-3 { -webkit-mask-image: url(/art/wear/ink-wear-3.svg); mask-image: url(/art/wear/ink-wear-3.svg); }
+.wear-4 { -webkit-mask-image: url(/art/wear/ink-wear-4.svg); mask-image: url(/art/wear/ink-wear-4.svg); }
+.wear-5 { -webkit-mask-image: url(/art/wear/ink-wear-5.svg); mask-image: url(/art/wear/ink-wear-5.svg); }
+.wear-6 { -webkit-mask-image: url(/art/wear/ink-wear-6.svg); mask-image: url(/art/wear/ink-wear-6.svg); }

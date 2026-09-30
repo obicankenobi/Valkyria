@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { scenarioVerdict, type GameState } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
+import { wearClass } from '../stampWear.js'
 import { Button, BottomSheet, DsPanel } from './designSystem.js'
 
 export const ENDING_LABEL: Record<string, string> = {
@@ -29,7 +30,7 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
         <DsPanel
           title={`${state.house.name} — Epilogue`}
           right={
-            <span className="order-stamp is-urgent" data-testid="epilogue-stamp">
+            <span className={`order-stamp is-urgent ${wearClass('epilogue-closed')}`} data-testid="epilogue-stamp">
               CLOSED
             </span>
           }

@@ -35,6 +35,7 @@ import {
 } from '../newsClassification.js'
 import type { NewsDepartment, TickerGroup } from '../newsClassification.js'
 import { Tag } from './ui.js'
+import { wearClass } from '../stampWear.js'
 import { DsPanel, DsToggle, Segmented } from './designSystem.js'
 
 // P70 (ETAPP6_TEKNISK_SPEC.md §5): "Ny sekvens: WireEvent-listan avslöjas en
@@ -105,7 +106,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
   return (
     <li className={classes.join(' ')}>
       <div className="wire-row">
-        <span className="wire-stamp">T{String(event.turn).padStart(2, '0')}</span>
+        <span className={`wire-stamp ${wearClass(event.id)}`}>T{String(event.turn).padStart(2, '0')}</span>
         <span className={`wire-glyph is-${event.severity}`} aria-hidden="true" />
         <span className="wire-text">{event.headline}</span>
         {anchor && <span className="wire-anchor">{anchor}</span>}
@@ -153,7 +154,7 @@ function TickerGroupRow({ group, state }: { group: TickerGroup; state: GameState
   return (
     <li className="wire-item is-ticker-group" data-testid="ticker-group-row">
       <div className="wire-row">
-        <span className="wire-stamp">×{group.events.length}</span>
+        <span className={`wire-stamp ${wearClass(`group-${latest.id}`)}`}>×{group.events.length}</span>
         <span className="wire-glyph is-ticker" aria-hidden="true" />
         <span className="wire-text">{latest.headline}</span>
         {anchor && <span className="wire-anchor">{anchor}</span>}
@@ -262,7 +263,7 @@ function CrisisModal({
   return (
     <div className="crisis-fullscreen" data-testid="crisis-modal">
       <div className="crisis-card">
-        <span className="order-stamp is-urgent crisis-eyes-only">EYES ONLY</span>
+        <span className={`order-stamp is-urgent crisis-eyes-only ${wearClass(`crisis-${pending.theatreId}`)}`}>EYES ONLY</span>
         <DoomsdayGauge value={state.doomsday} className="crisis-illustration" />
         <h2 className="crisis-title" data-testid="crisis-doomsday">
           CRISIS — DOOMSDAY AT {state.doomsday.toFixed(0)}

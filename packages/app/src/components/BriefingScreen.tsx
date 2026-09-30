@@ -6,6 +6,7 @@
 // redan säkert no-op, se TheatreMap.tsx) — "en karta", inte en egen,
 // förenklad kopia.
 import { formatMoney } from './ui.js'
+import { wearClass } from '../stampWear.js'
 import { Button, DsPanel } from './designSystem.js'
 import { TheatreMap } from './TheatreMap.js'
 import type { GameState } from '@seventh-front/core'
@@ -26,7 +27,7 @@ export function BriefingScreen({ state, onBegin, onBack }: { state: GameState; o
         <DsPanel
           title={`${house.name} — Briefing`}
           right={
-            <span className="order-stamp is-urgent" data-testid="briefing-classified">
+            <span className={`order-stamp is-urgent ${wearClass('briefing-classified')}`} data-testid="briefing-classified">
               CLASSIFIED
             </span>
           }

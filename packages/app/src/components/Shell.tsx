@@ -6,9 +6,12 @@
 // INTE av namnbytet, bara det som visas här i skalet runt dem (§2G:s egen
 // mening, ordagrant).
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { boardReviewOutlook, DISPLAY_THRESHOLDS, previewAction } from '@seventh-front/core'
 import type { GameState, PlayerAction } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
+import { VerbIcon } from './VerbIcon.js'
+import { VERB_ICON } from '../verbIcons.js'
 import { ActionSlot, InfoTooltip } from './designSystem.js'
 import type { RejectedEntry } from '../useGame.js'
 import { deriveQuarterlyNotice, deriveThisQuarter } from '../thisQuarter.js'
@@ -31,30 +34,8 @@ function hudSummary(id: Parameters<typeof hudNumberTopic>[0]): string {
 // previewAction (P78) — en delad sanningskälla, aldrig en egen gissning.
 // Målnamnen slås upp direkt ur state (aldrig gated — en handling i KÖN är
 // redan spelarens eget val, ingen dold information att läcka).
-export const VERB_ICON: Record<string, string> = {
-  EXPAND: '⬈',
-  WITHDRAW: '⬋',
-  LEAK: '✉',
-  SABOTAGE: '⚡',
-  TURN: '↻',
-  RECRUIT: '✛',
-  INFLUENCE: '⇄',
-  STAGE_INCIDENT: '✷',
-  BACK_CHANNEL: '☏',
-  BRIBE: '✎',
-  FUND_CAMPAIGN: '✎',
-  FAVOUR: '✎',
-  FUND_COUP: '☠',
-  ASSASSINATE: '☠',
-  BROKER: '⇄',
-  BUY_FORWARD: '⇩',
-  RELEASE: '⇧',
-  TAKE_LOAN: '£',
-  REPAY: '£',
-  BUILD_LINE: '⚒',
-  HIRE: '⚒',
-  REPRIORITISE_RND: '⚙',
-}
+// Återexport: tester och ActionCatalog importerar den härifrån (en källa: ../verbIcons.ts).
+export { VERB_ICON }
 
 function targetLabel(state: GameState, action: PlayerAction): string {
   switch (action.type) {
@@ -79,12 +60,12 @@ function targetLabel(state: GameState, action: PlayerAction): string {
   }
 }
 
-export function actionSummary(state: GameState, action: PlayerAction): { icon: string; label: string; cost: string | undefined } {
+export function actionSummary(state: GameState, action: PlayerAction): { icon: ReactNode; label: string; cost: string | undefined } {
   const op = action.type === 'INTERNAL' || action.type === 'INTEL' || action.type === 'POLITICAL' || action.type === 'MARKET' ? action.op : action.type
   const preview = previewAction(state, action)
   const cost = preview.cost === null ? undefined : formatMoney(preview.cost)
   const target = targetLabel(state, action)
-  return { icon: VERB_ICON[op] ?? '⌁', label: target ? `${op} ${target}` : op, cost }
+  return { icon: VERB_ICON[op] ? <VerbIcon verb={op} /> : '⌁', label: target ? `${op} ${target}` : op, cost }
 }
 
 export type ShellView = 'operations' | 'contracts' | 'company' | 'contacts' | 'news'

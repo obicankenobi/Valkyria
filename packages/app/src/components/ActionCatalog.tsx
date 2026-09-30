@@ -5,7 +5,7 @@
 // actionCatalog.ts:s statiska data — samma BottomSheet-mönster som
 // MapLegend.tsx (P81a).
 import { BottomSheet } from './designSystem.js'
-import { VERB_ICON } from './Shell.js'
+import { VerbIcon } from './VerbIcon.js'
 import { ACTION_CATALOG } from '../actionCatalog.js'
 import type { ActionCatalogEntry, ActionCatalogView } from '../actionCatalog.js'
 
@@ -59,7 +59,7 @@ export function ActionCatalog({
                 data-testid={`action-catalog-entry-${entry.verb}`}
               >
                 <span className="action-catalog-entry-icon" aria-hidden="true">
-                  {VERB_ICON[entry.verb] ?? '•'}
+                  <VerbIcon verb={entry.verb} />
                 </span>
                 <span className="action-catalog-entry-label">{entry.label}</span>
               </button>
