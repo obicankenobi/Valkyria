@@ -294,6 +294,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     categoryQuality: uniformCategoryRecord(0),
     researchHeadStart: uniformCategoryRecord(0),
     rndBidLock: {},
+    designs: [],
   }
 }
 

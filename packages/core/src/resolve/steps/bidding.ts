@@ -2,6 +2,8 @@
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
 import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
+import { designBidRejection, designBidTerm } from '../../design.js'
+import { round } from '../../money.js'
 import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
@@ -15,6 +17,7 @@ interface Candidate {
   grade: Grade
   bribe: Money
   score: number
+  designId?: string // P109
 }
 
 function pickWinner(candidates: readonly Candidate[]): Candidate | null {
@@ -72,6 +75,8 @@ export const bidding: ResolveStep = (ctx) => {
     const playerBid = playerBids[0]
 
     const candidates: Candidate[] = []
+    // P109: en konstruktion i budet prövas mot huset och ordern innan något annat räknas.
+    const designRejection = playerBid?.designId !== undefined ? designBidRejection(draft.house, playerBid.designId, order.productId) : null
 
     if (playerBid) {
       if (playerBid.price > order.trueBudget) {
@@ -127,7 +132,19 @@ export const bidding: ResolveStep = (ctx) => {
           actorIsPlayer: true,
           subjectId: order.buyerId,
         })
+      } else if (designRejection !== null) {
+        rejected.push({ action: playerBid, reason: designRejection })
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()}'S DESIGN CANNOT BE OFFERED HERE`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
       } else {
+        const design = playerBid.designId !== undefined ? draft.house.designs.find((d) => d.id === playerBid.designId) : undefined
         const score = computeScore({
           bidPrice: playerBid.price,
           bidDeliveryTurns: playerBid.deliveryTurns,
@@ -149,7 +166,9 @@ export const bidding: ResolveStep = (ctx) => {
           bribe: playerBid.bribe,
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product),
+          // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0),
+          ...(design ? { designId: design.id } : {}),
         })
       }
     }
@@ -238,7 +257,9 @@ export const bidding: ResolveStep = (ctx) => {
     }
 
     if (winner.source === 'player') {
-      const unitCostAtSigning = computeUnitCostNow(product, winner.grade, draft.market.commodities)
+      const baseUnitCost = computeUnitCostNow(product, winner.grade, draft.market.commodities)
+      const winningDesign = winner.designId !== undefined ? draft.house.designs.find((d) => d.id === winner.designId) : undefined
+      const unitCostAtSigning = winningDesign ? round(baseUnitCost * winningDesign.unitCostFactor) : baseUnitCost
       const contract: Contract = {
         id: `contract-${order.id}`,
         buyerId: order.buyerId,
@@ -256,6 +277,7 @@ export const bidding: ResolveStep = (ctx) => {
         // P98 (ETAPP8_FORSLAG.md §4.1): förskottet, fryst på ordern och betalt vid tilldelning.
         advancePct: order.advancePct,
         advancePaid: advanceAmount(winner.price, order.advancePct),
+        ...(winningDesign ? { designId: winningDesign.id } : {}),
       }
       draft.market.contracts.push(contract)
 

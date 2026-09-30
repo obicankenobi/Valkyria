@@ -87,7 +87,7 @@ export function startTrackedResearch(ctx: ResolveContext): void {
     const track = tracks[category]
     if (!track || draft.meta.turn < track.sinceTurn) continue
     if (house.techLevel[category] >= MAX_TECH_LEVEL) continue
-    if (house.rnd.some((p) => p.category === category)) continue
+    if (house.rnd.some((p) => p.category === category && !p.design)) continue
     const project = newProject(house, category, track.pace, draft.meta.turn)
     house.rnd.push(project)
     emit({
@@ -109,7 +109,7 @@ export function applyCrashProgramme(ctx: ResolveContext, category: TechCategory)
   const { draft, emit } = ctx
   const house = draft.house
   const running = house.rnd
-    .filter((p) => p.category === category && !p.crash)
+    .filter((p) => p.category === category && !p.crash && !p.design)
     .sort((a, b) => b.turnsRemaining - a.turnsRemaining)[0]
   if (running) {
     running.turnsRemaining = Math.max(1, Math.ceil(running.turnsRemaining * BALANCE.crashTimeFactor))

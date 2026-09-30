@@ -54,6 +54,10 @@ function describeChange(change: StandingOrderChange): string {
         : `${COMMODITY_LABEL[change.commodity]} ${formatMoney(change.volumePerTurn)} × ${change.durationTurns}`
     case 'STATION':
       return change.mode.toUpperCase()
+    case 'DESIGN':
+      return change.op === 'CANCEL'
+        ? `CANCEL ${change.category.toUpperCase()} DESIGN`
+        : `${change.category.toUpperCase()} DESIGN · ${change.focus.toUpperCase()} · ${change.ambition.toUpperCase()}`
     case 'RESEARCH':
       return change.op === 'CANCEL' ? `CANCEL ${change.category.toUpperCase()} RESEARCH` : `${change.category.toUpperCase()} RESEARCH · ${change.pace.toUpperCase()}`
   }

@@ -9,6 +9,12 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
+import {
+  QUALITY_CLASSES,
+  designBidRejection,
+  designBidTerm,
+  qualityClassOf,
+} from './design.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
@@ -19,6 +25,8 @@ import { round } from './money.js'
 import type {
   BidEstimate,
   BoardTarget,
+  Design,
+  DesignFlaw,
   Formation,
   FormationDisplay,
   Front,
@@ -30,6 +38,7 @@ import type {
   Order,
   Pct,
   ProductionLine,
+  QualityClass,
   RivalId,
   SectorControl,
   TechCategory,
@@ -437,8 +446,16 @@ export function officialDisplay(state: GameState, official: Official): OfficialD
   }
 }
 
-export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEstimate {
+// P109: konstruktionen ett bud kan bära — bara en egen, aktiv Design som passar ordern (samma prövning som bidding.ts).
+function usableDesign(state: GameState, order: Order, designId: string | undefined) {
+  if (designId === undefined) return undefined
+  if (designBidRejection(state.house, designId, order.productId) !== null) return undefined
+  return state.house.designs.find((d) => d.id === designId)
+}
+
+export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string): BidEstimate {
   const product = getProduct(order.productId)
+  const design = usableDesign(state, order, designId)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}`, 0)
 
   const depth = effectiveDepth(state, order.buyerId)
@@ -463,7 +480,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
   // "plus vilket hus som ligger lägst" — bara vid depth >= 4 (spec 4.3-tabellen).
   const lowestRivalHouse = depth >= 4 && lowest ? lowest.rivalId : null
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1)
 
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0
@@ -491,7 +508,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0),
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -517,8 +534,9 @@ export interface PlayerWinCurvePoint {
   confidence: Pct
 }
 
-export function playerWinCurve(state: GameState, order: Order, grade: Grade): PlayerWinCurvePoint[] {
+export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string): PlayerWinCurvePoint[] {
   const product = getProduct(order.productId)
+  const design = usableDesign(state, order, designId)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}:playerWinCurve`, 0)
 
   // Rivalprisbandets ÖVRE gräns — ordagrant samma beräkning som bidEstimate
@@ -538,7 +556,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade): Pl
   const lowestRivalPrice = rivalPrices.length > 0 ? Math.min(...rivalPrices) : order.referencePrice
   const rivalPriceHigh = Math.round(lowestRivalPrice * (1 + pct))
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1)
   const costFloor = Math.max(1, yourUnitCost * order.quantity)
   const ceiling = Math.max(costFloor, rivalPriceHigh)
 
@@ -562,7 +580,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade): Pl
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0),
   }
 
   const points: PlayerWinCurvePoint[] = []
@@ -762,4 +780,50 @@ export function estimateLineCompletionTurn(state: GameState, line: ProductionLin
   if (rate <= 0) return null
 
   return state.meta.turn + Math.ceil(remaining / rate)
+}
+
+// ── Konstruktioner (P109, ETAPP9_FORSLAG.md §5.1/§5.3, skyddsräcke 5) ────────────────────────────────────
+
+// Det gränssnittet får veta om en konstruktion: de tre synliga egenskaperna, klassen som ett intervall ("B±1") och
+// bristen FÖRST när den avslöjats. trueQuality och latentFlaw lämnar aldrig den här funktionen före det.
+export interface DesignDisplay {
+  id: string
+  name: string
+  category: Design['category']
+  generation: number
+  focus: Design['focus']
+  ambition: Design['ambition']
+  performance: Pct
+  reliability: Pct
+  unitCostFactor: number
+  status: Design['status']
+  qualityClass: { center: QualityClass; plusMinus: number }
+  flaw: DesignFlaw | null
+  testedIn: Design['testedIn']
+  fieldRecord: Design['fieldRecord']
+}
+
+export function designDisplay(state: GameState, design: Design): DesignDisplay {
+  const trueIdx = QUALITY_CLASSES.indexOf(qualityClassOf(design.trueQuality))
+  // Mittpunkten förskjuts hash-seedat (aldrig ur spelets Rng) inom ±osäkerheten, så den verkliga klassen alltid
+  // ligger i intervallet men intervallet inte pekar ut den. Samma hash för samma osäkerhet och provning.
+  const rng = createRng(`${state.meta.seed}:${design.id}:quality:${design.uncertainty}:${design.testedIn.join(',')}`, 0)
+  const offset = design.uncertainty > 0 ? rng.int(-design.uncertainty, design.uncertainty) : 0
+  const centerIdx = Math.max(0, Math.min(QUALITY_CLASSES.length - 1, trueIdx + offset))
+  return {
+    id: design.id,
+    name: design.name,
+    category: design.category,
+    generation: design.generation,
+    focus: design.focus,
+    ambition: design.ambition,
+    performance: design.performance,
+    reliability: design.reliability,
+    unitCostFactor: design.unitCostFactor,
+    status: design.status,
+    qualityClass: { center: QUALITY_CLASSES[centerIdx]!, plusMinus: design.uncertainty },
+    flaw: design.flawRevealed ? design.latentFlaw : null,
+    testedIn: design.testedIn,
+    fieldRecord: design.fieldRecord,
+  }
 }

@@ -33,8 +33,9 @@ export {
   projectedQuarter,
   researchOutlook,
   estimateLineCompletionTurn,
+  designDisplay,
 } from './queries.js'
-export type { PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook } from './queries.js'
+export type { DesignDisplay, PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook } from './queries.js'
 // getProduct/allProducts: paketets ENDA väg till produktkatalogen (avsnitt 6) för
 // extern kod — packages/harness (P9) behöver getProduct för att avgöra om en order
 // gäller en restricted-produkt (Order har bara productId, inte en kopia av
@@ -67,3 +68,6 @@ export { scenarioVerdict } from './scenarioVerdict.js'
 
 // P99: förskottsformlerna, så budformuläret (packages/app) och härnessen läser exakt de som betalar.
 export { advanceAmount, advanceFactors, computeAdvancePct, deliveryPayment } from './resolve/advance.js'
+
+// P109 (ETAPP9 §5): konstruktionerna — namn-/klasshjälpare som gränssnittet (P126) återanvänder i stället för att upprepa dem.
+export { DESIGN_AMBITIONS, DESIGN_ENVIRONMENTS, DESIGN_FOCUSES, QUALITY_CLASSES, currentGeneration, designBaseProduct, qualityClassOf } from './design.js'

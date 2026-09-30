@@ -8,6 +8,7 @@
 // Ingen spelarhandling för det finns (INTERNAL saknar en sådan op), så automatiskt
 // är det enda rimliga — annars skulle ett vunnet kontrakt aldrig producera något.
 import balanceData from '../../data/balance.json' with { type: 'json' }
+import { designUnitCostFactor } from '../../design.js'
 import { computeUnitCostNow, getProduct, materialCostPerUnit } from '../../pricing.js'
 import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
@@ -188,7 +189,11 @@ export const production: ResolveStep = (ctx) => {
       })
       continue
     }
-    const unitCostNow = computeUnitCostNow(product, line.grade, draft.market.commodities) * (overtime ? BALANCE.overtimeUnitCostFactor : 1)
+    // P109: en konstruktions styckkostnadsfaktor (1 för ett kontrakt utan konstruktion).
+    const unitCostNow =
+      computeUnitCostNow(product, line.grade, draft.market.commodities) *
+      (overtime ? BALANCE.overtimeUnitCostFactor : 1) *
+      designUnitCostFactor(house, contract.designId)
     // affordableUnits räknas mot RÅ unitCostNow, inte mot kostnaden EFTER ett
     // BUY_FORWARD-innehav — en medveten förenkling (P51, avsnitt 4.5): ett
     // stort innehav sänker vad du FAKTISKT betalar, men relaxar inte hur

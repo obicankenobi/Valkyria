@@ -9,6 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { round } from './money.js'
 import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
+import { BALANCE_DESIGN_STEPS, currentGeneration, isDesignProject, newDesignProject, validateDesignStart } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
 import type {
   ActionValidation,
@@ -100,6 +101,13 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       if (!(PACES as readonly string[]).includes(change.pace)) return fail('unknown research pace')
       return { ok: true }
     }
+    case 'DESIGN': {
+      if (change.op === 'CANCEL') {
+        return house.rnd.some((p) => p.category === change.category && isDesignProject(p)) ? { ok: true } : fail('no design project in that category')
+      }
+      const reason = validateDesignStart(house, change)
+      return reason ? fail(reason) : { ok: true }
+    }
   }
 }
 
@@ -189,6 +197,45 @@ export function applyStandingOrders(ctx: ResolveContext): void {
           actorIsPlayer: true,
           subjectId: station.nation,
         })
+        break
+      }
+      case 'DESIGN': {
+        // P109: ritbordsuppdraget. START lägger ett designprojekt i kön (går i gång nästa tur, som all tid); CANCEL
+        // tar bort det pågående i kategorin och dess framsteg.
+        if (change.op === 'CANCEL') {
+          draft.house.rnd = draft.house.rnd.filter((p) => !(p.category === change.category && isDesignProject(p)))
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `${draft.house.name.toUpperCase()} CANCELS ITS ${change.category.toUpperCase()} DESIGN PROJECT`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        } else {
+          const project = newDesignProject(
+            draft.house,
+            {
+              category: change.category,
+              focus: change.focus,
+              ambition: change.ambition,
+              targetGeneration: currentGeneration(turn) + BALANCE_DESIGN_STEPS[change.ambition],
+              upgradeOf: null,
+            },
+            turn,
+          )
+          draft.house.rnd.push(project)
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `DESIGN PROJECT: ${draft.house.name.toUpperCase()} STARTS A ${change.focus.toUpperCase()}, ${change.ambition.toUpperCase()} ${change.category.toUpperCase()} DESIGN (${project.turnsTotal} TURNS)`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        }
         break
       }
       case 'RESEARCH': {

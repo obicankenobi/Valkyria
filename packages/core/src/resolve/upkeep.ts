@@ -4,7 +4,9 @@
 import balanceData from '../data/balance.json' with { type: 'json' }
 import { standingStationMode } from '../standingOrders.js'
 import type { ResolveContext } from './index.js'
-import type { RndProject, Station, TechCategory, WireEvent } from '../types.js'
+import { rollDesign } from '../design.js'
+import type { Rng } from '../rng.js'
+import type { House, RndProject, Station, WireEvent } from '../types.js'
 
 type Emit = (e: Omit<WireEvent, 'id' | 'turn'>) => string
 
@@ -24,9 +26,18 @@ const BALANCE = balanceData as unknown as Balance
 // [category] += 1"), och pipelineordningen är fryst (CLAUDE.md hård regel 7) — hör
 // därför hemma här, där kön faktiskt skrivs, precis innan turens NYA handlingar
 // (som kan lägga till ett projekt som inte ska hinna en tur på samma passage).
+// P109: ett designprojekt som blir klart drar sitt utfall ur `designCtx.rng` (ctx.rng, hård regel 2). Utan ett sådant
+// sammanhang (ett anrop som bara avancerar teknikprojekt) får ett färdigt designprojekt vänta en tur.
+export interface DesignCompletionContext {
+  rng: Rng
+  turn: number
+  year: number
+}
+
 export function advanceRndQueue(
-  house: { rnd: RndProject[]; techLevel: Record<TechCategory, number>; researchHeadStart?: Record<TechCategory, number> },
+  house: Pick<House, 'rnd' | 'techLevel' | 'staff' | 'name'> & Partial<Pick<House, 'researchHeadStart' | 'designs'>>,
   emit: Emit,
+  designCtx?: DesignCompletionContext,
 ): void {
   const stillRunning: RndProject[] = []
   for (const project of house.rnd) {
@@ -50,6 +61,34 @@ export function advanceRndQueue(
     }
     if (project.turnsRemaining > 0) {
       stillRunning.push(project)
+      continue
+    }
+    if (project.design) {
+      if (!designCtx) {
+        project.turnsRemaining = 1
+        stillRunning.push(project)
+        continue
+      }
+      const designs = (house.designs ??= [])
+      const design = rollDesign(designCtx.rng, house as House, {
+        category: project.category,
+        focus: project.design.focus,
+        ambition: project.design.ambition,
+        upgradeOf: project.design.upgradeOf,
+        targetGeneration: project.design.targetGeneration,
+        turn: designCtx.turn,
+        year: designCtx.year,
+      })
+      designs.push(design)
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `DESIGN COMPLETE: ${design.name.toUpperCase()} (GENERATION ${design.generation}) — QUALITY NOT YET TESTED`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: true,
+        subjectId: null,
+      })
       continue
     }
     house.techLevel[project.category] += 1

@@ -18,6 +18,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
       // P108: ett forskningsspår per kategori — SET och CANCEL delar nyckel, den senare vinner. (Tavlans eget
       // kort för forskning byggs i P126; här bara så att köade ändringar inte kollapsar mot andra slag.)
       return `research:${change.category}`
+    case 'DESIGN':
+      // P109: ett designprojekt per kategori åt gången (START och CANCEL delar nyckel). Ritbordets eget kort byggs i P126.
+      return `design:${change.category}`
   }
 }
 

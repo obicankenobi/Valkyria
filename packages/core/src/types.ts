@@ -298,6 +298,8 @@ export interface House {
   // P108 (§4.5): krasprogrammet låser husets bud i kategorin NÄSTA kvartal — kategori → den tur då budet avvisas.
   // Ett sparat parti från före P108 saknar fältet och läses som inga lås.
   rndBidLock: Partial<Record<TechCategory, number>>
+  // P109 (ETAPP9 §5.1): husets egna konstruktioner. Ett sparat parti från före P109 saknar fältet och läses som tomt.
+  designs: Design[]
 }
 
 export interface BoardTarget {
@@ -341,6 +343,67 @@ export interface RndProject {
   costFactor?: number
   // P108: ett krasprogram (REPRIORITISE_RND) — halverad tid, dubbel totalkostnad, bud i kategorin låsta nästa kvartal.
   crash?: boolean
+  // P109 (ETAPP9 §5.2): ett designprojekt i stället för ett teknikprojekt — ger en Design när det blir klart, inte
+  // techLevel + 1. Delar kön, kostnadsmekaniken (costFactor, specialiseringens halvering), chefsingenjörens
+  // kortning och erfarenhetsförsprånget med teknikprojekten.
+  design?: DesignProjectSpec
+}
+
+// P109 (ETAPP9 §5.2): ritbordsuppdraget. Inriktningen väljer spelstil, ambitionen hur långt förbi det tidsenliga
+// (blockens generation, §7.1) huset sträcker sig — högre värden mot längre tid, högre kostnad och större
+// risk för brister (Hearts of Iron IV: man får forska före sin tid, men det kostar).
+export type DesignFocus = 'robust' | 'balanced' | 'advanced'
+export type DesignAmbition = 'timely' | 'forward' | 'ahead'
+export type QualityClass = 'A' | 'B' | 'C' | 'D'
+// P110 (§5.3): miljöer en brist kan höra till, och som en front kan ha.
+export type DesignEnvironment = 'jungle' | 'monsoon' | 'mine' | 'wear'
+export type DesignId = string
+
+export interface DesignProjectSpec {
+  focus: DesignFocus
+  ambition: DesignAmbition
+  // Måldgenerationen, fastställd vid start (tidsenlig generation då + ambitionens steg).
+  targetGeneration: number
+  // P112 (§5.5): en uppgradering av en egen konstruktion — billigare och snabbare, ärver fältryktet.
+  upgradeOf: DesignId | null
+  // P113 (§5.6): "konstruera om" efter en olycksfågel — kortare tid, och konstruktionen blir felfri.
+  redesignOf?: DesignId | null
+}
+
+// P110: en miljöbrist — dold tills den avslöjats (egen provning i rätt miljö eller en front med miljön).
+export interface DesignFlaw {
+  environment: DesignEnvironment
+  severity: number // 1–3
+}
+
+// P114 (§6.2): fältrykte. Stubben finns sedan P109 eftersom typbladet (§5.1) listar den.
+export interface DesignFieldRecord {
+  occasions: number
+  proven: boolean
+}
+
+// P109 (ETAPP9 §5.1): typbladet. Tre synliga egenskaper (performance, reliability, unitCostFactor); trueQuality
+// och latentFlaw är DOLDA (9D, skyddsräcke 5) och visas bara som ett intervall respektive när de avslöjats.
+export interface Design {
+  id: DesignId
+  name: string // "H&V M64 Field Gun" (9L)
+  category: TechCategory
+  baseProductId: ProductId
+  generation: number
+  focus: DesignFocus
+  ambition: DesignAmbition
+  performance: Pct // nominellt, synligt
+  reliability: Pct // nominellt, synligt
+  unitCostFactor: number // produktionskostnad mot basprodukten, synligt
+  trueQuality: Pct // DOLD — som byggd, efter utfallet
+  uncertainty: number // P110: osäkerheten i klasssteg (±), smalnar av vid provning
+  latentFlaw: DesignFlaw | null // DOLD
+  flawRevealed: boolean // P110: bristen känd för spelaren
+  testedIn: DesignEnvironment[] // P110: miljöer huset provat i egen regi
+  fieldRecord: DesignFieldRecord
+  lineage: DesignId | null // P112: föregångaren vid uppgradering
+  introducedTurn: number
+  status: 'active' | 'withdrawn' // P113: tillbakadragen under en omkonstruktion
 }
 
 export interface Station {
@@ -435,6 +498,9 @@ export interface Bid {
   deliveryTurns: number
   grade: Grade
   bribe: Money
+  // P109 (ETAPP9_FORSLAG.md §5.1, beslut 9B): en konstruktion att bjuda med. Måste vara en egen, aktiv Design
+  // vars baseProductId är ordens produkt. Utelämnat = ett vanligt bud, exakt som förut.
+  designId?: string
 }
 
 export interface Contract {
@@ -463,6 +529,9 @@ export interface Contract {
   // (konkurs, regimskifte).
   advancePct: Pct
   advancePaid: Money
+  // P109: konstruktionen kontraktet bjöds med (Bid.designId). Styckkostnaden vid signering och produktionen
+  // räknas med dess unitCostFactor. Utelämnat = basprodukten.
+  designId?: string
 }
 
 // Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när
@@ -861,6 +930,10 @@ export type StandingOrderChange =
   // P108 (ETAPP9_FORSLAG.md §4.5): forskningsspår — ett per kategori, i takten låg/normal/hög. SET eller CANCEL.
   | { kind: 'RESEARCH'; op: 'SET'; category: TechCategory; pace: ResearchPace }
   | { kind: 'RESEARCH'; op: 'CANCEL'; category: TechCategory }
+  // P109 (ETAPP9_FORSLAG.md §5.2): ritbordsuppdraget — starta ett designprojekt (inriktning + ambition) eller
+  // avbryt det pågående i kategorin. Kostar ingen handling.
+  | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition }
+  | { kind: 'DESIGN'; op: 'CANCEL'; category: TechCategory }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {

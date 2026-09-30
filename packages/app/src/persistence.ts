@@ -110,7 +110,8 @@ export function migrate(saved: SavedGame): SavedGame | null {
       // sparat parti får nollor i alla kategorier så att gränssnittet slipper undefined.
       const houseP107 = state.house as Partial<GameState['house']>
       // P108: rndBidLock (krasprogrammets budlås) tillkom på House — ett gammalt sparat parti har inga lås.
-      if (!houseP107.categoryQuality || !houseP107.researchHeadStart || !houseP107.rndBidLock) {
+      // P109: designs (husets konstruktioner) tillkom på House — ett gammalt sparat parti har inga.
+      if (!houseP107.categoryQuality || !houseP107.researchHeadStart || !houseP107.rndBidLock || !houseP107.designs) {
         const zeros = (): GameState['house']['categoryQuality'] => ({ infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 })
         state = {
           ...state,
@@ -119,6 +120,7 @@ export function migrate(saved: SavedGame): SavedGame | null {
             categoryQuality: houseP107.categoryQuality ?? zeros(),
             researchHeadStart: houseP107.researchHeadStart ?? zeros(),
             rndBidLock: houseP107.rndBidLock ?? {},
+            designs: houseP107.designs ?? [],
           },
         }
       }

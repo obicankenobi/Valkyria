@@ -160,7 +160,7 @@ export const applyActions: ResolveStep = (ctx) => {
   const { state, draft, submission, rng, emit, rejected } = ctx
   const house = draft.house
 
-  advanceRndQueue(house, emit)
+  advanceRndQueue(house, emit, { rng, turn: draft.meta.turn, year: draft.meta.year })
   advanceStations(ctx)
   // P100: stående order (kostar ingen handling, gäller från nästa tur) — före handlingsloopen.
   applyStandingOrders(ctx)

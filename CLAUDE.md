@@ -772,6 +772,10 @@ migreras. Golden omfryst i egen commit.
 kvartal), `chiefEngineer` över 70 kortar ett nytt projekt en tur; botarna använder spår. **Appen saknar än så länge
 kontroll för spår (P126)** — bara krasprogrammet nås där. Vakterna håller. Golden omfryst i egen commit.
 **P106–P108 (del A, "Grunden") är därmed klara.**
+**P109 BYGGD 2026-09-30:** `Design` (`House.designs`) med dold kvalitet och brist, stående order `DESIGN`
+(inriktning + ambition), utfall via `ctx.rng`, `Bid.designId`/`designBidTerm` efter `computeScore` (delad av
+`bidding.ts`, `bidEstimate`, `playerWinCurve`), `designDisplay` visar klassen som intervall. Ingen bot använder
+konstruktioner än; vakterna är orörda. Golden omfryst i egen commit.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

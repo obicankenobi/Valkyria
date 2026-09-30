@@ -662,6 +662,12 @@ lämnar golden orörd.
 > forskningsspår tills P126. Vakterna håller (`human` 80 %, `capacity` 3/97, `balanced-pwc` 100 %). Golden omfryst
 > i egen commit. Se ANDRINGSLOGG 2026-09-30.
 
+> **P109 BYGGD 2026-09-30.** `Design` (`House.designs`), stående order `DESIGN` (inriktning + ambition, en per
+> kategori, ingen handling), utfallet dras med `ctx.rng` när projektet blir klart (genombrott / gedigen / dold
+> brist), `Bid.designId` och `designBidTerm` (efter `computeScore`, delad med `bidEstimate`/`playerWinCurve`),
+> `Contract.designId` med styckkostnad × `unitCostFactor`, `designDisplay` visar klassen som intervall. `currentGeneration`
+> är ett provisoriskt tidsschema tills P118. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).
