@@ -336,6 +336,11 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // bit-identiska med P109:s–P112:s (db2c6cf301dd0, 9fd1f1efb7f35, 1bb041a449d989). balance.frozen.json följer med (nya
   // rader: en anteckning och tio tal). De nya hasharna: passive c799ecdd5bd39, aggressive 8b4c7721789cc, balanced
   // da588da434161.
+  //
+  // P114 (ETAPP9_FORSLAG.md §6.1–6.2/§12, beslut 9C — "regel"-prompt, egen commit): kvalitet i striden och fältrykte skrivs i
+  // VALFRIA fält (Front.equipmentQuality/designUnits) som utelämnas tills en konstruktion levereras, och ingen bot levererar
+  // en. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P113:s (verifierat). Bara balance.frozen.json följer med (nya rader: en anteckning
+  // och tio tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c799ecdd5bd39' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '8b4c7721789cc' },
