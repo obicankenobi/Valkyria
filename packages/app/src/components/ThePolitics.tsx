@@ -23,6 +23,7 @@
 // från belopp till effekt (avtagande avkastning, ett tak, aldrig säkert): varje nivå visar nu vad den köper
 // — samma tal som resolve, via previewAction (heat, relationer, kuppodds, counterIntelligence).
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   allProducts,
   findOfficial,
@@ -35,6 +36,7 @@ import type { FactionId, GameState, Official, OfficialId, PlayerAction, Product,
 import { Button, Card, DsSlider, Stepper, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
 import { Meter, Panel, Tag, formatMoney } from './ui.js'
+import { VerbIcon } from './VerbIcon.js'
 
 // Poängbaserade nivåer (samma mönster som INFLUENCE, CountryFile.tsx P79) för
 // de tre officials-verb vars spend/marginCost FAKTISKT skalar en effekt —
@@ -98,7 +100,7 @@ function VerbButton({
   disabled,
   testId,
 }: {
-  icon: string
+  icon: ReactNode
   label: string
   cost: string
   onClick: () => void
@@ -187,28 +189,28 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     <>
                       <div className="cf-grid">
                         <VerbButton
-                          icon="✎"
+                          icon={<VerbIcon verb="BRIBE" />}
                           label="BRIBE"
                           cost={`${formatMoney(BRIBE_TIER_POINTS.modest * 5000)}+`}
                           onClick={() => toggleOfficial(official.id, 'BRIBE')}
                           testId={`contacts-verb-BRIBE-${official.id}`}
                         />
                         <VerbButton
-                          icon="✎"
+                          icon={<VerbIcon verb="FUND_CAMPAIGN" />}
                           label="FUND CAMPAIGN"
                           cost={`${formatMoney(FUND_CAMPAIGN_TIER_POINTS.modest * 2000)}+`}
                           onClick={() => toggleOfficial(official.id, 'FUND_CAMPAIGN')}
                           testId={`contacts-verb-FUND_CAMPAIGN-${official.id}`}
                         />
                         <VerbButton
-                          icon="✎"
+                          icon={<VerbIcon verb="FAVOUR" />}
                           label="FAVOUR"
                           cost="MARGIN"
                           onClick={() => toggleOfficial(official.id, 'FAVOUR')}
                           testId={`contacts-verb-FAVOUR-${official.id}`}
                         />
                         <VerbButton
-                          icon="☠"
+                          icon={<VerbIcon verb="ASSASSINATE" />}
                           label="ASSASSINATE"
                           cost={`${formatMoney(ASSASSINATE_TIERS.modest)}+`}
                           onClick={() => toggleOfficial(official.id, 'ASSASSINATE')}
@@ -262,21 +264,21 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                 </div>
                 <div className="cf-grid">
                   <VerbButton
-                    icon="✷"
+                    icon={<VerbIcon verb="STAGE_INCIDENT" />}
                     label="STAGE INCIDENT"
                     cost={`${formatMoney(STAGE_INCIDENT_TIERS.modest)}+`}
                     onClick={() => toggleFaction(faction.id, 'STAGE_INCIDENT')}
                     testId={`contacts-verb-STAGE_INCIDENT-${faction.id}`}
                   />
                   <VerbButton
-                    icon="☏"
+                    icon={<VerbIcon verb="BACK_CHANNEL" />}
                     label="BACK CHANNEL"
                     cost={`${formatMoney(BACK_CHANNEL_TIERS.modest)}+`}
                     onClick={() => toggleFaction(faction.id, 'BACK_CHANNEL')}
                     testId={`contacts-verb-BACK_CHANNEL-${faction.id}`}
                   />
                   <VerbButton
-                    icon="☠"
+                    icon={<VerbIcon verb="FUND_COUP" />}
                     label="FUND COUP"
                     cost={`${formatMoney(FUND_COUP_TIERS.modest)}+`}
                     onClick={() => toggleFaction(faction.id, 'FUND_COUP')}
@@ -284,7 +286,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     testId={`contacts-verb-FUND_COUP-${faction.id}`}
                   />
                   <VerbButton
-                    icon="⇄"
+                    icon={<VerbIcon verb="BROKER" />}
                     label="BROKER"
                     cost="NO UPFRONT"
                     onClick={() => toggleFaction(faction.id, 'BROKER')}

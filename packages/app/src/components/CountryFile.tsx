@@ -26,11 +26,13 @@
 // applyFundCoup) utan en godkänd skiss eller ett balanstal att utgå från
 // hade varit att uppfinna en detalj i blindo. 7C bygger resten.
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { INFLUENCE_BALANCE, previewAction, validateAction } from '@seventh-front/core'
 import type { FactionId, GameState, Official, PlayerAction, RivalId } from '@seventh-front/core'
 import { BottomSheet, Button, Card, Segmented, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
 import { formatMoney } from './ui.js'
+import { VerbIcon } from './VerbIcon.js'
 
 type SubView = { kind: 'overview' } | { kind: 'target'; op: 'LEAK' | 'SABOTAGE' | 'TURN' } | { kind: 'influence' }
 
@@ -148,7 +150,7 @@ export function CountryFile({
           </div>
           <div className="cf-grid">
             <VerbButton
-              icon="⇄"
+              icon={<VerbIcon verb="INFLUENCE" />}
               label="INFLUENCE"
               cost="£15K+"
               onClick={() => setView({ kind: 'influence' })}
@@ -189,7 +191,7 @@ function VerbButton({
   disabled,
   testId,
 }: {
-  icon: string
+  icon: ReactNode
   label: string
   cost: string
   onClick: () => void
@@ -237,7 +239,7 @@ function CovertSection({
       </div>
       <div className="cf-grid">
         <VerbButton
-          icon="⬈"
+          icon={<VerbIcon verb="EXPAND" />}
           label="EXPAND"
           cost={costLabel(previewAction(state, expand).cost)}
           onClick={() => queue(expand)}
@@ -245,7 +247,7 @@ function CovertSection({
           testId="cf-verb-EXPAND"
         />
         <VerbButton
-          icon="⬋"
+          icon={<VerbIcon verb="WITHDRAW" />}
           label="WITHDRAW"
           cost={costLabel(previewAction(state, withdraw).cost)}
           onClick={() => queue(withdraw)}
@@ -253,21 +255,21 @@ function CovertSection({
           testId="cf-verb-WITHDRAW"
         />
         <VerbButton
-          icon="✉"
+          icon={<VerbIcon verb="LEAK" />}
           label="LEAK"
           cost={costLabel(leakPreview.cost)}
           onClick={() => setView({ kind: 'target', op: 'LEAK' })}
           testId="cf-verb-LEAK"
         />
         <VerbButton
-          icon="⚡"
+          icon={<VerbIcon verb="SABOTAGE" />}
           label="SABOTAGE"
           cost={costLabel(sabotagePreview.cost)}
           onClick={() => setView({ kind: 'target', op: 'SABOTAGE' })}
           testId="cf-verb-SABOTAGE"
         />
         <VerbButton
-          icon="↻"
+          icon={<VerbIcon verb="TURN" />}
           label="TURN"
           cost={costLabel(turnPreview.cost)}
           onClick={() => setView({ kind: 'target', op: 'TURN' })}
@@ -299,7 +301,7 @@ function RecruitSection({
       </div>
       <div className="cf-grid">
         <VerbButton
-          icon="✛"
+          icon={<VerbIcon verb="RECRUIT" />}
           label="RECRUIT"
           cost={costLabel(previewAction(state, recruit).cost)}
           onClick={() => queue(recruit)}

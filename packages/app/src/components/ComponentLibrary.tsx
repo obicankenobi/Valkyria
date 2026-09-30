@@ -24,6 +24,7 @@ import {
   TierPicker,
 } from './designSystem.js'
 import type { Tier } from './designSystem.js'
+import { VerbIcon } from './VerbIcon.js'
 
 const TIERS: Tier[] = [
   { key: 'modest', label: 'Modest', amount: '£15K', effect: '~ +5' },
@@ -147,8 +148,8 @@ export function ComponentLibrary() {
 
       <Section title="Action slot (bottendockan)">
         <div className="ds-library-row">
-          <ActionSlot icon="⌁" label="RECRUIT · LAOS" cost="£300K" onRemove={() => {}} testId="slot-filled" />
-          <ActionSlot icon="✉" label="BRIBE · MINH" cost="£60K" onRemove={() => {}} testId="slot-filled-2" />
+          <ActionSlot icon={<VerbIcon verb="RECRUIT" />} label="RECRUIT · LAOS" cost="£300K" onRemove={() => {}} testId="slot-filled" />
+          <ActionSlot icon={<VerbIcon verb="BRIBE" />} label="BRIBE · MINH" cost="£60K" onRemove={() => {}} testId="slot-filled-2" />
           <ActionSlot empty testId="slot-empty" />
         </div>
       </Section>
