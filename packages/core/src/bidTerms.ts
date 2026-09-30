@@ -5,7 +5,7 @@
 // läser alla `playerBidTerm` — ett test (bidTerms.test.ts) underkänner om skattningen och avgörandet
 // skiljer sig. Rivalerna har varken techLevel eller specialiseringsterm och får ingen av dem.
 import balanceData from './data/balance.json' with { type: 'json' }
-import type { House, Product, TechCategory } from './types.js'
+import type { House, Pct, Product, TechCategory } from './types.js'
 
 interface Balance {
   scoreBase: number
@@ -30,4 +30,15 @@ export function playerBidTerm(house: Pick<House, 'techLevel' | 'specialisation'>
     techTerm(house.techLevel[product.category], product.techRequired) +
     specialisationTerm(house.specialisation, product.category)
   )
+}
+
+// P107 (§4.3): kvalitetsrykte per kategori. Den husomfattande reputation.quality plus husets tillägg i produktens
+// kategori (House.categoryQuality, 0 i ett sparat parti från före P107), klampad 0–100. Skickas som `reputation` till
+// computeScore (formeln rörs inte) av bidding.ts och queries.ts — samma källa för avgörandet och skattningen.
+export function categoryReputation(
+  house: Pick<House, 'reputation'> & Partial<Pick<House, 'categoryQuality'>>,
+  category: TechCategory,
+): { reliability: Pct; quality: Pct } {
+  const quality = Math.max(0, Math.min(100, house.reputation.quality + (house.categoryQuality?.[category] ?? 0)))
+  return { reliability: house.reputation.reliability, quality }
 }

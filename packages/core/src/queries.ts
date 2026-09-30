@@ -8,7 +8,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
-import { playerBidTerm } from './bidTerms.js'
+import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
@@ -485,7 +485,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
     rivalPriceLow,
     rivalPriceHigh,
     relationToPlayer,
-    reputation: state.house.reputation,
+    reputation: categoryReputation(state.house, product.category),
     blocTerm,
     rivals: state.rivals,
     factionAlignment: faction ? faction.alignment : 0,
@@ -556,7 +556,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade): Pl
     rivalPriceLow: costFloor,
     rivalPriceHigh: ceiling,
     relationToPlayer,
-    reputation: state.house.reputation,
+    reputation: categoryReputation(state.house, product.category),
     blocTerm,
     rivals: state.rivals,
     factionAlignment: faction ? faction.alignment : 0,

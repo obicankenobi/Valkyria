@@ -65,4 +65,21 @@ describe('migrate (P96-uppföljning)', () => {
     expect(migrated.state.house.standingOrders).toEqual({ lines: {}, supply: [], stations: {} })
     expect(() => resolveTurn(migrated.state, migrated.draft)).not.toThrow()
   })
+
+  it('(P107) ger ett gammalt sparat parti utan categoryQuality/researchHeadStart nollor i alla kategorier, och en befintlig bank rörs inte', () => {
+    const save = oldSave()
+    const house = save.state.house as Partial<GameState['house']>
+    delete house.categoryQuality
+    delete house.researchHeadStart
+    const migrated = migrate(save)!
+    const zeros = { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+    expect(migrated.state.house.categoryQuality).toEqual(zeros)
+    expect(migrated.state.house.researchHeadStart).toEqual(zeros)
+    expect(() => resolveTurn(migrated.state, migrated.draft)).not.toThrow()
+
+    const fresh = oldSave()
+    fresh.state.house.researchHeadStart.naval = 1.25
+    const kept = migrate(fresh)!
+    expect(kept.state.house.researchHeadStart.naval).toBe(1.25)
+  })
 })

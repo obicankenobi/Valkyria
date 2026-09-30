@@ -37,6 +37,12 @@ interface Balance {
   gradeScandalChance: Record<Grade, number>
   qualityScandalPenalty: number
   qualityScandalTurns: number
+  // P107 (ETAPP9_FORSLAG.md §4.3–4.4).
+  qualityCategoryGradeABonus: number
+  qualityCategoryGradeCPenalty: number
+  qualityCategoryCap: number
+  headStartPerShipment: number
+  headStartCap: number
   rivalDeliveryUnitsPerTurn: number
   reliabilityLateEscalationPerTurn: number
   contractGracePeriodTurns: number
@@ -191,6 +197,11 @@ function refundAdvance(ctx: ResolveContext, contract: Contract, buyerName: strin
   })
 }
 
+// P107: ett sparat parti från före fältet saknar rekorden — de skapas då tomma (0 i alla kategorier).
+function uniformHeadStart(): Record<TechCategory, number> {
+  return { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 }
+}
+
 export const deliveries: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
@@ -288,6 +299,25 @@ export const deliveries: ResolveStep = (ctx) => {
       accumulateWarDemand(draft.market, product, shipment.units)
       applyDeliveryRelationsDecay(draft.factions, front, emit)
 
+      // P107 (§4.4): erfarenhet. En leverans in i en krigsfront bankar forskningsförsprång i produktens
+      // kategori (tak headStartCap); advanceRndQueue (upkeep.ts) förbrukar hela turer av ett pågående projekt.
+      if (front.status === 'war') {
+        const bank = (house.researchHeadStart ??= uniformHeadStart())
+        const gained = Math.min(BALANCE.headStartCap, (bank[product.category] ?? 0) + BALANCE.headStartPerShipment) - (bank[product.category] ?? 0)
+        if (gained > 0) {
+          bank[product.category] = (bank[product.category] ?? 0) + gained
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `${house.name.toUpperCase()} GAINS ${product.category.toUpperCase()} FIELD EXPERIENCE — R&D HEAD START`,
+            causeId: deliveryId,
+            delta: { [`researchHeadStart.${product.category}`]: gained },
+            actorIsPlayer: true,
+            subjectId: front.id,
+          })
+        }
+      }
+
       emit({
         severity: 'ticker',
         scope: 'front',
@@ -325,6 +355,31 @@ export const deliveries: ResolveStep = (ctx) => {
           actorIsPlayer: true,
           subjectId: contract.buyerId,
         })
+      }
+
+      // P107 (§4.3): kvalitetsrykte per kategori. Klass A höjer, klass C sänker (även utan skandal), klass B
+      // rör det inte; klampat till ±qualityCategoryCap, och ingen händelse när inget ändras (taket är nått).
+      const qualityDelta =
+        contract.grade === 'A' ? BALANCE.qualityCategoryGradeABonus : contract.grade === 'C' ? -BALANCE.qualityCategoryGradeCPenalty : 0
+      if (qualityDelta !== 0) {
+        const categoryQuality = (house.categoryQuality ??= uniformHeadStart())
+        const before = categoryQuality[product.category] ?? 0
+        const after = Math.max(-BALANCE.qualityCategoryCap, Math.min(BALANCE.qualityCategoryCap, before + qualityDelta))
+        if (after !== before) {
+          categoryQuality[product.category] = after
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline:
+              after > before
+                ? `${house.name.toUpperCase()} IS KNOWN FOR ${product.category.toUpperCase()} — GRADE A DELIVERY TO ${buyerName}`
+                : `${house.name.toUpperCase()}'S ${product.category.toUpperCase()} REPUTATION SLIPS — GRADE C DELIVERY TO ${buyerName}`,
+            causeId: fulfilledId,
+            delta: { [`categoryQuality.${product.category}`]: after - before },
+            actorIsPlayer: true,
+            subjectId: contract.buyerId,
+          })
+        }
       }
 
       // Avsnitt 5.1: grade-skandal. gradeScandalChance['A'] är 0 (balance.json) —

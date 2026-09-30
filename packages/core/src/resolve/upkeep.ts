@@ -24,10 +24,30 @@ const BALANCE = balanceData as unknown as Balance
 // [category] += 1"), och pipelineordningen är fryst (CLAUDE.md hård regel 7) — hör
 // därför hemma här, där kön faktiskt skrivs, precis innan turens NYA handlingar
 // (som kan lägga till ett projekt som inte ska hinna en tur på samma passage).
-export function advanceRndQueue(house: { rnd: RndProject[]; techLevel: Record<TechCategory, number> }, emit: Emit): void {
+export function advanceRndQueue(
+  house: { rnd: RndProject[]; techLevel: Record<TechCategory, number>; researchHeadStart?: Record<TechCategory, number> },
+  emit: Emit,
+): void {
   const stillRunning: RndProject[] = []
   for (const project of house.rnd) {
     project.turnsRemaining -= 1
+    // P107 (ETAPP9 §4.4): erfarenhet ur leveranser in i krigsfronter. Ett pågående projekt förbrukar HELA turer ur
+    // kategorins bank (bråkdelen ligger kvar) — aldrig mer än att projektet blir klart den här turen.
+    const banked = house.researchHeadStart?.[project.category] ?? 0
+    const used = Math.min(Math.floor(banked), project.turnsRemaining)
+    if (used > 0 && house.researchHeadStart) {
+      project.turnsRemaining -= used
+      house.researchHeadStart[project.category] = banked - used
+      emit({
+        severity: 'ticker',
+        scope: 'house',
+        headline: `FIELD EXPERIENCE SAVES ${used} TURN${used === 1 ? '' : 'S'} ON ${project.category.toUpperCase()} R&D`,
+        causeId: null,
+        delta: { [`researchHeadStart.${project.category}`]: -used },
+        actorIsPlayer: true,
+        subjectId: null,
+      })
+    }
     if (project.turnsRemaining > 0) {
       stillRunning.push(project)
       continue

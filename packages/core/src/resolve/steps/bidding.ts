@@ -1,7 +1,7 @@
 // bidding — avgör anbud som löper ut denna tur. Se ETAPP1_TEKNISK_SPEC.md avsnitt
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
-import { playerBidTerm } from '../../bidTerms.js'
+import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
 import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
@@ -125,7 +125,7 @@ export const bidding: ResolveStep = (ctx) => {
           weights: order.weights,
           inspectorIntegrity: officialIntegrity,
           relationToPlayer: faction ? faction.relationToPlayer : 0,
-          reputation: draft.house.reputation,
+          reputation: categoryReputation(draft.house, product.category), // P107: rykte per kategori
           blocTerm: faction ? alignmentPenalty(faction.alignment, draft.house) * blocMultiplier : 0,
         })
         candidates.push({

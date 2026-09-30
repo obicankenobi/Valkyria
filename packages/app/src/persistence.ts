@@ -106,6 +106,20 @@ export function migrate(saved: SavedGame): SavedGame | null {
           },
         }
       }
+      // P107: categoryQuality och researchHeadStart tillkom på House. Core läser båda defensivt; ett gammalt
+      // sparat parti får nollor i alla kategorier så att gränssnittet slipper undefined.
+      const houseP107 = state.house as Partial<GameState['house']>
+      if (!houseP107.categoryQuality || !houseP107.researchHeadStart) {
+        const zeros = (): GameState['house']['categoryQuality'] => ({ infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 })
+        state = {
+          ...state,
+          house: {
+            ...state.house,
+            categoryQuality: houseP107.categoryQuality ?? zeros(),
+            researchHeadStart: houseP107.researchHeadStart ?? zeros(),
+          },
+        }
+      }
       return state === saved.state ? saved : { ...saved, state }
     }
     default:

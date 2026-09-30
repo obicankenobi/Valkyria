@@ -291,6 +291,8 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     favourMarginOwed: 0,
     standingOrders: { lines: {}, supply: [], stations: {} },
     investigationUntilTurn: null,
+    categoryQuality: uniformCategoryRecord(0),
+    researchHeadStart: uniformCategoryRecord(0),
   }
 }
 

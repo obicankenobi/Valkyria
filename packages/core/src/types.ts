@@ -286,6 +286,15 @@ export interface House {
   // (tur + 1); economy.ts drar investigationActionPointPenalty från nästa tur handlingar så länge nästa tur
   // ligger inom den. null = ingen utredning har öppnats. Ett sparat parti utan fältet läses som null.
   investigationUntilTurn: number | null
+  // P107 (ETAPP9_FORSLAG.md §4.3): "känt för artilleri". Tillägg i poäng (−qualityCategoryCap…+qualityCategoryCap)
+  // på den husomfattande reputation.quality, per kategori; läses av budpoängen för den kategorins produkt
+  // (categoryReputation i bidTerms.ts). Fullgjorda klass A-kontrakt höjer, klass C sänker (deliveries.ts).
+  // Ett sparat parti från före P107 saknar fältet och läses som 0.
+  categoryQuality: Record<TechCategory, number>
+  // P107 (§4.4): forskningsförsprång i hela och bråkdelar av turer per kategori, bankat av leveranser in i en
+  // krigsfront (deliveries.ts) och förbrukat i hela turer av ett pågående projekt (upkeep.ts advanceRndQueue).
+  // Ett sparat parti från före P107 saknar fältet och läses som 0.
+  researchHeadStart: Record<TechCategory, number>
 }
 
 export interface BoardTarget {

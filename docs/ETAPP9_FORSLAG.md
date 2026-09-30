@@ -648,6 +648,13 @@ lämnar golden orörd.
 > strukturell — `human` har ingen marginal uppåt — och måste mötas med en rivalsidig motvikt eller ett
 > ägarbeslut i P130, inte med fler spelarbonusar. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
 
+> **P107 BYGGD 2026-09-30.** `House.categoryQuality` (tillägg i poäng på `reputation.quality`, ±4) och
+> `House.researchHeadStart` (turer per kategori) är nya fält; `categoryReputation` (`bidTerms.ts`) ger budpoängen
+> kategorins kvalitet i `bidding.ts`, `bidEstimate` och `playerWinCurve`. Klass A höjer, klass C sänker, klass B
+> rör inte; leveranser in i en krigsfront bankar forskningsförsprång som `advanceRndQueue` förbrukar i hela turer.
+> Förlorad upphandling med genomgång (§4.4:s andra halva) väntar på del E. Vakterna håller (`human` 80 %,
+> `capacity` 3/97). Saved-game-migrering i `persistence.ts`. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

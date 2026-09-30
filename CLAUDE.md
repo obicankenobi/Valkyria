@@ -763,6 +763,10 @@ etapp 8) görs före P106. Premisskontrollen i §0 görs om mot koden före P106
 spelbarhetstaket och `capacity`-referensen, så de provisoriska talen står på 0,25 (`techMarginWeight`) och 1
 (`specialisationBidBonusPct`); `human` har ingen marginal uppåt, vilket P130 måste möta med en rivalsidig
 motvikt eller ett ägarbeslut. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
+**P107 BYGGD 2026-09-30:** `House.categoryQuality` (±4 poäng på `reputation.quality`, `categoryReputation` i
+`bidTerms.ts`) — klass A höjer, klass C sänker, och leveranser in i krigsfronter bankar forskningsförsprång
+(`House.researchHeadStart`, förbrukas i hela turer av `advanceRndQueue`). Vakterna håller; sparade partier
+migreras. Golden omfryst i egen commit.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
