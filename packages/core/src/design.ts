@@ -63,6 +63,7 @@ interface Balance {
   kitPriceCapFactor: number
   kitScoreBonus: number
   redesignTurnsFactor: number
+  provenBidBonus: number
   doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
 }
 
@@ -330,7 +331,8 @@ export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fro
   const benchmark = designBenchmark(state.meta.turn)
   const benchmarkValue = (mix.performance + mix.reliability) * benchmark + mix.cost * COST_BENCHMARK
   const relative = Math.max(-1, Math.min(1, (value - benchmarkValue) / 50))
-  return BALANCE.designBidWeight * relative
+  // P114: stridsbeprövad syns hos alla köpare som en bonus (utanför ±designBidWeight — den är ett ryktesbevis, inte en värdering).
+  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0)
 }
 
 // Styckkostnadsfaktorn för ett kontrakt/bud med en konstruktion (1 utan).

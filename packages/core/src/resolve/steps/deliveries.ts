@@ -28,6 +28,7 @@ import { BROKER_CONTRACT_ID_PREFIX, recordExpense, recordFinancing, recordIncome
 import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
+import { designFieldFactor, recordFrontDelivery } from '../../fieldQuality.js'
 import { exposeDenials, onDesignDelivery } from '../../investigations.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Contract, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
@@ -291,6 +292,10 @@ export const deliveries: ResolveStep = (ctx) => {
     const frontMatch = resolveDeliveryFront(draft.fronts, contract.buyerId, contract.frontId)
     if (frontMatch) {
       const { front, side } = frontMatch
+      // P114: materielkvaliteten (konstruktionens fältfaktor) bokförs innan antalet läggs till; en leverans utan konstruktion
+      // skriver inget fält.
+      const deliveredDesign = contract.designId !== undefined ? draft.house.designs?.find((d) => d.id === contract.designId) : undefined
+      recordFrontDelivery(front, side, product.category, shipment.units, deliveredDesign ? designFieldFactor(deliveredDesign, front.id) : 1, deliveredDesign?.id)
       front.equipment[side][product.category] += shipment.units
       distributeUnitsToFormations(front, side, product.category, shipment.units)
       front.attribution[PLAYER_ATTRIBUTION_KEY] = (front.attribution[PLAYER_ATTRIBUTION_KEY] ?? 0) + shipment.units
@@ -502,6 +507,7 @@ export const deliveries: ResolveStep = (ctx) => {
         const frontMatch = findFrontForBuyer(draft.fronts, contract.buyerId)
         if (frontMatch) {
           const { front, side } = frontMatch
+          recordFrontDelivery(front, side, product.category, delivered, 1, undefined) // P114: späder ut husets kvalitet, skriver inget nytt
           front.equipment[side][product.category] += delivered
           distributeUnitsToFormations(front, side, product.category, delivered)
           front.attribution[rival.id] = (front.attribution[rival.id] ?? 0) + delivered

@@ -6,6 +6,7 @@
 // All slump via ctx.rng (hård regel 2), bara när ett villkor faktiskt är uppfyllt — ett parti utan en felaktig
 // konstruktion drar aldrig härifrån. Varje ändring emitterar en WireEvent med causeId (hård regel 4).
 import balanceData from './data/balance.json' with { type: 'json' }
+import { buyerIsLosing } from './fieldQuality.js'
 import { currentGeneration, frontEnvironments, newDesignProject, revealFlaw } from './design.js'
 import { recordExpense } from './ledger.js'
 import { officialId } from './officials.js'
@@ -26,6 +27,8 @@ interface Balance {
   qualityScandalTurns: number
   qualityCategoryCap: number
   retoolingTurns: number
+  blameRelationPenalty: number
+  blameProvenLoss: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -226,6 +229,26 @@ export function onDesignDelivery(ctx: ResolveContext, contract: Contract, frontI
     causeEventId: reportId,
   }
   investigationsOf(house).push(inv)
+
+  // P114 (§6.2): en olycksfågel vid ett NEDERLAG ger den omvända rubriken — köparen skyller på leverantören, relationen
+  // sjunker och konstruktionen tappar fälttillfällen och stridsbeprövad-stämpeln.
+  const front = draft.fronts[frontId]
+  const buyer = draft.factions[contract.buyerId]
+  if (front && buyer && buyerIsLosing(front, contract.buyerId)) {
+    buyer.relationToPlayer = Math.max(0, buyer.relationToPlayer - BALANCE.blameRelationPenalty)
+    design.fieldRecord.occasions = Math.max(0, design.fieldRecord.occasions - BALANCE.blameProvenLoss)
+    design.fieldRecord.proven = false
+    emit({
+      severity: 'headline',
+      scope: 'house',
+      headline: `${buyer.name.toUpperCase()} BLAMES ${house.name.toUpperCase()} FOR THE DEFEAT ON THE ${frontId.toUpperCase()} FRONT — ${design.name.toUpperCase()} FAILED`,
+      causeId: reportId,
+      delta: { relationToPlayer: -BALANCE.blameRelationPenalty },
+      actorIsPlayer: true,
+      subjectId: contract.buyerId,
+    })
+  }
+
   emit({
     severity: 'report',
     scope: 'house',

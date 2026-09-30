@@ -787,6 +787,8 @@ ej byggt, ägarbeslut behövs. Golden-hasharna oförändrade.
 **P113 BYGGD 2026-09-30:** olycksfåglar och utredningar (`investigations.ts`, `House.investigations`): rapport från
 fältet → utredningskort som stående order (åtgärda / förneka / konstruera om), utan svar = förnekande, förnekande kan
 avslöjas. Krönikeslaget `casualty`. **P109–P113 (del B, "Konstruktionen") är därmed klara.** Golden omfryst i egen commit.
+**P114 BYGGD 2026-09-30:** kvalitet i striden (`fieldQuality.ts`, ±25 %, valfria `Front`-fält), fälttillfällen,
+stridsbeprövad, familjerykte, flaggskepp och omvänd rubrik vid nederlag. Golden-hasharna oförändrade.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

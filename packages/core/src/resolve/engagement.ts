@@ -26,6 +26,7 @@
 // förband blir mauled/destroyed — steps/orders.ts (senare i SAMMA turs
 // pipeline) tömmer kön och utlyser namngivna ersättningsordrar.
 import balanceData from '../data/balance.json' with { type: 'json' }
+import { sideQuality } from '../fieldQuality.js'
 import { ratioAdvantage } from './steps/fronts.js'
 import type { ResolveContext } from './index.js'
 import type { Formation, Front, GameState, TechCategory } from '../types.js'
@@ -49,8 +50,9 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 // Avsnitt 5.3, punkt 2, ordagrant.
-function combatPower(f: Formation): number {
-  const equipmentPower = TECH_CATEGORIES.reduce((sum, c) => sum + f.equipment[c] * BALANCE.categoryCombatWeight[c], 0)
+function combatPower(f: Formation, front: Front): number {
+  // P114: sidans materielkvalitet per kategori (1 utan konstruktioner) — tio bra kanoner väger mer än tio dåliga.
+  const equipmentPower = TECH_CATEGORIES.reduce((sum, c) => sum + f.equipment[c] * BALANCE.categoryCombatWeight[c] * sideQuality(front, f.side, c), 0)
   const strengthFactor = f.strengthAtFull > 0 ? f.strength / f.strengthAtFull : 0
   return equipmentPower * strengthFactor * (f.readiness / 100)
 }
@@ -107,7 +109,7 @@ function resolvePair(
   defenderFormation.engagedWith = attackerFormation.id
 
   const pairAdvantageRaw =
-    ratioAdvantage(combatPower(attackerFormation), combatPower(defenderFormation)) -
+    ratioAdvantage(combatPower(attackerFormation, front), combatPower(defenderFormation, front)) -
     front.terrainBonus / 100 +
     (front.supplyStress[defenderSide] - front.supplyStress[attackerSide]) / 100
   const pairAdvantage = clamp(pairAdvantageRaw, -1, 1)

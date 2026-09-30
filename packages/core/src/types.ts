@@ -761,6 +761,12 @@ export interface Front {
   // Σ formations[side].equipment[c] === front.equipment[side][c] för varje c,
   // Σ formations[side].strength === front.strength[side].
   formations: Formation[]
+  // P114 (ETAPP9 §6.1, beslut 9E): husets konstruktioner på fronten. equipmentQuality är sidans materielkvalitet per kategori
+  // (1 = vanlig; enhetsviktat medelvärde, högst ±fieldQualityRange); designUnits hur många enheter av varje konstruktion som
+  // levererats till sidan (fälttillfällen går till dem). Båda utelämnas tills en konstruktion levereras — ett vanligt parti är
+  // bitvis oförändrat.
+  equipmentQuality?: Record<'a' | 'b', Partial<Record<TechCategory, number>>>
+  designUnits?: Record<'a' | 'b', Record<DesignId, number>>
 }
 
 // P38 (ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 5.2), ordagrant.

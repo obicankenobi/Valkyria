@@ -5,10 +5,12 @@
 // läser alla `playerBidTerm` — ett test (bidTerms.test.ts) underkänner om skattningen och avgörandet
 // skiljer sig. Rivalerna har varken techLevel eller specialiseringsterm och får ingen av dem.
 import balanceData from './data/balance.json' with { type: 'json' }
+import { flagshipDesign } from './fieldQuality.js'
 import type { House, Pct, Product, TechCategory } from './types.js'
 
 interface Balance {
   scoreBase: number
+  flagshipQualityBonus: number
   techMarginWeight: number
   specialisationBidBonusPct: number
 }
@@ -36,9 +38,11 @@ export function playerBidTerm(house: Pick<House, 'techLevel' | 'specialisation'>
 // kategori (House.categoryQuality, 0 i ett sparat parti från före P107), klampad 0–100. Skickas som `reputation` till
 // computeScore (formeln rörs inte) av bidding.ts och queries.ts — samma källa för avgörandet och skattningen.
 export function categoryReputation(
-  house: Pick<House, 'reputation'> & Partial<Pick<House, 'categoryQuality'>>,
+  house: Pick<House, 'reputation'> & Partial<Pick<House, 'categoryQuality' | 'designs'>>,
   category: TechCategory,
 ): { reliability: Pct; quality: Pct } {
-  const quality = Math.max(0, Math.min(100, house.reputation.quality + (house.categoryQuality?.[category] ?? 0)))
+  // P114: flaggskeppet (den stridsbeprövade konstruktion med flest fälttillfällen) ger en liten ryktesbonus i ALLA kategorier.
+  const flagship = flagshipDesign({ designs: house.designs ?? [] }) !== null ? BALANCE.flagshipQualityBonus : 0
+  const quality = Math.max(0, Math.min(100, house.reputation.quality + (house.categoryQuality?.[category] ?? 0) + flagship))
   return { reliability: house.reputation.reliability, quality }
 }

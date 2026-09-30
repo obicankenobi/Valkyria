@@ -22,6 +22,7 @@
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { engagement } from '../engagement.js'
 import { allocateByWeight } from '../allocateByWeight.js'
+import { awardFieldOccasions, classifyFrontOutcome, sideQuality } from '../../fieldQuality.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Faction, FactionId, Front } from '../../types.js'
 
@@ -123,18 +124,18 @@ export const fronts: ResolveStep = (ctx) => {
     // sedan vidare på de UPPDATERADE aggregaten, samma tur.
     engagement(draft, front, attacker, defender, emit)
 
-    resolveFront(front, attacker, defender, draft.factions, emit)
+    resolveFront(ctx, front, attacker, defender)
   }
 }
 
-function resolveFront(
-  front: Front,
-  attacker: 'a' | 'b',
-  defender: 'a' | 'b',
-  factions: Record<FactionId, Faction>,
-  emit: ResolveContext['emit'],
-): void {
-  const equipmentAdvantage = ratioAdvantage(front.equipment[attacker].artillery, front.equipment[defender].artillery)
+function resolveFront(ctx: ResolveContext, front: Front, attacker: 'a' | 'b', defender: 'a' | 'b'): void {
+  const { draft, emit } = ctx
+  const factions: Record<FactionId, Faction> = draft.factions
+  // P114: artilleriet räknas med sidans materielkvalitet (1 utan konstruktioner, så ett vanligt parti är oförändrat).
+  const equipmentAdvantage = ratioAdvantage(
+    front.equipment[attacker].artillery * sideQuality(front, attacker, 'artillery'),
+    front.equipment[defender].artillery * sideQuality(front, defender, 'artillery'),
+  )
   const manpowerAdvantage = ratioAdvantage(front.strength[attacker], front.strength[defender])
   // terrainBonus gynnar FÖRSVARAREN (spec 2.3), alltså subtraheras den från
   // anfallarens fördel. supplyStress hos försvararen, om högre än anfallarens,
@@ -189,6 +190,11 @@ function resolveFront(
     subjectId: front.id,
   })
 
+  // P114 (ETAPP9 §6.2): att hålla under press ger husets konstruktioner på den pressade sidan ett fälttillfälle (ett
+  // genombrott ger det åt vinnaren nedan).
+  const outcome = classifyFrontOutcome(netAdvantage, attacker, defender)
+  if (outcome?.kind === 'hold') awardFieldOccasions(ctx, front, outcome.side, 'hold', front.lastCasualtyEventId)
+
   // Position flyttas vid genombrott (spec 5) — bara när obalansen passerar
   // tröskeln, inte varje tur.
   if (Math.abs(netAdvantage) > BALANCE.frontBreakthroughThreshold) {
@@ -213,6 +219,7 @@ function resolveFront(
     // för att sektorkontroll ska röra sig. Genombrottströskeln (redan ovan)
     // är den enda utlösaren — inget nytt balanstal krävs.
     redeployAfterBreakthrough(front, winner, otherSide(winner), breakthroughEventId, emit)
+    awardFieldOccasions(ctx, front, winner, 'breakthrough', breakthroughEventId) // P114
   }
 }
 

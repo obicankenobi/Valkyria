@@ -690,6 +690,11 @@ lämnar golden orörd.
 > som skandal) eller konstruera om (tillbakadragen under ett kortare projekt). Utan svar = förnekande. Nytt krönikeslag
 > `casualty`. Del B (P109–P113) är därmed klar. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
 
+> **P114 BYGGD 2026-09-30.** `fieldQuality.ts`: materielkvalitet per front och sida (±25 %, enhetsviktad, valfria fält),
+> fälttillfällen vid genombrott och att hålla under press, stridsbeprövad (3 tillfällen, sänkt av familjeryktet, budbonus),
+> flaggskeppets ryktesbonus i alla kategorier och omvänd rubrik vid olycksfågel i nederlag. Golden-hasharna oförändrade.
+> Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).
