@@ -83,14 +83,15 @@ describe('board (isolerat steg, spec avsnitt 5 "Board")', () => {
     board(makeCtx(state).ctx)
     expect(state.house.boardTarget.reviewsFailed).toBe(1)
 
-    // P53b: passmark(10) = 2 * (10/20)² * 0,85 = 0,425 → 1 700 000 kr. 2 000 000
+    // P53b/P104: passmark(10) = 2,31 * (10/20)² * 0,85 = 0,491 → ca 1 964 000 kr. 2 400 000
     // kr räcker gott för godkänt vid tur 10, men ligger under passmark(14) =
-    // 2 * (14/20)² * 0,85 = 0,833 → 3 332 000 kr — cumulativ intäkt växer aldrig
-    // bakåt, så samma 2 000 000 kr måste både klara tur 10 och underkännas igen
-    // vid tur 14 utan ytterligare intäkt.
+    // 2,31 * (14/20)² * 0,85 = 0,962 → ca 3 848 000 kr — cumulativ intäkt växer aldrig
+    // bakåt, så samma 2 400 000 kr måste både klara tur 10 och underkännas igen
+    // vid tur 14 utan ytterligare intäkt. (P104 höjde tröskeln 2 → 2,31; före det var siffrorna
+    // 2 000 000 kr mot passmark 1 700 000 respektive 3 332 000 kr.)
     state.meta.turn = 10 // godkänd — gott om progress mot passmark(10)
     state.house.revenueByTurn = Array(11).fill(0)
-    state.house.revenueByTurn[10] = 2000000
+    state.house.revenueByTurn[10] = 2400000
     board(makeCtx(state).ctx)
     expect(state.house.boardTarget.reviewsFailed).toBe(0) // nollställd, inte kvar på 1
 

@@ -271,10 +271,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // investigationUntilTurn är hashen bit-identisk med P100:s (11ad870a249092). balance.frozen.json följer med
   // (tolv nya tal). De nya hasharna: passive ac66ac396a835, aggressive 1e42b914c3069f, balanced
   // 12e06615d26d5d. headlines > 8 höll oförändrat (passive 72, aggressive 169, balanced 155).
+  //
+  // Omfryst IGEN i P104 (ETAPP8_FORSLAG.md §7.2/§9, ägarbeslut 2026-09-30: "du får omfrysa golden" — P104 hade
+  // stannat på att skyddsräcke 8.2 bara nämner P96/P98/P100/P102). Ändringen är exakt två dataposter, inget
+  // annat (git diff verifierad): advancePctMin/Max 10/40 -> 5/30 (balance.json) och boardTarget.threshold
+  // 2 -> 2,31 (indochina-slice.json); balance.frozen.json följer med (fyra rader: två tal, en anteckning).
+  // Ingen kod rörd. De nya hasharna: passive 1deca8837b7ec4, aggressive 1b6a8b7573baeb, balanced
+  // 1595f8a6ff97a1.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'ac66ac396a835' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1e42b914c3069f' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '12e06615d26d5d' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1deca8837b7ec4' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1b6a8b7573baeb' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1595f8a6ff97a1' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
