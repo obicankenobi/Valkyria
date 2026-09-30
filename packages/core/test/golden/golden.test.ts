@@ -287,10 +287,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // balance.frozen.json följer med (fyra nya rader: en anteckning och tre tal). aggressive är oförändrad
   // (1b6a8b7573baeb) — dess tio turer bjuder inget där termen avgör. De nya hasharna: passive c60a1067590f3,
   // aggressive 1b6a8b7573baeb, balanced 1cfa09b74e3354.
+  //
+  // Omfryst IGEN i P107 (ETAPP9_FORSLAG.md §4.3–4.4/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen
+  // commit efter koden). House.categoryQuality och House.researchHeadStart är nya fält i det hashade
+  // sluttillståndet, och fullgjorda klass A/C-kontrakt samt leveranser in i krigsfronter rör dem. INNAN
+  // omfrysningen verifierades att ändringen är exakt det: med de fem nya talen neutraliserade
+  // (qualityCategoryGradeABonus 0, qualityCategoryGradeCPenalty 0, headStartPerShipment 0) och de två nya
+  // fälten borttagna ur det hashade tillståndet är alla tre hashar bit-identiska med P106:s (c60a1067590f3,
+  // 1b6a8b7573baeb, 1cfa09b74e3354). balance.frozen.json följer med (sex nya rader: en anteckning och fem tal).
+  // De nya hasharna: passive 1fdf598fe6c117, aggressive b56647e507f30, balanced 1224ccdfc47d34.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c60a1067590f3' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1b6a8b7573baeb' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1cfa09b74e3354' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1fdf598fe6c117' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'b56647e507f30' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1224ccdfc47d34' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
