@@ -21,6 +21,15 @@ const MIN_WIN_PCT = 30
 // Efter att tjänstemännens relation förfaller ska en AKTIV bot klara sig — annars är spelet bara vinnbart
 // genom att inte spela.
 const MIN_ACTIVE_WIN_PCT = 20
+// Tak (RAPPORT4 §3 punkt 2, ägarbeslut 2026-09-30): golvet fångar "går inte att vinna", taket fångar det
+// motsatta — "en enkel bot vinner nästan allt". Underkänn om någon bot vinner över MAX_WIN_PCT.
+const MAX_WIN_PCT = 90
+// Undantag, dokumenterat och ägarbeslutat: `balanced-pwc` vinner 99–100 % (30/30 här). Orsaken är strukturell —
+// en bot som bjuder vid 60 % konfidens på `playerWinCurve` vinner nästan alltid, och styrelsetröskeln är inget
+// spak mot den (vid boardTarget.threshold 2,5 vinner den fortfarande 96 % medan `human` faller till 21 %). Se
+// ANDRINGSLOGG.md, raden om taket i spelbarhetstestet. Undantaget vaktas nedan: ligger boten under taket har
+// orsaken åtgärdats och boten ska strykas härifrån.
+const KNOWN_ABOVE_CEILING: readonly string[] = ['balanced-pwc']
 
 describe('spelbarhet (RAPPORT3 §4)', () => {
   it(
@@ -41,6 +50,17 @@ describe('spelbarhet (RAPPORT3 §4)', () => {
 
       const bestActive = Math.max(...summaries.filter((s) => s.policy !== 'passive').map((s) => s.winPct))
       expect(bestActive, `ingen AKTIV bot vinner ≥ ${MIN_ACTIVE_WIN_PCT} %: ${detail}`).toBeGreaterThanOrEqual(MIN_ACTIVE_WIN_PCT)
+
+      // Taket: alla botar utom de dokumenterade undantagen.
+      for (const summary of summaries.filter((s) => !KNOWN_ABOVE_CEILING.includes(s.policy))) {
+        expect(summary.winPct, `${summary.policy} vinner över taket ${MAX_WIN_PCT} % (spelet är för lätt för den): ${detail}`).toBeLessThanOrEqual(MAX_WIN_PCT)
+      }
+      // Vakten: ett undantag ska vara ett verkligt undantag. Ligger boten under taket är orsaken åtgärdad.
+      for (const name of KNOWN_ABOVE_CEILING) {
+        const summary = summaries.find((s) => s.policy === name)
+        expect(summary, `${name} finns inte bland botarna — stryk den ur KNOWN_ABOVE_CEILING`).toBeDefined()
+        expect(summary!.winPct, `${name} ligger inte längre över taket ${MAX_WIN_PCT} % — stryk den ur KNOWN_ABOVE_CEILING: ${detail}`).toBeGreaterThan(MAX_WIN_PCT)
+      }
     },
     60_000,
   )
