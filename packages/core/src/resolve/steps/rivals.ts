@@ -47,6 +47,7 @@
 // levererar inte", avsnitt 2.5 ordagrant) läses i bidding.ts/deliveries.ts. Se
 // docs/ANDRINGSLOGG.md för den fulla motiveringen till den här tolkningen.
 import balanceData from '../../data/balance.json' with { type: 'json' }
+import { processDesignCopying } from '../../capture.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { deriveSupplyCostIndex } from './supply.js'
 import type { ResolveStep } from '../index.js'
@@ -240,4 +241,7 @@ export const rivals: ResolveStep = (ctx) => {
       }
     }
   }
+
+  // P116 (ETAPP9 §6.5): en rival i motståndarens block kan kopiera en fångad konstruktion (drar bara om någon finns).
+  processDesignCopying(ctx)
 }

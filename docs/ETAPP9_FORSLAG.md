@@ -701,6 +701,12 @@ lämnar golden orörd.
 > för alla (`exposedToRivals`, P116 läser flaggan). UI (katalog, Handbok, ikon) kommer i P126–P128. Golden-hasharna
 > oförändrade. Se ANDRINGSLOGG 2026-09-30.
 
+> **P116 BYGGD 2026-09-30.** `capture.ts`: motståndaren fångar husets materiel vid ett genombrott (`Design.captured`) och en
+> rival i motståndarens block kan kopiera den (`copiedBy`, sänker budtermen; ökad risk efter ett fältprov); husets köpare
+> överlämnar fiendens erövrade materiel (`House.capturedMateriel`), som `REVERSE_ENGINEER` (INTERNAL, det andra nya verbet)
+> omsätter i forskningsförsprång och `studiedSystems`. **Golden ändras på riktigt** (överlämningen sker i alla tre partier);
+> attribuerad genom att hook-raden bortkommenterad ger P113:s hashar. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

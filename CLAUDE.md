@@ -792,6 +792,9 @@ stridsbeprövad, familjerykte, flaggskepp och omvänd rubrik vid nederlag. Golde
 **P115 BYGGD 2026-09-30:** `FIELD_TRIAL` (`POLITICAL`, tjänsteman + konstruktion): sats till självkostnad, intervallet
 smalnar av, fälttillfälle, miljöbrist avslöjas, bonus i köparens nästa upphandling; kvaliteten blir känd för alla
 (`exposedToRivals`). Ej nåbart i appen förrän P126–P128. Golden-hasharna oförändrade.
+**P116 BYGGD 2026-09-30:** fångad materiel och `REVERSE_ENGINEER` (`capture.ts`): motståndaren fångar/rival kopierar
+konstruktioner, köpare överlämnar fiendens materiel, verbet ger forskningsförsprång. **Golden ändrad på riktigt** (överlämningen
+sker i alla tre partier) och attribuerad via den enda hook-raden. **P114–P116 (del C, "Fältet", utom P117) klara.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

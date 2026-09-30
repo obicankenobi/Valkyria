@@ -1,0 +1,27 @@
+{
+  "_note": "P116 (ETAPP9_FORSLAG.md §6.5/§6.6): namngivna, FIKTIVA fiendesystem per faktion och kategori — det en köpare överlämnar som erövrad materiel (House.capturedMateriel) och det REVERSE_ENGINEER studerar. Ingen balanssiffra. En faktion eller kategori utan post får ett generiskt namn (capture.ts).",
+  "nlf": {
+    "infantry": "Model 56 Assault Rifle",
+    "artillery": "Model 54 Field Gun",
+    "armour": "Model 60 Light Tank",
+    "aviation": "Fighter Type 17",
+    "naval": "Riverine Gunboat Class S",
+    "electronics": "Fan-Beam Radar Set"
+  },
+  "rvn": {
+    "infantry": "Model 49 Carbine",
+    "artillery": "Model 50 Howitzer",
+    "armour": "Model 41 Half-Track",
+    "aviation": "Trainer-Attacker Type 3",
+    "naval": "Coastal Patrol Craft Class C",
+    "electronics": "Field Radio Set Type 9"
+  },
+  "laos": {
+    "infantry": "Model 52 Rifle",
+    "artillery": "Model 53 Mortar",
+    "armour": "Model 44 Scout Car",
+    "aviation": "Liaison Aircraft Type 1",
+    "naval": "River Patrol Launch Class L",
+    "electronics": "Portable Radio Type 5"
+  }
+}

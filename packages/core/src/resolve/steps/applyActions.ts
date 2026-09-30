@@ -54,6 +54,7 @@ import { findOfficial } from '../../officials.js'
 import { validateAction } from '../../validateAction.js'
 import { applyStandingOrders } from '../../standingOrders.js'
 import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
+import { applyReverseEngineer } from '../../capture.js'
 import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
@@ -278,6 +279,12 @@ export const applyActions: ResolveStep = (ctx) => {
             actorIsPlayer: true,
             subjectId: null,
           })
+          break
+        }
+
+        case 'REVERSE_ENGINEER': {
+          // P116 (ETAPP9 §6.5, beslut 9G): studera ett erövrat system — forskningsförsprång mot just det systemet.
+          applyReverseEngineer(ctx, (action.payload as { systemId: string }).systemId)
           break
         }
 

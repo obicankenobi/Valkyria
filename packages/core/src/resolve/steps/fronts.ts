@@ -22,6 +22,7 @@
 import balanceData from '../../data/balance.json' with { type: 'json' }
 import { engagement } from '../engagement.js'
 import { allocateByWeight } from '../allocateByWeight.js'
+import { handleBreakthroughCaptures } from '../../capture.js'
 import { awardFieldOccasions, classifyFrontOutcome, sideQuality } from '../../fieldQuality.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Faction, FactionId, Front } from '../../types.js'
@@ -220,6 +221,7 @@ function resolveFront(ctx: ResolveContext, front: Front, attacker: 'a' | 'b', de
     // är den enda utlösaren — inget nytt balanstal krävs.
     redeployAfterBreakthrough(front, winner, otherSide(winner), breakthroughEventId, emit)
     awardFieldOccasions(ctx, front, winner, 'breakthrough', breakthroughEventId) // P114
+    handleBreakthroughCaptures(ctx, front, winner, breakthroughEventId) // P116
   }
 }
 

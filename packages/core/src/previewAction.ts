@@ -25,12 +25,15 @@ import { effectiveDepth } from './queries.js'
 import { intelOpSuccessPct } from './resolve/steps/applyActions.js'
 import { computeInfluenceAfter, findTheatreForFaction, frontOpponentOf, fundCoupSuccessPct } from './resolve/political.js'
 import { assassinateReductionFactor, backChannelGain, stageIncidentHeatScale } from './spendCurves.js'
+import { capturedSystem, reverseEngineerTurns } from './capture.js'
 import { fieldTrialBatch } from './design.js'
 import { crashProgrammeCost } from './research.js'
 import { isRepayPayload, isRndPayload } from './validateAction.js'
 import type { ActionPreview, GameState, Money, PlayerAction, Pct } from './types.js'
 
 interface Balance {
+  reverseEngineerCost: number
+  headStartCap: number
   fieldTrialUncertaintySteps: number
   buildLineCost: number
   hireCost: number
@@ -73,6 +76,18 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
           return preview(BALANCE.buildLineCost, null)
         case 'HIRE':
           return preview(BALANCE.hireCost, null)
+        case 'REVERSE_ENGINEER': {
+          // P116: studiens kostnad och försprångets före → efter i kategorins bank (turer, aldrig över headStartCap).
+          const systemId = (action.payload as { systemId?: unknown }).systemId
+          const entry = typeof systemId === 'string' ? capturedSystem(state.house, systemId) : undefined
+          if (!entry) return preview(null, null)
+          const before = state.house.researchHeadStart?.[entry.category] ?? 0
+          return preview(BALANCE.reverseEngineerCost, null, true, {
+            label: 'R&D HEAD START (TURNS)',
+            before,
+            after: Math.min(BALANCE.headStartCap, before + reverseEngineerTurns(entry.units)),
+          })
+        }
         case 'REPRIORITISE_RND':
           // P108: krasprogrammets totalkostnad (halverad tid, dubbel totalkostnad), inte längre "ingen kostnad".
           return preview(isRndPayload(action.payload) ? crashProgrammeCost(state.house, action.payload.category) : null, null)

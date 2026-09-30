@@ -301,6 +301,10 @@ export interface House {
   rndBidLock: Partial<Record<TechCategory, number>>
   // P109 (ETAPP9 §5.1): husets egna konstruktioner. Ett sparat parti från före P109 saknar fältet och läses som tomt.
   designs: Design[]
+  // P116 (ETAPP9 §6.5): fiendens erövrade materiel som köpare överlämnat (per system, enheter) och hur många exemplar av varje
+  // system huset studerat med REVERSE_ENGINEER (P117:s motmedelsforskning läser den). Båda utelämnas tills något fångats.
+  capturedMateriel?: CapturedMateriel[]
+  studiedSystems?: Record<string, number>
   // P113 (ETAPP9 §5.6): utredningar efter olycksfåglar i fält. Ett sparat parti från före P113 saknar fältet och läses som tomt.
   investigations: Investigation[]
 }
@@ -414,6 +418,19 @@ export interface Design {
   trials?: Record<FactionId, { turn: number; bonusActive: boolean }>
   // P115: resultatet av ett fältprov blir känt för alla — rivalerna ser konstruktionens verkliga kvalitet (P116 läser flaggan).
   exposedToRivals?: boolean
+  // P116 (§6.5): motståndaren har tagit husets materiel av den här konstruktionen vid ett genombrott (en gång). En rival i
+  // motståndarens block kan därefter kopiera den (copiedBy); varje kopia sänker budtermen.
+  captured?: { turn: number; byFactionId: FactionId; eventId: string | null }
+  copiedBy?: RivalId[]
+}
+
+// P116: ett namngivet fiendesystem (data/enemySystems.json) huset fått överlämnat — id = `${faktion}-${kategori}`.
+export interface CapturedMateriel {
+  systemId: string
+  name: string
+  category: TechCategory
+  fromFactionId: FactionId
+  units: number
 }
 
 // P113 (ETAPP9 §5.6): en utredning efter en olycksfågel i fält. open → spelaren väljer; denied → förnekad (kan fortfarande
@@ -948,7 +965,7 @@ export type PoliticalOp =
   | 'INFLUENCE'
   | 'FUND_COUP'
   | 'ASSASSINATE'
-export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY'
+export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN' | 'REPAY' | 'REVERSE_ENGINEER'
 
 // QUOTE är inte en PlayerAction. Bud ligger i TurnSubmission.bids och kostar inga
 // handlingspoäng. Se spec 3.1. ASSASSINATE finns inte i IntelOp i etapp 1 och ska

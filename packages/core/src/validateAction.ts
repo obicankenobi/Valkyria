@@ -38,6 +38,7 @@
 // exakta fallet (flera TAKE_LOAN, REPAY-före-TAKE_LOAN) och en kommentar om
 // den kvarstående, medvetet accepterade avvikelsen.
 import balanceData from './data/balance.json' with { type: 'json' }
+import { capturedSystem } from './capture.js'
 import { fieldTrialBatch } from './design.js'
 import { round } from './money.js'
 import { allProducts } from './pricing.js'
@@ -50,6 +51,7 @@ interface Balance {
   brokerRelationThreshold: number
   brokerIntegrityThreshold: number
   fieldTrialRelationFloor: number
+  reverseEngineerCost: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -117,6 +119,13 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
         case 'HIRE':
           if (!isHirePayload(action.payload)) return fail('invalid hire role')
           return ok()
+        case 'REVERSE_ENGINEER': {
+          // P116 (ETAPP9 §6.5): ett erövrat system huset fått överlämnat, och kassa för studien.
+          const systemId = (action.payload as { systemId?: unknown }).systemId
+          if (typeof systemId !== 'string' || !capturedSystem(house, systemId)) return fail('unknown captured system')
+          if (house.treasury < BALANCE.reverseEngineerCost) return fail('not enough cash to reverse-engineer')
+          return ok()
+        }
         case 'REPRIORITISE_RND':
           if (!isRndPayload(action.payload)) return fail('invalid R&D category')
           // P108: ett krasprogram per kategori åt gången.

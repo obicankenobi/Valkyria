@@ -66,6 +66,7 @@ interface Balance {
   provenBidBonus: number
   fieldTrialBatchFraction: number
   fieldTrialBidBonus: number
+  copyBidPenalty: number
   doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
 }
 
@@ -336,7 +337,9 @@ export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fro
   // P114: stridsbeprövad syns hos alla köpare som en bonus (utanför ±designBidWeight — den är ett ryktesbevis, inte en värdering).
   // P115: ett fältprov hos just den här köparen ger en bonus i dess nästa upphandling (förbrukas när konstruktionen vinner där).
   const trialBonus = design.trials?.[order.buyerId]?.bonusActive ? BALANCE.fieldTrialBidBonus : 0
-  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0) + trialBonus
+  // P116: varje rival som kopierat den fångade konstruktionen sänker dess värde (egenskaper som tappar värde när andra kopierar).
+  const copyPenalty = (design.copiedBy?.length ?? 0) * BALANCE.copyBidPenalty
+  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0) + trialBonus - copyPenalty
 }
 
 // P115 (§6.4): fältprovets sats — en mindre del av basproduktens minsta orderkvantitet, till självkostnad.
