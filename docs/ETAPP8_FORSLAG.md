@@ -666,6 +666,16 @@ eller uttryckligen reviderade med motivering. Frys om `balance.frozen.json` sist
 > vapenvilofrekvensen för `human` (2 %) är ett botval, inte en balansfråga, och INSOLVENCY-raden går inte att nå med
 > data (styrelsen avgör före kassan) — båda föreslås revideras. Detaljerade siffror i loggraden.
 
+> **P104 — TILLÄMPAD 2026-09-30, golden omfryst på ägarbeslut ("du får omfrysa golden").** Se ANDRINGSLOGG-raden
+> med samma datum. Två dataposter: `advancePct` 5/30 och `boardTarget.threshold` 2,31. Hashar: passive
+> `1deca8837b7ec4`, aggressive `1b6a8b7573baeb`, balanced `1595f8a6ff97a1`. **Resultat (500 partier):** `human`
+> 67 % vinst / 33 % BUYOUT / 0 % INSOLVENCY, förskottsandel 34 %, `passive` 100 % BUYOUT, kassan under noll före
+> tur 5 i 0 %. Fem av sex fetstilta rader uppfyllda; vapenvilofrekvensen reviderad (se nedan). **Revideringar av
+> §7.2:** `human` INSOLVENCY 0–20 %; vapenvila och larm har ingen frekvensgräns för `human` — frekvensen är ett
+> botval, mekaniken är nåbar (fredsspelare: vapenvila tur 4–5 i 200/200 partier, BUYOUT 200/200, intäkten på fronten
+> faller till 0). Frågan lämnas till speltestet i P105. **`capacity`:** rotorsaken till 2 % vinst är budregeln (bara
+> ordrar med en ledig linje nu → 4,7 kontrakt/parti), inte politiken; oförändrad som referensbot.
+
 **P105 — Speltest. Ingen kod.** Tre partier på telefon. Frågan i §1, plus de tre vanliga: *Vad
 försökte du göra och hittade inte? Vad hände som du inte förstod? När tråkades du?*
 
