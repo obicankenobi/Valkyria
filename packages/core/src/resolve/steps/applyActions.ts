@@ -54,6 +54,7 @@ import { findOfficial } from '../../officials.js'
 import { validateAction } from '../../validateAction.js'
 import { applyStandingOrders } from '../../standingOrders.js'
 import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
+import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Contract, GameState, OfficialId, ProductionLine, Station, TechCategory } from '../../types.js'
@@ -165,6 +166,7 @@ export const applyActions: ResolveStep = (ctx) => {
   advanceStations(ctx)
   // P100: stående order (kostar ingen handling, gäller från nästa tur) — före handlingsloopen.
   applyStandingOrders(ctx)
+  resolveOverdueInvestigations(ctx) // P113: utan svar inom fristen räknas en utredning som ett förnekande
   // P108: forskningsspår i kraft startar ett projekt i kategorier som saknar ett (efter advanceRndQueue ovan).
   startTrackedResearch(ctx)
   resolvePendingCrisis(ctx)

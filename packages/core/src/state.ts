@@ -295,6 +295,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     researchHeadStart: uniformCategoryRecord(0),
     rndBidLock: {},
     designs: [],
+    investigations: [],
   }
 }
 

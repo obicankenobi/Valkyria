@@ -62,6 +62,7 @@ interface Balance {
   kitUnitCostFactor: number
   kitPriceCapFactor: number
   kitScoreBonus: number
+  redesignTurnsFactor: number
   doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
 }
 
@@ -158,6 +159,8 @@ export interface DesignRollSpec {
   targetGeneration: number
   turn: number
   year: number
+  // P113: en omkonstruktion efter en olycksfågel — felfri, och ärver bara ett icke-negativt utfall.
+  redesignOf?: DesignId | null
 }
 
 // Utfallet (§5.2): genombrott, gedigen eller en konstruktion med en dold miljöbrist. Spannet beror på ambition,
@@ -222,7 +225,10 @@ function rollUpgrade(rng: Rng, house: House, spec: DesignRollSpec, pred: Design)
   const freshReliability = focus.reliability - steps * BALANCE.designAmbitionReliabilityLoss
   const performance = clampPct(Math.max(pred.performance, Math.min(freshPerformance, pred.performance + gain)))
   const reliability = clampPct(Math.max(pred.reliability, Math.min(freshReliability, pred.reliability + gain)))
-  const inheritedDelta = pred.trueQuality - (pred.performance + pred.reliability) / 2
+  const redesign = spec.redesignOf !== undefined && spec.redesignOf !== null
+  const rawDelta = pred.trueQuality - (pred.performance + pred.reliability) / 2
+  // En omkonstruktion (P113) är felfri och tar inte med sig ett negativt utfall.
+  const inheritedDelta = redesign ? Math.max(0, rawDelta) : rawDelta
   const trueQuality = clampPct((performance + reliability) / 2 + inheritedDelta + rng.int(-BALANCE.designSpread, BALANCE.designSpread))
   return {
     id: `design-${house.designs.length + 1}`,
@@ -237,8 +243,8 @@ function rollUpgrade(rng: Rng, house: House, spec: DesignRollSpec, pred: Design)
     unitCostFactor: pred.unitCostFactor,
     trueQuality,
     uncertainty: pred.uncertainty,
-    latentFlaw: pred.latentFlaw ? { ...pred.latentFlaw } : null,
-    flawRevealed: pred.flawRevealed,
+    latentFlaw: !redesign && pred.latentFlaw ? { ...pred.latentFlaw } : null,
+    flawRevealed: redesign ? false : pred.flawRevealed,
     testedIn: [...pred.testedIn],
     fieldRecord: { ...pred.fieldRecord },
     lineage: pred.id,
@@ -370,7 +376,11 @@ export function validateDesignStart(
 
 export function newDesignProject(house: House, spec: DesignProjectSpec & { category: TechCategory }, turn: number): RndProject {
   const upgrade = spec.upgradeOf !== null
-  const turns = designDuration(house, spec.ambition, upgrade)
+  const redesign = spec.redesignOf !== undefined && spec.redesignOf !== null
+  // P113: en omkonstruktion går ännu fortare än en uppgradering — huset har lärt sig (redesignTurnsFactor).
+  const turns = redesign
+    ? Math.max(1, Math.round(designDuration(house, spec.ambition, true) * BALANCE.redesignTurnsFactor))
+    : designDuration(house, spec.ambition, upgrade)
   return {
     id: `rnd-design-${spec.category}-${turn}`,
     category: spec.category,
@@ -382,6 +392,7 @@ export function newDesignProject(house: House, spec: DesignProjectSpec & { categ
       ambition: spec.ambition,
       targetGeneration: spec.targetGeneration,
       upgradeOf: spec.upgradeOf,
+      ...(redesign ? { redesignOf: spec.redesignOf } : {}),
     },
   }
 }

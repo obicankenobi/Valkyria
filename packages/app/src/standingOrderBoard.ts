@@ -24,6 +24,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'TESTING':
       // P110: en provning per konstruktion (SET och CANCEL delar nyckel).
       return `testing:${change.designId}`
+    case 'INVESTIGATION':
+      // P113: ett svar per utredning.
+      return `investigation:${change.investigationId}`
   }
 }
 

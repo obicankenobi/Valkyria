@@ -5,6 +5,7 @@ import balanceData from '../data/balance.json' with { type: 'json' }
 import { standingStationMode } from '../standingOrders.js'
 import type { ResolveContext } from './index.js'
 import { revealFlaw, rollDesign } from '../design.js'
+import { closeRedesignInvestigations } from '../investigations.js'
 import type { Rng } from '../rng.js'
 import type { House, RndProject, Station, WireEvent } from '../types.js'
 
@@ -76,11 +77,14 @@ export function advanceRndQueue(
         focus: project.design.focus,
         ambition: project.design.ambition,
         upgradeOf: project.design.upgradeOf,
+        redesignOf: project.design.redesignOf ?? null,
         targetGeneration: project.design.targetGeneration,
         turn: designCtx.turn,
         year: designCtx.year,
       })
       designs.push(design)
+      // P113: en omkonstruktion avslutar utredningen som åtgärdad (den gamla konstruktionen förblir tillbakadragen).
+      if (project.design.redesignOf) closeRedesignInvestigations(house as House, project.design.redesignOf)
       emit({
         severity: 'headline',
         scope: 'house',

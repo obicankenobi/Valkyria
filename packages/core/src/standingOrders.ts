@@ -9,6 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { round } from './money.js'
 import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
+import { applyInvestigationChoice, validateInvestigationChoice } from './investigations.js'
 import { BALANCE_DESIGN_STEPS, currentGeneration, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
 import type {
@@ -100,6 +101,10 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       }
       if (!(PACES as readonly string[]).includes(change.pace)) return fail('unknown research pace')
       return { ok: true }
+    }
+    case 'INVESTIGATION': {
+      const reason = validateInvestigationChoice(house, change)
+      return reason ? fail(reason) : { ok: true }
     }
     case 'TESTING': {
       const reason = validateTestingChange(house, change)
@@ -203,6 +208,10 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         })
         break
       }
+      case 'INVESTIGATION':
+        // P113: utredningskortets val (ingen handling, ingen fördröjning — utredningen är redan öppen).
+        applyInvestigationChoice(ctx, change)
+        break
       case 'TESTING': {
         // P110: provning i egen regi. SET byter miljö och börjar om räkningen (från nästa tur); CANCEL avbryter.
         const testing = (orders.testing ??= {})

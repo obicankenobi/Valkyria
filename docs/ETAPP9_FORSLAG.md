@@ -684,6 +684,12 @@ lämnar golden orörd.
 > **Premissfynd:** §5.5:s mening om att omställning av linjer gör en ny konstruktion kostsam stämmer inte under 9B
 > (samma `productId`) — ej byggt, förslag till ägaren. Golden-hasharna oförändrade. Se ANDRINGSLOGG 2026-09-30.
 
+> **P113 BYGGD 2026-09-30.** `Investigation`/`House.investigations`: en leverans av en konstruktion med en miljöbrist i
+> frontens miljö kan ge en rapport från fältet (`ctx.rng`, avslöjar bristen, öppnar en utredning med frist). Utredningskortet
+> är en stående order: åtgärda i fält (pengar, omställning, 15 % risk), förneka (anseende, rykte per leverans, kan avslöjas
+> som skandal) eller konstruera om (tillbakadragen under ett kortare projekt). Utan svar = förnekande. Nytt krönikeslag
+> `casualty`. Del B (P109–P113) är därmed klar. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

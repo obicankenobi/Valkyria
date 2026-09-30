@@ -30,6 +30,8 @@ const KIND_PATTERNS: { kind: ChronicleKind; patterns: RegExp[] }[] = [
   { kind: 'exposure', patterns: [/^STATION .+ BURNED/] },
   { kind: 'bankruptcy', patterns: [/BANKRUPT — ALL CONTRACTS VOIDED/] },
   { kind: 'ceasefire', patterns: [/^CEASEFIRE ON THE/] },
+  // P113: rapporter från fältet och avslöjade förnekanden (investigations.ts).
+  { kind: 'casualty', patterns: [/^FIELD REPORT:/, /^COVER-UP EXPOSED:/] },
   // 'contract': bara husets EGNA vunna kontrakt, aldrig ett rivalhus — se
   // classifyEvent nedan (actorIsPlayer avgör, inte headlinen, eftersom
   // spelarens och rivalernas "WINS CONTRACT"-rubriker delar samma svans).

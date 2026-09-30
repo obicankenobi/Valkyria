@@ -28,6 +28,7 @@ import { BROKER_CONTRACT_ID_PREFIX, recordExpense, recordFinancing, recordIncome
 import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
+import { exposeDenials, onDesignDelivery } from '../../investigations.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Contract, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
 
@@ -222,6 +223,9 @@ export const deliveries: ResolveStep = (ctx) => {
     })
   }
 
+  // P113: ett förnekande kan komma fram (drar bara när någon konstruktion är förnekad).
+  exposeDenials(ctx)
+
   // Nollställs varje tur, precis som Theatre.deliveriesIntoActiveWarThisTurn —
   // doomsday.ts (senare i samma passage) läser av och kopierar in i pendingCrisis
   // om en kris utlöses den här turen (avsnitt 9.3, BACK_DOWN).
@@ -298,6 +302,8 @@ export const deliveries: ResolveStep = (ctx) => {
       if (theatre) theatre.deliveriesIntoActiveWarThisTurn += shipment.units
       accumulateWarDemand(draft.market, product, shipment.units)
       applyDeliveryRelationsDecay(draft.factions, front, emit)
+      // P113: rapporter från fältet om konstruktioner med en miljöbrist, och kostnaden för ett förnekande.
+      onDesignDelivery(ctx, contract, front.id, deliveryId)
 
       // P107 (§4.4): erfarenhet. En leverans in i en krigsfront bankar forskningsförsprång i produktens
       // kategori (tak headStartCap); advanceRndQueue (upkeep.ts) förbrukar hela turer av ett pågående projekt.

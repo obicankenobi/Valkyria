@@ -173,6 +173,7 @@ export type ChronicleKind =
   | 'restricted_delivery'
   | 'contract'
   | 'ceasefire'
+  | 'casualty' // P113: en rapport från fältet om en konstruktion (utredning öppnas) eller ett avslöjat förnekande
 
 export interface ChronicleEntry {
   turn: number
@@ -300,6 +301,8 @@ export interface House {
   rndBidLock: Partial<Record<TechCategory, number>>
   // P109 (ETAPP9 §5.1): husets egna konstruktioner. Ett sparat parti från före P109 saknar fältet och läses som tomt.
   designs: Design[]
+  // P113 (ETAPP9 §5.6): utredningar efter olycksfåglar i fält. Ett sparat parti från före P113 saknar fältet och läses som tomt.
+  investigations: Investigation[]
 }
 
 export interface BoardTarget {
@@ -404,6 +407,25 @@ export interface Design {
   lineage: DesignId | null // P112: föregångaren vid uppgradering
   introducedTurn: number
   status: 'active' | 'withdrawn' // P113: tillbakadragen under en omkonstruktion
+  // P113 (§5.6): spelaren förnekade en olycksfågel — ryktet sjunker per leverans tills bristen åtgärdas eller sanningen kommer fram.
+  denied?: boolean
+}
+
+// P113 (ETAPP9 §5.6): en utredning efter en olycksfågel i fält. open → spelaren väljer; denied → förnekad (kan fortfarande
+// åtgärdas eller konstrueras om, eller avslöjas); fixed → åtgärdad eller omkonstruerad; exposed → förnekandet avslöjades;
+// redesigning → ett omkonstruktionsprojekt pågår.
+export type InvestigationChoice = 'FIX' | 'DENY' | 'REDESIGN'
+export interface Investigation {
+  id: string
+  designId: DesignId
+  environment: DesignEnvironment
+  severity: number
+  frontId: FrontId
+  buyerId: FactionId
+  openedTurn: number
+  deadlineTurn: number
+  status: 'open' | 'denied' | 'fixed' | 'exposed' | 'redesigning'
+  causeEventId: string | null
 }
 
 export interface Station {
@@ -943,6 +965,8 @@ export type StandingOrderChange =
   // P110 (ETAPP9 §5.3): provning i egen regi — en miljö per konstruktion åt gången; kostar pengar och tid.
   | { kind: 'TESTING'; op: 'SET'; designId: DesignId; environment: DesignEnvironment }
   | { kind: 'TESTING'; op: 'CANCEL'; designId: DesignId }
+  // P113: utredningskortets val — ingen handling.
+  | { kind: 'INVESTIGATION'; investigationId: string; choice: InvestigationChoice }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
