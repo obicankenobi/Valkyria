@@ -744,7 +744,7 @@ linje, avtal och station; Segmented/Stepper, köas i `draft.standingOrders`, gä
 **P102 BYGGD 2026-09-29:** belopp som köper odds (`spendCurves.ts`: `spend/(spend+half)`, avtagande, aldrig säkert) för STAGE_INCIDENT
 (heat-storlek), BACK_CHANNEL (relationsvinst), FUND_COUP (odds, tak 85 %) och ASSASSINATE (mildare konsekvenser); `previewAction` och
 CONTACTS visar vad varje nivå köper. Tillvalet "under utredning" (8E): en bränd station tar en handling nästa kvartal
-(`House.investigationUntilTurn`). Golden omfryst i egen commit. P103–P105 är inte påbörjade (schemalagda 04:45).
+(`House.investigationUntilTurn`). Golden omfryst i egen commit. Fullt svep efter P100–P102 grönt: 1 239 tester, lint, typecheck, build, e2e (187, tre körningar), shots granskade. P103–P105 är inte påbörjade (schemalagda 04:45).
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
