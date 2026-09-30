@@ -664,6 +664,13 @@ Idéer från researchen som passar senare:
 
 ## 14. Kvarstående punkter för ägaren
 
+> **Uppdatering 2026-09-30 (ägarbeslut, se ANDRINGSLOGG):** (a) nya pipeline-steg får läggas in i etapp 9 med
+> loggad placering; (b) generationsschemat mappas mot de sex kategorierna (kliv tur 4, 8, 12) och den slutliga
+> listan godkänns före P118; (c) en konstruktionsfamilj per kategori är avsiktligt; (d) nya verb kommer med
+> handlingskatalog, Handbok, handledning och SVG-ikoner via tillgångsfabriken; (e) ägaren anger per gång vilka
+> prompter som körs ("Kör x–x").
+
+
 Besluten 9A–9O är fattade (§3). Kvar:
 
 1. **P105 först:** speltestet av etapp 8 bör göras innan P106 körs. Det är första gången spelet går att
