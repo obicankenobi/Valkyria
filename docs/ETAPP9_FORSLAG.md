@@ -1,8 +1,14 @@
 # Etapp 9 — Ritbordet
 
-**THE SEVENTH FRONT** · förslag, **inte antaget** · slutversion 2026-09-30 mot `e7b655d` (efter P104)
+**THE SEVENTH FRONT** · **ANTAGEN 2026-09-30** · skriven mot `e7b655d` (efter P104), del E tillagd samma dag
 
-> Ersätter de två tidigare utkasten från samma dag. Ägaren bad om en etapp där forskning,
+> **Status:** antagen av ägaren 2026-09-30. Besluten 9A–9L fattades enligt rekommendationerna, och
+> tre nya beslut (9M–9O) fattades för del E, Upphandlingen. Allt är loggat i `ANDRINGSLOGG.md`. Del A–E
+> är etappens kärna; del F kan brytas ut till en egen etapp (9A). Premisskontrollen i §0 görs om mot
+> koden före P106. Rekommendationen att köra P105 (speltestet av etapp 8) först står kvar i §14.
+
+> Ersätter de två tidigare utkasten från samma dag. Del E (upphandlingen) lades till efter ägarens fråga om
+> utvecklingsupphandlingar med kravspecifikationer, konkurrens mellan husen och möjligheten att fuska. Ägaren bad om en etapp där forskning,
 > produktutveckling och innovation blir dynamiska, anpassningsbara efter spelstil och avgörande
 > för partiet: en bra produkt ska kunna lyfta huset, en medioker ska inte göra det. Kalla krigets
 > kapplöpning ska driva innovationen. Förslaget bygger på en genomgång av koden, av tre
@@ -16,7 +22,7 @@
 
 0. Premisskontroll · 1. Frågan · 2. Designprinciper · 3. Ägarbeslut ·
 4. Del A, grunden · 5. Del B, konstruktionen · 6. Del C, fältet · 7. Del D, kapplöpningen ·
-8. Del E, huset och staten · 9. Gränssnittet · 10. Härness, måltabell, balans ·
+8. Del E, upphandlingen · 8b. Del F, huset och staten · 9. Gränssnittet · 10. Härness, måltabell, balans ·
 11. Skyddsräcken · 12. Promptsekvens · 13. Utanför etappen · 14. Öppna beslut ·
 Bilaga A, förebilder och källor
 
@@ -39,6 +45,8 @@ om något inte stämmer.
 | 0.8 | Levererad materiel fördelas på förband efter doktrin och styrka. **Antal räknas, inte produktens kvalitet.** `Front.attribution` bokför vilket hus som levererat. | `deliveries.ts` |
 | 0.9 | Förband har doktrin. Faktionernas `techLevel` skrivs aldrig efter start. Blocktillhörighet finns (`Faction.alignment`, −100 öst … +100 väst), liksom husets `homeState`. Supermakterna finns inte som aktörer. | `types.ts`, `indochina-slice.json` |
 | 0.10 | Byggt och återanvändbart: omställning av linjer (`retoolingTurns`), genombrott och omgruppering (P82), `EMBARGO`, `LEAK`/`TURN`/`SABOTAGE`, `counterIntelligence`, `scandalRisk`, stående order (P100), huvudboken (P96), krönikan (P89), styrelsens PM (P97). | respektive fil |
+| 0.12 | **Korruption lämnar inga spår.** Mutan i ett bud (`Bid.bribe`) höjer poängen mot tjänstemän med låg integritet men ger ingen upptäcktsrisk. `BRIBE` och `BROKER` höjer `Official.scandalRisk`, men ingen kod läser fältet. P62 noterade att en utlösare för att en tjänsteman faller saknas. | `pricing.ts:236`, `political.ts:321`, `applyActions.ts:597`, sökning |
+| 0.13 | Rivalhusen har `temperament` och `aggression` men inget beteende utöver prissättning. | `rivals.json` |
 | 0.11 | Läget efter P104: `human` vinner 67 %, spelbarhetstestet har golv (30 %) och tak (90 %), och `capacity` är referensmätare. | `ANDRINGSLOGG.md` 2026-09-30 |
 
 **Slutsats.** Spelet har ingen produkt som är *husets*. Så länge alla säljer samma gevär kan en bra
@@ -57,6 +65,7 @@ kapplöpning bestämma vad som efterfrågas.
 3. **Dynamik:** Tvingar kapplöpningen huset att fortsätta utveckla, eller räcker en tidig framgång?
 4. **Spårbarhet (pelare 2):** Går en framgång eller ett haveri att spåra bakåt till ett beslut på ritbordet?
 5. **Pelare 1:** Tjänar huset på att kapplöpningen går fort, och syns det i doomsday?
+6. **Rent eller smutsigt:** Är både ett ärligt och ett korrupt hus spelbara vägar, med olika risker?
 
 ---
 
@@ -86,11 +95,11 @@ Hämtade ur researchen och ur projektets egna erfarenheter. De gäller hela etap
 
 ---
 
-## 3. Ägarbeslut (ej fattade)
+## 3. Ägarbeslut (fattade 2026-09-30)
 
-| | Fråga | Rekommendation |
+| | Fråga | Beslut |
 |---|---|---|
-| **9A** | Omfång | **Del A–D är etapp 9.** Del E (§8) är andra halvan och kan brytas ut till en etapp 10 om etappen blir för stor. Kapningsordningen står i §12. |
+| **9A** | Omfång | **Del A–E är etapp 9.** Del F (§8b) är andra halvan och kan brytas ut till en etapp 10 om etappen blir för stor. Kapningsordningen står i §12. |
 | **9B** | Egna konstruktioner som varianter eller nya produkter? | **Varianter.** En konstruktion bygger på en basprodukt och bjuds på dess ordrar. `Order` skrivs inte om. |
 | **9C** | Golden | Förhandsauktoriserad omfrysning **bara i promptar märkta "regel"** i §12, var och en i egen commit efter verifiering att ändringen är den prompten beskriver. |
 | **9D** | Dold verklig kvalitet? | **Ja**, visad som ett intervall ("B±1") som smalnar av genom provning och fält. |
@@ -98,10 +107,13 @@ Hämtade ur researchen och ur projektets egna erfarenheter. De gäller hela etap
 | **9F** | Rivalernas konstruktioner | **Enkla**, enligt schema per rival och specialisering. Ingen egen forskningsmodell. |
 | **9G** | Nya verb | **Två:** `FIELD_TRIAL` (§6.4) och `REVERSE_ENGINEER` (§6.5). Allt annat styrs via ritbordet och stående order. |
 | **9H** | Blockens kapplöpning som dolda tal med underrättelsebedömningar? | **Ja.** Falska gap är en av de starkaste idéerna i förslaget (§7.3). |
-| **9I** | Hemstatens betydelse (väst/öst/neutral) | **Stor:** den avgör statliga kontrakt, exportregler och vilka block huset lagligt får sälja till (§8.1). |
-| **9J** | Civil gren | **Ja** (§8.2). Den prövar pelare 1:s andra halva. |
-| **9K** | Namngivna chefskonstruktörer | **Ja** (§8.3), som förlängning av etapp 5:s tjänstemän. |
-| **9L** | Namnmall för konstruktioner | Husets initialer + beteckning + år + typ, till exempel "H&V M64 Field Gun". Godkänns före P109. |
+| **9I** | Hemstatens betydelse (väst/öst/neutral) | **Stor:** den avgör vilka upphandlingar huset får delta i (§8.1), exportregler och vilka block huset lagligt får sälja till (§8b.1). |
+| **9J** | Civil gren | **Ja** (§8b.2). Den prövar pelare 1:s andra halva. |
+| **9K** | Namngivna chefskonstruktörer | **Ja** (§8b.3), som förlängning av etapp 5:s tjänstemän. |
+| **9L** | Namnmall för konstruktioner | Husets initialer + beteckning + år + typ, till exempel "H&V M64 Field Gun". |
+| **9M** | Hur långt får fusket i upphandlingarna gå? | **Alla sex knepen** (§8.2), från kravpåverkan till förfalskade protokoll. Pappersspåret gör de grövsta dyrast. |
+| **9N** | Ska mutan i vanliga bud också lämna ett pappersspår? | **Ja.** All korruption kan komma fram (§8.3). Golden fryses om i den prompten. |
+| **9O** | Hur görs upphandlingsdragen? | I upphandlingsmappen. Varje knep och motköp kostar en handling och är en ny `PlayerAction`-typ, `PROCUREMENT`, med en op per knep. Det utökar 9G; anmälan och inlämning av prototyp kostar ingen handling. |
 
 ---
 
@@ -324,22 +336,142 @@ samma fart som drar doomsday uppåt.
 
 ---
 
-## 8. Del E — Huset och staten (andra halvan, kan brytas ut)
+## 8. Del E — Upphandlingen
 
-### 8.1 Statliga utvecklingskontrakt och exportregler
-- **Kontraktsformen:** ett block kan finansiera ett utvecklingsprojekt, antingen med **kostnad plus
-  vinst** (säker marginal men granskning) eller till **fast pris** (hög vinst om det går bra, förlust och
-  utfrågning vid fördyring). Förebilder: TFX/F-111-striden 1962–68 och C-5A-fördyringen 1968–69.
-- **Exklusivitet:** kontraktets teknik får inte säljas till andra blocket eller till neutrala.
+Kravkorten i §7.1 blir här konkreta upphandlingar, där husen konkurrerar öppet mot varandra om
+samma krav. Del E ger också korruptionen en baksida som den saknar i dag (0.12).
+
+### 8.1 Utvecklingsupphandlingen
+
+En faktion, eller ett blocks ministerium, går ut med en **anbudsinfordran** i en kategori. Den utlöses
+av det som redan driver efterfrågan: ett kravkort (§7.1), en gap-chock (§7.2) eller en front som länge
+förlorat materiel. Målet är en till tre upphandlingar per parti.
+
+```
+Programme {
+  id, buyerId, category, baseProductId
+  requirements[]     kravrader: prestanda ≥, tillförlitlighet ≥, styckpris ≤, leveransår ≤
+                     varje rad är ska-krav eller bör-krav, med vikt
+  testEnvironment    köparens miljö: djungel, monsun, berg … (kopplat till §5.3)
+  grant              forskningsanslag: 'costPlus' | 'fixedPrice' | null, belopp
+  prize              seriekontrakt: kvantitet × turer, förskott enligt etapp 8
+  phase              announced → specLocked → development → trial → awarded
+  entrants[]         anmälda hus, spelaren och rivaler
+  traces[]           pappersspår kopplade till upphandlingen (§8.3)
+}
+```
+
+**Faserna:**
+
+1. **Anbudsinfordran (ett kvartal).** Kraven är ett utkast och går att påverka (§8.2). Husen anmäler sig,
+   vilket inte kostar någon handling. Du ser vilka rivaler som anmält sig, och med underrättelse hur
+   långt de har kommit.
+2. **Kravlåsning.** Kraven fastställs. Hemstaten avgör om huset får delta (9I): ett västanslutet hus får
+   inte delta i ett östblocksministeriums upphandling, och tvärtom. Neutrala får delta överallt, men med
+   lägre vikt på relationen.
+3. **Utveckling (2–4 kvartal).** Huset konstruerar mot kravet på ritbordet (del B), eller anmäler en
+   befintlig konstruktion. **Forskningsanslaget** betalas ut här:
+   - **Kostnad plus vinst:** säker marginal, men granskning. Stora överskridanden syns.
+   - **Fast pris:** hög vinst om det går bra, förlust vid fördyring.
+
+   Förebilderna är TFX/F-111-striden 1962–68 och C-5A 1968–69.
+4. **Jämförande prov.** Varje hus lämnar in en prototyp, vilket inte kostar någon handling. Provet görs i
+   köparens miljö, så en miljöbrist (§5.3) kan avslöjas redan här, vilket belönar robusta konstruktioner.
+   Resultatet kommer som ett **utvärderingsprotokoll** med uppmätt värde per kravrad. Uppmätt värde =
+   verklig kvalitet + prototypfaktor + mätbrus, dragna med `ctx.rng`. Den som underkänns på ett ska-krav
+   diskvalificeras.
+5. **Tilldelning.** Poängen räknas av en egen funktion, `evaluateTrial`, som inte är `computeScore`
+   (skyddsräcke 2). Den väger provpoäng per kravrad, pris, relation, rykte och motköp (§8.2). Vinnaren
+   får seriekontraktet som ett vanligt `Contract`, med förskott enligt etapp 8.
+
+**Delad order:** om tvåan ligger nära vinnaren kan ministeriet dela serien, till exempel 70/30.
+Förlusten blir då inte total, och den som leder drar inte ifrån för gott. En förlorare behåller alltid
+sin konstruktion och kan sälja den till andra. Ett bra provprotokoll ger ett litet rykte ("TESTED BY THE
+RVN MINISTRY OF DEFENCE") även för den som förlorar.
+
+Förebilden är proven mellan Leopard och AMX-30 1963 under internationell övervakning. Belgien valde
+Leopard när Frankrike vägrade att låta delar av AMX-30 tillverkas i Belgien.
+
+### 8.2 Påverkan, motköp och fusk
+
+Dragen görs i upphandlingsmappen och kostar en handling var (9O). Varje drag markerar med prickar vilka
+mätare det påverkar, utan tal (princip 3).
+
+| Drag | Fas | Vad det ger | Pappersspår och risk |
+|---|---|---|---|
+| **Motköp** (lagligt) | anbudsinfordran, utveckling | Du lovar lokal tillverkning. Högre poäng, särskilt hos NON_ALIGNMENT-tjänstemän, men lägre marginal på serien. | inget |
+| **Skriva kravet** | anbudsinfordran | En kravrad eller vikt lutas mot din konstruktions styrka. Kräver relation med eller muta till upphandlingstjänstemannen. | Litet spår. En tjänsteman med hög integritet kan vägra och rapportera, och då sjunker relationen. |
+| **Handbyggt provexemplar** | prov | Högre prototypfaktor, alltså bättre provpoäng. | Spåret är tekniskt: serien blir sämre än provet. När det syns i fält börjar en utredning. Hur stor den blir beror på gapet. |
+| **Muta provnämnden** | prov | Bättre protokoll. | Medelstort spår. Upptäckt ger diskvalificering, även i efterhand. |
+| **Förfalska protokoll** | prov | Ett ska-krav som inte nås blir godkänt. | Stort spår. Kopplas till olycksfågeln (§5.6): när bristen syns i fält kan kontraktet hävas i efterhand och huset stängas av hos köparen. |
+| **Underbud** (gråzon) | tilldelning | Lågt pris vinner. Priset höjs senare med tilläggsbeställningar. | Inget brottsligt spår, men fördyringen kan ge utfrågning och halverad order (C-5A). |
+| **Sabotera eller läcka mot rival** | utveckling, prov | Befintliga `SABOTAGE` och `LEAK` får upphandlingen som mål. | Befintliga regler för exponering och motspionage. |
+
+**Rivalerna fuskar också.** En rival med hårt temperament (0.13) använder ibland samma knep och lämnar
+egna spår. Med underrättelse i köparens land kan du **anmäla** en rival som fuskat. Har du rätt
+diskvalificeras rivalen. Har du fel sjunker relationen till upphandlingstjänstemannen.
+
+Förebild för det handbyggda exemplaret: en utredning av den amerikanska arméns generalinspektör fann
+1963 att jämförelseproven mellan AR-15 och M14 hade riggats. Man valde tester som gynnade M14 och
+ställde handplockade M14-gevär av tävlingskvalitet mot AR-15 direkt från fabrik.
+
+### 8.3 Pappersspåret
+
+Ett enhetligt system för all korruption i spelet: knepen i §8.2, `BRIBE`, `BROKER`, `FAVOUR` och, enligt
+beslut 9N, **mutan i vanliga bud**.
+
+- **Varje korrupt handling ger ett spår:** vem, vilken tjänsteman, vilken sorts handling, hur allvarlig,
+  vilken tur. Spåren sparas i staten.
+- **Varje tur kan ett öppet spår komma fram.** Chansen stiger med:
+  - tjänstemannens `scandalRisk`, som därmed får sin första läsare (0.12)
+  - rivalernas underrättelse i landet
+  - tiden, eftersom en lång stubin brinner
+  - **regimskiften:** efter en kupp (`FUND_COUP`) öppnas arkiven och gamla spår får en engångschans att
+    komma fram, både dina och rivalernas
+- **När ett spår kommer fram** får du ett **utredningskort**, uppbyggt som krisen, med tre dåliga vägar:
+  - **Förneka:** ingen kostnad nu, men risk att det blir större.
+  - **Offra någon:** du avskedar en direktör, och en personalroll (`staff`) sjunker.
+  - **Förlikas:** du betalar, och det syns i huvudboken.
+- **Följderna** beror på allvaret:
+  - hävt kontrakt
+  - avstängning från köparens upphandlingar i några turer
+  - tjänstemannen faller och ersätts. Det är den utlösare för `replaceOfficial` som saknats sedan P62.
+  - sämre rykte och en rad i krönikan
+  - avdrag vid styrelsens nästa granskning
+- **Spåren kan sopas igen** mot betalning (en stående order, "juridisk rådgivning"). Det minskar
+  chansen, men lämnar ett eget litet spår.
+
+Förebilden är Lockheed-affärerna: mutor som betalades under många år och avslöjades först 1975–76.
+
+### 8.4 Rent rykte
+
+Ett nytt värde, `reputation.integrity`, för husets hederlighet:
+
+- Det stiger långsamt när inga spår kommer fram och sjunker kraftigt när ett gör det.
+- **Tjänstemän med hög integritet** väger det i upphandlingar. Ett rent hus har alltså en fördel där
+  mutor fungerar sämst.
+- Epilogen räknar det: fusk som kommit fram räknas till axeln SHADOW, och ett rent hus kan få ett eget
+  slutkort.
+
+Det är detta som gör "rent hus" och "smutsigt hus" till två verkliga spelstilar, och som besvarar
+delfråga 6.
+
+---
+
+## 8b. Del F — Huset och staten (andra halvan, kan brytas ut)
+
+### 8b.1 Exportregler och hemstaten
+- **Exklusivitet:** teknik som tagits fram med forskningsanslag i en upphandling (§8.1) får inte säljas
+  till andra blocket eller till neutrala.
 - **Exportregler:** konstruktioner över en nivå hamnar på blockens exportlista, en fiktiv motsvarighet
   till CoCom. Att sälja dem över blockgränsen ger heat, doomsday och risk för upptäckt.
 - **Hemstaten avgör (9I):**
-  - Ett västanslutet hus får västkontrakt men förlorar östmarknaden.
-  - Ett neutralt hus får inga kontrakt men kan sälja till alla, med sämre betalningsvillkor.
+  - Ett västanslutet hus får delta i västliga upphandlingar men förlorar östmarknaden.
+  - Ett neutralt hus får delta överallt med lägre relationsvikt, och säljer till alla med sämre betalningsvillkor.
 
   Förebilden är de neutrala exportörerna i Schweiz, Sverige och Belgien.
 
-### 8.2 Den civila grenen
+### 8b.2 Den civila grenen
 - Ett forskningsspår kan ge en **civil produkt**: traktorer ur pansarlinjen, radioapparater ur
   elektroniken, transporthelikoptrar till oljebolag.
 - Civila ordrar är små och stabila och beror inte på kriget. De ger också ett litet försprång tillbaka
@@ -351,7 +483,7 @@ samma fart som drar doomsday uppåt.
 Förebilden är Saab: bilar från 1949, datorer från flygelektroniken och sammanslagningen med
 Scania-Vabis 1968.
 
-### 8.3 Chefskonstruktörer
+### 8b.3 Chefskonstruktörer
 - Namngivna personer med en egenskap (snabb, noggrann eller sparsam) och en egen inriktning. De ger
   forskningen ett ansikte och knyter den till etapp 5:s tjänstemän.
 - En rival kan värva din chefskonstruktör, och du kan värva deras.
@@ -361,7 +493,7 @@ Scania-Vabis 1968.
 Förebilder: de sovjetiska konstruktionsbyråerna som bar sina chefers namn, och Kelly Johnsons Skunk
 Works.
 
-### 8.4 Licenser
+### 8b.4 Licenser
 - En licens ger engångsbelopp och royalty. Samtidigt växer licenstagarens förmåga, och den kan till
   slut sälja på egen hand på husets marknader.
 - Kundanpassningar driver upp kostnaden och kan utlösa en politisk skandal hos köparen, som då
@@ -389,13 +521,18 @@ Etapp 7:s regler 1–18 gäller. Registret är krigsrummet 1965.
   säkerheten. Under tavlan ligger nästa kvartals kravkort, synliga.
 - **Budmappen** har ett `Segmented`-val bland husets konstruktioner och stämplarna STRIDSBEPRÖVAD och
   KRAVNIVÅ. Vinstchansen räknas om direkt.
-- **Beslutskort** (olycksfåglar, fältprov, statliga kontrakt) markerar med prickar vilka mätare de
+- **Upphandlingsmappen** (CONTRACTS) är en egen mapp per upphandling: kravbladet stämplat och daterat,
+  en tidslinje för faserna, konkurrenterna med underrättelsens prickar, knepen som registerkort och
+  provdagens **utvärderingsprotokoll**, skrivet på skrivmaskin med en rad per krav och ett underkänt
+  ska-krav överstruket med rött.
+- **Utredningskortet** (§8.3) är byggt som kriskortet, med tre val och prickar för vad de påverkar.
+- **Beslutskort** (olycksfåglar, fältprov, upphandlingar) markerar med prickar vilka mätare de
   påverkar, utan tal.
 - **Daterade PM** inför systemen ett i taget:
   1. Konstruktionen från start.
   2. Kravkorten 1965.
   3. Kapplöpningstavlan första gången ett block går upp en generation.
-  4. Statliga kontrakt efter första gap-chocken.
+  4. Den första upphandlingen efter första gap-chocken.
 - **Kartan och NEWS DESK:** rubriker om fältrykte, gap och återkallelser. Förbandsbrickor med husets
   materiel får en liten märkning.
 
@@ -406,13 +543,16 @@ Etapp 7:s regler 1–18 gäller. Registret är krigsrummet 1965.
 **Härnessen (ingen `core`-ändring):**
 - `human` väljer inriktning efter köparnas mix och ambition efter kravkorten.
 - Nya varianter för att pröva spelstilarna: `human-robust`, `human-advanced`, `human-noresearch`,
-  `human-bothsides` (säljer till båda sidor) och, om del E ingår, `human-civil`.
+  `human-bothsides` (säljer till båda sidor), `human-clean` (fuskar aldrig), `human-dirty` (använder
+  knepen när de lönar sig) och, om del F ingår, `human-civil`. Rivalernas fusk styrs av deras temperament.
 - Nya kolumner:
   - konstruktioner, genombrott och olycksfåglar
   - antal stridsbeprövade
   - gap-chocker och antal gånger huset var först på plats
   - falska gap som huset själv skapade
   - intäkt från konstruktioner yngre än fyra kvartal
+  - upphandlingar per parti, vunna, delade och förlorade
+  - pappersspår, andel som kommit fram, hävda kontrakt och avstängningar
   - civil intäkt
 
 **Måltabell** (balanspasset mäter och reviderar, samma regler som tidigare):
@@ -427,7 +567,11 @@ Etapp 7:s regler 1–18 gäller. Registret är krigsrummet 1965.
 | `human-bothsides` mot `human`, högsta doomsday | ≥ 10 högre | **ja** (pelare 1) |
 | Andel olycksfåglar | 10–25 % | |
 | Den som var först på plats vinner också partiet | ≤ 80 % (ingen fri väg till seger) | |
-| Vapenvilepartier där `human-civil` överlever | > 30 % | om del E ingår |
+| Upphandlingar per parti | 1–3 | |
+| `human-clean` och `human-dirty`, vinst | båda ≥ 35 % | **ja** (delfråga 6) |
+| `human-dirty` vinner fler upphandlingar men får fler hävda kontrakt än `human-clean` | båda sant | **ja** |
+| Andel pappersspår som kommer fram under partiet | 30–60 % | |
+| Vapenvilepartier där `human-civil` överlever | > 30 % | om del F ingår |
 | `human`, `SCENARIO_COMPLETE` | 40–70 % | **ja** |
 
 Spelbarhetstestets golv och tak samt capacity-referensen (ägarbeslut 2026-09-30) ska hålla efter varje
@@ -447,7 +591,9 @@ prompt som rör kärnan.
    det enda som visas.
 6. **Inga verkliga namn.** Konstruktioner, konstruktörer och exportlistor är fiktiva. De historiska
    förebilderna står bara i bilaga A.
-7. **Golden** fryses bara om enligt 9C.
+7. **Upphandlingens tilldelning räknas av `evaluateTrial`, inte `computeScore`**, samma princip som BROKER
+   i P57. Budmutans spår (9N) läggs till utan att röra `computeScore`s formel.
+8. **Golden** fryses bara om enligt 9C.
 
 ---
 
@@ -474,26 +620,32 @@ lämnar golden orörd.
 | | P119 | Gap-chocker, först på plats, efterföljarrabatt | regel |
 | | P120 | Bedömningar som intervall, falska gap, `LEAK` mot bedömningar | regel |
 | | P121 | Kapplöpningen och doomsday, sälja till båda sidor | regel |
-| **Gränssnitt 1** | P122 | Ritbordet och typbladet | UI |
-| | P123 | Kapplöpningstavlan, kravkorten, budmappen, beslutskort, daterade PM | UI |
-| **Mätning 1** | P124 | Härnessen för A–D | mätning |
-| | P125 | Balanspass A–D | data |
-| | P126 | Speltest, ingen kod | – |
-| **E Huset och staten** | P127 | Statliga kontrakt och exportregler | regel |
-| | P128 | Civil gren | regel |
-| | P129 | Chefskonstruktörer och specialprojekt | regel |
-| | P130 | Licenser och embargo som skapar konkurrent | regel |
-| | P131 | Gränssnitt för del E | UI |
-| **Mätning 2** | P132 | Härness och balanspass för E | mätning/data |
-| | P133 | Speltest, ingen kod | – |
+| **E Upphandlingen** | P122 | `Programme`, faserna, forskningsanslag, hemstatens behörighet, tilldelning och delad order, `evaluateTrial` | regel |
+| | P123 | Jämförande prov i köparens miljö, utvärderingsprotokoll, motköp | regel |
+| | P124 | `PROCUREMENT`: de sex knepen (9M, 9O), rivalernas fusk och anmälan | regel |
+| | P125 | Pappersspåret för all korruption inklusive budmutor (9N), utredningskortet, regimskiften öppnar arkiven, `replaceOfficial` när en tjänsteman faller, rent rykte | regel |
+| **Gränssnitt** | P126 | Ritbordet och typbladet | UI |
+| | P127 | Kapplöpningstavlan, kravkorten, budmappen, beslutskort, daterade PM | UI |
+| | P128 | Upphandlingsmappen, utvärderingsprotokollet, utredningskortet | UI |
+| **Mätning** | P129 | Härnessen för A–E | mätning |
+| | P130 | Balanspass A–E | data |
+| | P131 | Speltest, ingen kod | – |
+| **F Huset och staten** | P132 | Exportregler och exklusivitet | regel |
+| | P133 | Civil gren | regel |
+| | P134 | Chefskonstruktörer och specialprojekt | regel |
+| | P135 | Licenser och embargo som skapar konkurrent | regel |
+| | P136 | Gränssnitt för del F | UI |
+| **Mätning F** | P137 | Härness och balanspass för F | mätning/data |
+| | P138 | Speltest, ingen kod | – |
 
 **Kapningsordning** om etappen behöver bli mindre:
-1. Bryt ut del E (P127–P133) till en egen etapp.
+1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).
 3. Stryk P120 (falska gap). Den är stark men inte nödvändig för frågan i §1.
 4. Stryk P112 (uppgraderingar).
 
-Del A–C besvarar ensamma delfråga 1, 2 och 4. Del D behövs för delfråga 3 och 5.
+Del E stryks inte: pappersspåret (P125) rättar ett fel som finns i dag (0.12), oavsett resten.
+Del A–C besvarar delfråga 1, 2 och 4, del D delfråga 3 och 5, och del E delfråga 6.
 
 ---
 
@@ -502,8 +654,6 @@ Del A–C besvarar ensamma delfråga 1, 2 och 4. Del D behövs för delfråga 3 
 Idéer från researchen som passar senare:
 - **Vapenmässan** vartannat år: visa upp för ordrar, eller håll hemligt. En krasch vid en uppvisning
   blir en rubrik (förebild: B-58 i Paris 1965).
-- **Mutspår med lång stubin:** mutor som blir en skandal långt senare (förebild: Lockheed-affärerna,
-  avslöjade 1975–76). Bygger på `scandalRisk`.
 - **Förfalskade slutanvändarintyg** för neutrala hus (förebild: Bührle-målet i Schweiz 1968–70).
 - **Försvarsutredningar** som betygsätter husens fältrykte vid en tidpunkt spelaren inte känner till
   exakt, i stil med poängkorten i *Twilight Struggle*.
@@ -512,14 +662,16 @@ Idéer från researchen som passar senare:
 
 ---
 
-## 14. Öppna beslut för ägaren
+## 14. Kvarstående punkter för ägaren
 
-1. Besluten 9A–9L i §3.
-2. **P105 först:** speltestet av etapp 8 bör göras innan etappen antas. Det är första gången spelet
-   går att vinna med rimlig marginal, och det är värt att veta hur det känns innan nästa lager läggs på.
-3. **Det historiska grundschemat** för blockens generationer (§7.1) tas fram och godkänns av ägaren
+Besluten 9A–9O är fattade (§3). Kvar:
+
+1. **P105 först:** speltestet av etapp 8 bör göras innan P106 körs. Det är första gången spelet går att
+   vinna med rimlig marginal, och det är värt att veta hur det känns innan nästa lager läggs på.
+2. **Det historiska grundschemat** för blockens generationer (§7.1) tas fram och godkänns av ägaren
    före P118. Förslag: en generation per kategori vartannat år, med kliv 1965 (luftvärn), 1966
    (helikoptrar) och 1967 (pansarvärn).
+3. **Utvärderingen av del F:** efter P131 avgör ägaren om del F byggs i etapp 9 eller blir en egen etapp.
 
 ---
 
@@ -538,13 +690,16 @@ Historiska mönster som mekanikerna bygger på. Namnen används bara här, aldri
 | Motmedel (§6.6) | SA-2 1965, Wild Weasel och Shrike 1965–66 | [Air & Space Forces](https://www.airandspaceforces.com/article/0710weasels/) |
 | Uppgraderingssatser (§5.5) | L7-kanonen i Centurions torn | [Royal Ordnance L7](https://en.wikipedia.org/wiki/Royal_Ordnance_L7) |
 | Falska gap (§7.3) | Missilgapet 1957–61 | [Missile gap](https://en.wikipedia.org/wiki/Missile_gap) |
-| Statliga kontrakt, fördyring (§8.1) | TFX/F-111 1962–68, C-5A 1968–69 | [GlobalSecurity](https://www.globalsecurity.org/military/systems/aircraft/f-111-history.htm) |
-| Exportregler, neutrala (§8.1) | CoCom 1949–94; Bührle-målet 1968–70 | [CoCom](https://en.wikipedia.org/wiki/Coordinating_Committee_for_Multilateral_Export_Controls) |
-| Civil gren (§8.2) | Saab: bilar, datorer, Scania-Vabis 1968 | [Saab AB](https://en.wikipedia.org/wiki/Saab_AB) |
-| Konstruktörer (§8.3) | Sovjetiska konstruktionsbyråer, Skunk Works | [Kelly Johnson](https://migflug.com/jetflights/kelly-johnson-lockheed-skunk-works-designer-sr-71-u-2/) |
-| Licenser (§8.4) | MiG-21 i Tjeckoslovakien, Indien och Kina | [mig-21.de](https://mig-21.de/english/production.htm) |
-| Kundanpassning, skandal (§8.4) | Mirage-affären i Schweiz 1964 | [Mirages affair](https://en.wikipedia.org/wiki/Mirages_affair) |
-| Embargo skapar konkurrent (§8.4) | Frankrikes embargo 1969, Israels Nesher | [IAI Nesher](https://en.wikipedia.org/wiki/IAI_Nesher) |
+| Forskningsanslag, fördyring (§8.1) | TFX/F-111 1962–68, C-5A 1968–69 | [GlobalSecurity](https://www.globalsecurity.org/military/systems/aircraft/f-111-history.htm) |
+| Exportregler, neutrala (§8b.1) | CoCom 1949–94; Bührle-målet 1968–70 | [CoCom](https://en.wikipedia.org/wiki/Coordinating_Committee_for_Multilateral_Export_Controls) |
+| Civil gren (§8b.2) | Saab: bilar, datorer, Scania-Vabis 1968 | [Saab AB](https://en.wikipedia.org/wiki/Saab_AB) |
+| Konstruktörer (§8b.3) | Sovjetiska konstruktionsbyråer, Skunk Works | [Kelly Johnson](https://migflug.com/jetflights/kelly-johnson-lockheed-skunk-works-designer-sr-71-u-2/) |
+| Licenser (§8b.4) | MiG-21 i Tjeckoslovakien, Indien och Kina | [mig-21.de](https://mig-21.de/english/production.htm) |
+| Kundanpassning, skandal (§8b.4) | Mirage-affären i Schweiz 1964 | [Mirages affair](https://en.wikipedia.org/wiki/Mirages_affair) |
+| Embargo skapar konkurrent (§8b.4) | Frankrikes embargo 1969, Israels Nesher | [IAI Nesher](https://en.wikipedia.org/wiki/IAI_Nesher) |
+| Jämförande prov, motköp (§8.1–8.2) | Leopard mot AMX-30 1963; Belgiens val när Frankrike vägrade lokal tillverkning | [AMX-30](https://en.wikipedia.org/wiki/AMX-30) |
+| Handbyggt provexemplar, riggat prov (§8.2) | Generalinspektörens utredning 1963 av proven AR-15 mot M14 | [M16 rifle](https://en.wikipedia.org/wiki/M16_rifle) |
+| Pappersspår med lång stubin (§8.3) | Lockheed-affärerna, avslöjade 1975–76 | [Lockheed bribery scandals](https://en.wikipedia.org/wiki/Lockheed_bribery_scandals) |
 
 **Spelmekaniska förebilder:**
 - **Forska före sin tid:** Hearts of Iron IV.
