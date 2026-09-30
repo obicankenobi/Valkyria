@@ -278,10 +278,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // 2 -> 2,31 (indochina-slice.json); balance.frozen.json följer med (fyra rader: två tal, en anteckning).
   // Ingen kod rörd. De nya hasharna: passive 1deca8837b7ec4, aggressive 1b6a8b7573baeb, balanced
   // 1595f8a6ff97a1.
+  //
+  // Omfryst IGEN i P106 (ETAPP9_FORSLAG.md §4.1–4.2/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen
+  // commit efter koden). Spelarens budpoäng får techTerm och specialiseringstermen EFTER computeScore
+  // (bidTerms.ts), och ett forskningsprojekt i specialiseringen kostar halv rndOverhead. INNAN omfrysningen
+  // verifierades att ändringen är exakt det: med de tre nya talen neutraliserade (techMarginWeight 0,
+  // specialisationBidBonusPct 0, specialisationRndCostFactor 1) är alla tre hashar bit-identiska med P104:s.
+  // balance.frozen.json följer med (fyra nya rader: en anteckning och tre tal). aggressive är oförändrad
+  // (1b6a8b7573baeb) — dess tio turer bjuder inget där termen avgör. De nya hasharna: passive c60a1067590f3,
+  // aggressive 1b6a8b7573baeb, balanced 1cfa09b74e3354.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1deca8837b7ec4' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c60a1067590f3' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1b6a8b7573baeb' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1595f8a6ff97a1' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1cfa09b74e3354' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
