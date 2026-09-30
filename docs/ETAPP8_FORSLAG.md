@@ -633,7 +633,7 @@ ett larm hoppar från This Quarter till rätt kort. Golden orörd.
 > **P102 BYGGD 2026-09-29 — belopp som köper odds, med tillvalet "under utredning" (8E).** Se ANDRINGSLOGG-raden med
 > samma datum. Klart-när: högsta nivån ger mätbart bättre utfall än lägsta för alla fyra (kuppodds, heat-höjning,
 > relationsvinst, mildare konsekvenser — `spendCurves.test.ts`), ingen nivå ger säker framgång (tak 85 %, kurvan når
-> aldrig 1), golden omfryst i egen commit — nya hashar se `golden.test.ts`.
+> aldrig 1), golden omfryst i egen commit — passive `ac66ac396a835`, aggressive `1e42b914c3069f`, balanced `12e06615d26d5d`.
 
 **P102 — Belopp som köper odds.** Kurvorna för de fyra operationerna, `previewAction` per nivå,
 och tillvalet "under utredning" om 8E har antagits. *Klart när:* högsta nivån ger mätbart bättre

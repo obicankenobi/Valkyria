@@ -321,5 +321,18 @@
   "stationActiveUpkeepFactor": 1.5,
   "stationActiveExposurePerTurn": 3,
   "stationQuietExposureDecay": 4,
-  "stationActiveDepthTurns": 4
+  "stationActiveDepthTurns": 4,
+  "_p102_note": "ETAPP8_FORSLAG.md §6.1 (pelare 3: spelet prissätter en handling i stället för att säga nej): STAGE_INCIDENT, BACK_CHANNEL, FUND_COUP och ASSASSINATE får en kurva från belopp till effekt, spendCurve(spend, half) = spend / (spend + half): 0 vid 0, avtagande avkastning (varje extra krona ger mindre), och når aldrig 1 — 'dubbel summa märkbart bättre, aldrig dubbelt så bra, aldrig säkert'. Alla tal PROVISORISKA, kalibreras i P104. FUND_COUP: successPct = clamp(fundCoupBaseSuccessPct − counterIntelligence + fundCoupSpendBonusMaxPct × kurva(spend, fundCoupSpendHalf), fundCoupMinSuccessPct, fundCoupSuccessCapPct) — före P102 var spend verkningslös och en kupp mot en motpart med counterIntelligence 40 (default) klampades till golvet 5 %; med halva-vid 1 000 000 ger 500 000/1 500 000/3 000 000 20/36/45 % mot default-motpart, taket 85 hindrar 'säker'. STAGE_INCIDENT: heat-höjningen (stageIncidentHeatMin–Max) skalas med stageIncidentHeatScaleMin (0,5, vid spend 0 — också botarnas spend 0) upp mot stageIncidentHeatScaleMax (2) via kurvan (halva-vid 25 000); den fasta lyckandechansen stageIncidentSuccessPct rörs inte. BACK_CHANNEL: relationsvinsten relationsBackChannelGain skalas 0,5×–2,5× (halva-vid 25 000). ASSASSINATE: beloppet sänker counterIntelligence-höjningen (assassinateCounterIntelligenceGain) och DOOMSDAY-risken med upp till assassinateMaxReductionPct (60 %) via kurvan (halva-vid 500 000) — målet dör alltid, som förut. investigationActionPointPenalty (1): beslut 8E, 'under utredning' — en station som bränns (exposure över tröskeln) öppnar en utredning; nästa kvartal har huset en handling färre.",
+  "fundCoupSpendHalf": 1000000,
+  "fundCoupSpendBonusMaxPct": 60,
+  "fundCoupSuccessCapPct": 85,
+  "stageIncidentSpendHalf": 25000,
+  "stageIncidentHeatScaleMin": 0.5,
+  "stageIncidentHeatScaleMax": 2,
+  "backChannelSpendHalf": 25000,
+  "backChannelGainScaleMin": 0.5,
+  "backChannelGainScaleMax": 2.5,
+  "assassinateSpendHalf": 500000,
+  "assassinateMaxReductionPct": 60,
+  "investigationActionPointPenalty": 1
 }

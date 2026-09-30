@@ -61,8 +61,7 @@ const TURNS = 21 // MAX_TURNS, se packages/harness/src/runGame.ts — turn 0..20
 // P40:s namngivna ersättningsordrar, P40:s omkalibrerade förbandsroster
 // (indochina-slice.json) och P42:s egen invariant-bugfix (resolveFront synkar
 // nu förbandens strength, se ANDRINGSLOGG.md) bryter sluttillståndets hash.
-// P102: PAUSAD i den här commiten, aktiv igen i nästa (omfrysningen, beslut 8C — egen commit).
-it.skip('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
+it('fixtures/balance.frozen.json är bitvis identisk med src/data/balance.json', () => {
   expect(balanceFrozen).toEqual(balanceLive)
 })
 
@@ -262,15 +261,24 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // oförändrat, och omfrysningen speglar bara den nya fältformen. balance.frozen.json följer med (elva nya
   // tal). De nya hasharna: passive 11ad870a249092, aggressive 6a1a16e93ce0a, balanced 7cd16075822ce.
   // headlines > 8 höll oförändrat (passive 72, aggressive 172, balanced 155).
+  //
+  // Omfryst IGEN i P102 (ETAPP8_FORSLAG.md §6.1/§9, beslut 8C — förhandsauktoriserat, egen commit efter
+  // koden). STAGE_INCIDENT, BACK_CHANNEL, FUND_COUP och ASSASSINATE fick en kurva från belopp till effekt
+  // (spendCurves.ts), och en bränd station öppnar en utredning (House.investigationUntilTurn, nytt fält).
+  // aggressive och balanced skickar de fyra verben med fasta belopp (spend 0 för incident/back channel,
+  // 1 000 000 för kupp, 500 000 för lönnmord) och deras utfall ändras — precis som specen förutsåg.
+  // INNAN omfrysningen verifierades att passive, som aldrig skickar dem, bara ändras av det nya fältet: utan
+  // investigationUntilTurn är hashen bit-identisk med P100:s (11ad870a249092). balance.frozen.json följer med
+  // (tolv nya tal). De nya hasharna: passive ac66ac396a835, aggressive 1e42b914c3069f, balanced
+  // 12e06615d26d5d. headlines > 8 höll oförändrat (passive 72, aggressive 169, balanced 155).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '11ad870a249092' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '6a1a16e93ce0a' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '7cd16075822ce' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'ac66ac396a835' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1e42b914c3069f' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '12e06615d26d5d' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
-    // P102: PAUSAD i den här commiten (kurvorna ändrar utfallen), omfryst i nästa commit.
-    it.skip(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
+    it(`${policyName}: sluttillståndets hash är oförändrad, och partiet ger > 8 rubriker`, () => {
       const policy = POLICIES[policyName] as Policy
       const { finalState, wireLog } = playScript(SCENARIO, seed, policy, TURNS)
 
