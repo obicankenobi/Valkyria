@@ -638,6 +638,16 @@ lämnar golden orörd.
 | **Mätning F** | P137 | Härness och balanspass för F | mätning/data |
 | | P138 | Speltest, ingen kod | – |
 
+> **P106 BYGGD 2026-09-30.** Premisskontrollen (§0) gjordes om mot koden och höll; ingen premiss föll.
+> `bidTerms.ts` (`techTerm`, `specialisationTerm`, `playerBidTerm`) läggs på spelarens poäng efter
+> `computeScore`, på en plats per läsare (`bidding.ts`; `bidEstimate`/`playerWinCurve` via
+> `WinBandInputs.playerBidTerm`). Specialiseringen halverar `rndOverhead` för projekt i den egna kategorin.
+> **Fynd:** specens "+10 %" (tolkat som +10 poäng) och `techMarginWeight` 2 bröt spelbarhetstaket och
+> `capacity`-referensen (`human` 99 %, `balanced` 100 %, `capacity` 65 % vinst). Valda provisoriska tal:
+> `techMarginWeight` 0,25, `specialisationBidBonusPct` 1 (de största som håller vakterna). Orsaken är
+> strukturell — `human` har ingen marginal uppåt — och måste mötas med en rivalsidig motvikt eller ett
+> ägarbeslut i P130, inte med fler spelarbonusar. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

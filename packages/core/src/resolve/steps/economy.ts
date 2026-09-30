@@ -27,6 +27,7 @@ interface FixedCosts {
 }
 
 interface Balance {
+  specialisationRndCostFactor: number
   fixedCosts: FixedCosts
   creditMultiple: number
   chiefOfStaffActionBonusThreshold: number
@@ -87,7 +88,13 @@ export function computeFixedCostsBreakdown(house: House, turn?: number): FixedCo
         return sum + BALANCE.fixedCosts.stationUpkeep * factor
       }, 0),
   )
-  const rndOverhead = BALANCE.fixedCosts.rndOverhead * house.rnd.length
+  // P106 (ETAPP9 §4.2): ett projekt i husets specialisering kostar specialisationRndCostFactor × rndOverhead.
+  const rndOverhead = round(
+    house.rnd.reduce(
+      (sum, p) => sum + BALANCE.fixedCosts.rndOverhead * (p.category === house.specialisation ? BALANCE.specialisationRndCostFactor : 1),
+      0,
+    ),
+  )
   return { payroll, lineUpkeep, stationUpkeep, rndOverhead }
 }
 

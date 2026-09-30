@@ -229,6 +229,11 @@ describe('bidding — (c) rivaljitter ger osäkerhet i utfallet', () => {
       const order = dueOrder({ trueBudget: 3000000, referencePrice: 2000000, expiresTurn: 0 })
       state.market.openOrders = [order]
       state.meta.turn = 0
+      // P106: priset nedan är kalibrerat mot poängen FÖRE teknik- och specialiseringstermen. Termen
+      // neutraliseras här (annan specialisering, teknik exakt på kravet) så att testet fortsatt mäter
+      // jitterns effekt; termens egen effekt testas i bidTerms.test.ts.
+      state.house.specialisation = 'infantry'
+      state.house.techLevel.artillery = 2
       // En enda rival (Brandt: aggression 55, specialisation artillery — matchar
       // produktkategorin, specBonus −0,04). Förväntat bud utan jitter (P22-
       // balanspasset sänkte rivalMarginBase 0,3→0,1 för att få upp rivalWinPct, se

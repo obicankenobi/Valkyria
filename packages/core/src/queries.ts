@@ -8,6 +8,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
+import { playerBidTerm } from './bidTerms.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
@@ -490,6 +491,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade): BidEs
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
+    playerBidTerm: playerBidTerm(state.house, product),
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -560,6 +562,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade): Pl
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
+    playerBidTerm: playerBidTerm(state.house, product),
   }
 
   const points: PlayerWinCurvePoint[] = []
@@ -590,6 +593,9 @@ interface WinBandInputs {
   // bidEstimate — samma tal används för både spelarens blocTerm (ovan) och varje
   // samplad rivals, se rivalScore nedan.
   blocMultiplier: number
+  // P106: teknik- och specialiseringstermen (bidTerms.ts), en gång räknad av anroparen ur state.house —
+  // samma tal bidding.ts lägger på spelarens poäng efter computeScore.
+  playerBidTerm: number
 }
 
 // Monte Carlo-skattning för EN prispunkt: kör MONTE_CARLO_SAMPLES simulerade
@@ -617,7 +623,7 @@ function computeWinAtPrice(hashRng: Rng, p: WinBandInputs, price: Money): Pct {
     relationToPlayer: p.relationToPlayer,
     reputation: p.reputation,
     blocTerm: p.blocTerm,
-  })
+  }) + p.playerBidTerm
 
   let wins = 0
   for (let sample = 0; sample < MONTE_CARLO_SAMPLES; sample++) {

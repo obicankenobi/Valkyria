@@ -757,6 +757,12 @@ brytas ut. **Golden får frysas om av kodsessionen bara i promptar märkta "rege
 mätpromptar gäller "stanna och fråga" som vanligt. `computeScore` rörs inte: nya termer läggs efter
 anropet och upphandlingar avgörs av en egen `evaluateTrial`. Rekommendationen är att P105 (speltestet av
 etapp 8) görs före P106. Premisskontrollen i §0 görs om mot koden före P106.
+**P106 BYGGD 2026-09-30:** premisskontrollen höll; `bidTerms.ts` (`techTerm`, `specialisationTerm`,
+`playerBidTerm`) läggs på spelarens poäng efter `computeScore` och delas av `bidding.ts`, `bidEstimate` och
+`playerWinCurve`; specialiseringen halverar `rndOverhead` i den egna kategorin. **Fynd:** specens +10 % bröt
+spelbarhetstaket och `capacity`-referensen, så de provisoriska talen står på 0,25 (`techMarginWeight`) och 1
+(`specialisationBidBonusPct`); `human` har ingen marginal uppåt, vilket P130 måste möta med en rivalsidig
+motvikt eller ett ägarbeslut. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

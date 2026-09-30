@@ -1,6 +1,7 @@
 // bidding — avgör anbud som löper ut denna tur. Se ETAPP1_TEKNISK_SPEC.md avsnitt
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
+import { playerBidTerm } from '../../bidTerms.js'
 import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
@@ -133,7 +134,9 @@ export const bidding: ResolveStep = (ctx) => {
           deliveryTurns: playerBid.deliveryTurns,
           grade: playerBid.grade,
           bribe: playerBid.bribe,
-          score: score + preferredBonus('player'),
+          // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
+          // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product),
         })
       }
     }
