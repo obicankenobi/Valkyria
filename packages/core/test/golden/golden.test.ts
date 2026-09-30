@@ -318,6 +318,11 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // lägger inget nytt obligatoriskt fält i sluttillståndet (StandingOrders.testing är valfritt och utelämnas tills en
   // provning sätts) och ingen bot provar något, så ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P109:s — det är verifierat, inte
   // antaget. Bara balance.frozen.json följer med (nya rader: en anteckning och två tal).
+  //
+  // P111 (ETAPP9_FORSLAG.md §5.4/§12, beslut 9C — "regel"-prompt, egen commit): köparens preferensmix och den relativa
+  // bedömningen är rena funktioner över befintligt tillstånd (agenda, front, doktrin, tur) och lägger inget fält i
+  // sluttillståndet; ingen bot bjuder med en konstruktion. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P109:s/P110:s (verifierat).
+  // Bara balance.frozen.json följer med (nya rader: en anteckning och tio tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'db2c6cf301dd0' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9fd1f1efb7f35' },
