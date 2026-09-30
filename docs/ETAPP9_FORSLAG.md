@@ -678,6 +678,12 @@ lämnar golden orörd.
 > `buyerPreferenceDisplay` avslöjar mixen bara med en station. Avsteg: riktmärket är härlett ur generationen tills P118.
 > Golden-hasharna oförändrade. Se ANDRINGSLOGG 2026-09-30.
 
+> **P112 BYGGD 2026-09-30.** `DESIGN START` med `upgradeOf` (billigare, snabbare, lägre tak, ärver föregångarens dolda
+> utfall/brist/fältrykte) mot en ny konstruktion (dyrare, nollställd, högre tak). `Bid.kit`: uppgraderingssats till köparens
+> befintliga materiel (lägre marginal, poängbonus), prövad av `bidDesignRejection` och delad med `bidEstimate`/`playerWinCurve`.
+> **Premissfynd:** §5.5:s mening om att omställning av linjer gör en ny konstruktion kostsam stämmer inte under 9B
+> (samma `productId`) — ej byggt, förslag till ägaren. Golden-hasharna oförändrade. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

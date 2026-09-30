@@ -254,7 +254,7 @@ export function applyStandingOrders(ctx: ResolveContext): void {
               focus: change.focus,
               ambition: change.ambition,
               targetGeneration: currentGeneration(turn) + BALANCE_DESIGN_STEPS[change.ambition],
-              upgradeOf: null,
+              upgradeOf: change.upgradeOf ?? null,
             },
             turn,
           )
@@ -262,7 +262,7 @@ export function applyStandingOrders(ctx: ResolveContext): void {
           emit({
             severity: 'ticker',
             scope: 'house',
-            headline: `DESIGN PROJECT: ${draft.house.name.toUpperCase()} STARTS A ${change.focus.toUpperCase()}, ${change.ambition.toUpperCase()} ${change.category.toUpperCase()} DESIGN (${project.turnsTotal} TURNS)`,
+            headline: `DESIGN PROJECT: ${draft.house.name.toUpperCase()} STARTS A ${change.focus.toUpperCase()}, ${change.ambition.toUpperCase()} ${change.category.toUpperCase()} ${change.upgradeOf ? 'UPGRADE' : 'DESIGN'} (${project.turnsTotal} TURNS)`,
             causeId: null,
             delta: {},
             actorIsPlayer: true,

@@ -501,6 +501,9 @@ export interface Bid {
   // P109 (ETAPP9_FORSLAG.md §5.1, beslut 9B): en konstruktion att bjuda med. Måste vara en egen, aktiv Design
   // vars baseProductId är ordens produkt. Utelämnat = ett vanligt bud, exakt som förut.
   designId?: string
+  // P112 (§5.5): en uppgraderingssats till köparens befintliga materiel — kräver en uppgraderad konstruktion vars
+  // föregångare köparen fått levererad. Lägre marginal (prisgolv och styckkostnad) mot snabbare affär (poängbonus).
+  kit?: boolean
 }
 
 export interface Contract {
@@ -532,6 +535,8 @@ export interface Contract {
   // P109: konstruktionen kontraktet bjöds med (Bid.designId). Styckkostnaden vid signering och produktionen
   // räknas med dess unitCostFactor. Utelämnat = basprodukten.
   designId?: string
+  // P112: kontraktet är en uppgraderingssats (Bid.kit).
+  kit?: boolean
 }
 
 // Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när
@@ -932,7 +937,8 @@ export type StandingOrderChange =
   | { kind: 'RESEARCH'; op: 'CANCEL'; category: TechCategory }
   // P109 (ETAPP9_FORSLAG.md §5.2): ritbordsuppdraget — starta ett designprojekt (inriktning + ambition) eller
   // avbryt det pågående i kategorin. Kostar ingen handling.
-  | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition }
+  // P112: upgradeOf = en uppgradering av en egen konstruktion i samma kategori (billigare, snabbare, lägre tak, ärver ryktet).
+  | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId }
   | { kind: 'DESIGN'; op: 'CANCEL'; category: TechCategory }
   // P110 (ETAPP9 §5.3): provning i egen regi — en miljö per konstruktion åt gången; kostar pengar och tid.
   | { kind: 'TESTING'; op: 'SET'; designId: DesignId; environment: DesignEnvironment }

@@ -2,7 +2,7 @@
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
 import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
-import { designBidRejection, designBidTerm } from '../../design.js'
+import { KIT_UNIT_COST_FACTOR, bidDesignRejection, designBidTerm, kitBidTerm } from '../../design.js'
 import { round } from '../../money.js'
 import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
@@ -18,6 +18,7 @@ interface Candidate {
   bribe: Money
   score: number
   designId?: string // P109
+  kit?: boolean // P112
 }
 
 function pickWinner(candidates: readonly Candidate[]): Candidate | null {
@@ -76,7 +77,7 @@ export const bidding: ResolveStep = (ctx) => {
 
     const candidates: Candidate[] = []
     // P109: en konstruktion i budet prövas mot huset och ordern innan något annat räknas.
-    const designRejection = playerBid?.designId !== undefined ? designBidRejection(draft.house, playerBid.designId, order.productId) : null
+    const designRejection = playerBid ? bidDesignRejection(draft, playerBid, order) : null
 
     if (playerBid) {
       if (playerBid.price > order.trueBudget) {
@@ -167,8 +168,9 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0),
           ...(design ? { designId: design.id } : {}),
+          ...(playerBid.kit ? { kit: true } : {}),
         })
       }
     }
@@ -259,7 +261,9 @@ export const bidding: ResolveStep = (ctx) => {
     if (winner.source === 'player') {
       const baseUnitCost = computeUnitCostNow(product, winner.grade, draft.market.commodities)
       const winningDesign = winner.designId !== undefined ? draft.house.designs.find((d) => d.id === winner.designId) : undefined
-      const unitCostAtSigning = winningDesign ? round(baseUnitCost * winningDesign.unitCostFactor) : baseUnitCost
+      // P112: en uppgraderingssats sänker styckkostnaden ytterligare (lägre marginal mot snabbare affär).
+      const unitCostAtSigning =
+        winningDesign || winner.kit ? round(baseUnitCost * (winningDesign ? winningDesign.unitCostFactor : 1) * (winner.kit ? KIT_UNIT_COST_FACTOR : 1)) : baseUnitCost
       const contract: Contract = {
         id: `contract-${order.id}`,
         buyerId: order.buyerId,
@@ -278,6 +282,7 @@ export const bidding: ResolveStep = (ctx) => {
         advancePct: order.advancePct,
         advancePaid: advanceAmount(winner.price, order.advancePct),
         ...(winningDesign ? { designId: winningDesign.id } : {}),
+        ...(winner.kit ? { kit: true } : {}),
       }
       draft.market.contracts.push(contract)
 

@@ -12,8 +12,12 @@ import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import {
   QUALITY_CLASSES,
   buyerPreferenceMix,
+  KIT_UNIT_COST_FACTOR,
+  bidDesignRejection,
   designBidRejection,
   designBidTerm,
+  kitBidTerm,
+  kitPriceCap,
   qualityClassOf,
 } from './design.js'
 import type { PreferenceMix } from './design.js'
@@ -448,16 +452,19 @@ export function officialDisplay(state: GameState, official: Official): OfficialD
   }
 }
 
-// P109: konstruktionen ett bud kan bära — bara en egen, aktiv Design som passar ordern (samma prövning som bidding.ts).
-function usableDesign(state: GameState, order: Order, designId: string | undefined) {
-  if (designId === undefined) return undefined
-  if (designBidRejection(state.house, designId, order.productId) !== null) return undefined
-  return state.house.designs.find((d) => d.id === designId)
+// P109/P112: konstruktionen (och satsen) ett bud kan bära — bara en egen, aktiv Design som passar ordern, och en sats bara
+// när villkoren är uppfyllda (samma prövning som bidding.ts, utan prisgrinden: priset är det reglaget väljer).
+function usableDesign(state: GameState, order: Order, designId: string | undefined, kit = false) {
+  if (designId === undefined) return { design: undefined, kit: false }
+  if (designBidRejection(state.house, designId, order.productId) !== null) return { design: undefined, kit: false }
+  const design = state.house.designs.find((d) => d.id === designId)
+  const kitOk = kit && design !== undefined && bidDesignRejection(state, { designId, kit: true, price: 0 }, order) === null
+  return { design, kit: kitOk }
 }
 
-export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string): BidEstimate {
+export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string, kit = false): BidEstimate {
   const product = getProduct(order.productId)
-  const design = usableDesign(state, order, designId)
+  const { design, kit: useKit } = usableDesign(state, order, designId, kit)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}`, 0)
 
   const depth = effectiveDepth(state, order.buyerId)
@@ -482,7 +489,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
   // "plus vilket hus som ligger lägst" — bara vid depth >= 4 (spec 4.3-tabellen).
   const lowestRivalHouse = depth >= 4 && lowest ? lowest.rivalId : null
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1)
 
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0
@@ -510,7 +517,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0),
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -536,9 +543,9 @@ export interface PlayerWinCurvePoint {
   confidence: Pct
 }
 
-export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string): PlayerWinCurvePoint[] {
+export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string, kit = false): PlayerWinCurvePoint[] {
   const product = getProduct(order.productId)
-  const design = usableDesign(state, order, designId)
+  const { design, kit: useKit } = usableDesign(state, order, designId, kit)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}:playerWinCurve`, 0)
 
   // Rivalprisbandets ÖVRE gräns — ordagrant samma beräkning som bidEstimate
@@ -558,9 +565,10 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
   const lowestRivalPrice = rivalPrices.length > 0 ? Math.min(...rivalPrices) : order.referencePrice
   const rivalPriceHigh = Math.round(lowestRivalPrice * (1 + pct))
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1)
   const costFloor = Math.max(1, yourUnitCost * order.quantity)
-  const ceiling = Math.max(costFloor, rivalPriceHigh)
+  // P112: en satsaffärs pris kapas vid kitPriceCapFactor × referenspris (lägre marginal).
+  const ceiling = Math.max(costFloor, useKit ? Math.min(rivalPriceHigh, kitPriceCap(order)) : rivalPriceHigh)
 
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0
@@ -582,7 +590,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0),
   }
 
   const points: PlayerWinCurvePoint[] = []

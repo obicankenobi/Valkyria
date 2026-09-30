@@ -781,6 +781,9 @@ konstruktioner än; vakterna är orörda. Golden omfryst i egen commit.
 `revealFlaw`). Golden-hasharna oförändrade; bara `balance.frozen.json` omfryst.
 **P111 BYGGD 2026-09-30:** köparens preferensmix (`buyerPreferenceMix`) och relativ bedömning (riktmärket stiger
 med generationen) i `designBidTerm`; mixen visas bara med en station (`buyerPreferenceDisplay`). Golden-hasharna oförändrade.
+**P112 BYGGD 2026-09-30:** uppgradering (`DESIGN START` med `upgradeOf`, ärver ryktet) mot ny konstruktion, och
+uppgraderingssatser (`Bid.kit`). **Premissfynd:** linjeomställning utlöses inte av ett designbyte (9B, samma `productId`) —
+ej byggt, ägarbeslut behövs. Golden-hasharna oförändrade.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

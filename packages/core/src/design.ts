@@ -56,6 +56,12 @@ interface Balance {
   preferenceMixDoctrineShift: number
   preferenceMixFloor: number
   benchmarkPerGeneration: number
+  upgradeTurnsFactor: number
+  upgradeCostFactor: number
+  upgradeMaxPerformanceGain: number
+  kitUnitCostFactor: number
+  kitPriceCapFactor: number
+  kitScoreBonus: number
   doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
 }
 
@@ -107,14 +113,15 @@ function chiefEngineerSaves(house: Pick<House, 'staff'>): number {
 }
 
 // Ett designprojekts längd: rndProjectTurns × ambitionens tidsfaktor, en tur kortare med chefsingenjören över tröskeln.
-export function designDuration(house: Pick<House, 'staff'>, ambition: DesignAmbition): number {
-  const base = Math.max(1, Math.round(BALANCE.rndProjectTurns * BALANCE.designAmbition[ambition].turnsFactor))
+export function designDuration(house: Pick<House, 'staff'>, ambition: DesignAmbition, upgrade = false): number {
+  const factor = BALANCE.designAmbition[ambition].turnsFactor * (upgrade ? BALANCE.upgradeTurnsFactor : 1)
+  const base = Math.max(1, Math.round(BALANCE.rndProjectTurns * factor))
   return Math.max(1, base - chiefEngineerSaves(house))
 }
 
 // Faktorn på rndOverhead per tur — ambitionens costFactor.
-export function designCostPerTurn(ambition: DesignAmbition): number {
-  return BALANCE.designAmbition[ambition].costFactor
+export function designCostPerTurn(ambition: DesignAmbition, upgrade = false): number {
+  return BALANCE.designAmbition[ambition].costFactor * (upgrade ? BALANCE.upgradeCostFactor : 1)
 }
 
 export function qualityClassOf(trueQuality: number): QualityClass {
@@ -157,6 +164,8 @@ export interface DesignRollSpec {
 // chefsingenjör och husets erfarenhet (antalet egna konstruktioner i kategorin). Dras med den Rng som skickas in
 // (ctx.rng i resolve, hård regel 2). De SYNLIGA värdena är designvalen; bara trueQuality och bristen är utfallet.
 export function rollDesign(rng: Rng, house: House, spec: DesignRollSpec): Design {
+  const predecessor = spec.upgradeOf !== null ? house.designs.find((d) => d.id === spec.upgradeOf) : undefined
+  if (predecessor) return rollUpgrade(rng, house, spec, predecessor)
   const focus = BALANCE.designFocus[spec.focus]
   const steps = BALANCE.designAmbition[spec.ambition].steps
   const performance = clampPct(focus.performance + steps * BALANCE.designAmbitionPerformanceGain)
@@ -197,6 +206,42 @@ export function rollDesign(rng: Rng, house: House, spec: DesignRollSpec): Design
     testedIn: [],
     fieldRecord: { occasions: 0, proven: false },
     lineage: spec.upgradeOf,
+    introducedTurn: spec.turn,
+    status: 'active',
+  }
+}
+
+// P112 (§5.5): en uppgradering ärver föregångarens dolda utfall (gott och dåligt), brist, osäkerhet, provningshistorik och
+// fältrykte; dess tak är lägre (prestanda och tillförlitlighet stiger högst upgradeMaxPerformanceGain över föregångarens och
+// sjunker aldrig) och styckkostnaden är föregångarens. Bara en liten spridning dras — ingen ny brist- eller genombrottsrullning.
+function rollUpgrade(rng: Rng, house: House, spec: DesignRollSpec, pred: Design): Design {
+  const focus = BALANCE.designFocus[spec.focus]
+  const steps = BALANCE.designAmbition[spec.ambition].steps
+  const gain = BALANCE.upgradeMaxPerformanceGain
+  const freshPerformance = focus.performance + steps * BALANCE.designAmbitionPerformanceGain
+  const freshReliability = focus.reliability - steps * BALANCE.designAmbitionReliabilityLoss
+  const performance = clampPct(Math.max(pred.performance, Math.min(freshPerformance, pred.performance + gain)))
+  const reliability = clampPct(Math.max(pred.reliability, Math.min(freshReliability, pred.reliability + gain)))
+  const inheritedDelta = pred.trueQuality - (pred.performance + pred.reliability) / 2
+  const trueQuality = clampPct((performance + reliability) / 2 + inheritedDelta + rng.int(-BALANCE.designSpread, BALANCE.designSpread))
+  return {
+    id: `design-${house.designs.length + 1}`,
+    name: designName(house, spec.category, spec.year),
+    category: spec.category,
+    baseProductId: pred.baseProductId,
+    generation: spec.targetGeneration,
+    focus: spec.focus,
+    ambition: spec.ambition,
+    performance,
+    reliability,
+    unitCostFactor: pred.unitCostFactor,
+    trueQuality,
+    uncertainty: pred.uncertainty,
+    latentFlaw: pred.latentFlaw ? { ...pred.latentFlaw } : null,
+    flawRevealed: pred.flawRevealed,
+    testedIn: [...pred.testedIn],
+    fieldRecord: { ...pred.fieldRecord },
+    lineage: pred.id,
     introducedTurn: spec.turn,
     status: 'active',
   }
@@ -305,7 +350,7 @@ export function isDesignProject(project: Pick<RndProject, 'design'>): boolean {
 
 export function validateDesignStart(
   house: House,
-  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition },
+  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId | null },
 ): string | null {
   if (!(TECH_CATEGORIES as readonly string[]).includes(change.category)) return 'unknown category'
   if (!(DESIGN_FOCUSES as readonly string[]).includes(change.focus)) return 'unknown design focus'
@@ -314,17 +359,24 @@ export function validateDesignStart(
     return 'tech level too low for a design in that category'
   }
   if (house.rnd.some((p) => p.category === change.category && p.design)) return 'a design project is already running in that category'
+  if (change.upgradeOf !== undefined && change.upgradeOf !== null) {
+    const pred = house.designs?.find((d) => d.id === change.upgradeOf)
+    if (!pred) return 'unknown design to upgrade'
+    if (pred.category !== change.category) return 'the design to upgrade is in another category'
+    if (pred.status !== 'active') return 'the design to upgrade is withdrawn'
+  }
   return null
 }
 
 export function newDesignProject(house: House, spec: DesignProjectSpec & { category: TechCategory }, turn: number): RndProject {
-  const turns = designDuration(house, spec.ambition)
+  const upgrade = spec.upgradeOf !== null
+  const turns = designDuration(house, spec.ambition, upgrade)
   return {
     id: `rnd-design-${spec.category}-${turn}`,
     category: spec.category,
     turnsRemaining: turns,
     turnsTotal: turns,
-    costFactor: designCostPerTurn(spec.ambition),
+    costFactor: designCostPerTurn(spec.ambition, upgrade),
     design: {
       focus: spec.focus,
       ambition: spec.ambition,
@@ -369,4 +421,53 @@ export function revealFlaw(design: Design): boolean {
 export function testingOverheadCount(house: Pick<House, 'standingOrders'>, turn?: number): number {
   const tests = Object.values(house.standingOrders?.testing ?? {})
   return tests.filter((t) => turn === undefined || turn >= t.sinceTurn).length
+}
+
+// ── uppgraderingssatser (P112, ETAPP9 §5.5) ─────────────────────────────────
+
+// Poängbonusen en satsaffär ger (snabbare affär), efter computeScore — delad av bidding.ts, bidEstimate och playerWinCurve.
+export function kitBidTerm(): number {
+  return BALANCE.kitScoreBonus
+}
+
+export function kitPriceCap(order: Pick<Order, 'referencePrice'>): number {
+  return Math.round(BALANCE.kitPriceCapFactor * order.referencePrice)
+}
+
+export const KIT_UNIT_COST_FACTOR = BALANCE.kitUnitCostFactor
+
+// Villkoren för en uppgraderingssats: en uppgraderad konstruktion (lineage), köparen har fått föregångaren (eller någon
+// tidigare i släktlinjen) levererad (ett fullgjort kontrakt bärande dess designId), och priset ligger under taket
+// (lägre marginal). `price` utelämnat prövar bara de två första villkoren (skattningarna).
+export function kitBidRejection(
+  state: Pick<GameState, 'house' | 'market'>,
+  design: Design,
+  order: Pick<Order, 'buyerId' | 'referencePrice'>,
+  price?: number,
+): string | null {
+  if (design.lineage === null) return 'an upgrade kit needs an upgraded design'
+  const lineage = new Set<string>()
+  for (let id: string | null = design.lineage; id !== null && !lineage.has(id); ) {
+    lineage.add(id)
+    id = state.house.designs.find((d) => d.id === id)?.lineage ?? null
+  }
+  const hasMateriel = state.market.contracts.some(
+    (c) => c.status === 'fulfilled' && c.buyerId === order.buyerId && c.designId !== undefined && lineage.has(c.designId),
+  )
+  if (!hasMateriel) return 'the buyer has no materiel of the predecessor'
+  if (price !== undefined && price > kitPriceCap(order)) return 'kit price above the cap'
+  return null
+}
+
+// Hela prövningen av ett bud som bär en konstruktion och/eller en sats (bidding.ts). null = godtaget.
+export function bidDesignRejection(
+  state: Pick<GameState, 'house' | 'market'>,
+  bid: { designId?: string; kit?: boolean; price: number },
+  order: Pick<Order, 'buyerId' | 'productId' | 'referencePrice'>,
+): string | null {
+  if (bid.designId === undefined) return bid.kit ? 'an upgrade kit needs an upgraded design' : null
+  const rejection = designBidRejection(state.house, bid.designId, order.productId)
+  if (rejection) return rejection
+  if (!bid.kit) return null
+  return kitBidRejection(state, state.house.designs.find((d) => d.id === bid.designId)!, order, bid.price)
 }
