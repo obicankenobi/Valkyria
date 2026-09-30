@@ -673,6 +673,11 @@ lämnar golden orörd.
 > miljöbrister som bara avslöjas av provning i rätt miljö (`revealFlaw`, återanvänds av P113). Golden-hasharna
 > oförändrade; bara `balance.frozen.json` omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
 
+> **P111 BYGGD 2026-09-30.** `buyerPreferenceMix` (härledd ur agenda, förlorande front och doktrin), `designBidTerm` är nu
+> mix-viktad och relativ mot ett riktmärke som stiger med generationen (rivalerna hinner ikapp av sig själva),
+> `buyerPreferenceDisplay` avslöjar mixen bara med en station. Avsteg: riktmärket är härlett ur generationen tills P118.
+> Golden-hasharna oförändrade. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

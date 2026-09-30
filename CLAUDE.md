@@ -779,6 +779,8 @@ konstruktioner än; vakterna är orörda. Golden omfryst i egen commit.
 **P110 BYGGD 2026-09-30:** provning i egen regi (stående order `TESTING`, osäkerheten smalnar av, kostar
 `rndOverhead` × 0,5 per tur) och miljöbrister som bara avslöjas i rätt miljö (`data/environments.json`,
 `revealFlaw`). Golden-hasharna oförändrade; bara `balance.frozen.json` omfryst.
+**P111 BYGGD 2026-09-30:** köparens preferensmix (`buyerPreferenceMix`) och relativ bedömning (riktmärket stiger
+med generationen) i `designBidTerm`; mixen visas bara med en station (`buyerPreferenceDisplay`). Golden-hasharna oförändrade.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

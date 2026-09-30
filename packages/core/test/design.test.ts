@@ -322,15 +322,17 @@ describe('bud med en konstruktion — en formel, en källa (P109, skyddsräcke 3
     expect(designTrueValues(d)).toEqual({ performance: 70, reliability: 60 })
   })
 
-  it('termen är designBidWeight × clamp((sant medelvärde − designBenchmarkBase) / 50, −1, 1) i P109:s neutrala läge', () => {
+  it('termen (P111: köparviktad och relativ) är 0 för en konstruktion på riktmärket, positiv över och negativ under, begränsad till ±designBidWeight', () => {
     const strong = designWith({ performance: 90, reliability: 90, trueQuality: 90 })
-    const weak = designWith({ performance: 10, reliability: 10, trueQuality: 10 })
+    const weak = designWith({ performance: 10, reliability: 10, trueQuality: 10, unitCostFactor: 1 })
     const neutral = designWith({ performance: B.designBenchmarkBase, reliability: B.designBenchmarkBase, trueQuality: B.designBenchmarkBase })
     const state = fresh()
     const order = orderFor(state)
-    expect(designBidTerm(state, strong, order)).toBeCloseTo(B.designBidWeight * 0.8, 9)
-    expect(designBidTerm(state, weak, order)).toBeCloseTo(-B.designBidWeight * 0.8, 9)
     expect(designBidTerm(state, neutral, order)).toBeCloseTo(0, 9)
+    expect(designBidTerm(state, strong, order)).toBeGreaterThan(0)
+    expect(designBidTerm(state, strong, order)).toBeLessThanOrEqual(B.designBidWeight)
+    expect(designBidTerm(state, weak, order)).toBeLessThan(0)
+    expect(designBidTerm(state, weak, order)).toBeGreaterThanOrEqual(-B.designBidWeight)
   })
 
   it('bidding.ts avvisar okänd konstruktion, en för en annan basprodukt och en tillbakadragen', () => {

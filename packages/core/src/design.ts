@@ -16,6 +16,7 @@ import type {
   DesignFocus,
   DesignId,
   DesignProjectSpec,
+  Front,
   GameState,
   House,
   Order,
@@ -48,6 +49,21 @@ interface Balance {
   qualityClassThresholds: { A: number; B: number; C: number }
   designBidWeight: number
   designBenchmarkBase: number
+  preferenceMixBase: PreferenceMix
+  preferenceMixAgendaShift: number
+  preferenceMixLosingFrontShift: number
+  preferenceMixLosingPosition: number
+  preferenceMixDoctrineShift: number
+  preferenceMixFloor: number
+  benchmarkPerGeneration: number
+  doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
+}
+
+// P111: köparens preferensmix — tre vikter som summerar till 1.
+export interface PreferenceMix {
+  performance: number
+  reliability: number
+  cost: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -192,13 +208,77 @@ export function designTrueValues(design: Pick<Design, 'performance' | 'reliabili
   return { performance: design.performance + delta, reliability: design.reliability + delta }
 }
 
-// Budtermen (skyddsräcke 1 och 3): designBidWeight × clamp((sant värde − riktmärket) / 50, −1, 1), adderad till
-// spelarens poäng EFTER computeScore. P109:s neutrala läge — medelvärdet av sann prestanda och tillförlitlighet mot ett
-// fast riktmärke. P111 gör den köpar-viktad och relativ; funktionen och dess anropare är desamma.
-export function designBidTerm(_state: Pick<GameState, 'meta'>, design: Design, _order: Pick<Order, 'buyerId'>): number {
+// ── köparens preferensmix och den relativa bedömningen (P111, ETAPP9 §5.4) ──────────────────────────
+
+type MixInput = Pick<GameState, 'officials' | 'fronts'>
+type MixOrder = Pick<Order, 'buyerId' | 'officialId' | 'frontId'>
+
+function frontFor(state: MixInput, order: MixOrder): { front: Front; side: 'a' | 'b' } | null {
+  const direct = order.frontId !== null ? state.fronts[order.frontId] : undefined
+  const candidates = direct ? [direct] : Object.values(state.fronts)
+  for (const front of candidates) {
+    if (front.sideA === order.buyerId) return { front, side: 'a' }
+    if (front.sideB === order.buyerId) return { front, side: 'b' }
+  }
+  return null
+}
+
+// Köparens dolda preferensmix för en kategori, härledd ur det som finns (ingen ny lagrad sanning): grundmixen,
+// tjänstemannens agenda, en förlorande front och förbandens doktrin. Ren och deterministisk; varje vikt golvas och
+// mixen normaliseras till summa 1. Underrättelse avslöjar den (buyerPreferenceDisplay i queries).
+export function buyerPreferenceMix(state: MixInput, order: MixOrder, category: TechCategory): PreferenceMix {
+  const mix: PreferenceMix = { ...BALANCE.preferenceMixBase }
+  // Flytta `amount` till en vikt från de två andra, lika.
+  const shift = (to: keyof PreferenceMix, amount: number): void => {
+    mix[to] += amount
+    for (const other of ['performance', 'reliability', 'cost'] as const) if (other !== to) mix[other] -= amount / 2
+  }
+
+  const agenda = state.officials[order.officialId]?.agenda
+  if (agenda === 'MODERNISE') shift('performance', BALANCE.preferenceMixAgendaShift)
+  if (agenda === 'AUSTERITY') shift('cost', BALANCE.preferenceMixAgendaShift)
+
+  const match = frontFor(state, order)
+  if (match) {
+    const { front, side } = match
+    const losing = side === 'a' ? front.position > BALANCE.preferenceMixLosingPosition : front.position < -BALANCE.preferenceMixLosingPosition
+    if (losing) shift('performance', BALANCE.preferenceMixLosingFrontShift)
+
+    const formations = (front.formations ?? []).filter((f) => f.factionId === order.buyerId && f.status !== 'destroyed')
+    if (formations.length > 0) {
+      const meanWeight = formations.reduce((sum, f) => sum + (BALANCE.doctrineProfile[f.doctrine]?.[category] ?? 0), 0) / formations.length
+      // 0,25 = lika vikt mellan de fyra kategorier en doktrin namnger; 0,5 = avståndet till "helt dominerande".
+      const emphasis = Math.max(-1, Math.min(1, (meanWeight - 0.25) / 0.5))
+      shift('performance', BALANCE.preferenceMixDoctrineShift * emphasis)
+    }
+  }
+
+  for (const key of ['performance', 'reliability', 'cost'] as const) mix[key] = Math.max(BALANCE.preferenceMixFloor, mix[key])
+  const total = mix.performance + mix.reliability + mix.cost
+  return { performance: mix.performance / total, reliability: mix.reliability / total, cost: mix.cost / total }
+}
+
+// Riktmärket en konstruktion bedöms mot: den generationens nivå, som stiger med generationen (P109:s provisoriska
+// tidsschema tills P118). Det är "det bästa köparen redan erbjudits" — när rivalerna hinner ikapp krymper försprånget av
+// sig självt, utan extra regler. Kostnadsdelen är fast (basproduktens faktor 1 värderas lika med riktmärket).
+export function designBenchmark(turn: number): number {
+  return BALANCE.designBenchmarkBase + BALANCE.benchmarkPerGeneration * (currentGeneration(turn) - 1)
+}
+
+const COST_BENCHMARK = 50
+
+// Budtermen (skyddsräcke 1 och 3): designBidWeight × clamp((köparens värdering − riktmärket) / 50, −1, 1), adderad till
+// spelarens poäng EFTER computeScore. Värderingen är mix-viktad över sann prestanda, sann tillförlitlighet och en kostnadspoäng
+// (50 + (1 − styckkostnadsfaktor) × 100); riktmärket viktas med samma mix. Samma funktion används av bidding.ts,
+// bidEstimate och playerWinCurve.
+export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fronts'>, design: Design, order: MixOrder): number {
+  const mix = buyerPreferenceMix(state, order, design.category)
   const values = designTrueValues(design)
-  const mean = (values.performance + values.reliability) / 2
-  const relative = Math.max(-1, Math.min(1, (mean - BALANCE.designBenchmarkBase) / 50))
+  const costScore = Math.max(0, Math.min(100, COST_BENCHMARK + (1 - design.unitCostFactor) * 100))
+  const value = mix.performance * values.performance + mix.reliability * values.reliability + mix.cost * costScore
+  const benchmark = designBenchmark(state.meta.turn)
+  const benchmarkValue = (mix.performance + mix.reliability) * benchmark + mix.cost * COST_BENCHMARK
+  const relative = Math.max(-1, Math.min(1, (value - benchmarkValue) / 50))
   return BALANCE.designBidWeight * relative
 }
 

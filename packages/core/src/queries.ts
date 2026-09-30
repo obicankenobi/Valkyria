@@ -11,10 +11,12 @@ import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import {
   QUALITY_CLASSES,
+  buyerPreferenceMix,
   designBidRejection,
   designBidTerm,
   qualityClassOf,
 } from './design.js'
+import type { PreferenceMix } from './design.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
@@ -826,4 +828,15 @@ export function designDisplay(state: GameState, design: Design): DesignDisplay {
     testedIn: design.testedIn,
     fieldRecord: design.fieldRecord,
   }
+}
+
+// P111 (ETAPP9 §5.4, skyddsräcke 5): köparens preferensmix visas bara med underrättelse — en station i landet
+// (samma binära grind som förbandsdisplayen: effectiveDepth > 0). Utan station är den okänd (null).
+export function buyerPreferenceDisplay(
+  state: GameState,
+  order: Pick<Order, 'buyerId' | 'officialId' | 'frontId'>,
+  category: TechCategory,
+): PreferenceMix | null {
+  if (effectiveDepth(state, order.buyerId) === 0) return null
+  return buyerPreferenceMix(state, order, category)
 }

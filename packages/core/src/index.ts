@@ -34,6 +34,7 @@ export {
   researchOutlook,
   estimateLineCompletionTurn,
   designDisplay,
+  buyerPreferenceDisplay,
 } from './queries.js'
 export type { DesignDisplay, PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook } from './queries.js'
 // getProduct/allProducts: paketets ENDA väg till produktkatalogen (avsnitt 6) för
@@ -70,4 +71,5 @@ export { scenarioVerdict } from './scenarioVerdict.js'
 export { advanceAmount, advanceFactors, computeAdvancePct, deliveryPayment } from './resolve/advance.js'
 
 // P109 (ETAPP9 §5): konstruktionerna — namn-/klasshjälpare som gränssnittet (P126) återanvänder i stället för att upprepa dem.
+export type { PreferenceMix } from './design.js'
 export { DESIGN_AMBITIONS, DESIGN_ENVIRONMENTS, DESIGN_FOCUSES, QUALITY_CLASSES, currentGeneration, designBaseProduct, qualityClassOf } from './design.js'
