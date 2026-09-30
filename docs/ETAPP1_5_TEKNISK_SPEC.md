@@ -515,6 +515,10 @@ Och en fjärde bot, som etapp 1 saknade:
 `capacity` är referensboten: den mäter om kapacitetsknappheten (`DESIGN.md` §4) är verklig. Om
 `capacity` presterar sämre än `aggressive` är knappheten fortfarande fiktion.
 
+> **Reviderat 2026-09-30 (ägarbeslut):** `capacity` förväntas inte längre prestera bättre eller sämre än
+> någon annan bot. Den är en referensmätare — dess slutfördelning är sparad som referensvärde och bevakas av
+> `packages/harness/test/capacityReference.test.ts` (±10 procentenheter). Se ETAPP8_FORSLAG.md, P104.
+
 ---
 
 ## 11. Verktygskedjan
@@ -622,7 +626,7 @@ att någon rad rörde sig.
 | Andel partier som slutar på tur 14 eller 20 | ~80 % (reviderat under P22 — se nedan, i spänning mot `passive`s BUYOUT-rad) | NY. Utfallsrymden ska vara bred |
 | Spridning i slutkassa för `balanced` | ≥ 3× mellan p10 och p90 **bland partier med positiv slutkassa** | Definitionen rättad, se granskningsrapporten |
 | Turer med `heat > 40` i ett aktivt parti | 30–60 % | |
-| `capacity`-boten mot `aggressive` | `capacity` ska ha **lägre** median-slutkassa (reviderat under P22 — strukturellt, se nedan) | NY. Prövar om kapacitetsknappheten är verklig |
+| ~~`capacity`-boten mot `aggressive`~~ | ~~`capacity` ska ha **lägre** median-slutkassa (reviderat under P22 — strukturellt, se nedan)~~ | ~~NY. Prövar om kapacitetsknappheten är verklig~~ **Struken 2026-09-30 (ägarbeslut, capacity-frågan efter P104):** `capacity` är en referensmätare och förväntas inte vinna eller slå någon annan bot — se ETAPP8_FORSLAG.md, P104-blockquoten, och `packages/harness/test/capacityReference.test.ts`. |
 
 **Måltabellen är hypoteser, inte acceptanskriterier.** Samma brasklapp som etapp 1. Om
 härnessen envist säger något annat och partierna ändå är roliga att spela är det tabellen som

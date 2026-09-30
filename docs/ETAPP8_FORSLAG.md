@@ -270,10 +270,27 @@ tidigare balanspass.
 | `passive`: `BUYOUT` | > 60 % (passivitet ska fortfarande straffa sig) | **ja** |
 | Förskottets andel av intäkterna, `human` | 15–35 % | |
 | Partier där kassan går under noll före tur 5, `human` | < 20 % | **ja** |
-| Minst en vapenvila, `human` | 20–50 % av partierna | **ja** |
+| Minst en vapenvila, `human` | ~~20–50 % av partierna~~ **Reviderad 2026-09-30:** mekaniken ska vara *nåbar*, ingen frekvensgräns (pelare 1:s andra halva, "för lite krig", är inte prövad — se anteckningen under tabellen) | **ja** |
 | Intäkt kvartalet efter en vapenvila mot kvartalet före, samma front | minst 30 % lägre | **ja** (pelare 1) |
-| Minst ett larm från en stående order, `human` | > 50 % av partierna | |
+| Minst ett larm från en stående order, `human` | ~~> 50 % av partierna~~ **Reviderad 2026-09-30:** *nåbara*, ingen frekvensgräns | |
 | `FUND_COUP` på högsta nivån mot lägsta, `aggressive` | minst +15 procentenheter i lyckandechans | |
+
+> **Anteckning 2026-09-30 (ägarbeslut, vapenviloraden):** raden reviderades till "nåbar" i P104, men pelare 1:s
+> andra halva — "för lite krig för att överleva kvartalet" — är **inte prövad**. Den kräver en mekanik där
+> vapenvila kan komma *mot spelarens vilja* (en stormakt som tvingar fram förhandlingar när doomsday varit högt
+> länge, RAPPORT4 §4) och flyttas till en kommande etapp. `human` ändras inte för att nå raden.
+>
+> **Måltabellrader som förväntade sig att `capacity` skulle vinna eller slå en annan bot — struken
+> 2026-09-30:** (1) ETAPP1_5_TEKNISK_SPEC.md §13, "`capacity`-boten mot `aggressive`" (lägre median-slutkassa) och
+> meningen under 10.2 ("presterar `capacity` sämre än `aggressive` är knappheten fortfarande fiktion");
+> (2) ETAPP2_TEKNISK_SPEC.md avsnitt 3, målet "`capacity` slår `aggressive`" och tabellraden "`capacity` mot
+> `aggressive`, median slutkassa — `capacity` högre" (fetstilt). ETAPP8 §7.2 hade ingen `capacity`-rad.
+>
+> **`capacity` som referensmätare (referensvärde):** 300 partier (`capacity-reference:<i>` mot indochina-slice,
+> efter P104): SCENARIO_COMPLETE 2 (0,7 %), BUYOUT 290 (96,7 %), INSOLVENCY 7 (2,3 %), NUCLEAR_EXCHANGE 1
+> (0,3 %). `packages/harness/test/capacityReference.test.ts` underkänner om vinst- eller BUYOUT-andelen flyttat
+> sig mer än ±10 procentenheter. Rör den sig ska prompten som orsakade det redovisa varför i ANDRINGSLOGG.md och
+> uppdatera referensen (testet OCH den här raden) som ett ägarbeslut.
 
 Balanspasset ändrar bara `balance.json` och scenariodatan. `balance.frozen.json` fryses om **sist
 i etappen**, samma praxis som P22.
@@ -711,6 +728,7 @@ Tio prompter. 8A och 8B är kärnan. Om etappen behöver kortas stryks 8D först
 ## 12. Efter etappen — kandidater (inte föreslagna här)
 
 - **Etapp 9, forskningen** (redan i ETAPP7 §16).
+- **En mekanik där vapenvila kan komma mot spelarens vilja** (RAPPORT4 §4, ägarbeslut 2026-09-30) — förutsättningen för att pröva pelare 1:s andra halva, "för lite krig".
 - **Andra scenariot, `SUEZ`** (DESIGN.md §16): 14 turer, en stor köpare och hela scenariot är en
   enda kris. Det är det billigaste sättet att pröva om systemen generaliserar, eftersom
   kartsystemet redan är byggt för det (ETAPP7 §14). DESIGN.md säger att variationen ska komma

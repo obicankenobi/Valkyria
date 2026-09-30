@@ -310,6 +310,8 @@ och logga valet.
 Målet: vända ordningen i 1.2 så att `capacity` slår `aggressive`, utan att göra
 `aggressive` ospelbar.
 
+> **Struket mål 2026-09-30 (ägarbeslut):** `capacity` ska inte slå `aggressive` — den är en referensmätare, se ETAPP8_FORSLAG.md, P104.
+
 ### 3.1 Sena kontrakt eskalerar
 
 I dag är `late` en återvändsgränd med ett engångsstraff. Ny regel i `deliveries.ts`, och
@@ -580,7 +582,7 @@ levererade.
 
 | Kriterium | Målvärde | Mätt nu (n=500/policy, P32) |
 |---|---|---|
-| **`capacity` mot `aggressive`, median slutkassa** | **`capacity` högre** | Reviderat, se blockquote. `capacity` −£419 969, `aggressive` £758 025 — samma riktning som P22:s ursprungliga fynd, nu djupare: `capacity` tar aldrig lån och är kapacitetsspärrad (spec 10.2, kod), `aggressive` vinner ~2× fler kontrakt (mätt: 14 mot `balanced`s 6 vid samma jämförelse) |
+| ~~**`capacity` mot `aggressive`, median slutkassa**~~ | ~~**`capacity` högre**~~ | **Struken 2026-09-30 (ägarbeslut, capacity-frågan efter P104):** `capacity` är en referensmätare och förväntas inte vinna eller slå någon annan bot — se ETAPP8_FORSLAG.md, P104-blockquoten, och `packages/harness/test/capacityReference.test.ts`. Reviderat tidigare, se blockquote. `capacity` −£419 969, `aggressive` £758 025 — samma riktning som P22:s ursprungliga fynd, nu djupare: `capacity` tar aldrig lån och är kapacitetsspärrad (spec 10.2, kod), `aggressive` vinner ~2× fler kontrakt (mätt: 14 mot `balanced`s 6 vid samma jämförelse) |
 | **Rivalerna vinner ordrar, `aggressive`** | **> 15 %** | 23,0 % (median 20,0 %) ✓ |
 | Rivalerna vinner ordrar, `balanced` | 25–45 % | 55,4 % (median 57,1 %) — över, ej fetstilt, samma rotorsak som ovan (en svagare budstrategi förlorar oftare till rivaler också) |
 | **Rivalernas andel av `Front.attribution`** | **> 25 %** | 30,5 % ✓ (P25/P29 gjorde fältet meningsfullt första gången) |

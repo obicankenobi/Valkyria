@@ -47,6 +47,7 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'Each buyer (a faction) regularly puts out orders for a specific weapon type, in a quantity and with a deadline that depend on how hard-pressed the front is right now. An order shows as a stamped folder on CONTRACTS, with the buyer\'s name and a deadline before it is decided.',
       'A bid sets three things: price, delivery time, and an optional bribe to the buyer\'s procurement official. The price is compared against what it actually costs you to build the item (your margin) and against what rival houses are likely to bid. A lower, faster, more generous offer wins more often — but never a guarantee.',
       'When a bid wins it becomes a contract: part of the payment arrives immediately (an advance share that varies per order), the rest when the units actually deliver. A contract can go late (a missed deadline) or be voided (e.g. if the buyer\'s regime falls in a coup) — see Politics.',
+      'Winning a contract close to your own unit cost does not pay the house\'s fixed costs: payroll, line upkeep and interest come due every quarter whatever you win. Price for a margin, not just for the win.',
     ],
   },
   {

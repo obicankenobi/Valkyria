@@ -39,6 +39,12 @@ describe('handbook — täckning (P91b klart-när)', () => {
     }
   })
 
+  it('Procurement (CONTRACTS) varnar för att ett kontrakt nära självkostnad inte täcker de fasta kostnaderna (ägarbeslut 2026-09-30)', () => {
+    const body = findHandbookEntry('procurement')!.body.join(' ')
+    expect(body).toMatch(/unit cost/i)
+    expect(body).toMatch(/fixed costs/i)
+  })
+
   it('findHandbookEntry returnerar null för en okänd topic', () => {
     expect(findHandbookEntry('okand' as never)).toBeNull()
   })
