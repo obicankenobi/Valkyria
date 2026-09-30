@@ -328,10 +328,18 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // lägger inga obligatoriska fält i sluttillståndet (Bid.kit, Contract.kit och upgradeOf är valfria och utelämnas) och
   // ingen bot ritar eller bjuder med en sats. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P109:s (verifierat). Bara
   // balance.frozen.json följer med (nya rader: en anteckning och sex tal).
+  //
+  // Omfryst IGEN i P113 (ETAPP9_FORSLAG.md §5.6/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter
+  // koden). House.investigations är ett nytt fält i det hashade sluttillståndet; olycksfall, utredningskortet och
+  // standardförnekandet rör inget av de tre scriptade partierna (ingen bot levererar en konstruktion). INNAN omfrysningen
+  // verifierades att ändringen är exakt det: med det nya fältet borttaget ur det hashade tillståndet är alla tre hashar
+  // bit-identiska med P109:s–P112:s (db2c6cf301dd0, 9fd1f1efb7f35, 1bb041a449d989). balance.frozen.json följer med (nya
+  // rader: en anteckning och tio tal). De nya hasharna: passive c799ecdd5bd39, aggressive 8b4c7721789cc, balanced
+  // da588da434161.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'db2c6cf301dd0' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9fd1f1efb7f35' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1bb041a449d989' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c799ecdd5bd39' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '8b4c7721789cc' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'da588da434161' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
