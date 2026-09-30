@@ -313,6 +313,11 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // alla tre hashar bit-identiska med P108:s (3a5b3ed8d4bc, 16a19817a63401, 15e1f3d04960ba). balance.frozen.json följer
   // med (nya rader: en anteckning och nya tal). De nya hasharna: passive db2c6cf301dd0, aggressive 9fd1f1efb7f35,
   // balanced 1bb041a449d989.
+  //
+  // P110 (ETAPP9_FORSLAG.md §5.3/§12, beslut 9C — "regel"-prompt, egen commit): provning i egen regi och miljöbrister
+  // lägger inget nytt obligatoriskt fält i sluttillståndet (StandingOrders.testing är valfritt och utelämnas tills en
+  // provning sätts) och ingen bot provar något, så ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P109:s — det är verifierat, inte
+  // antaget. Bara balance.frozen.json följer med (nya rader: en anteckning och två tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'db2c6cf301dd0' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9fd1f1efb7f35' },
