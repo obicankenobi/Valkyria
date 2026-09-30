@@ -789,6 +789,9 @@ fältet → utredningskort som stående order (åtgärda / förneka / konstruera
 avslöjas. Krönikeslaget `casualty`. **P109–P113 (del B, "Konstruktionen") är därmed klara.** Golden omfryst i egen commit.
 **P114 BYGGD 2026-09-30:** kvalitet i striden (`fieldQuality.ts`, ±25 %, valfria `Front`-fält), fälttillfällen,
 stridsbeprövad, familjerykte, flaggskepp och omvänd rubrik vid nederlag. Golden-hasharna oförändrade.
+**P115 BYGGD 2026-09-30:** `FIELD_TRIAL` (`POLITICAL`, tjänsteman + konstruktion): sats till självkostnad, intervallet
+smalnar av, fälttillfälle, miljöbrist avslöjas, bonus i köparens nästa upphandling; kvaliteten blir känd för alla
+(`exposedToRivals`). Ej nåbart i appen förrän P126–P128. Golden-hasharna oförändrade.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

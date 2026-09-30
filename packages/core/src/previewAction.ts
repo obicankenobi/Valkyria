@@ -25,11 +25,13 @@ import { effectiveDepth } from './queries.js'
 import { intelOpSuccessPct } from './resolve/steps/applyActions.js'
 import { computeInfluenceAfter, findTheatreForFaction, frontOpponentOf, fundCoupSuccessPct } from './resolve/political.js'
 import { assassinateReductionFactor, backChannelGain, stageIncidentHeatScale } from './spendCurves.js'
+import { fieldTrialBatch } from './design.js'
 import { crashProgrammeCost } from './research.js'
 import { isRepayPayload, isRndPayload } from './validateAction.js'
 import type { ActionPreview, GameState, Money, PlayerAction, Pct } from './types.js'
 
 interface Balance {
+  fieldTrialUncertaintySteps: number
   buildLineCost: number
   hireCost: number
   intelExpandCost: number
@@ -110,6 +112,16 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
         case 'BRIBE':
         case 'FUND_CAMPAIGN':
           return preview(finiteOrNull(action.spend), null) // avvisas aldrig av rng, bara klippt vinst
+        case 'FIELD_TRIAL': {
+          // P115: satsens kostnad (självkostnad) och intervallets före → efter; lyckas alltid.
+          const design = state.house.designs?.find((d) => d.id === action.designId)
+          if (!design) return preview(null, null)
+          return preview(fieldTrialBatch(state, design).cost, null, true, {
+            label: 'CLASS UNCERTAINTY',
+            before: design.uncertainty,
+            after: Math.max(0, design.uncertainty - BALANCE.fieldTrialUncertaintySteps),
+          })
+        }
         case 'FAVOUR':
           return preview(null, null) // ingen kassa dras (avsnitt 3.3) — kostnaden är en marginalskuld (P99d), se favourMarginOwed
         case 'INFLUENCE': {

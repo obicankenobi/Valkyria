@@ -695,6 +695,12 @@ lämnar golden orörd.
 > flaggskeppets ryktesbonus i alla kategorier och omvänd rubrik vid olycksfågel i nederlag. Golden-hasharna oförändrade.
 > Se ANDRINGSLOGG 2026-09-30.
 
+> **P115 BYGGD 2026-09-30.** `FIELD_TRIAL` (`POLITICAL`, `officialId` + `designId`): en sats till självkostnad till en köpare,
+> relation över golvet, en gång per köpare; intervallet smalnar av direkt, ett fälttillfälle, en miljöbrist avslöjas om
+> köparens front har miljön, bonus i köparens nästa upphandling — mot satsen, en handling och att kvaliteten blir känd
+> för alla (`exposedToRivals`, P116 läser flaggan). UI (katalog, Handbok, ikon) kommer i P126–P128. Golden-hasharna
+> oförändrade. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

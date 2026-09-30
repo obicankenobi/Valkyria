@@ -105,6 +105,31 @@ export function provenThreshold(state: Pick<GameState, 'house' | 'market'>, desi
   return Math.max(BALANCE.provenMinOccasions, BALANCE.provenOccasions - BALANCE.provenFamilyStep * Math.max(0, buyers.size - 1))
 }
 
+// Ger EN konstruktion ett fälttillfälle (också via ett fältprov, P115). Når den tröskeln blir den stridsbeprövad med
+// `provenHeadline` och funktionen returnerar sant; annars emitterar den inget (anroparen bestämmer om en rad behövs).
+export function grantFieldOccasion(
+  ctx: ResolveContext,
+  design: Design,
+  provenHeadline: string,
+  causeId: string | null,
+  subjectId: string | null,
+): boolean {
+  const { draft, emit } = ctx
+  design.fieldRecord.occasions += 1
+  if (design.fieldRecord.proven || design.fieldRecord.occasions < provenThreshold(draft, design)) return false
+  design.fieldRecord.proven = true
+  emit({
+    severity: 'headline',
+    scope: 'front',
+    headline: provenHeadline,
+    causeId,
+    delta: { [`fieldRecord.${design.id}.occasions`]: 1 },
+    actorIsPlayer: true,
+    subjectId,
+  })
+  return true
+}
+
 // Ger varje konstruktion som levererats till sidan på fronten ett fälttillfälle. Den som når tröskeln blir stridsbeprövad
 // med en rubrik ("THE H&V M64 HELD AT …").
 export function awardFieldOccasions(
@@ -121,23 +146,17 @@ export function awardFieldOccasions(
     if ((units[designId] ?? 0) <= 0) continue
     const design = draft.house.designs?.find((d) => d.id === designId)
     if (!design) continue
-    design.fieldRecord.occasions += 1
     const name = design.name.toUpperCase()
-    if (!design.fieldRecord.proven && design.fieldRecord.occasions >= provenThreshold(draft, design)) {
-      design.fieldRecord.proven = true
-      emit({
-        severity: 'headline',
-        scope: 'front',
-        headline:
-          kind === 'hold'
-            ? `THE ${name} HELD THE ${front.id.toUpperCase()} FRONT UNDER PRESSURE — BATTLE-PROVEN`
-            : `THE ${name} BROKE THROUGH ON THE ${front.id.toUpperCase()} FRONT — BATTLE-PROVEN`,
-        causeId,
-        delta: { [`fieldRecord.${design.id}.occasions`]: 1 },
-        actorIsPlayer: true,
-        subjectId: front.id,
-      })
-    } else {
+    const provenNow = grantFieldOccasion(
+      ctx,
+      design,
+      kind === 'hold'
+        ? `THE ${name} HELD THE ${front.id.toUpperCase()} FRONT UNDER PRESSURE — BATTLE-PROVEN`
+        : `THE ${name} BROKE THROUGH ON THE ${front.id.toUpperCase()} FRONT — BATTLE-PROVEN`,
+      causeId,
+      front.id,
+    )
+    if (!provenNow) {
       emit({
         severity: 'ticker',
         scope: 'front',

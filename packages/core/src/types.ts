@@ -409,6 +409,11 @@ export interface Design {
   status: 'active' | 'withdrawn' // P113: tillbakadragen under en omkonstruktion
   // P113 (§5.6): spelaren förnekade en olycksfågel — ryktet sjunker per leverans tills bristen åtgärdas eller sanningen kommer fram.
   denied?: boolean
+  // P115 (§6.4): FIELD_TRIAL per köpare — bonusActive = bonusen i köparens nästa upphandling är kvar (förbrukas när
+  // konstruktionen vinner där). En köpare kan prova en konstruktion en gång. Utelämnat = aldrig provad.
+  trials?: Record<FactionId, { turn: number; bonusActive: boolean }>
+  // P115: resultatet av ett fältprov blir känt för alla — rivalerna ser konstruktionens verkliga kvalitet (P116 läser flaggan).
+  exposedToRivals?: boolean
 }
 
 // P113 (ETAPP9 §5.6): en utredning efter en olycksfågel i fält. open → spelaren väljer; denied → förnekad (kan fortfarande
@@ -903,6 +908,9 @@ export type PlayerAction =
   | { type: 'POLITICAL'; op: 'ASSASSINATE'; officialId: OfficialId; spend: Money }
   | { type: 'POLITICAL'; op: 'BRIBE' | 'FUND_CAMPAIGN'; officialId: OfficialId; spend: Money }
   | { type: 'POLITICAL'; op: 'FAVOUR'; officialId: OfficialId; marginCost: Money }
+  // P115 (ETAPP9 §6.4, beslut 9G): FIELD_TRIAL — ett av de två nya verben. Pekar på en tjänsteman (skyddsräcke 3: aldrig ett
+  // fritextnamn) och en egen konstruktion; kostar satsen till självkostnad (fieldTrialBatch), ingen `spend`.
+  | { type: 'POLITICAL'; op: 'FIELD_TRIAL'; officialId: OfficialId; designId: DesignId }
   // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): "betala för att flytta en
   // faktions publicSupport ELLER dess relations mot ett annat land" — två
   // olika mål, en gemensam diskriminant (`effect.kind`) i stället för två

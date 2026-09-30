@@ -38,6 +38,7 @@
 // exakta fallet (flera TAKE_LOAN, REPAY-före-TAKE_LOAN) och en kommentar om
 // den kvarstående, medvetet accepterade avvikelsen.
 import balanceData from './data/balance.json' with { type: 'json' }
+import { fieldTrialBatch } from './design.js'
 import { round } from './money.js'
 import { allProducts } from './pricing.js'
 import { findOfficial } from './officials.js'
@@ -48,6 +49,7 @@ interface Balance {
   maxStations: number
   brokerRelationThreshold: number
   brokerIntegrityThreshold: number
+  fieldTrialRelationFloor: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -159,6 +161,19 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
           if (!target) return fail('unknown target faction')
           if (!Number.isFinite(action.spend) || action.spend < 0) return fail('invalid spend amount')
           if (target.coupAttempted) return fail('coup already attempted against this faction')
+          return ok()
+        }
+        case 'FIELD_TRIAL': {
+          // P115 (ETAPP9 §6.4): en tjänsteman med relation över ett golv, en egen aktiv konstruktion som köparen inte redan provat,
+          // och kassa för satsen.
+          const official = draft.officials[action.officialId]
+          if (!official) return fail('unknown official')
+          const design = draft.house.designs?.find((d) => d.id === action.designId)
+          if (!design) return fail('unknown design')
+          if (design.status !== 'active') return fail('design is withdrawn')
+          if (official.relationToPlayer < BALANCE.fieldTrialRelationFloor) return fail('relation too low for a field trial')
+          if (design.trials?.[official.factionId]) return fail('that buyer has already tested this design')
+          if (draft.house.treasury < fieldTrialBatch(draft, design).cost) return fail('not enough cash for the trial batch')
           return ok()
         }
         case 'ASSASSINATE': {

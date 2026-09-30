@@ -285,6 +285,9 @@ export const bidding: ResolveStep = (ctx) => {
         ...(winner.kit ? { kit: true } : {}),
       }
       draft.market.contracts.push(contract)
+      // P115: fältprovets bonus hos den här köparen är förbrukad — "nästa upphandling" var den här.
+      const trial = winningDesign?.trials?.[order.buyerId]
+      if (trial) trial.bonusActive = false
 
       if (faction) {
         const boost = rng.int(BALANCE.relationBoostMin, BALANCE.relationBoostMax)

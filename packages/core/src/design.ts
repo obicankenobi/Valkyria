@@ -6,7 +6,7 @@
 // designBidTerm, och den läggs EFTER computeScore (skyddsräcke 1). Ett bud utan konstruktion får ingen term.
 import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
-import { allProducts } from './pricing.js'
+import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { Rng } from './rng.js'
 import type {
@@ -64,6 +64,8 @@ interface Balance {
   kitScoreBonus: number
   redesignTurnsFactor: number
   provenBidBonus: number
+  fieldTrialBatchFraction: number
+  fieldTrialBidBonus: number
   doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
 }
 
@@ -332,7 +334,17 @@ export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fro
   const benchmarkValue = (mix.performance + mix.reliability) * benchmark + mix.cost * COST_BENCHMARK
   const relative = Math.max(-1, Math.min(1, (value - benchmarkValue) / 50))
   // P114: stridsbeprövad syns hos alla köpare som en bonus (utanför ±designBidWeight — den är ett ryktesbevis, inte en värdering).
-  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0)
+  // P115: ett fältprov hos just den här köparen ger en bonus i dess nästa upphandling (förbrukas när konstruktionen vinner där).
+  const trialBonus = design.trials?.[order.buyerId]?.bonusActive ? BALANCE.fieldTrialBidBonus : 0
+  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0) + trialBonus
+}
+
+// P115 (§6.4): fältprovets sats — en mindre del av basproduktens minsta orderkvantitet, till självkostnad.
+export function fieldTrialBatch(state: Pick<GameState, 'market'>, design: Design): { units: number; cost: number } {
+  const product = getProduct(design.baseProductId)
+  const units = Math.max(1, Math.ceil((product.orderQuantityMin ?? 1) * BALANCE.fieldTrialBatchFraction))
+  const unitCost = computeUnitCostNow(product, 'A', state.market.commodities) * design.unitCostFactor
+  return { units, cost: Math.round(unitCost * units) }
 }
 
 // Styckkostnadsfaktorn för ett kontrakt/bud med en konstruktion (1 utan).

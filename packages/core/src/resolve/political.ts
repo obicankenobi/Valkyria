@@ -18,6 +18,8 @@ import balanceData from '../data/balance.json' with { type: 'json' }
 import successorsData from '../data/successors.json' with { type: 'json' }
 import { addDoomsday } from './doomsdayGate.js'
 import { replaceOfficial } from '../officials.js'
+import { fieldTrialBatch, frontEnvironments, revealFlaw } from '../design.js'
+import { grantFieldOccasion } from '../fieldQuality.js'
 import { recordExpense } from '../ledger.js'
 import { round } from '../money.js'
 import { assassinateReductionFactor, backChannelGain, fundCoupBonusPct, stageIncidentHeatScale } from '../spendCurves.js'
@@ -28,6 +30,8 @@ const SUCCESSOR_NAMES = successorsData as unknown as Record<FactionId, string[]>
 const AGENDAS: readonly Agenda[] = ['REARM', 'AUSTERITY', 'MODERNISE', 'NON_ALIGNMENT', 'SELF_ENRICHMENT']
 
 interface Balance {
+  fieldTrialUncertaintySteps: number
+  fieldTrialOccasions: number
   bribeRelationCostPerPoint: number
   bribeRelationMaxPerTurn: number
   bribeLowIntegrityGainBonus: number
@@ -149,6 +153,9 @@ export function applyPolitical(
       return
     case 'ASSASSINATE':
       applyAssassinate(ctx, action)
+      return
+    case 'FIELD_TRIAL':
+      applyFieldTrial(ctx, action)
       return
   }
 }
@@ -618,5 +625,53 @@ function applyAssassinate(ctx: ResolveContext, action: Extract<PoliticalAction, 
       const amount = Math.max(1, Math.round(rng.int(BALANCE.stageIncidentDoomsdayMin, BALANCE.stageIncidentDoomsdayMax) * assassinateReductionFactor(action.spend)))
       addDoomsday(ctx, amount, assassinationId)
     }
+  }
+}
+
+// P115 (ETAPP9 §6.4, beslut 9G): FIELD_TRIAL. Satsen kostar självkostnad (huvudboken: political); intervallet smalnar av,
+// ett fälttillfälle bokförs (kan göra konstruktionen stridsbeprövad), en miljöbrist avslöjas om köparens front har miljön,
+// bonusen i köparens nästa upphandling aktiveras — och resultatet blir känt för alla (exposedToRivals). Ingen slump.
+function applyFieldTrial(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'FIELD_TRIAL' }>): void {
+  const { draft, emit } = ctx
+  const house = draft.house
+  const official = draft.officials[action.officialId]!
+  const design = house.designs.find((d) => d.id === action.designId)!
+  const buyer = draft.factions[official.factionId]
+  const buyerName = (buyer ? buyer.name : official.factionId).toUpperCase()
+  const batch = fieldTrialBatch(draft, design)
+
+  house.treasury -= batch.cost
+  recordExpense(draft, 'political', batch.cost)
+  design.uncertainty = Math.max(0, design.uncertainty - BALANCE.fieldTrialUncertaintySteps)
+  design.trials = { ...(design.trials ?? {}), [official.factionId]: { turn: draft.meta.turn, bonusActive: true } }
+  design.exposedToRivals = true
+
+  const trialId = emit({
+    severity: 'headline',
+    scope: 'market',
+    headline: `FIELD TRIAL: ${buyerName} TESTS ${batch.units}× ${design.name.toUpperCase()} — THE RESULTS ARE KNOWN TO ALL (−£${batch.cost.toLocaleString('en-GB')})`,
+    causeId: null,
+    delta: { treasury: -batch.cost },
+    actorIsPlayer: true,
+    subjectId: official.factionId,
+  })
+
+  // En miljöbrist syns bara på en front med rätt miljö — köparens front räknas.
+  const front = Object.values(draft.fronts).find((f) => f.sideA === official.factionId || f.sideB === official.factionId)
+  const flaw = design.latentFlaw
+  if (front && flaw && frontEnvironments(front.id).includes(flaw.environment) && revealFlaw(design)) {
+    emit({
+      severity: 'headline',
+      scope: 'front',
+      headline: `FIELD TRIAL ON THE ${front.id.toUpperCase()} FRONT REVEALS A ${flaw.environment.toUpperCase()} FLAW IN ${design.name.toUpperCase()}`,
+      causeId: trialId,
+      delta: {},
+      actorIsPlayer: true,
+      subjectId: front.id,
+    })
+  }
+
+  for (let i = 0; i < BALANCE.fieldTrialOccasions; i++) {
+    grantFieldOccasion(ctx, design, `THE ${design.name.toUpperCase()} PASSES ITS FIELD TRIAL WITH ${buyerName} — BATTLE-PROVEN`, trialId, official.factionId)
   }
 }
