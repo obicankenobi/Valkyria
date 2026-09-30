@@ -655,6 +655,17 @@ utfall än lägsta för alla fyra, ingen nivå ger säker framgång, och golden 
 **P104 — Balanspasset.** Mät mot §7.2 och justera bara data. Fetstilta rader ska vara uppfyllda
 eller uttryckligen reviderade med motivering. Frys om `balance.frozen.json` sist.
 
+> **P104 — MÄTT 2026-09-30, EJ TILLÄMPAD.** Se ANDRINGSLOGG-raden med samma datum. **Stannade på en motsägelse i
+> specen** (CLAUDE.md: "stanna, beskriv, föreslå"): P104 vill frysa om `balance.frozen.json` sist, men skyddsräcke 8.2
+> tillåter omfrysning bara i P96/P98/P100/P102, och golden-testet kräver att frysfilen är bitvis identisk med
+> `balance.json`. Varje dataändring som flyttar `human` ändrar därför golden. Inget ändrat. **Beslut som krävs av
+> ägaren:** (a) godkänn en omfrysning i P104 (då tillämpas förslaget nedan, i egen commit, och de tre hashvärdena
+> verifieras mot orsaken), eller (b) behåll dagens balans. **Förslaget** (provkört, återställt): `boardTarget.threshold`
+> 2 → 2,30 och `advancePctMin`/`advancePctMax` 10/40 → 5/30 ger `human` 69 % vinst / 31 % BUYOUT / 0 % INSOLVENCY,
+> förskottsandel 33 %, `passive` 100 % BUYOUT. Fem av de sex fetstilta raderna nås då eller är redan uppfyllda;
+> vapenvilofrekvensen för `human` (2 %) är ett botval, inte en balansfråga, och INSOLVENCY-raden går inte att nå med
+> data (styrelsen avgör före kassan) — båda föreslås revideras. Detaljerade siffror i loggraden.
+
 **P105 — Speltest. Ingen kod.** Tre partier på telefon. Frågan i §1, plus de tre vanliga: *Vad
 försökte du göra och hittade inte? Vad hände som du inte förstod? När tråkades du?*
 
