@@ -15,6 +15,7 @@ import type {
   GameState,
   House,
   LineStandingOrder,
+  ResearchPace,
   StandingOrderChange,
   StandingOrders,
   StationMode,
@@ -29,6 +30,7 @@ const BALANCE = balanceData as unknown as Balance
 
 const SHIFTS = ['normal', 'overtime'] as const
 const MODES: readonly StationMode[] = ['quiet', 'normal', 'active']
+const PACES: readonly ResearchPace[] = ['low', 'normal', 'high']
 
 export function emptyStandingOrders(): StandingOrders {
   return { lines: {}, supply: [], stations: {} }
@@ -88,6 +90,14 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       const station = house.stations.find((s) => s.id === change.stationId)
       if (!station || station.status === 'burned') return fail('unknown station')
       if (!(MODES as readonly string[]).includes(change.mode)) return fail('unknown station mode')
+      return { ok: true }
+    }
+    case 'RESEARCH': {
+      if (!(TECH_CATEGORIES as readonly string[]).includes(change.category)) return fail('unknown category')
+      if (change.op === 'CANCEL') {
+        return house.standingOrders?.research?.[change.category] ? { ok: true } : fail('no research track for that category')
+      }
+      if (!(PACES as readonly string[]).includes(change.pace)) return fail('unknown research pace')
       return { ok: true }
     }
   }
@@ -179,6 +189,35 @@ export function applyStandingOrders(ctx: ResolveContext): void {
           actorIsPlayer: true,
           subjectId: station.nation,
         })
+        break
+      }
+      case 'RESEARCH': {
+        // P108: ett spår per kategori. SET skriver över (byte av tempo), CANCEL tar bort spåret men låter ett
+        // pågående projekt löpa klart. Projektet startar i startTrackedResearch (research.ts) från sinceTurn.
+        const research = (orders.research ??= {})
+        if (change.op === 'CANCEL') {
+          delete research[change.category]
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `STANDING ORDER: ${change.category.toUpperCase()} RESEARCH TRACK CANCELLED (A RUNNING PROJECT FINISHES)`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        } else {
+          research[change.category] = { pace: change.pace, sinceTurn: from }
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `STANDING ORDER: ${change.category.toUpperCase()} RESEARCH TRACK — ${change.pace.toUpperCase()} PACE (FROM NEXT QUARTER)`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        }
         break
       }
     }

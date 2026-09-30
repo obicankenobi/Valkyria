@@ -200,25 +200,35 @@ describe('balanced (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     expect(balanced(state).actions).toContainEqual({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 150000 } })
   })
 
-  it('(P28 klart-når) investerar i REPRIORITISE_RND(artillery) en gång, så länge tekniknivån inte redan räcker till mk9', () => {
+  it('(P28 klart-når, P108) sätter ETT forskningsspår i artilleri (stående order, ingen handling) så länge tekniknivån inte räcker till mk9', () => {
     const state = withSurplus(createInitialState('indochina-slice', 'balanced-rnd-seed'))
     state.market.openOrders = []
     expect(state.house.techLevel.artillery).toBe(7) // under mk9:s 8
 
-    expect(balanced(state).actions).toContainEqual({
-      type: 'INTERNAL',
-      op: 'REPRIORITISE_RND',
-      payload: { category: 'artillery' },
-    })
+    expect(balanced(state).standingOrders).toContainEqual({ kind: 'RESEARCH', op: 'SET', category: 'artillery', pace: 'normal' })
+    // Krasprogrammet (REPRIORITISE_RND) är inte längre botens väg till forskning: dubbel kostnad och bud låsta.
+    expect(balanced(state).actions.some((a) => a.type === 'INTERNAL' && a.op === 'REPRIORITISE_RND')).toBe(false)
 
     // Redan en pågående artillery-satsning — inget nytt försök samma parti.
     state.house.rnd = [{ id: 'rnd-1', category: 'artillery', turnsRemaining: 3, turnsTotal: 6 }]
-    expect(balanced(state).actions.some((a) => a.type === 'INTERNAL' && a.op === 'REPRIORITISE_RND')).toBe(false)
+    expect(balanced(state).standingOrders.some((c) => c.kind === 'RESEARCH' && c.op === 'SET')).toBe(false)
 
-    // Tekniknivån redan tillräcklig — inget försök alls.
+    // Projektet tar nivån till 8: ett kvarstående spår sägs upp i förväg (annars startar det ett andra projekt).
+    state.house.standingOrders.research = { artillery: { pace: 'normal', sinceTurn: 1 } }
+    expect(balanced(state).standingOrders).toContainEqual({ kind: 'RESEARCH', op: 'CANCEL', category: 'artillery' })
+
+    // Tekniknivån redan tillräcklig och inget spår — inget försök alls.
     state.house.rnd = []
+    state.house.standingOrders.research = {}
     state.house.techLevel.artillery = 8
-    expect(balanced(state).actions.some((a) => a.type === 'INTERNAL' && a.op === 'REPRIORITISE_RND')).toBe(false)
+    expect(balanced(state).standingOrders.some((c) => c.kind === 'RESEARCH')).toBe(false)
+  })
+
+  it('(P108) sätter inget spår utan överskott över grundkapitalet — samma spärr som den gamla handlingen hade', () => {
+    const state = createInitialState('indochina-slice', 'balanced-rnd-poor-seed')
+    state.market.openOrders = []
+    state.house.treasury = state.house.foundingCapital // inget överskott efter projektkostnaden
+    expect(balanced(state).standingOrders.some((c) => c.kind === 'RESEARCH')).toBe(false)
   })
 })
 
@@ -236,18 +246,18 @@ describe('capacity (referensboten, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
     expect(bids.map((b) => b.orderId)).toEqual(['order-deliverable'])
   })
 
-  it('gör ingen politik och tar inga lån (men investerar en gång i R&D, P28)', () => {
+  it('gör ingen politik och tar inga lån (men sätter ett forskningsspår i artilleri, P28/P108)', () => {
     const state = createInitialState('indochina-slice', 'capacity-no-actions-seed')
     state.house.treasury = -1
     state.house.creditLimit = 999999
-    // "Ingen politik, inga lån" (spec 10.2) gäller fortfarande — bara R&D-
-    // engångsförsöket (P28) finns kvar, se motsvarande passive-test.
-    expect(capacity(state).actions).toEqual([
-      { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'artillery' } },
-    ])
+    // "Ingen politik, inga lån" (spec 10.2) gäller fortfarande — bara R&D-engångsförsöket (P28) finns kvar, nu som
+    // en stående order (P108) utan spärr mot kassan, som den gamla handlingen.
+    expect(capacity(state).actions).toEqual([])
+    expect(capacity(state).standingOrders).toEqual([{ kind: 'RESEARCH', op: 'SET', category: 'artillery', pace: 'normal' }])
 
     state.house.techLevel.artillery = 8
     expect(capacity(state).actions).toEqual([])
+    expect(capacity(state).standingOrders).toEqual([])
   })
 })
 

@@ -162,6 +162,7 @@ function RndSection({ state, onFile }: { state: GameState; onFile: (action: Play
   const [category, setCategory] = useState<TechCategory>(TECH_CATEGORIES[0]!)
   const action: PlayerAction = { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category } }
   const validation = validateAction(state, state, action)
+  const preview = previewAction(state, action)
 
   return (
     <div className="cf-field">
@@ -172,9 +173,12 @@ function RndSection({ state, onFile }: { state: GameState; onFile: (action: Play
         onChange={setCategory}
         testId="company-rnd-category"
       />
-      <p className="cf-hint">Tech level {state.house.techLevel[category]}. Free — costs an executive action.</p>
+      <p className="cf-hint">
+        Tech level {state.house.techLevel[category]}. Crash programme: half the time, double the cost, and no bids in this
+        category next quarter. Costs an executive action.
+      </p>
       <Button variant="secondary" disabled={!validation.ok} onClick={() => onFile(action)} testId="company-rnd-file">
-        Reprioritise R&amp;D
+        Crash R&amp;D — {formatMoney(preview.cost ?? 0)}
       </Button>
       {reasonHint(validation) && <p className="cf-hint is-warning">{reasonHint(validation)}</p>}
     </div>

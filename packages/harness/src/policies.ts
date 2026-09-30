@@ -295,11 +295,24 @@ function chooseGrade(state: GameState, order: Order): Grade {
 // nästan alla partier som överlever till tur 10 hinner klart oavsett policy,
 // så splitten måste komma från VILKA botar som investerar, inte från vilka
 // partier som överlever.
-function reprioritiseArtilleryIfNeeded(state: GameState, actions: PlayerAction[]): void {
-  if (state.house.techLevel.artillery >= 8) return
-  const alreadyQueued = state.house.rnd.some((p) => p.category === 'artillery')
-  if (alreadyQueued) return
-  actions.push({ type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'artillery' } })
+// P108 (ETAPP9 §4.5): REPRIORITISE_RND är ett krasprogram (dubbel kostnad, bud i kategorin låsta nästa kvartal) och
+// ska inte längre vara botarnas vanliga väg till forskning. Samma engångsinsats görs som ett forskningsspår i
+// artilleri i normal takt (en stående order, ingen handling): sätts när artilleri ligger under 8 utan spår, och
+// sägs upp när nivån nåtts så att spåret inte fortsätter mot 10 och bränner rndOverhead i onödan.
+//
+// `fromSurplusOnly` bevarar botarnas tidigare beteende: balanced och human släppte igenom REPRIORITISE_RND bara ur
+// ett överskott över grundkapitalet (spendOnlyFromSurplus), capacity gjorde det utan spärr.
+function researchStandingOrders(state: GameState, fromSurplusOnly: boolean): StandingOrderChange[] {
+  const hasTrack = state.house.standingOrders?.research?.artillery !== undefined
+  // Ett pågående projekt räknas in: spåret startar nästa projekt i samma tur som det förra blir klart, så en
+  // uppsägning som väntar tills nivån FAKTISKT nått 8 kommer en tur för sent och lämnar ett onödigt andra projekt.
+  const queued = state.house.rnd.filter((p) => p.category === 'artillery').length
+  if (state.house.techLevel.artillery + queued >= 8) {
+    return hasTrack ? [{ kind: 'RESEARCH', op: 'CANCEL', category: 'artillery' }] : []
+  }
+  if (hasTrack || queued > 0) return []
+  if (fromSurplusOnly && state.house.treasury - BOT_BALANCE.rndProjectCost < state.house.foundingCapital) return []
+  return [{ kind: 'RESEARCH', op: 'SET', category: 'artillery', pace: 'normal' }]
 }
 
 // P99c (mätt, se ANDRINGSLOGG): GK-A-verben (kampanjer, underrättelseoperationer, R&D, INFLUENCE, ...)
@@ -369,7 +382,7 @@ export const passive: Policy = (state) => {
   const bids = candidates.slice(0, BOT_BALANCE.passiveMaxConcurrentBids).map((c) => c.bid)
 
   // Investerar INTE i R&D (P28) — passive är den minimala arketypen, se
-  // reprioritiseArtilleryIfNeeded:s egen motivering (balanced/capacity gör det).
+  // researchStandingOrders:s egen motivering (balanced/capacity gör det).
   const actions: PlayerAction[] = []
   if (state.house.treasury < 0) {
     takeLoan(Math.min(state.house.creditLimit, -state.house.treasury), actions)
@@ -394,7 +407,7 @@ export const aggressive: Policy = (state) => {
     bids.push({ orderId: order.id, price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 })
   }
 
-  // Investerar INTE i R&D (P28) — se reprioritiseArtilleryIfNeeded:s motivering.
+  // Investerar INTE i R&D (P28) — se researchStandingOrders:s motivering.
   const actions: PlayerAction[] = []
   courtOfficialAtRisk(state, actions) // P99c: först — handlingspoängen är knappa, och ett beslut kostar mer
   stageIncidentIfCool(state, actions)
@@ -428,7 +441,7 @@ export const balanced: Policy = (state) => {
     bids.push({ orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 })
   }
 
-  return { standingOrders: [], bids, actions: balancedActions(state) }
+  return { standingOrders: researchStandingOrders(state, true), bids, actions: balancedActions(state) }
 }
 
 // Utbruten oförändrad ur `balanced` (P103) så att `balanced-pwc` delar EXAKT samma handlingar — bara
@@ -436,7 +449,6 @@ export const balanced: Policy = (state) => {
 function balancedActions(state: GameState): PlayerAction[] {
   const actions: PlayerAction[] = []
   courtOfficialAtRisk(state, actions) // P99c: först — handlingspoängen är knappa, och ett beslut kostar mer
-  reprioritiseArtilleryIfNeeded(state, actions)
   backChannelIfHot(state, actions)
   favourBestRelationOfficial(state, actions) // P56, GK-A: nytt verb, minst en bot
   influenceWeakestPublicSupport(state, actions) // P60, GK-A: nytt verb, minst en bot
@@ -493,11 +505,10 @@ export const capacity: Policy = (state) => {
   }
 
   // "Ingen politik, inga lån" (spec 10.2, ordagrant) — men R&D är varken.
-  // Se reprioritiseArtilleryIfNeeded:s egen motivering ovan (P28).
+  // Se researchStandingOrders:s egen motivering ovan (P28).
   const actions: PlayerAction[] = []
-  reprioritiseArtilleryIfNeeded(state, actions)
 
-  return { standingOrders: [], bids, actions }
+  return { standingOrders: researchStandingOrders(state, false), bids, actions }
 }
 
 // ── balanced-pwc / capacity-pwc ──────────────────────────────────────────
@@ -514,7 +525,7 @@ function pwcBid(state: GameState, order: Order, target: number, preferHigherOnTi
 }
 
 export const balancedPwc: Policy = (state) => ({
-  standingOrders: [],
+  standingOrders: researchStandingOrders(state, true),
   bids: state.market.openOrders.map((order) => pwcBid(state, order, BALANCED_TARGET_CONFIDENCE, true)),
   actions: balancedActions(state),
 })
@@ -529,8 +540,7 @@ export const capacityPwc: Policy = (state) => {
     bids.push(pwcBid(state, order, CAPACITY_TARGET_CONFIDENCE, false))
   }
   const actions: PlayerAction[] = []
-  reprioritiseArtilleryIfNeeded(state, actions)
-  return { standingOrders: [], bids, actions }
+  return { standingOrders: researchStandingOrders(state, false), bids, actions }
 }
 
 // ── human ────────────────────────────────────────────────────────────────
@@ -648,13 +658,12 @@ export const human: Policy = (state) => {
   const actions: PlayerAction[] = []
   courtOfficialAtRisk(state, actions)
   backChannelOnPoorFront(state, actions)
-  reprioritiseArtilleryIfNeeded(state, actions)
   if (state.house.treasury < state.house.foundingCapital * HUMAN_LOAN_CASH_SHARE) {
     takeLoan(Math.min(state.house.creditLimit, state.house.foundingCapital * HUMAN_LOAN_SHARE), actions)
   }
 
   const affordable = spendOnlyFromSurplus(state, actions).slice(0, state.house.actionPoints)
-  return { standingOrders: humanStandingOrders(state), bids: humanBids(state), actions: affordable }
+  return { standingOrders: [...humanStandingOrders(state), ...researchStandingOrders(state, true)], bids: humanBids(state), actions: affordable }
 }
 
 export const POLICIES: Record<string, Policy> = {

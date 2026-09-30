@@ -29,10 +29,14 @@ describe('previewAction — kostnad', () => {
     expect(previewAction(state, { type: 'INTERNAL', op: 'HIRE', payload: { role: 'chiefEngineer' } }).cost).toBe(BALANCE.hireCost)
   })
 
-  it('TAKE_LOAN: ingen kostnad (inflöde), REPRIORITISE_RND: ingen kostnad', () => {
+  it('TAKE_LOAN: ingen kostnad (inflöde)', () => {
     const state = createInitialState('indochina-slice', 'pa-seed')
     expect(previewAction(state, { type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 1000 } }).cost).toBeNull()
-    expect(previewAction(state, { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'infantry' } }).cost).toBeNull()
+  })
+
+  it('REPRIORITISE_RND (krasprogram, P108): kostnaden är programmets totalkostnad — research.test.ts binder siffran till balansen', () => {
+    const state = createInitialState('indochina-slice', 'pa-seed')
+    expect(previewAction(state, { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'infantry' } }).cost).toBeGreaterThan(0)
   })
 
   it('REPAY: kostnaden är det begärda beloppet', () => {

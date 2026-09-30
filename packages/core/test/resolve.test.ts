@@ -654,6 +654,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
     result = resolveTurn(state, EMPTY)
     const fixedCostsAfterCompletion = fixedCostsChargedThisTurn(result.wire)
 
-    expect(fixedCostsWhileActive - fixedCostsAfterCompletion).toBe(120000) // fixedCosts.rndOverhead, balance.json
+    // P108: REPRIORITISE_RND är ett krasprogram — rndOverhead × crashCostMultiple / crashTimeFactor per tur (2 / 0,5 = 4).
+    expect(fixedCostsWhileActive - fixedCostsAfterCompletion).toBe(120000 * 4) // fixedCosts.rndOverhead × krasfaktorn, balance.json
   })
 })

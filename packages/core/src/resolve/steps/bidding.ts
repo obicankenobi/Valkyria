@@ -2,6 +2,7 @@
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
 import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
+import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
@@ -109,6 +110,18 @@ export const bidding: ResolveStep = (ctx) => {
           severity: 'ticker',
           scope: 'market',
           headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()}'S ${product.category.toUpperCase()} TECH LEVEL IS TOO LOW`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
+      } else if (isBidLocked(draft.house, product.category, draft.meta.turn)) {
+        // P108 (ETAPP9 §4.5): ett krasprogram i kategorin förra turen låser husets bud i den här.
+        rejected.push({ action: playerBid, reason: 'crash programme: no bids in this category this quarter' })
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()}'S ${product.category.toUpperCase()} CRASH PROGRAMME`,
           causeId: null,
           delta: {},
           actorIsPlayer: true,

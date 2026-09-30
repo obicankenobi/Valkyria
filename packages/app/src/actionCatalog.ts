@@ -53,7 +53,7 @@ export const ACTION_CATALOG: readonly ActionCatalogEntry[] = [
   { verb: 'REPAY', label: 'Repay debt', objectGroup: 'THE COMPANY', target: 'company' },
   { verb: 'BUILD_LINE', label: 'Build a production line', objectGroup: 'THE COMPANY', target: 'company' },
   { verb: 'HIRE', label: 'Hire staff', objectGroup: 'THE COMPANY', target: 'company' },
-  { verb: 'REPRIORITISE_RND', label: 'Reprioritise R&D', objectGroup: 'THE COMPANY', target: 'company' },
+  { verb: 'REPRIORITISE_RND', label: 'Crash R&D programme', objectGroup: 'THE COMPANY', target: 'company' },
   // Råvarupanel i THE COMPANY (§7.1:s egen rad) — P85, CompanyActions.tsx.
   { verb: 'BUY_FORWARD', label: 'Reserve a commodity', objectGroup: 'Raw materials panel', target: 'company' },
   { verb: 'RELEASE', label: 'Release a commodity reserve', objectGroup: 'Raw materials panel', target: 'company' },

@@ -767,6 +767,11 @@ motvikt eller ett ägarbeslut. Golden omfryst i egen commit. Se ANDRINGSLOGG 202
 `bidTerms.ts`) — klass A höjer, klass C sänker, och leveranser in i krigsfronter bankar forskningsförsprång
 (`House.researchHeadStart`, förbrukas i hela turer av `advanceRndQueue`). Vakterna håller; sparade partier
 migreras. Golden omfryst i egen commit.
+**P108 BYGGD 2026-09-30:** forskning som stående order (`RESEARCH`, spår per kategori i takt låg/normal/hög,
+`research.ts`), `REPRIORITISE_RND` som krasprogram (halverad tid, dubbel totalkostnad, en handling, budlås nästa
+kvartal), `chiefEngineer` över 70 kortar ett nytt projekt en tur; botarna använder spår. **Appen saknar än så länge
+kontroll för spår (P126)** — bara krasprogrammet nås där. Vakterna håller. Golden omfryst i egen commit.
+**P106–P108 (del A, "Grunden") är därmed klara.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

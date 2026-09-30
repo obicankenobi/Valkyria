@@ -14,6 +14,7 @@
 import balance from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
+import { projectOverheadPerTurn } from '../../research.js'
 import { standingStationMode } from '../../standingOrders.js'
 import type { ResolveStep } from '../index.js'
 import type { House, Money } from '../../types.js'
@@ -27,7 +28,6 @@ interface FixedCosts {
 }
 
 interface Balance {
-  specialisationRndCostFactor: number
   fixedCosts: FixedCosts
   creditMultiple: number
   chiefOfStaffActionBonusThreshold: number
@@ -88,13 +88,9 @@ export function computeFixedCostsBreakdown(house: House, turn?: number): FixedCo
         return sum + BALANCE.fixedCosts.stationUpkeep * factor
       }, 0),
   )
-  // P106 (ETAPP9 §4.2): ett projekt i husets specialisering kostar specialisationRndCostFactor × rndOverhead.
-  const rndOverhead = round(
-    house.rnd.reduce(
-      (sum, p) => sum + BALANCE.fixedCosts.rndOverhead * (p.category === house.specialisation ? BALANCE.specialisationRndCostFactor : 1),
-      0,
-    ),
-  )
+  // P106 (ETAPP9 §4.2) + P108: varje projekt kostar rndOverhead × sin costFactor (spårets tempo, krasprogrammet),
+  // och ett projekt i husets specialisering kostar specialisationRndCostFactor × det. Räknas i research.ts.
+  const rndOverhead = round(house.rnd.reduce((sum, p) => sum + projectOverheadPerTurn(house, p), 0))
   return { payroll, lineUpkeep, stationUpkeep, rndOverhead }
 }
 

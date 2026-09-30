@@ -14,6 +14,10 @@ export function standingOrderKey(change: StandingOrderChange): string {
       return `supply:${change.commodity}`
     case 'STATION':
       return `station:${change.stationId}`
+    case 'RESEARCH':
+      // P108: ett forskningsspår per kategori — SET och CANCEL delar nyckel, den senare vinner. (Tavlans eget
+      // kort för forskning byggs i P126; här bara så att köade ändringar inte kollapsar mot andra slag.)
+      return `research:${change.category}`
   }
 }
 

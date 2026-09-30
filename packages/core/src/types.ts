@@ -295,6 +295,9 @@ export interface House {
   // krigsfront (deliveries.ts) och förbrukat i hela turer av ett pågående projekt (upkeep.ts advanceRndQueue).
   // Ett sparat parti från före P107 saknar fältet och läses som 0.
   researchHeadStart: Record<TechCategory, number>
+  // P108 (§4.5): krasprogrammet låser husets bud i kategorin NÄSTA kvartal — kategori → den tur då budet avvisas.
+  // Ett sparat parti från före P108 saknar fältet och läses som inga lås.
+  rndBidLock: Partial<Record<TechCategory, number>>
 }
 
 export interface BoardTarget {
@@ -333,6 +336,11 @@ export interface RndProject {
   category: TechCategory
   turnsRemaining: number
   turnsTotal: number
+  // P108 (ETAPP9_FORSLAG.md §4.5): faktor på rndOverhead per tur (forskningsspårets tempo eller krasprogrammet).
+  // Saknas i ett sparat parti från före P108 och läses då som 1.
+  costFactor?: number
+  // P108: ett krasprogram (REPRIORITISE_RND) — halverad tid, dubbel totalkostnad, bud i kategorin låsta nästa kvartal.
+  crash?: boolean
 }
 
 export interface Station {
@@ -840,6 +848,7 @@ export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN
 // En ändring kostar INGEN handling (skyddsräcke 6), gäller från NÄSTA tur och ligger kvar tills den ändras.
 export type LineShift = 'normal' | 'overtime'
 export type StationMode = 'quiet' | 'normal' | 'active'
+export type ResearchPace = 'low' | 'normal' | 'high'
 
 export type StandingOrderChange =
   // Linjeuppdrag: en produktkategori (null = "fritt", dagens automatiska tilldelning) och ett skift.
@@ -849,6 +858,9 @@ export type StandingOrderChange =
   | { kind: 'SUPPLY'; op: 'CANCEL'; commodity: Commodity }
   // Stationsläge: tyst, normal eller aktiv.
   | { kind: 'STATION'; stationId: string; mode: StationMode }
+  // P108 (ETAPP9_FORSLAG.md §4.5): forskningsspår — ett per kategori, i takten låg/normal/hög. SET eller CANCEL.
+  | { kind: 'RESEARCH'; op: 'SET'; category: TechCategory; pace: ResearchPace }
+  | { kind: 'RESEARCH'; op: 'CANCEL'; category: TechCategory }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -876,10 +888,18 @@ export interface StationStandingOrder {
   activeTurns: number
 }
 
+// P108: ett forskningsspår i kraft från och med sinceTurn.
+export interface ResearchTrackOrder {
+  pace: ResearchPace
+  sinceTurn: number
+}
+
 export interface StandingOrders {
   lines: Record<string, LineStandingOrder>
   supply: SupplyAgreement[]
   stations: Record<string, StationStandingOrder>
+  // P108: saknas i ett sparat parti från före P108 (och tills första spåret sätts) — läses som inga spår.
+  research?: Partial<Record<TechCategory, ResearchTrackOrder>>
 }
 
 export interface TurnSubmission {

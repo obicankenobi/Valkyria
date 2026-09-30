@@ -71,11 +71,18 @@ describe('migrate (P96-uppföljning)', () => {
     const house = save.state.house as Partial<GameState['house']>
     delete house.categoryQuality
     delete house.researchHeadStart
+    delete house.rndBidLock
     const migrated = migrate(save)!
     const zeros = { infantry: 0, artillery: 0, armour: 0, aviation: 0, naval: 0, electronics: 0 }
     expect(migrated.state.house.categoryQuality).toEqual(zeros)
     expect(migrated.state.house.researchHeadStart).toEqual(zeros)
     expect(() => resolveTurn(migrated.state, migrated.draft)).not.toThrow()
+
+    // P108: rndBidLock tillkom på House — ett gammalt sparat parti har inga lås, och ett befintligt lås rörs inte.
+    expect(migrated.state.house.rndBidLock).toEqual({})
+    const locked = oldSave()
+    locked.state.house.rndBidLock = { artillery: 7 }
+    expect(migrate(locked)!.state.house.rndBidLock).toEqual({ artillery: 7 })
 
     const fresh = oldSave()
     fresh.state.house.researchHeadStart.naval = 1.25

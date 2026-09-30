@@ -56,7 +56,7 @@ export const HANDBOOK: readonly HandbookEntry[] = [
     summary: 'Your lines manufacture against won contracts at their own pace. Build more lines or hire staff to raise capacity; research unlocks which products you can sell.',
     body: [
       'Each production line works against one won contract at a time, at its own pace (units per turn). A line can manufacture any product — no line is locked to a single weapon type.',
-      'THE COMPANY shows your lines\' status, the house\'s fixed costs, and interest on debt. BUILD_LINE builds a new line (a one-off investment); HIRE hires staff who raise throughput or research speed; REPRIORITISE_RND moves research resources between tech categories.',
+      'THE COMPANY shows your lines\' status, the house\'s fixed costs, and interest on debt. BUILD_LINE builds a new line (a one-off investment); HIRE hires staff who raise throughput or research speed; REPRIORITISE_RND is a crash programme in one tech category: half the time, double the total cost, and the house cannot bid in that category next quarter. Steady research is a research track (a standing order with a low, normal or high pace) — it costs no action and runs on its own.',
       'Research (R&D) raises techLevel per category. A techLevel that is too low disqualifies you from bidding on the most advanced products in that category — a hard gate, not a scoring penalty.',
       'The raw materials panel (BUY_FORWARD/RELEASE) lets you reserve or release a share of a commodity ahead of time, as a hedge against supplyCostIndex rising before you need it.',
     ],

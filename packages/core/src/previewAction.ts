@@ -25,7 +25,8 @@ import { effectiveDepth } from './queries.js'
 import { intelOpSuccessPct } from './resolve/steps/applyActions.js'
 import { computeInfluenceAfter, findTheatreForFaction, frontOpponentOf, fundCoupSuccessPct } from './resolve/political.js'
 import { assassinateReductionFactor, backChannelGain, stageIncidentHeatScale } from './spendCurves.js'
-import { isRepayPayload } from './validateAction.js'
+import { crashProgrammeCost } from './research.js'
+import { isRepayPayload, isRndPayload } from './validateAction.js'
 import type { ActionPreview, GameState, Money, PlayerAction, Pct } from './types.js'
 
 interface Balance {
@@ -71,7 +72,8 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
         case 'HIRE':
           return preview(BALANCE.hireCost, null)
         case 'REPRIORITISE_RND':
-          return preview(null, null)
+          // P108: krasprogrammets totalkostnad (halverad tid, dubbel totalkostnad), inte längre "ingen kostnad".
+          return preview(isRndPayload(action.payload) ? crashProgrammeCost(state.house, action.payload.category) : null, null)
       }
       break
 

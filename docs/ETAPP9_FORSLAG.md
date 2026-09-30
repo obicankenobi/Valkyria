@@ -655,6 +655,13 @@ lämnar golden orörd.
 > Förlorad upphandling med genomgång (§4.4:s andra halva) väntar på del E. Vakterna håller (`human` 80 %,
 > `capacity` 3/97). Saved-game-migrering i `persistence.ts`. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
 
+> **P108 BYGGD 2026-09-30.** `RESEARCH` är en ny stående order (spår per kategori, låg/normal/hög, ingen handling,
+> från nästa tur; `research.ts`). `REPRIORITISE_RND` är ett krasprogram: halverad tid, dubbel totalkostnad, en
+> handling, inga bud i kategorin nästa kvartal (`House.rndBidLock`). `chiefEngineer` över 70 kortar ett nytt
+> projekt en tur. Botarna använder ett spår i stället för handlingen. **Gap:** appen saknar kontroll för
+> forskningsspår tills P126. Vakterna håller (`human` 80 %, `capacity` 3/97, `balanced-pwc` 100 %). Golden omfryst
+> i egen commit. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

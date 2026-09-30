@@ -53,9 +53,10 @@ import { computeUnitCostNow, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
 import { validateAction } from '../../validateAction.js'
 import { applyStandingOrders } from '../../standingOrders.js'
+import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
 import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
-import type { Commodity, Contract, GameState, OfficialId, ProductionLine, RndProject, Station, TechCategory } from '../../types.js'
+import type { Commodity, Contract, GameState, OfficialId, ProductionLine, Station, TechCategory } from '../../types.js'
 
 interface Balance {
   buildLineCost: number
@@ -163,9 +164,10 @@ export const applyActions: ResolveStep = (ctx) => {
   advanceStations(ctx)
   // P100: stående order (kostar ingen handling, gäller från nästa tur) — före handlingsloopen.
   applyStandingOrders(ctx)
+  // P108: forskningsspår i kraft startar ett projekt i kategorier som saknar ett (efter advanceRndQueue ovan).
+  startTrackedResearch(ctx)
   resolvePendingCrisis(ctx)
 
-  let rndSeq = 0
   // BRIBE:s tak (bribeRelationMaxPerTurn) är PER TJÄNSTEMAN per tur, inte totalt
   // (P56, ETAPP5_TEKNISK_SPEC.md avsnitt 3.3 — ändrat från per faktion) — flera
   // BRIBE mot samma person samma tur ska inte kringgå taket genom att delas upp,
@@ -277,24 +279,9 @@ export const applyActions: ResolveStep = (ctx) => {
         }
 
         case 'REPRIORITISE_RND': {
-          const payload = action.payload as { category: TechCategory }
-          const category = payload.category
-          const project: RndProject = {
-            id: `rnd-${category}-${draft.meta.turn}-${rndSeq++}`,
-            category,
-            turnsRemaining: BALANCE.rndProjectTurns,
-            turnsTotal: BALANCE.rndProjectTurns,
-          }
-          house.rnd.push(project)
-          emit({
-            severity: 'ticker',
-            scope: 'house',
-            headline: `${house.name.toUpperCase()} REPRIORITISES R&D TOWARD ${category.toUpperCase()}`,
-            causeId: null,
-            delta: {},
-            actorIsPlayer: true,
-            subjectId: null,
-          })
+          // P108 (ETAPP9 §4.5): ett krasprogram — halverad tid mot dubbel kostnad, bud i kategorin låsta nästa kvartal.
+          // Den löpande forskningen sköts av forskningsspår (stående order, research.ts).
+          applyCrashProgramme(ctx, (action.payload as { category: TechCategory }).category)
           break
         }
       }

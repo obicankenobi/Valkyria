@@ -52,7 +52,7 @@ function describeAction(action: Extract<PlayerAction, { type: 'INTERNAL' }>): st
     case 'HIRE':
       return `Hire — ${String(action.payload.role ?? '')}`
     case 'REPRIORITISE_RND':
-      return `Reprioritise R&D — ${String(action.payload.category ?? '')}`
+      return `Crash R&D programme — ${String(action.payload.category ?? '')}`
   }
 }
 

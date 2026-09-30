@@ -293,6 +293,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     investigationUntilTurn: null,
     categoryQuality: uniformCategoryRecord(0),
     researchHeadStart: uniformCategoryRecord(0),
+    rndBidLock: {},
   }
 }
 

@@ -117,6 +117,10 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
           return ok()
         case 'REPRIORITISE_RND':
           if (!isRndPayload(action.payload)) return fail('invalid R&D category')
+          // P108: ett krasprogram per kategori åt gången.
+          if (draft.house.rnd.some((p) => p.category === (action.payload as { category: TechCategory }).category && p.crash)) {
+            return fail('crash programme already running for that category')
+          }
           return ok()
       }
       break
