@@ -341,6 +341,10 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // VALFRIA fält (Front.equipmentQuality/designUnits) som utelämnas tills en konstruktion levereras, och ingen bot levererar
   // en. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P113:s (verifierat). Bara balance.frozen.json följer med (nya rader: en anteckning
   // och tio tal).
+  //
+  // P115 (ETAPP9_FORSLAG.md §6.4/§12, beslut 9C — "regel"-prompt, egen commit): FIELD_TRIAL lägger bara valfria fält på Design
+  // (trials, exposedToRivals) och ingen bot skickar verbet. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P113:s (verifierat). Bara
+  // balance.frozen.json följer med (nya rader: en anteckning och fem tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c799ecdd5bd39' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '8b4c7721789cc' },
