@@ -129,9 +129,11 @@ describe('previewAction — sannolikhet', () => {
     expect(p.effect!.after).toBeLessThanOrEqual(before)
   })
 
-  it('andra POLITICAL-verb (t.ex. BACK_CHANNEL) har effect: null', () => {
+  it('verb utan en enda läsbar mätarrörelse (BRIBE, FUND_CAMPAIGN) har effect: null; BACK_CHANNEL har sedan P102 en RELATIONS-effekt', () => {
     const state = createInitialState('indochina-slice', 'pa-seed')
-    expect(previewAction(state, { type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 10000 }).effect).toBeNull()
+    expect(previewAction(state, { type: 'POLITICAL', op: 'BRIBE', officialId: 'official-rvn-procurement', spend: 10000 }).effect).toBeNull()
+    expect(previewAction(state, { type: 'POLITICAL', op: 'FUND_CAMPAIGN', officialId: 'official-rvn-procurement', spend: 10000 }).effect).toBeNull()
+    expect(previewAction(state, { type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 10000 }).effect?.label).toBe('RELATIONS')
   })
 
   // §7.4, ordagrant: "Motståndarens counterIntelligence utan station visas

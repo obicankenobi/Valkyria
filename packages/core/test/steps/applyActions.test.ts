@@ -1,3 +1,4 @@
+import { assassinateReductionFactor, backChannelGain } from '../../src/spendCurves.js'
 import { describe, expect, it } from 'vitest'
 import { applyActions } from '../../src/resolve/steps/applyActions.js'
 import { endings } from '../../src/resolve/steps/endings.js'
@@ -594,8 +595,9 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
     const { ctx, emitted } = makeCtx(state, [{ type: 'POLITICAL', op: 'BACK_CHANNEL', targetFactionId: 'rvn', spend: 30000 }])
     applyActions(ctx)
 
-    expect(rvn.relations['nlf']).toBe(beforeRvn + balance.relationsBackChannelGain)
-    expect(nlf.relations['rvn']).toBe(beforeNlf + balance.relationsBackChannelGain)
+    // P102: beloppet styr relationsvinsten (avtagande kurva) — spend 30 000 ger backChannelGain(30 000).
+    expect(rvn.relations['nlf']).toBeCloseTo(beforeRvn + backChannelGain(30000), 10)
+    expect(nlf.relations['rvn']).toBeCloseTo(beforeNlf + backChannelGain(30000), 10)
     expect(emitted.some((e) => e.headline.includes('RELATIONS IMPROVE') && e.headline.includes('NATIONAL LIBERATION FRONT'))).toBe(true)
   })
 
@@ -861,7 +863,8 @@ describe('applyActions — POLITICAL (ETAPP1_5_TEKNISK_SPEC.md avsnitt 8.3, BRIB
       const action: PlayerAction = { type: 'POLITICAL', op: 'ASSASSINATE', officialId: official.id, spend: 500000 }
       applyActions(makeCtx(state, [action], 'assassinate-seed').ctx)
 
-      expect(rvn.counterIntelligence).toBe(ciBefore + balance.assassinateCounterIntelligenceGain)
+      // P102: ett större belopp sänker höjningen — spend 500 000 ger gain × assassinateReductionFactor(500 000).
+      expect(rvn.counterIntelligence).toBeCloseTo(ciBefore + balance.assassinateCounterIntelligenceGain * assassinateReductionFactor(500000), 10)
     })
 
     it('en blockbunden faktions lönnmord (|alignment| > 60) höjer doomsday inom stageIncidentDoomsdayMin/Max', () => {

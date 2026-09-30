@@ -95,13 +95,14 @@ export function migrate(saved: SavedGame): SavedGame | null {
       // P99d/P100: favourMarginOwed och standingOrders tillkom på House. Core läser båda defensivt, men
       // gränssnittet (anslagstavlan) ska slippa det: ett gammalt sparat parti får skuldfri/tom standard.
       const house = state.house as Partial<GameState['house']>
-      if (typeof house.favourMarginOwed !== 'number' || !house.standingOrders) {
+      if (typeof house.favourMarginOwed !== 'number' || !house.standingOrders || house.investigationUntilTurn === undefined) {
         state = {
           ...state,
           house: {
             ...state.house,
             favourMarginOwed: house.favourMarginOwed ?? 0,
             standingOrders: house.standingOrders ?? { lines: {}, supply: [], stations: {} },
+            investigationUntilTurn: house.investigationUntilTurn ?? null, // P102
           },
         }
       }

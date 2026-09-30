@@ -20,6 +20,7 @@ import { addDoomsday } from './doomsdayGate.js'
 import { replaceOfficial } from '../officials.js'
 import { recordExpense } from '../ledger.js'
 import { round } from '../money.js'
+import { assassinateReductionFactor, backChannelGain, fundCoupBonusPct, stageIncidentHeatScale } from '../spendCurves.js'
 import type { ResolveContext } from './index.js'
 import type { Agenda, FactionId, GameState, OfficialId, PlayerAction } from '../types.js'
 
@@ -52,6 +53,7 @@ interface Balance {
   fundCoupCost: number
   fundCoupBaseSuccessPct: number
   fundCoupMinSuccessPct: number
+  fundCoupSuccessCapPct: number
   fundCoupCaughtCounterIntelligenceGain: number
   fundCoupFailureRelationPenalty: number
   fundCoupNeutralAlignmentShift: number
@@ -67,10 +69,18 @@ const BALANCE = balanceData as unknown as Balance
 
 // Flyttad ordagrant ur applyActions.ts (P56) — se den filens tidigare version i
 // git-historiken för den oförändrade kommentaren.
-function findTheatreForFaction(draft: GameState, factionId: string): GameState['theatres'][string] | null {
+export function findTheatreForFaction(draft: Readonly<GameState>, factionId: string): GameState['theatres'][string] | null {
   const front = Object.values(draft.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
   if (!front) return null
   return draft.theatres[front.theatreId] ?? null
+}
+
+// P102: frontmotståndaren (den enda BACK_CHANNEL/STAGE_INCIDENT rör relationen mot) — utbruten så att
+// previewAction kan visa relationen före/efter med samma uppslagning som adjustFrontOpponentRelations.
+export function frontOpponentOf(state: Readonly<GameState>, factionId: string): string | null {
+  const front = Object.values(state.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
+  if (!front) return null
+  return front.sideA === factionId ? front.sideB : front.sideA
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -165,7 +175,8 @@ function applyFactionTargetedPolitical(
       let headline = `INCIDENT STAGED AGAINST ${target.name.toUpperCase()}`
       if (theatre) {
         const before = theatre.heat
-        theatre.heat = Math.min(100, theatre.heat + rng.int(BALANCE.stageIncidentHeatMin, BALANCE.stageIncidentHeatMax))
+        // P102: beloppet styr hur stor höjningen blir (avtagande, med golv vid spend 0).
+        theatre.heat = Math.min(100, theatre.heat + Math.round(rng.int(BALANCE.stageIncidentHeatMin, BALANCE.stageIncidentHeatMax) * stageIncidentHeatScale(action.spend)))
         headline = `INCIDENT STAGED AGAINST ${target.name.toUpperCase()} — ${theatre.name.toUpperCase()} HEAT ${before.toFixed(0)} → ${theatre.heat.toFixed(0)}`
       }
       const incidentId = emit({
@@ -232,7 +243,8 @@ function applyFactionTargetedPolitical(
   })
   const amount = rng.int(BALANCE.backChannelDoomsdayMin, BALANCE.backChannelDoomsdayMax)
   addDoomsday(ctx, -amount, channelId)
-  adjustFrontOpponentRelations(draft, target.id, BALANCE.relationsBackChannelGain, channelId, emit, 'IMPROVE')
+  // P102: beloppet styr relationsvinsten.
+  adjustFrontOpponentRelations(draft, target.id, backChannelGain(action.spend), channelId, emit, 'IMPROVE')
 }
 
 // BRIBE/FUND_CAMPAIGN/FAVOUR — samtliga tre tar officialId (skyddsräcke 3, se
@@ -413,8 +425,13 @@ function applyInfluence(ctx: ResolveContext, action: Extract<PoliticalAction, { 
 // FUND_COUP:s sannolikhet med EXAKT samma formel som den faktiska
 // avgörandet nedan använder — samma "en formel, en källa"-motivering som
 // intelOpSuccessPct (applyActions.ts), se den funktionens egen kommentar.
-export function fundCoupSuccessPct(target: { counterIntelligence: number }): number {
-  return clamp(BALANCE.fundCoupBaseSuccessPct - target.counterIntelligence, BALANCE.fundCoupMinSuccessPct, 100)
+export function fundCoupSuccessPct(target: { counterIntelligence: number }, spend: number): number {
+  // P102: beloppet köper odds — men med avtagande avkastning och ett tak under 100 (fundCoupSuccessCapPct).
+  return clamp(
+    BALANCE.fundCoupBaseSuccessPct - target.counterIntelligence + fundCoupBonusPct(spend),
+    BALANCE.fundCoupMinSuccessPct,
+    BALANCE.fundCoupSuccessCapPct,
+  )
 }
 
 function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { op: 'FUND_COUP' }>): void {
@@ -425,7 +442,7 @@ function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { o
   target.coupAttempted = true
   house.treasury -= action.spend
   recordExpense(draft, 'political', action.spend)
-  const successPct = fundCoupSuccessPct(target)
+  const successPct = fundCoupSuccessPct(target, action.spend)
 
   if (rng.chance(successPct)) {
     const alignmentBefore = target.alignment
@@ -584,7 +601,8 @@ function applyAssassinate(ctx: ResolveContext, action: Extract<PoliticalAction, 
 
   if (target) {
     const before = target.counterIntelligence
-    target.counterIntelligence = Math.min(100, before + BALANCE.assassinateCounterIntelligenceGain)
+    // P102: ett större belopp sänker höjningen (men aldrig till noll).
+    target.counterIntelligence = Math.min(100, before + BALANCE.assassinateCounterIntelligenceGain * assassinateReductionFactor(action.spend))
     emit({
       severity: 'ticker',
       scope: 'faction',
@@ -596,7 +614,8 @@ function applyAssassinate(ctx: ResolveContext, action: Extract<PoliticalAction, 
     })
 
     if (Math.abs(target.alignment) > 60) {
-      const amount = rng.int(BALANCE.stageIncidentDoomsdayMin, BALANCE.stageIncidentDoomsdayMax)
+      // P102: samma reduktionsfaktor skalar DOOMSDAY-risken (minst 1 — den försvinner aldrig).
+      const amount = Math.max(1, Math.round(rng.int(BALANCE.stageIncidentDoomsdayMin, BALANCE.stageIncidentDoomsdayMax) * assassinateReductionFactor(action.spend)))
       addDoomsday(ctx, amount, assassinationId)
     }
   }

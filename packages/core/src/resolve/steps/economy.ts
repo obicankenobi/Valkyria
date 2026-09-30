@@ -33,6 +33,7 @@ interface Balance {
   scandalCreditPenalty: number
   stationQuietUpkeepFactor: number
   stationActiveUpkeepFactor: number
+  investigationActionPointPenalty: number
 }
 
 const BALANCE = balance as unknown as Balance
@@ -52,8 +53,11 @@ const ACTION_POINTS_WITH_BONUS = 4
 // tur (applyActions, som läser house.actionPoints, kör FÖRST i pipelinen — se
 // resolve/index.ts) mot chiefOfStaff:s värde EFTER den här turens egna HIRE-
 // handlingar (economy.ts kör sist), inte det värde turen började med.
-function computeActionPoints(house: House): number {
-  return house.staff.chiefOfStaff > BALANCE.chiefOfStaffActionBonusThreshold ? ACTION_POINTS_WITH_BONUS : ACTION_POINTS_BASE
+function computeActionPoints(house: House, turn: number): number {
+  const base = house.staff.chiefOfStaff > BALANCE.chiefOfStaffActionBonusThreshold ? ACTION_POINTS_WITH_BONUS : ACTION_POINTS_BASE
+  // P102 (beslut 8E, "under utredning"): NÄSTA tur ligger inom en öppen utredning → en handling färre.
+  const until = house.investigationUntilTurn ?? null
+  return until !== null && turn + 1 <= until ? Math.max(1, base - BALANCE.investigationActionPointPenalty) : base
 }
 
 export interface FixedCostsBreakdown {
@@ -188,7 +192,7 @@ export const economy: ResolveStep = (ctx) => {
   }
 
   const previousActionPoints = house.actionPoints
-  house.actionPoints = computeActionPoints(house)
+  house.actionPoints = computeActionPoints(house, draft.meta.turn)
   if (house.actionPoints !== previousActionPoints) {
     emit({
       severity: 'ticker',

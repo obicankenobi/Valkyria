@@ -290,6 +290,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     favourMarginSpent: 0,
     favourMarginOwed: 0,
     standingOrders: { lines: {}, supply: [], stations: {} },
+    investigationUntilTurn: null,
   }
 }
 

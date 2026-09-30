@@ -282,6 +282,10 @@ export interface House {
   // P100 (ETAPP8_FORSLAG.md §5.1): det gällande läget för de tre slagen stående order. Ett sparat parti
   // från före P100 saknar fältet — standingOrders.ts läser det defensivt.
   standingOrders: StandingOrders
+  // P102 (beslut 8E, "under utredning"): sista turen en utredning gäller. Sätts när en station bränns
+  // (tur + 1); economy.ts drar investigationActionPointPenalty från nästa tur handlingar så länge nästa tur
+  // ligger inom den. null = ingen utredning har öppnats. Ett sparat parti utan fältet läses som null.
+  investigationUntilTurn: number | null
 }
 
 export interface BoardTarget {

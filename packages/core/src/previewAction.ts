@@ -23,7 +23,8 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { effectiveDepth } from './queries.js'
 import { intelOpSuccessPct } from './resolve/steps/applyActions.js'
-import { computeInfluenceAfter, fundCoupSuccessPct } from './resolve/political.js'
+import { computeInfluenceAfter, findTheatreForFaction, frontOpponentOf, fundCoupSuccessPct } from './resolve/political.js'
+import { assassinateReductionFactor, backChannelGain, stageIncidentHeatScale } from './spendCurves.js'
 import { isRepayPayload } from './validateAction.js'
 import type { ActionPreview, GameState, Money, PlayerAction, Pct } from './types.js'
 
@@ -34,6 +35,9 @@ interface Balance {
   intelRecruitCost: number
   intelCovertOpCost: number
   stageIncidentSuccessPct: number
+  stageIncidentHeatMin: number
+  stageIncidentHeatMax: number
+  assassinateCounterIntelligenceGain: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -77,9 +81,30 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
           // Fast, global sannolikhet — INTE gated av mottagarens
           // counterIntelligence (till skillnad från FUND_COUP/LEAK/SABOTAGE/
           // TURN nedan), se political.ts:s applyFactionTargetedPolitical.
-          return preview(finiteOrNull(action.spend), BALANCE.stageIncidentSuccessPct)
-        case 'BACK_CHANNEL':
-          return preview(finiteOrNull(action.spend), null) // lyckas alltid
+          // P102: beloppet styr hur stor heat-höjningen blir — visad som nuvarande → FÖRVÄNTAT värde
+          // (mittpunkten av stageIncidentHeatMin–Max × kurvans skala), samma formel som resolve.
+          {
+            const theatre = findTheatreForFaction(state, action.targetFactionId)
+            const spend = finiteOrNull(action.spend)
+            const effect =
+              theatre && spend !== null
+                ? {
+                    label: 'HEAT',
+                    before: theatre.heat,
+                    after: Math.min(100, theatre.heat + ((BALANCE.stageIncidentHeatMin + BALANCE.stageIncidentHeatMax) / 2) * stageIncidentHeatScale(spend)),
+                  }
+                : null
+            return preview(spend, BALANCE.stageIncidentSuccessPct, true, effect)
+          }
+        case 'BACK_CHANNEL': {
+          // P102: beloppet styr relationsvinsten mellan frontmotståndarna — lyckas alltid, effekten är deterministisk.
+          const spend = finiteOrNull(action.spend)
+          const faction = state.factions[action.targetFactionId]
+          const opponentId = frontOpponentOf(state, action.targetFactionId)
+          if (spend === null || !faction || !opponentId) return preview(spend, null)
+          const before = faction.relations[opponentId] ?? 0
+          return preview(spend, null, true, { label: 'RELATIONS', before, after: Math.min(100, before + backChannelGain(spend)) })
+        }
         case 'BRIBE':
         case 'FUND_CAMPAIGN':
           return preview(finiteOrNull(action.spend), null) // avvisas aldrig av rng, bara klippt vinst
@@ -104,10 +129,22 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
         case 'FUND_COUP': {
           const target = state.factions[action.targetFactionId]
           const known = effectiveDepth(state, action.targetFactionId) > 0
-          return preview(finiteOrNull(action.spend), known && target ? fundCoupSuccessPct(target) : null, known)
+          const spend = finiteOrNull(action.spend)
+          return preview(spend, known && target && spend !== null ? fundCoupSuccessPct(target, spend) : null, known)
         }
-        case 'ASSASSINATE':
-          return preview(finiteOrNull(action.spend), null) // "dödar alltid målet" (avsnitt 4.5)
+        case 'ASSASSINATE': {
+          // "dödar alltid målet" (avsnitt 4.5) — beloppet sänker konsekvenserna (P102): counterIntelligence-
+          // höjningen visas före → efter, gated av samma effectiveDepth-grind som FUND_COUP.
+          const spend = finiteOrNull(action.spend)
+          const official = state.officials[action.officialId]
+          const target = official ? state.factions[official.factionId] : undefined
+          if (!official || !target) return preview(spend, null)
+          const known = effectiveDepth(state, official.factionId) > 0
+          if (!known || spend === null) return preview(spend, null, known)
+          const before = target.counterIntelligence
+          const after = Math.min(100, before + BALANCE.assassinateCounterIntelligenceGain * assassinateReductionFactor(spend))
+          return preview(spend, null, true, { label: 'COUNTER-INTELLIGENCE', before, after })
+        }
       }
       break
 

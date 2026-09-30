@@ -741,7 +741,10 @@ med causeId. Kostar ingen handling, gäller från nästa tur. Befintliga botar o
 med P99d:s). Golden omfryst i egen commit. **P101 BYGGD 2026-09-29:** anslagstavlan i THE COMPANY (`StandingOrdersBoard.tsx`, `standingOrderBoard.ts`) — ett registerkort per
 linje, avtal och station; Segmented/Stepper, köas i `draft.standingOrders`, gäller nästa kvartal. Linjekorten återanvänder P85:s
 `ProductionLineBand`. De tre larmen ger rött fettkritsstreck och en This Quarter-rad som hoppar till kortet (öppnat). Golden orörd.
-P102 (belopp som köper odds) är inte påbörjad.
+**P102 BYGGD 2026-09-29:** belopp som köper odds (`spendCurves.ts`: `spend/(spend+half)`, avtagande, aldrig säkert) för STAGE_INCIDENT
+(heat-storlek), BACK_CHANNEL (relationsvinst), FUND_COUP (odds, tak 85 %) och ASSASSINATE (mildare konsekvenser); `previewAction` och
+CONTACTS visar vad varje nivå köper. Tillvalet "under utredning" (8E): en bränd station tar en handling nästa kvartal
+(`House.investigationUntilTurn`). Golden omfryst i egen commit. P103–P105 är inte påbörjade (schemalagda 04:45).
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

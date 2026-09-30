@@ -18,21 +18,17 @@
 // ExecutiveActions, <select>/<input type="number">) flyttas hit och tas bort
 // där — se TheHouse.tsx:s egen kommentar.
 //
-// GENUINT FYND, dokumenterat i docs/ANDRINGSLOGG.md: av POLITICAL:s åtta op
-// skalar bara BRIBE/FUND_CAMPAIGN/FAVOUR/INFLUENCE sitt spend/marginCost mot
-// en faktisk effekt (political.ts:s cost-per-point-formler). STAGE_INCIDENT/
-// BACK_CHANNEL/FUND_COUP/ASSASSINATE debiterar treasury men beloppet skalar
-// INGENTING i utfallet (fast sannolikhet respektive fast rng-intervall,
-// oberoende av spend) — CountryFile.tsx (P79) dokumenterade redan detta för
-// STAGE_INCIDENT/BACK_CHANNEL; den här prompten bekräftar att det gäller
-// FUND_COUP och ASSASSINATE också. UI:t är ärligt om det (en hint under
-// reglaget) i stället för att låtsas att mer pengar ger bättre odds.
+// P86 fann att STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/ASSASSINATE debiterade treasury men att beloppet inte
+// skalade något i utfallet, och gjorde UI:t ärligt om det. P102 (ETAPP8_FORSLAG.md §6.1) gav dem en kurva
+// från belopp till effekt (avtagande avkastning, ett tak, aldrig säkert): varje nivå visar nu vad den köper
+// — samma tal som resolve, via previewAction (heat, relationer, kuppodds, counterIntelligence).
 import { useState } from 'react'
 import {
   allProducts,
   findOfficial,
   getProduct,
   officialDisplay,
+  previewAction,
   validateAction,
 } from '@seventh-front/core'
 import type { FactionId, GameState, Official, OfficialId, PlayerAction, Product, RivalHouse } from '@seventh-front/core'
@@ -48,28 +44,34 @@ const BRIBE_TIER_POINTS: Record<Tier['key'], number> = { modest: 3, serious: 8, 
 const FUND_CAMPAIGN_TIER_POINTS: Record<Tier['key'], number> = { modest: 5, serious: 15, lavish: 30 }
 const FAVOUR_TIER_POINTS: Record<Tier['key'], number> = { modest: 3, serious: 8, lavish: 15 }
 
-// STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/ASSASSINATE skalar ingen effekt mot
-// spend (se filens huvudkommentar) — inget "känt tak" att ta en bråkdel av,
-// samma situation CompanyActions.tsx aldrig har. Tre runda, PROVISORISKA
-// kronbelopp. FUND_COUP/ASSASSINATE:s SERIOUS-nivå återanvänder härnessens
-// egna bot-konstanter (packages/harness/src/policies.ts:s
-// BOT_BALANCE.fundCoupCost / ASSASSINATE_SPEND) i stället för att gissa en
-// helt ny siffra.
+// Tre runda, PROVISORISKA kronbelopp per nivå (P102: nu med en verklig effekt per nivå — se
+// spendCurves.ts; halva-vid-punkterna i balance.json är 25 000/25 000/1 000 000/500 000, nivåerna ligger
+// runt dem så att LAVISH märkbart slår MODEST utan att bli säker).
 const STAGE_INCIDENT_TIERS: Record<Tier['key'], number> = { modest: 10_000, serious: 25_000, lavish: 50_000 }
 const BACK_CHANNEL_TIERS: Record<Tier['key'], number> = { modest: 10_000, serious: 25_000, lavish: 50_000 }
-const FUND_COUP_TIERS: Record<Tier['key'], number> = { modest: 500_000, serious: 1_000_000, lavish: 1_500_000 }
-const ASSASSINATE_TIERS: Record<Tier['key'], number> = { modest: 250_000, serious: 500_000, lavish: 750_000 }
+const FUND_COUP_TIERS: Record<Tier['key'], number> = { modest: 500_000, serious: 1_500_000, lavish: 3_000_000 }
+const ASSASSINATE_TIERS: Record<Tier['key'], number> = { modest: 250_000, serious: 750_000, lavish: 1_500_000 }
 
-function reasonHint(validation: { ok: true } | { ok: false; reason: string }): string | null {
-  return validation.ok ? null : validation.reason
+// "vad den här nivån köper", ur previewAction (samma formel som resolve): en kort effekttext per nivå.
+function tierEffectText(state: GameState, action: PlayerAction): string {
+  const p = previewAction(state, action)
+  if (p.successPct !== null && p.effect === null) return `${Math.round(p.successPct)} % success`
+  if (!p.successPctKnown && p.effect === null && action.type === 'POLITICAL' && action.op === 'FUND_COUP') return 'success unknown'
+  if (p.effect) return `${p.effect.label} ${Math.round(p.effect.before)}→${Math.round(p.effect.after)}`
+  return ''
 }
 
-function moneyTiers(amounts: Record<Tier['key'], number>): Tier[] {
+function tiersWithEffect(state: GameState, amounts: Record<Tier['key'], number>, actionFor: (spend: number) => PlayerAction): Tier[] {
   return (['modest', 'serious', 'lavish'] as const).map((key) => ({
     key,
     label: key.toUpperCase(),
     amount: formatMoney(amounts[key]),
+    effect: tierEffectText(state, actionFor(amounts[key])),
   }))
+}
+
+function reasonHint(validation: { ok: true } | { ok: false; reason: string }): string | null {
+  return validation.ok ? null : validation.reason
 }
 
 function statusTone(status: Official['status']): 'green' | 'amber' | 'red' {
@@ -292,30 +294,33 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
 
                 {openForm?.kind === 'faction' && openForm.factionId === faction.id && openForm.op === 'STAGE_INCIDENT' && (
                   <FactionFlatSpendForm
+                    state={state}
                     faction={faction}
                     op="STAGE_INCIDENT"
                     title="STAGE INCIDENT"
-                    hint={`Fixed 65% chance to raise heat where this country fights. Spend funds the cover story — it does not change the odds.`}
+                    hint="Fixed 65% chance to raise heat where this country fights. More money makes the incident bigger — the odds stay the same."
                     tiers={STAGE_INCIDENT_TIERS}
                     onQueue={queue}
                   />
                 )}
                 {openForm?.kind === 'faction' && openForm.factionId === faction.id && openForm.op === 'BACK_CHANNEL' && (
                   <FactionFlatSpendForm
+                    state={state}
                     faction={faction}
                     op="BACK_CHANNEL"
                     title="BACK CHANNEL"
-                    hint="Always succeeds — eases doomsday and improves relations with this country's front opponent. Spend does not change how much."
+                    hint="Always succeeds — eases doomsday and improves relations with this country's front opponent. More money improves them further, with diminishing returns."
                     tiers={BACK_CHANNEL_TIERS}
                     onQueue={queue}
                   />
                 )}
                 {openForm?.kind === 'faction' && openForm.factionId === faction.id && openForm.op === 'FUND_COUP' && (
                   <FactionFlatSpendForm
+                    state={state}
                     faction={faction}
                     op="FUND_COUP"
                     title="FUND COUP"
-                    hint="Big, rare, expensive (DESIGN.md §13). One attempt ever per faction. Success chance falls with this country's counter-intelligence — spend does not change it."
+                    hint="Big, rare, expensive (DESIGN.md §13). One attempt ever per faction. More money raises the odds, with diminishing returns — never to certainty — and they fall with this country's counter-intelligence."
                     tiers={FUND_COUP_TIERS}
                     onQueue={queue}
                   />
@@ -449,9 +454,8 @@ function FavourForm({ state, official, onQueue }: { state: GameState; official: 
   )
 }
 
-// ASSASSINATE — "dödar alltid målet" (political.ts, avsnitt 4.5). Ingen
-// lyckandechans att förhandsvisa; spend skalar ingen effekt (se filens
-// huvudkommentar).
+// ASSASSINATE — "dödar alltid målet" (political.ts, avsnitt 4.5). Ingen lyckandechans; P102: beloppet
+// sänker konsekvenserna (counterIntelligence-höjningen och DOOMSDAY-risken), aldrig till noll.
 function AssassinateForm({ state, official, onQueue }: { state: GameState; official: Official; onQueue: (action: PlayerAction) => void }) {
   const [tier, setTier] = useState<Tier['key']>('modest')
   const spend = ASSASSINATE_TIERS[tier]
@@ -463,11 +467,16 @@ function AssassinateForm({ state, official, onQueue }: { state: GameState; offic
       <h3 className="cf-form-title">ASSASSINATE</h3>
       <p className="cf-hint">
         Always kills the target — she is replaced next turn. Always raises this country's counter-intelligence, and risks
-        doomsday if the country is strongly bloc-aligned. Spend does not change the outcome.
+        doomsday if the country is strongly bloc-aligned. More money softens both, but never removes them.
       </p>
       <div className="cf-field">
         <span className="cf-field-label">SPEND</span>
-        <TierPicker tiers={moneyTiers(ASSASSINATE_TIERS)} value={tier} onChange={setTier} testId={`contacts-ASSASSINATE-tier-${official.id}`} />
+        <TierPicker
+          tiers={tiersWithEffect(state, ASSASSINATE_TIERS, (amount) => ({ type: 'POLITICAL', op: 'ASSASSINATE', officialId: official.id, spend: amount }))}
+          value={tier}
+          onChange={setTier}
+          testId={`contacts-ASSASSINATE-tier-${official.id}`}
+        />
       </div>
       <Button variant="primary" disabled={!validation.ok} onClick={() => onQueue(action)} testId={`contacts-ASSASSINATE-file-${official.id}`}>
         FILE — {formatMoney(spend)}
@@ -477,9 +486,10 @@ function AssassinateForm({ state, official, onQueue }: { state: GameState; offic
   )
 }
 
-// STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP — samma form (targetFactionId +
-// spend, spend skalar ingen effekt), bara titel/hint/tiers skiljer.
+// STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP — samma form (targetFactionId + spend), bara titel/hint/tiers
+// skiljer. P102: varje nivå visar vad den köper (previewAction).
 function FactionFlatSpendForm({
+  state,
   faction,
   op,
   title,
@@ -487,6 +497,7 @@ function FactionFlatSpendForm({
   tiers,
   onQueue,
 }: {
+  state: GameState
   faction: GameState['factions'][string]
   op: 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_COUP'
   title: string
@@ -504,7 +515,12 @@ function FactionFlatSpendForm({
       <p className="cf-hint">{hint}</p>
       <div className="cf-field">
         <span className="cf-field-label">SPEND</span>
-        <TierPicker tiers={moneyTiers(tiers)} value={tier} onChange={setTier} testId={`contacts-${op}-tier-${faction.id}`} />
+        <TierPicker
+          tiers={tiersWithEffect(state, tiers, (amount) => ({ type: 'POLITICAL', op, targetFactionId: faction.id, spend: amount }))}
+          value={tier}
+          onChange={setTier}
+          testId={`contacts-${op}-tier-${faction.id}`}
+        />
       </div>
       <Button variant="primary" onClick={() => onQueue(action)} testId={`contacts-${op}-file-${faction.id}`}>
         FILE — {formatMoney(spend)}

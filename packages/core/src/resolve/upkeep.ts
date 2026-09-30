@@ -73,12 +73,24 @@ export function advanceStations(ctx: ResolveContext): void {
     if (rng.chance(BALANCE.stationBurnChancePct)) {
       station.status = 'burned'
       house.exposureEvents.push(draft.meta.turn)
-      emit({
+      const burnId = emit({
         severity: 'headline',
         scope: 'house',
         headline: `STATION ${station.city.toUpperCase()} BURNED — EXPOSURE ${station.exposure.toFixed(0)}`,
         causeId: null,
         delta: { exposure: 0 },
+        actorIsPlayer: false,
+        subjectId: station.nation,
+      })
+      // P102 (beslut 8E): "under utredning" — en bränd station öppnar en utredning; nästa kvartal har huset
+      // en handling färre (economy.ts drar investigationActionPointPenalty). Ett mellansteg före EXPOSURE-slutet.
+      house.investigationUntilTurn = draft.meta.turn + 1
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `INVESTIGATION OPENED INTO ${station.city.toUpperCase()} — ONE FEWER EXECUTIVE ACTION NEXT QUARTER`,
+        causeId: burnId,
+        delta: { investigationUntilTurn: draft.meta.turn + 1 },
         actorIsPlayer: false,
         subjectId: station.nation,
       })
