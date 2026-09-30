@@ -323,6 +323,11 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // bedömningen är rena funktioner över befintligt tillstånd (agenda, front, doktrin, tur) och lägger inget fält i
   // sluttillståndet; ingen bot bjuder med en konstruktion. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P109:s/P110:s (verifierat).
   // Bara balance.frozen.json följer med (nya rader: en anteckning och tio tal).
+  //
+  // P112 (ETAPP9_FORSLAG.md §5.5/§12, beslut 9C — "regel"-prompt, egen commit): uppgraderingar och uppgraderingssatser
+  // lägger inga obligatoriska fält i sluttillståndet (Bid.kit, Contract.kit och upgradeOf är valfria och utelämnas) och
+  // ingen bot ritar eller bjuder med en sats. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P109:s (verifierat). Bara
+  // balance.frozen.json följer med (nya rader: en anteckning och sex tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'db2c6cf301dd0' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9fd1f1efb7f35' },
