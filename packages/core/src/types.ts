@@ -934,6 +934,9 @@ export type StandingOrderChange =
   // avbryt det pågående i kategorin. Kostar ingen handling.
   | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition }
   | { kind: 'DESIGN'; op: 'CANCEL'; category: TechCategory }
+  // P110 (ETAPP9 §5.3): provning i egen regi — en miljö per konstruktion åt gången; kostar pengar och tid.
+  | { kind: 'TESTING'; op: 'SET'; designId: DesignId; environment: DesignEnvironment }
+  | { kind: 'TESTING'; op: 'CANCEL'; designId: DesignId }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -967,12 +970,21 @@ export interface ResearchTrackOrder {
   sinceTurn: number
 }
 
+// P110: en pågående provning. turnsRun räknar turer den gällt (sinceTurn och framåt).
+export interface DesignTestOrder {
+  environment: DesignEnvironment
+  sinceTurn: number
+  turnsRun: number
+}
+
 export interface StandingOrders {
   lines: Record<string, LineStandingOrder>
   supply: SupplyAgreement[]
   stations: Record<string, StationStandingOrder>
   // P108: saknas i ett sparat parti från före P108 (och tills första spåret sätts) — läses som inga spår.
   research?: Partial<Record<TechCategory, ResearchTrackOrder>>
+  // P110: pågående provningar, per konstruktion. Saknas i ett sparat parti från före P110 — läses som inga.
+  testing?: Record<DesignId, DesignTestOrder>
 }
 
 export interface TurnSubmission {

@@ -9,7 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { round } from './money.js'
 import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
-import { BALANCE_DESIGN_STEPS, currentGeneration, isDesignProject, newDesignProject, validateDesignStart } from './design.js'
+import { BALANCE_DESIGN_STEPS, currentGeneration, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
 import type {
   ActionValidation,
@@ -100,6 +100,10 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       }
       if (!(PACES as readonly string[]).includes(change.pace)) return fail('unknown research pace')
       return { ok: true }
+    }
+    case 'TESTING': {
+      const reason = validateTestingChange(house, change)
+      return reason ? fail(reason) : { ok: true }
     }
     case 'DESIGN': {
       if (change.op === 'CANCEL') {
@@ -197,6 +201,35 @@ export function applyStandingOrders(ctx: ResolveContext): void {
           actorIsPlayer: true,
           subjectId: station.nation,
         })
+        break
+      }
+      case 'TESTING': {
+        // P110: provning i egen regi. SET byter miljö och börjar om räkningen (från nästa tur); CANCEL avbryter.
+        const testing = (orders.testing ??= {})
+        const design = draft.house.designs.find((d) => d.id === change.designId)
+        if (change.op === 'CANCEL') {
+          delete testing[change.designId]
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `STANDING ORDER: TESTING OF ${(design?.name ?? change.designId).toUpperCase()} STOPPED`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        } else {
+          testing[change.designId] = { environment: change.environment, sinceTurn: from, turnsRun: 0 }
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `STANDING ORDER: TESTING OF ${(design?.name ?? change.designId).toUpperCase()} IN ${change.environment.toUpperCase()} CONDITIONS (FROM NEXT QUARTER)`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        }
         break
       }
       case 'DESIGN': {

@@ -668,6 +668,11 @@ lämnar golden orörd.
 > `Contract.designId` med styckkostnad × `unitCostFactor`, `designDisplay` visar klassen som intervall. `currentGeneration`
 > är ett provisoriskt tidsschema tills P118. Golden omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
 
+> **P110 BYGGD 2026-09-30.** `data/environments.json` (miljöer per front), stående order `TESTING` (provning i egen
+> regi: osäkerheten smalnar av ett klasssteg per 2 turer, kostar `rndOverhead` × 0,5 per tur, slutar vid 0) och
+> miljöbrister som bara avslöjas av provning i rätt miljö (`revealFlaw`, återanvänds av P113). Golden-hasharna
+> oförändrade; bara `balance.frozen.json` omfryst i egen commit. Se ANDRINGSLOGG 2026-09-30.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

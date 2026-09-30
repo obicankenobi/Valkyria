@@ -21,6 +21,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'DESIGN':
       // P109: ett designprojekt per kategori åt gången (START och CANCEL delar nyckel). Ritbordets eget kort byggs i P126.
       return `design:${change.category}`
+    case 'TESTING':
+      // P110: en provning per konstruktion (SET och CANCEL delar nyckel).
+      return `testing:${change.designId}`
   }
 }
 

@@ -5,6 +5,7 @@
 // EN källa för budtermen (skyddsräcke 3): bidding.ts, bidEstimate och playerWinCurve (via WinBandInputs) läser alla
 // designBidTerm, och den läggs EFTER computeScore (skyddsräcke 1). Ett bud utan konstruktion får ingen term.
 import balanceData from './data/balance.json' with { type: 'json' }
+import environmentsData from './data/environments.json' with { type: 'json' }
 import { allProducts } from './pricing.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { Rng } from './rng.js'
@@ -251,4 +252,41 @@ export function newDesignProject(house: House, spec: DesignProjectSpec & { categ
       upgradeOf: spec.upgradeOf,
     },
   }
+}
+
+// ── miljöer och provning (P110, ETAPP9 §5.3) ─────────────────────────────────
+
+const FRONT_ENVIRONMENTS = environmentsData as unknown as Record<string, DesignEnvironment[] | string>
+
+// Miljöerna en front har (data/environments.json). En okänd front har inga.
+export function frontEnvironments(frontId: string): DesignEnvironment[] {
+  const value = FRONT_ENVIRONMENTS[frontId]
+  return Array.isArray(value) ? value : []
+}
+
+export function validateTestingChange(
+  house: House,
+  change: { op: 'SET'; designId: DesignId; environment: DesignEnvironment } | { op: 'CANCEL'; designId: DesignId },
+): string | null {
+  if (change.op === 'CANCEL') return house.standingOrders?.testing?.[change.designId] ? null : 'no testing of that design'
+  const design = house.designs?.find((d) => d.id === change.designId)
+  if (!design) return 'unknown design'
+  if (!(DESIGN_ENVIRONMENTS as readonly string[]).includes(change.environment)) return 'unknown test environment'
+  if (design.status !== 'active') return 'design is withdrawn'
+  return null
+}
+
+// Avslöjar en konstruktions dolda brist (provning i rätt miljö nu, en front med rätt miljö i P113). Returnerar sant om
+// något avslöjades. Bristen görs synlig — inte åtgärdad.
+export function revealFlaw(design: Design): boolean {
+  if (!design.latentFlaw || design.flawRevealed) return false
+  design.flawRevealed = true
+  return true
+}
+
+// Kostnaden för pågående provningar per tur, i multiplar av rndOverhead (ingen specialiseringshalvering — provning är
+// inte forskning i en kategori). `turn` utelämnat räknar alla; annars bara de som redan gäller.
+export function testingOverheadCount(house: Pick<House, 'standingOrders'>, turn?: number): number {
+  const tests = Object.values(house.standingOrders?.testing ?? {})
+  return tests.filter((t) => turn === undefined || turn >= t.sinceTurn).length
 }

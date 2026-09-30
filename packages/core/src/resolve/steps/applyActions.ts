@@ -43,7 +43,7 @@
 // ordning). Se validateAction.ts:s egen kommentar för den fulla motiveringen
 // och docs/ANDRINGSLOGG.md för beslutet.
 import balanceData from '../../data/balance.json' with { type: 'json' }
-import { advanceRndQueue, advanceStations } from '../upkeep.js'
+import { advanceDesignTesting, advanceRndQueue, advanceStations } from '../upkeep.js'
 import { resolvePendingCrisis } from '../crisis.js'
 import { applyPolitical } from '../political.js'
 import { round } from '../../money.js'
@@ -161,6 +161,7 @@ export const applyActions: ResolveStep = (ctx) => {
   const house = draft.house
 
   advanceRndQueue(house, emit, { rng, turn: draft.meta.turn, year: draft.meta.year })
+  advanceDesignTesting(house, draft.meta.turn, emit) // P110
   advanceStations(ctx)
   // P100: stående order (kostar ingen handling, gäller från nästa tur) — före handlingsloopen.
   applyStandingOrders(ctx)

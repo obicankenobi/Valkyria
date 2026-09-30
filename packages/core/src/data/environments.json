@@ -1,0 +1,5 @@
+{
+  "_note": "P110 (ETAPP9_FORSLAG.md §5.3): miljöerna per front. En konstruktions miljöbrist (Design.latentFlaw) visar sig på en front vars miljöer inkluderar bristens miljö (P113), eller vid egen provning i den miljön. Fiktiv scenariodata, ingen balanssiffra.",
+  "front-1": ["jungle", "monsoon", "wear"],
+  "front-laos": ["jungle", "mine"]
+}

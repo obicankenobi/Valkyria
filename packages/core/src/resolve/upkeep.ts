@@ -4,13 +4,14 @@
 import balanceData from '../data/balance.json' with { type: 'json' }
 import { standingStationMode } from '../standingOrders.js'
 import type { ResolveContext } from './index.js'
-import { rollDesign } from '../design.js'
+import { revealFlaw, rollDesign } from '../design.js'
 import type { Rng } from '../rng.js'
 import type { House, RndProject, Station, WireEvent } from '../types.js'
 
 type Emit = (e: Omit<WireEvent, 'id' | 'turn'>) => string
 
 interface Balance {
+  testingTurnsPerStep: number
   intelDormantExposureDecay: number
   exposureBurnThreshold: number
   stationBurnChancePct: number
@@ -103,6 +104,50 @@ export function advanceRndQueue(
     })
   }
   house.rnd = stillRunning
+}
+
+// P110 (ETAPP9 §5.3): provning i egen regi. Varje tur en provning gäller: osäkerheten smalnar av ett klasssteg var
+// testingTurnsPerStep:e tur, miljön noteras, och bristen avslöjas bara om provningen görs i bristens miljö. Provningen
+// slutar av sig själv när osäkerheten är noll och bristen (om någon) provats i sin miljö. Anropas först i applyActions,
+// före turens nya stående order, så en provning som sätts denna tur börjar gälla nästa.
+export function advanceDesignTesting(house: Pick<House, 'designs' | 'standingOrders' | 'name'>, turn: number, emit: Emit): void {
+  const testing = house.standingOrders?.testing
+  if (!testing) return
+  for (const [designId, test] of Object.entries(testing)) {
+    if (turn < test.sinceTurn) continue
+    const design = house.designs?.find((d) => d.id === designId)
+    if (!design || design.status !== 'active') {
+      delete testing[designId]
+      continue
+    }
+    test.turnsRun += 1
+    if (!design.testedIn.includes(test.environment)) design.testedIn.push(test.environment)
+
+    if (design.latentFlaw && design.latentFlaw.environment === test.environment && revealFlaw(design)) {
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `TESTING IN ${test.environment.toUpperCase()} CONDITIONS REVEALS A FLAW IN ${design.name.toUpperCase()}`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: true,
+        subjectId: null,
+      })
+    }
+    if (test.turnsRun % BALANCE.testingTurnsPerStep === 0 && design.uncertainty > 0) design.uncertainty -= 1
+    if (design.uncertainty === 0) {
+      delete testing[designId]
+      emit({
+        severity: 'ticker',
+        scope: 'house',
+        headline: `TESTING OF ${design.name.toUpperCase()} COMPLETE — ITS QUALITY CLASS IS NOW KNOWN`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: true,
+        subjectId: null,
+      })
+    }
+  }
 }
 
 // Samma princip som advanceRndQueue: stationers exponering rör sig med TIDEN

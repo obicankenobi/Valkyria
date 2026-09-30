@@ -776,6 +776,9 @@ kontroll för spår (P126)** — bara krasprogrammet nås där. Vakterna håller
 (inriktning + ambition), utfall via `ctx.rng`, `Bid.designId`/`designBidTerm` efter `computeScore` (delad av
 `bidding.ts`, `bidEstimate`, `playerWinCurve`), `designDisplay` visar klassen som intervall. Ingen bot använder
 konstruktioner än; vakterna är orörda. Golden omfryst i egen commit.
+**P110 BYGGD 2026-09-30:** provning i egen regi (stående order `TESTING`, osäkerheten smalnar av, kostar
+`rndOverhead` × 0,5 per tur) och miljöbrister som bara avslöjas i rätt miljö (`data/environments.json`,
+`revealFlaw`). Golden-hasharna oförändrade; bara `balance.frozen.json` omfryst.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
