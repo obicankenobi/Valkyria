@@ -644,6 +644,14 @@ utfall än lägsta för alla fyra, ingen nivå ger säker framgång, och golden 
 **P103 — Härnessen.** Policyn `human`, flytten till `playerWinCurve` och de nya kolumnerna. Ingen
 `core`-ändring. *Klart när:* `human` kör 500 partier utan avvisade handlingar över 5 %.
 
+> **P103 — BYGGD 2026-09-30.** Se ANDRINGSLOGG-raden med samma datum. Klart-när uppfyllt: `human` kör 500 partier
+> med 0,9 % avvisade poster (av 25 850 inskickade; gränsen var 5 %). Ren `harness`-ändring — golden orörd och
+> verifierad, `balanced`/`capacity`/`bidEstimate.winBand` orörda (skyddsräcke 3). **Mätningen är P104:s underlag och
+> visar redan att §7.2:s startvärden inte nås:** `human` vinner 98 % (mål 40–70 %), BUYOUT 2 % (15–35 %), INSOLVENCY
+> 0 % (5–20 %), förskottets andel 42 % (15–35 %), vapenvila ≥ 1 i 2 % av partierna (20–50 %), larm från stående
+> order i 5 % (> 50 %); kassan går aldrig under noll före tur 5 (< 20 % — uppfyllt) och `passive` BUYOUT är 100 %
+> (> 60 % — uppfyllt). Se P104-blockquoten.
+
 **P104 — Balanspasset.** Mät mot §7.2 och justera bara data. Fetstilta rader ska vara uppfyllda
 eller uttryckligen reviderade med motivering. Frys om `balance.frozen.json` sist.
 

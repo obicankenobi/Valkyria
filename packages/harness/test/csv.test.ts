@@ -27,6 +27,14 @@ function row(overrides: Partial<GameMetrics> = {}): GameMetrics {
     formationsChangedStatus: 6,
     factionsChangedAlignment: 1,
     officialsReplaced: 0,
+    // P103 (ETAPP8_FORSLAG.md §7.1): balansmåtten.
+    advanceSharePct: 22.5,
+    minTreasuryTurns1to6: 1_200_000,
+    ceasefires: 1,
+    standingOrderAlarms: 2,
+    buyoutReview: 0,
+    submittedItems: 30,
+    rejectedItems: 1,
     ...overrides,
   }
 }
@@ -37,7 +45,7 @@ describe('csv (packages/harness)', () => {
     const lines = csv.trim().split('\n')
 
     expect(lines[0]).toBe(
-      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced',
+      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems',
     )
     expect(lines.length).toBe(3) // header + 2 partier
     expect(lines[1]).toContain('passive,seed-1,INSOLVENCY,9,-123,0,3,50,45,8,12.5,20,1,15,0,2,0,4,37.5,6,1,0')
@@ -47,7 +55,7 @@ describe('csv (packages/harness)', () => {
   it('en tom lista ger bara headerraden', () => {
     const csv = toCsv([])
     expect(csv.trim().split('\n')).toEqual([
-      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced',
+      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems',
     ])
   })
 

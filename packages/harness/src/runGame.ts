@@ -65,7 +65,25 @@ export interface GameMetrics {
   formationsChangedStatus: number
   factionsChangedAlignment: number
   officialsReplaced: number
+  // P103 (ETAPP8_FORSLAG.md §7.1) — de fem kolumnerna balanspasset P104 mäter mot §7.2, alla lästa ur
+  // redan bokförda fält (huvudboken, wire, status), ingen ny räknare i core. Plus submittedItems/
+  // rejectedItems för P103:s klart-när ("avvisade handlingar över 5 %").
+  advanceSharePct: number // förskott av alla intäkter (huvudbokens income.advances / summan av income)
+  minTreasuryTurns1to6: number // lägsta kassa efter någon av turerna 0–5 (kvartal 1, före första granskningen)
+  ceasefires: number // antal "CEASEFIRE ON THE …"-händelser
+  standingOrderAlarms: number // larm från stående order (förlustavtal, övertidshaveri, aktiv station över brännsgränsen)
+  buyoutReview: number // vilken granskning (1-baserat) BUYOUT inträffar vid, reviewTurns.length+1 = slutavräkningen; 0 om partiet inte slutar så
+  submittedItems: number // bud + handlingar + stående orderändringar som policyn skickade in
+  rejectedItems: number // av dem, de som resolveTurn avvisade
 }
+
+// Rubrikmönstren för de tre larmen — grep:ade ordagrant ur emit()-anropen i standingOrders.ts,
+// resolve/steps/production.ts och resolve/upkeep.ts (samma teknik som newsClassification.ts).
+const STANDING_ORDER_ALARMS = [
+  'HAS BEEN LOSING MONEY FOR',
+  'BREAKS DOWN UNDER OVERTIME',
+  'ON ACTIVE DUTY PASSES THE BURN THRESHOLD',
+]
 
 const MAX_TURNS = 21
 
@@ -84,13 +102,22 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let formationsChangedStatus = 0
   let factionsChangedAlignment = 0
   let officialsReplaced = 0
+  // P103 — de fem nya kolumnerna.
+  let minTreasury = Number.POSITIVE_INFINITY
+  let ceasefires = 0
+  let standingOrderAlarms = 0
+  let submittedItems = 0
+  let rejectedItems = 0
 
   for (let t = 0; t < MAX_TURNS; t++) {
     const decidingThisTurn = state.market.openOrders.filter((o) => o.expiresTurn <= state.meta.turn)
     for (const order of decidingThisTurn) rivalBidsAttempted += order.competingRivals.length
 
     const prevState = state
-    const result: TurnResult = resolveTurn(state, policy(state))
+    const submission = policy(state)
+    const result: TurnResult = resolveTurn(state, submission)
+    submittedItems += submission.bids.length + submission.actions.length + submission.standingOrders.length
+    rejectedItems += result.rejected.length
     state = result.state
     turnsPlayed++
 
@@ -129,7 +156,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       if (prevOfficial && prevOfficial.name !== nextOfficial.name) officialsReplaced++
     }
 
+    if (t < 6) minTreasury = Math.min(minTreasury, state.house.treasury)
     for (const event of result.wire) {
+      if (event.headline.startsWith('CEASEFIRE ON THE')) ceasefires++
+      if (STANDING_ORDER_ALARMS.some((pattern) => event.headline.includes(pattern))) standingOrderAlarms++
       if (event.headline.includes('WINS CONTRACT')) {
         if (event.actorIsPlayer) playerWins++
         else rivalWins++
@@ -145,6 +175,24 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
 
     if (state.status.kind === 'ended') break
   }
+
+  const ledgerIncome = (state.ledger ?? []).reduce(
+    (acc, e) => {
+      acc.advances += e.income.advances
+      acc.total += Object.values(e.income).reduce((a, b) => a + b, 0)
+      return acc
+    },
+    { advances: 0, total: 0 },
+  )
+  // BUYOUT avgörs antingen vid en granskningstur (andra underkända i rad → granskningens 1-baserade
+  // nummer) eller vid scenariots dueTurn när målet inte nåtts (slutavräkningen → reviewTurns.length + 1).
+  const reviewTurns = state.house.boardTarget.reviewTurns
+  const buyoutReview =
+    state.status.kind === 'ended' && state.status.ending === 'BUYOUT'
+      ? reviewTurns.includes(state.status.turn)
+        ? reviewTurns.indexOf(state.status.turn) + 1
+        : reviewTurns.length + 1
+      : 0
 
   const totalRevenue = state.house.revenueByTurn.reduce((sum, r) => sum + r, 0)
   const totalCost = state.market.contracts.reduce((sum, c) => sum + c.unitCostAtSigning * c.unitsDelivered, 0)
@@ -190,5 +238,12 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     formationsChangedStatus,
     factionsChangedAlignment,
     officialsReplaced,
+    advanceSharePct: ledgerIncome.total > 0 ? (ledgerIncome.advances / ledgerIncome.total) * 100 : 0,
+    minTreasuryTurns1to6: Number.isFinite(minTreasury) ? minTreasury : state.house.treasury,
+    ceasefires,
+    standingOrderAlarms,
+    buyoutReview,
+    submittedItems,
+    rejectedItems,
   }
 }

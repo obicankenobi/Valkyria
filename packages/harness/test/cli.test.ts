@@ -7,7 +7,7 @@ describe('parseArgs (packages/harness)', () => {
     const args = parseArgs([])
     expect(args.scenario).toBe('indochina-slice')
     expect(args.runs).toBe(100)
-    expect(args.policyNames.sort()).toEqual(['aggressive', 'balanced', 'capacity', 'passive'])
+    expect(args.policyNames.sort()).toEqual(['aggressive', 'balanced', 'balanced-pwc', 'capacity', 'capacity-pwc', 'human', 'passive'])
     expect(args.outPath).toBe('harness-results.csv')
   })
 
@@ -45,7 +45,7 @@ describe('main (packages/harness) — end till slut', () => {
       const lines = content.trim().split('\n')
 
       expect(lines[0]).toBe(
-        'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced',
+        'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems',
       )
       expect(lines.length).toBe(1 + 2 * 2) // header + (2 policies × 2 runs)
     } finally {

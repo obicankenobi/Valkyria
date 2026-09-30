@@ -24,6 +24,13 @@ const COLUMNS = [
   'formationsChangedStatus',
   'factionsChangedAlignment',
   'officialsReplaced',
+  'advanceSharePct',
+  'minTreasuryTurns1to6',
+  'ceasefires',
+  'standingOrderAlarms',
+  'buyoutReview',
+  'submittedItems',
+  'rejectedItems',
 ] as const satisfies readonly (keyof GameMetrics)[]
 
 function csvField(value: string | number): string {

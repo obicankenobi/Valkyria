@@ -7,8 +7,8 @@
 // och alla fyra INTERNAL/INTEL/POLITICAL-operationer avsnitt 10.2 nämner utöver det
 // är no-ops fram till P17/P18 — samma mönster som P3:s SUBMISSION_WITH_LOAN_ATTEMPT:
 // spec-ordagrant nu, och sant den dag en framtida prompt kopplar in dem.
-import { BOT_BALANCE, bidEstimate, computeUnitCostNow, getProduct, officialId } from '@seventh-front/core'
-import type { Bid, GameState, Grade, Order, PlayerAction, TurnSubmission } from '@seventh-front/core'
+import { BOT_BALANCE, COMMODITIES, bidEstimate, computeUnitCostNow, getProduct, officialId, playerWinCurve } from '@seventh-front/core'
+import type { Bid, Commodity, GameState, Grade, Order, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 
 export type Policy = (state: GameState) => TurnSubmission
 
@@ -428,6 +428,12 @@ export const balanced: Policy = (state) => {
     bids.push({ orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 })
   }
 
+  return { standingOrders: [], bids, actions: balancedActions(state) }
+}
+
+// Utbruten oförändrad ur `balanced` (P103) så att `balanced-pwc` delar EXAKT samma handlingar — bara
+// budkurvan skiljer. Rena flytten: golden-testet läser `balanced` och är oförändrat.
+function balancedActions(state: GameState): PlayerAction[] {
   const actions: PlayerAction[] = []
   courtOfficialAtRisk(state, actions) // P99c: först — handlingspoängen är knappa, och ett beslut kostar mer
   reprioritiseArtilleryIfNeeded(state, actions)
@@ -436,8 +442,7 @@ export const balanced: Policy = (state) => {
   influenceWeakestPublicSupport(state, actions) // P60, GK-A: nytt verb, minst en bot
   turnFirstStationsProcurementOfficial(state, actions) // P60, GK-A: nytt verb, minst en bot
   takeLoan(state.house.creditLimit * BALANCED_LOAN_SHARE, actions)
-
-  return { standingOrders: [], bids, actions: spendOnlyFromSurplus(state, actions) }
+  return spendOnlyFromSurplus(state, actions)
 }
 
 // ── capacity ─────────────────────────────────────────────────────────────
@@ -495,4 +500,169 @@ export const capacity: Policy = (state) => {
   return { standingOrders: [], bids, actions }
 }
 
-export const POLICIES: Record<string, Policy> = { passive, aggressive, balanced, capacity }
+// ── balanced-pwc / capacity-pwc ──────────────────────────────────────────
+// P103 (ETAPP8_FORSLAG.md §7.1): ETAPP7 §16 ville flytta `balanced` och `capacity` till `playerWinCurve`,
+// men golden-testet läser `balanced` direkt, så originalen lämnas orörda och två NYA varianter bjuder
+// ur samma kurva reglaget i budmappen visar (P81c/P84). Samma konfidensmål (60 %), samma tie-break,
+// samma handlingar och samma kapacitetsregel som originalen — bara prispunkterna kommer från
+// `playerWinCurve` i stället för `bidEstimate.winBand`. Ingen marginalspärr: en ren jämförelse mot
+// originalen ska visa vad kurvbytet ensamt gör.
+function pwcBid(state: GameState, order: Order, target: number, preferHigherOnTie: boolean): Bid {
+  const grade = chooseGrade(state, order)
+  const closest = pickClosestConfidence(playerWinCurve(state, order, grade), target, preferHigherOnTie)
+  return { orderId: order.id, price: closest.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 }
+}
+
+export const balancedPwc: Policy = (state) => ({
+  standingOrders: [],
+  bids: state.market.openOrders.map((order) => pwcBid(state, order, BALANCED_TARGET_CONFIDENCE, true)),
+  actions: balancedActions(state),
+})
+
+export const capacityPwc: Policy = (state) => {
+  let availableLines = state.house.lines.filter((l) => l.status === 'idle').length
+  const bids: Bid[] = []
+  for (const order of state.market.openOrders) {
+    const needed = linesNeededFor(order)
+    if (needed > availableLines) continue
+    availableLines -= needed
+    bids.push(pwcBid(state, order, CAPACITY_TARGET_CONFIDENCE, false))
+  }
+  const actions: PlayerAction[] = []
+  reprioritiseArtilleryIfNeeded(state, actions)
+  return { standingOrders: [], bids, actions }
+}
+
+// ── human ────────────────────────────────────────────────────────────────
+// P103 (ETAPP8_FORSLAG.md §7.1, beslut 8F): en RIMLIG spelare, inte en optimal — måttstocken för
+// balanspasset i P104. Den gör det en människa med spelets egna gränssnitt gör:
+//  - bjuder ur `playerWinCurve` (samma kurva reglaget visar, P81c/P84), inte ur `bidEstimate.winBand`
+//    som golden-testets `balanced` läser. Bland kurvans punkter väljs den med störst förväntad vinst
+//    (marginal i kronor × vinstchans) som ändå ger minst HUMAN_MIN_MARGIN;
+//  - föredrar förskott när kassan är låg (ordern med högst `advancePct` går före), annars bäst
+//    förväntad vinst — och tar aldrig fler ordrar än linjerna räcker till (som `capacity`);
+//  - lägger övertid på linjerna när ett kontrakt hotar bli sent, och ett leverantörsavtal när en
+//    råvara ligger lågt (båda stående order, kostar ingen handling);
+//  - använder `BACK_CHANNEL` mot en krigsfront där huset saknar kontrakt efter tur HUMAN_..._FROM_TURN;
+//  - uppvaktar den tjänsteman som är närmast förfall (P99c), gör R&D-engångsförsöket, och lånar bara
+//    när kassan är nära noll. Kostsamma verb bara ur överskott (P99c).
+// `balanced` och `capacity` rörs inte (golden läser `balanced`); en `-pwc`-variant av dem byggs inte —
+// `human` ÄR den spelarlika botten i måltabellen (8F).
+const HUMAN_MIN_MARGIN = 0.05
+const HUMAN_MIN_CONFIDENCE = 25
+const HUMAN_LOW_CASH_SHARE = 0.5 // kassa under hälften av grundkapitalet = "låg kassa"
+const HUMAN_SUPPLY_INDEX_MAX = 95 // en råvara under det här indexet är "låg" — läge för ett avtal
+const HUMAN_SUPPLY_VOLUME = 50_000
+const HUMAN_SUPPLY_TURNS = 6
+const HUMAN_BACK_CHANNEL_FROM_TURN = 4
+const HUMAN_BACK_CHANNEL_SPEND = 25_000
+const HUMAN_OVERTIME_DUE_WITHIN_TURNS = 2
+const HUMAN_LOAN_CASH_SHARE = 0.1 // lånar först när kassan understiger 10 % av grundkapitalet
+const HUMAN_LOAN_SHARE = 0.3 // ... och då 30 % av grundkapitalet
+
+function humanBids(state: GameState): Bid[] {
+  const lowCash = state.house.treasury < state.house.foundingCapital * HUMAN_LOW_CASH_SHARE
+  let availableLines = state.house.lines.filter((l) => l.status === 'idle').length
+  const candidates: { bid: Bid; value: number; advancePct: number; lines: number }[] = []
+
+  for (const order of state.market.openOrders) {
+    const grade = chooseGrade(state, order)
+    const curve = playerWinCurve(state, order, grade)
+    const totalCost = curve[0]!.price // kurvans golv ÄR egen självkostnad (P84)
+    let best: { price: number; confidence: number } | null = null
+    let bestValue = 0
+    for (const point of curve) {
+      if (point.confidence < HUMAN_MIN_CONFIDENCE || marginAt(point.price, totalCost) < HUMAN_MIN_MARGIN) continue
+      const value = (point.price - totalCost) * (point.confidence / 100)
+      if (value > bestValue) {
+        best = point
+        bestValue = value
+      }
+    }
+    if (!best) continue
+    candidates.push({
+      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0 },
+      value: bestValue,
+      advancePct: order.advancePct,
+      lines: linesNeededFor(order),
+    })
+  }
+
+  candidates.sort((a, b) => (lowCash ? b.advancePct - a.advancePct || b.value - a.value : b.value - a.value))
+  const bids: Bid[] = []
+  for (const c of candidates) {
+    if (c.lines > availableLines) continue
+    availableLines -= c.lines
+    bids.push(c.bid)
+  }
+  return bids
+}
+
+function humanStandingOrders(state: GameState): StandingOrderChange[] {
+  const changes: StandingOrderChange[] = []
+  const turn = state.meta.turn
+  const affordable = state.house.treasury >= state.house.foundingCapital * HUMAN_LOW_CASH_SHARE
+
+  // Övertid när ett kontrakt hotar bli sent — och tillbaka till normalt skift när hotet är över.
+  const atRisk = state.market.contracts.some(
+    (c) => c.status === 'active' && c.unitsDelivered < c.quantity && c.dueTurn - turn <= HUMAN_OVERTIME_DUE_WITHIN_TURNS,
+  )
+  const wanted = atRisk && affordable ? 'overtime' : 'normal'
+  for (const line of state.house.lines) {
+    const current = state.house.standingOrders?.lines[line.id]?.shift ?? 'normal'
+    if (current !== wanted) changes.push({ kind: 'LINE', lineId: line.id, category: null, shift: wanted })
+  }
+
+  // Ett leverantörsavtal (högst ett nytt per tur) för den billigaste råvaran under gränsen.
+  if (affordable) {
+    const held = new Set((state.house.standingOrders?.supply ?? []).map((a) => a.commodity))
+    let cheapest: Commodity | null = null
+    for (const commodity of COMMODITIES) {
+      if (held.has(commodity) || state.market.commodities[commodity] >= HUMAN_SUPPLY_INDEX_MAX) continue
+      if (cheapest === null || state.market.commodities[commodity] < state.market.commodities[cheapest]) cheapest = commodity
+    }
+    if (cheapest !== null) {
+      changes.push({ kind: 'SUPPLY', op: 'SET', commodity: cheapest, volumePerTurn: HUMAN_SUPPLY_VOLUME, durationTurns: HUMAN_SUPPLY_TURNS })
+    }
+  }
+  return changes
+}
+
+function backChannelOnPoorFront(state: GameState, actions: PlayerAction[]): void {
+  if (state.meta.turn < HUMAN_BACK_CHANNEL_FROM_TURN) return
+  const served = new Set(state.market.contracts.filter((c) => c.status !== 'voided').map((c) => c.frontId))
+  const front = Object.values(state.fronts).find((f) => f.status === 'war' && !served.has(f.id))
+  if (!front) return
+  const target = [front.sideA, front.sideB].map((id) => state.factions[id]).find((f) => f && !f.bankrupt)
+  if (!target) return
+  const surplus = state.house.treasury - HUMAN_BACK_CHANNEL_SPEND >= state.house.foundingCapital
+  actions.push({
+    type: 'POLITICAL',
+    op: 'BACK_CHANNEL',
+    targetFactionId: target.id,
+    spend: surplus ? HUMAN_BACK_CHANNEL_SPEND : 0,
+  })
+}
+
+export const human: Policy = (state) => {
+  const actions: PlayerAction[] = []
+  courtOfficialAtRisk(state, actions)
+  backChannelOnPoorFront(state, actions)
+  reprioritiseArtilleryIfNeeded(state, actions)
+  if (state.house.treasury < state.house.foundingCapital * HUMAN_LOAN_CASH_SHARE) {
+    takeLoan(Math.min(state.house.creditLimit, state.house.foundingCapital * HUMAN_LOAN_SHARE), actions)
+  }
+
+  const affordable = spendOnlyFromSurplus(state, actions).slice(0, state.house.actionPoints)
+  return { standingOrders: humanStandingOrders(state), bids: humanBids(state), actions: affordable }
+}
+
+export const POLICIES: Record<string, Policy> = {
+  passive,
+  aggressive,
+  balanced,
+  capacity,
+  human,
+  'balanced-pwc': balancedPwc,
+  'capacity-pwc': capacityPwc,
+}
