@@ -408,7 +408,11 @@ export function QuarterBand({ state, onNavigate }: { state: GameState; onNavigat
               key={item.id}
               type="button"
               className="ds-quarterband-item-button"
-              onClick={() => onNavigate(item.target)}
+              onClick={() => {
+                // P101: listan täcker målet — ett hopp stänger den (annars ligger kortet bakom listan).
+                setExpanded(false)
+                onNavigate(item.target)
+              }}
               data-testid={`quarterband-item-${item.id}`}
             >
               <span className="ds-quarterband-item-icon" aria-hidden="true">

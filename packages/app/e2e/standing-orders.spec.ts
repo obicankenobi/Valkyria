@@ -103,4 +103,7 @@ test('ett larm hoppar från This Quarter till rätt kort på tavlan, som öppnas
   await expect(page.getByTestId('standing-card-supply-steel')).toBeVisible()
   await expect(page.getByTestId('standing-back-supply-steel')).toBeVisible()
   await expect(page.getByTestId('standing-alarm-supply-steel')).toBeVisible()
+  // Listan har stängts och kortet är faktiskt i bild (inte bara i DOM:en).
+  await expect(page.getByTestId('quarterband-body')).toHaveCount(0)
+  await expect(page.getByTestId('standing-card-supply-steel')).toBeInViewport()
 })

@@ -1967,7 +1967,7 @@ td.is-key {
   position: absolute;
   left: -4px;
   right: -4px;
-  top: 40px;
+  top: 60px; /* under rubrikraden — en streckad linje att stryka under, inte över texten */
   height: 4px;
   background: var(--red);
   transform: rotate(-1.4deg);
