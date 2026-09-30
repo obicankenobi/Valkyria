@@ -345,10 +345,20 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // P115 (ETAPP9_FORSLAG.md §6.4/§12, beslut 9C — "regel"-prompt, egen commit): FIELD_TRIAL lägger bara valfria fält på Design
   // (trials, exposedToRivals) och ingen bot skickar verbet. ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P113:s (verifierat). Bara
   // balance.frozen.json följer med (nya rader: en anteckning och fem tal).
+  //
+  // Omfryst IGEN i P116 (ETAPP9_FORSLAG.md §6.5/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter
+  // koden). Till skillnad från P109–P115 ÄNDRAS de scriptade partierna på riktigt: när en köpare huset har ett kontrakt med
+  // vinner ett genombrott överlämnar den fiendens erövrade materiel (House.capturedMateriel, nytt valfritt fält, och en
+  // rubrik per överlämning) — det händer i alla tre partier (passive 7, aggressive 7, balanced 7 genombrott). En ren
+  // strippning av fältet går därför inte att jämföra bitvis (rubrikerna flyttar wire-id:n), så attributionen gjordes på
+  // det andra sättet: med den ENA hook-raden i fronts.ts (handleBreakthroughCaptures) bortkommenterad är alla tre hashar
+  // bit-identiska med P113:s (c799ecdd5bd39, 8b4c7721789cc, da588da434161) — inget annat i P116 (kopiering, verbet) rör
+  // partierna. balance.frozen.json följer med (nya rader: en anteckning och sju tal). De nya hasharna: passive
+  // 3952e3b974b05, aggressive 143653a4a5c867, balanced 92d255177e644.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c799ecdd5bd39' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '8b4c7721789cc' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'da588da434161' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '3952e3b974b05' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '143653a4a5c867' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '92d255177e644' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
