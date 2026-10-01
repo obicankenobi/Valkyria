@@ -35,11 +35,12 @@ export {
   estimateLineCompletionTurn,
   designDisplay,
   designStartPreview,
+  designBidStamps,
   researchTrackPreview,
   buyerPreferenceDisplay,
   raceAssessment,
 } from './queries.js'
-export type { DesignStartPreview, ResearchTrackPreview, DesignDisplay, PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook, RaceAssessment } from './queries.js'
+export type { DesignBidStamps, DesignStartPreview, ResearchTrackPreview, DesignDisplay, PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook, RaceAssessment } from './queries.js'
 // getProduct/allProducts: paketets ENDA väg till produktkatalogen (avsnitt 6) för
 // extern kod — packages/harness (P9) behöver getProduct för att avgöra om en order
 // gäller en restricted-produkt (Order har bara productId, inte en kopia av
@@ -57,6 +58,8 @@ export { officialId, findOfficial } from './officials.js'
 // använder (P79). ActionValidation/ActionPreview exporteras redan via
 // `export * from './types.js'` ovan.
 export { validateAction } from './validateAction.js'
+// P127: budmappen filtrerar konstruktionerna med samma prövning som bidding.ts.
+export { bidDesignRejection } from './design.js'
 // P125: pappersspåret — gränssnittet (P128) läser sannolikhet, rent rykte och avstängning ur samma funktioner som reglerna.
 export { INTEGRITY_START, cleanHouse, integrityBidTerm, isSuspendedFrom, traceSurfaceChancePct } from './traces.js'
 export { previewAction } from './previewAction.js'

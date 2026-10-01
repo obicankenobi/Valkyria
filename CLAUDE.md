@@ -840,6 +840,10 @@ aggressive 19, capacity 2, passive 0, balanced-pwc 99 %). Ingen bot svarar på k
 inriktning/ambition/startpunkt/forskningsspår som stående order med förhandsvisning (`designStartPreview`, `researchTrackPreview` i core), typblad med visarinstrument, klass `B ±1` och stämplar,
 provning, fältprov och utredningskortets tre svar. `FIELD_TRIAL`/`REVERSE_ENGINEER` fick katalogpost (24 verb), Handboksuppslag `design` och ikoner. Golden orörd. Ingen handledning/daterat
 PM för ritbordet än (P127); pappersspårets kort och upphandlingsmappen saknar UI (P128).
+**P127 BYGGD 2026-10-02:** kapplöpningstavlan (`RaceBoard.tsx`, överst på CONTRACTS: väst/öst, bedömd generation som fettkritsstreck med säkerhetsstämpel ur `raceAssessment`) och kravkorten
+(`requirementCards`), budmappens `Segmented`-val bland husets konstruktioner med stämplarna BATTLE-PROVEN / FIELD-TRIALLED HERE / REQUIRED LEVEL (ny ren fråga `designBidStamps`, kravnivån bara med
+underrättelse), beslutskortens prickar (`DecisionDots`, utan tal) och fyra daterade PM (`memos.ts`, `MemoSheet.tsx`, rader med ✉ i kvartalsbandet, lästa sparas i `settings:memosRead`). Golden orörd.
+Upphandlingsmappen, utvärderingsprotokollet och pappersspårets utredningskort saknar fortfarande UI (P128). **P124–P127 är därmed klara (kördes som en sats på ägarens begäran); P128 är nästa.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

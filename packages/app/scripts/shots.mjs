@@ -62,6 +62,17 @@ async function injectDesigns(page) {
     house.capturedMateriel = [{ systemId: 'nlf-artillery', name: 'Type 63 rocket launcher', category: 'artillery', fromFactionId: 'nlf', units: 3 }]
     house.standingOrders.research = { artillery: { pace: 'normal', sinceTurn: 1 } }
     house.treasury = 20000000
+    saved.state.market.openOrders = [
+      {
+        id: 'order-9', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 12, statedBudget: 7000000, trueBudget: 8000000, referencePrice: 6000000,
+        requiredDeliveryTurns: 3, expiresTurn: 6, competingRivals: ['brandt', 'costigan'], weights: { price: 0.5, delivery: 0.3, relationship: 0.2 },
+        officialId: 'official-rvn-procurement', reason: { kind: 'PEACETIME_REPLACEMENT' }, frontId: 'front-1', advancePct: 15,
+      },
+    ]
+    // P127: ett block har gått upp en generation och ett gap är aktivt.
+    saved.state.race.generation.west.artillery = 2
+    saved.state.race.generation.east.armour = 2
+    saved.state.race.gap = { artillery: { leader: 'west', sinceTurn: 1 } }
     for (const o of Object.values(saved.state.officials)) o.relationToPlayer = 80
     await new Promise((resolve, reject) => {
       const putReq = store.put(saved, 'save:default')
@@ -644,6 +655,40 @@ const APP_SCREENS = [
       await page.getByTestId('type-orders-toggle-design-3').click()
       await page.getByTestId('type-orders-design-3').waitFor()
       await page.getByTestId('type-sheets').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P127: kapplöpningstavlan — väst/öst, bedömd generation med säkerhetsstämpel, gap-ledare och kravkort.
+    name: 'race-board',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('tab-contracts').click()
+      await page.getByTestId('race-board').waitFor()
+    },
+  },
+  {
+    // P127: budmappen med konstruktionsval och stämplarna BATTLE-PROVEN / REQUIRED LEVEL.
+    name: 'bid-design',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('tab-contracts').click()
+      await page.getByRole('button', { name: 'quote' }).first().click()
+      await page.getByTestId('bid-form').waitFor()
+      await page.getByTestId('bid-design').getByText('#2').click()
+    },
+  },
+  {
+    // P127: ett daterat PM som skrivmaskinsblad.
+    name: 'memo',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('quarterband-memo-count').waitFor()
+      await page.getByTestId('quarterband-toggle').click()
+      await page.getByTestId('quarterband-memo-drawing-board').click()
+      await page.getByTestId('memo-sheet').waitFor()
     },
   },
   {

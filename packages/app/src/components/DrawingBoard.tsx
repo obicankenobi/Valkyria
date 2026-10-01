@@ -38,11 +38,11 @@ const SILHOUETTE: Record<TechCategory, string[]> = {
 }
 
 // Streck i ordning: streck i tecknas när framsteget passerat i/n. pathLength=100 gör streckets längd oberoende av formen.
-export function DrawingSilhouette({ category, progress }: { category: TechCategory; progress: number }) {
+export function DrawingSilhouette({ category, progress, className, testId }: { category: TechCategory; progress: number; className?: string; testId?: string }) {
   const strokes = SILHOUETTE[category]
   const n = strokes.length
   return (
-    <svg className="drawing-svg" viewBox="0 0 120 60" role="img" aria-label={`${CATEGORY_NAME[category]} blueprint, ${Math.round(progress * 100)} per cent drawn`} data-testid={`drawing-${category}`} data-progress={progress.toFixed(2)}>
+    <svg className={className ? `drawing-svg ${className}` : 'drawing-svg'} viewBox="0 0 120 60" role="img" aria-label={`${CATEGORY_NAME[category]} blueprint, ${Math.round(progress * 100)} per cent drawn`} data-testid={testId ?? `drawing-${category}`} data-progress={progress.toFixed(2)}>
       <g className="drawing-faint" fill="none">
         {strokes.map((d, i) => (
           <path key={i} d={d} pathLength={100} />

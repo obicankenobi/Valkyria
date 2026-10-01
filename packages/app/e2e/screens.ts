@@ -436,6 +436,18 @@ async function injectDesigns(page: Page): Promise<void> {
     house.capturedMateriel = [{ systemId: 'nlf-artillery', name: 'Type 63 rocket launcher', category: 'artillery', fromFactionId: 'nlf', units: 3 }]
     ;(house.standingOrders as Record<string, unknown>).research = { artillery: { pace: 'normal', sinceTurn: 1 } }
     house.treasury = 20_000_000
+    ;(saved.state as unknown as { market: { openOrders: unknown[] }; race: { generation: Record<string, Record<string, number>>; gap?: unknown } }).market.openOrders = [
+      {
+        id: 'order-9', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 12, statedBudget: 7000000, trueBudget: 8000000, referencePrice: 6000000,
+        requiredDeliveryTurns: 3, expiresTurn: 6, competingRivals: ['brandt', 'costigan'], weights: { price: 0.5, delivery: 0.3, relationship: 0.2 },
+        officialId: 'official-rvn-procurement', reason: { kind: 'PEACETIME_REPLACEMENT' }, frontId: 'front-1', advancePct: 15,
+      },
+    ]
+    // P127: ett block har gått upp en generation och ett gap är aktivt — kapplöpningstavlan och kravnivåstämpeln har något att visa.
+    const race = (saved.state as unknown as { race: { generation: Record<string, Record<string, number>>; gap?: unknown } }).race
+    race.generation['west']!['artillery'] = 2
+    race.generation['east']!['armour'] = 2
+    race.gap = { artillery: { leader: 'west', sinceTurn: 1 } }
     for (const o of Object.values(saved.state.officials) as { relationToPlayer: number }[]) o.relationToPlayer = 80
     await new Promise((resolve, reject) => {
       const putReq = store.put(saved, 'save:default')
@@ -461,6 +473,31 @@ export async function enterTypeSheet(page: Page): Promise<void> {
   await injectDesigns(page)
   await page.getByTestId('type-orders-toggle-design-3').click()
   await page.getByTestId('type-orders-design-3').waitFor()
+}
+
+// P127: kapplöpningstavlan (CONTRACTS) med kravkort, gap-ledare och bedömningsstämplar.
+export async function enterRaceBoard(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('tab-contracts').click()
+  await page.getByTestId('race-board').waitFor()
+}
+
+// P127: budmappen med konstruktionsval och stämplar — en order är injicerad så att formuläret är deterministiskt.
+export async function enterBidDesign(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('tab-contracts').click()
+  await page.getByRole('button', { name: 'quote' }).first().click()
+  await page.getByTestId('bid-form').waitFor()
+  await page.getByTestId('bid-design').getByText('#2').click()
+}
+
+// P127: ett daterat PM öppet som skrivmaskinsblad ur kvartalsbandet.
+export async function enterMemo(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('quarterband-memo-count').waitFor()
+  await page.getByTestId('quarterband-toggle').click()
+  await page.getByTestId('quarterband-memo-drawing-board').click()
+  await page.getByTestId('memo-sheet').waitFor()
 }
 
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
@@ -489,4 +526,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'standing-alarm', path: '/', setup: enterStandingAlarm },
   { name: 'drawing-board', path: '/', setup: enterDrawingBoard },
   { name: 'type-sheet', path: '/', setup: enterTypeSheet },
+  { name: 'race-board', path: '/', setup: enterRaceBoard },
+  { name: 'bid-design', path: '/', setup: enterBidDesign },
+  { name: 'memo', path: '/', setup: enterMemo },
 ]

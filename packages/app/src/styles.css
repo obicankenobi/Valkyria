@@ -5200,3 +5200,217 @@ summary:focus-visible,
   gap: 8px;
 }
 .type-fields dd.is-red { color: var(--red); }
+
+/* P127 (ETAPP9 §9): beslutskortens prickar — en prick per påverkad mätare, med mätarens namn (aldrig ett tal). */
+.decision-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.decision-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.decision-dot i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink-dim);
+}
+.decision-dot.is-cash i { background: var(--green); }
+.decision-dot.is-reputation i { background: var(--blue); }
+.decision-dot.is-relations i { background: var(--amber); }
+.decision-dot.is-time i { background: var(--ink-dim); }
+.decision-dot.is-rivals i { background: var(--red); }
+.decision-dot.is-doomsday i { background: var(--red); outline: 2px solid var(--red-soft); }
+
+/* P127 (ETAPP9 §9): kapplöpningstavlan — två kolumner (väst/öst), en rad per kategori, fettkritsstreck på en generationsskala, en säkerhetsstämpel
+   per rad, och kravkort under tavlan. Fettkrita = --blue/--red (samma som blocksidorna), aldrig glöd. */
+.race-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.race-column {
+  min-width: 0;
+  padding: 8px;
+  background: var(--panel-sunken);
+  border: 1px solid var(--line);
+}
+.race-column-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+.race-column.is-west .race-column-title { color: var(--west); }
+.race-column.is-east .race-column-title { color: var(--east); }
+.race-row {
+  display: grid;
+  gap: 2px;
+  padding: 6px 0;
+  border-top: 1px dashed var(--line-strong);
+  min-width: 0;
+}
+.race-row-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.race-sil {
+  width: 44px;
+  max-height: 24px;
+  flex: none;
+  background: transparent;
+  border: 0;
+}
+.race-sil .drawing-faint path { stroke-dasharray: none; stroke-opacity: 0.4; }
+.race-row-name {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.race-scale {
+  display: block;
+  width: 100%;
+  height: 24px;
+}
+.race-scale-axis { stroke: var(--line-strong); stroke-width: 1; }
+.race-scale-tick { stroke: var(--ink-dim); stroke-width: 0.8; }
+.race-scale-crayon { stroke-width: 5; stroke-linecap: round; stroke-opacity: 0.8; }
+.race-scale-crayon.is-west { stroke: var(--west); }
+.race-scale-crayon.is-east { stroke: var(--east); }
+.race-scale-own { fill: var(--ink); }
+.race-row-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+.race-gap {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--amber-ink);
+}
+.race-stamp {
+  justify-self: start;
+  padding: 1px 6px;
+  border: 2px solid var(--ink-faint);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  transform: rotate(-2deg);
+  overflow-wrap: anywhere;
+}
+.race-stamp.is-confirmed { border-color: var(--green); color: var(--green); }
+.race-legend { margin-top: 8px; }
+.race-cards-title {
+  margin: 12px 0 6px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--amber-ink);
+}
+.race-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 10px;
+}
+.race-card {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-left-width: 4px;
+  box-shadow: 1px 2px 3px rgba(36, 31, 24, 0.25);
+}
+.race-card.is-west { border-left-color: var(--west); }
+.race-card.is-east { border-left-color: var(--east); }
+.race-card-when {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--amber-ink);
+}
+.race-card-what {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* P127: stämplarna vid en konstruktion i budmappen (BATTLE-PROVEN, REQUIRED LEVEL …). */
+.bid-design-stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+.bid-design-stamp {
+  padding: 1px 6px;
+  border: 2px solid var(--ink-faint);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  transform: rotate(-2deg);
+}
+.bid-design-stamp.is-green { border-color: var(--green); color: var(--green); }
+.bid-design-stamp.is-red { border-color: var(--red); color: var(--red); }
+
+/* P127 (ETAPP9 §9): daterade PM — skrivmaskinsblad i ett bottenark, och en ✉-märkning i kvartalsbandet. */
+.ds-quarterband-memos {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber-ink);
+}
+.ds-quarterband-item-button.is-memo {
+  font-family: var(--font-mono);
+}
+.memo-paper {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  box-shadow: 1px 3px 4px rgba(36, 31, 24, 0.3);
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.memo-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--line-strong);
+  font-size: 13px;
+}
+.memo-head dt { color: var(--ink-faint); }
+.memo-head dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.memo-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.memo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

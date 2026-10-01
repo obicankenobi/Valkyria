@@ -16,6 +16,7 @@ import { ActionSlot, InfoTooltip } from './designSystem.js'
 import type { RejectedEntry } from '../useGame.js'
 import { deriveQuarterlyNotice, deriveThisQuarter } from '../thisQuarter.js'
 import type { ThisQuarterTarget } from '../thisQuarter.js'
+import type { DatedMemo } from '../memos.js'
 import { playSound } from '../sound.js'
 import { HANDBOOK, hudNumberTopic } from '../handbook.js'
 import type { HandbookTopicId } from '../handbook.js'
@@ -330,7 +331,18 @@ export function HudBar({
 // ── This Quarter-bandet (§7.7). "Listan är en vägvisare, inte ett
 // formulär": ett alltid synligt, utfällbart band vars rader hoppar till
 // föremålet (P83). Kvartalsbeskedet (P81-11) ligger överst, statiskt. ──
-export function QuarterBand({ state, onNavigate }: { state: GameState; onNavigate: (target: ThisQuarterTarget) => void }) {
+export function QuarterBand({
+  state,
+  onNavigate,
+  memos = [],
+  onOpenMemo = () => {},
+}: {
+  state: GameState
+  onNavigate: (target: ThisQuarterTarget) => void
+  // P127 (ETAPP9 §9, daterade PM): olästa PM visas som egna rader (räknas inte in i "This Quarter"-antalet) och öppnas som ett skrivmaskinsblad.
+  memos?: readonly DatedMemo[]
+  onOpenMemo?: (id: string) => void
+}) {
   const [expanded, setExpanded] = useState(false)
   // P81c (§13, P81-blockquoten, P81-8): "en varning i kvartalsbandet" turen
   // före en granskning spelaren ligger under kravet inför — samma
@@ -363,6 +375,11 @@ export function QuarterBand({ state, onNavigate }: { state: GameState; onNavigat
             ⚠
           </span>
         )}
+        {memos.length > 0 && (
+          <span className="ds-quarterband-memos" data-testid="quarterband-memo-count" aria-label={`${memos.length} unread memo${memos.length === 1 ? '' : 's'}`}>
+            ✉ {memos.length}
+          </span>
+        )}
         <span className="ds-quarterband-spacer" />
         <span className="ds-quarterband-chevron" aria-hidden="true">
           {expanded ? '▴' : '▾'}
@@ -379,6 +396,23 @@ export function QuarterBand({ state, onNavigate }: { state: GameState; onNavigat
               ))}
             </div>
           )}
+          {memos.map((memo) => (
+            <button
+              key={memo.id}
+              type="button"
+              className="ds-quarterband-item-button is-memo"
+              onClick={() => {
+                setExpanded(false)
+                onOpenMemo(memo.id)
+              }}
+              data-testid={`quarterband-memo-${memo.id}`}
+            >
+              <span className="ds-quarterband-item-icon" aria-hidden="true">
+                ✉
+              </span>
+              MEMO {memo.date} — {memo.subject}
+            </button>
+          ))}
           {boardWarning && (
             <p className="ds-quarterband-item is-warn" data-testid="quarterband-board-warning-item">
               Board review next turn — at {currentPct.toFixed(0)}%, need {requiredPct.toFixed(0)}% to stay on track.
@@ -402,7 +436,7 @@ export function QuarterBand({ state, onNavigate }: { state: GameState; onNavigat
               {item.label}
             </button>
           ))}
-          {count === 0 && notice.length === 0 && <p className="ds-quarterband-item is-quiet">Nothing needs your attention.</p>}
+          {count === 0 && notice.length === 0 && memos.length === 0 && <p className="ds-quarterband-item is-quiet">Nothing needs your attention.</p>}
         </div>
       )}
     </div>

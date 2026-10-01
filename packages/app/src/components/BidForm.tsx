@@ -6,11 +6,11 @@
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useEffect, useMemo, useState } from 'react'
-import { advanceAmount, bidEstimate, orderTerms, playerWinCurve } from '@seventh-front/core'
+import { advanceAmount, bidDesignRejection, bidEstimate, designBidStamps, orderTerms, playerWinCurve } from '@seventh-front/core'
 import type { DriverLevel } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
-import { Button, DsSlider, Segmented, Stepper } from './designSystem.js'
+import { Button, DsSlider, DsToggle, Segmented, Stepper } from './designSystem.js'
 import { playSound } from '../sound.js'
 
 const GRADES: Grade[] = ['A', 'B', 'C']
@@ -80,18 +80,39 @@ export function BidForm({
   }, [])
   const [grade, setGrade] = useState<Grade>(existingBid?.grade ?? 'A')
 
+  // P127 (ETAPP9 §9, budmappen): ett Segmented-val bland husets konstruktioner (plus STANDARD = basprodukten). Bara konstruktioner som går att
+  // bjuda på visas (samma prövning som bidding.ts, bidDesignRejection). Vinstchansen räknas om direkt eftersom bidEstimate/playerWinCurve tar
+  // designId (en formel, en källa).
+  const eligibleDesigns = useMemo(
+    () => (state.house.designs ?? []).filter((d) => bidDesignRejection(state, { designId: d.id, price: 0 }, order) === null),
+    [state, order],
+  )
+  const [designChoice, setDesignChoice] = useState<string>(
+    existingBid?.designId && eligibleDesigns.some((d) => d.id === existingBid.designId) ? existingBid.designId : 'standard',
+  )
+  const designId = designChoice === 'standard' ? undefined : designChoice
+  const chosenDesign = designId ? eligibleDesigns.find((d) => d.id === designId) : undefined
+  const [kit, setKit] = useState<boolean>(existingBid?.kit ?? false)
+  const useKit = kit && chosenDesign !== undefined && chosenDesign.lineage !== null
+
   // bidEstimate/playerWinCurve drar aldrig ur huvud-Rng:n (hash-seedade, se
   // queries.ts) — säkert att räkna om vid varje grade-byte utan att röra
   // rngCursor.
-  const estimate = useMemo(() => bidEstimate(state, order, grade), [state, order, grade])
-  const winCurve = useMemo(() => playerWinCurve(state, order, grade), [state, order, grade])
+  const estimate = useMemo(() => bidEstimate(state, order, grade, designId, useKit), [state, order, grade, designId, useKit])
+  const winCurve = useMemo(() => playerWinCurve(state, order, grade, designId, useKit), [state, order, grade, designId, useKit])
   const priceMin = winCurve[0]?.price ?? 0
   const priceMax = winCurve[winCurve.length - 1]?.price ?? priceMin
 
   const [price, setPrice] = useState<number>(existingBid?.price ?? priceMin)
+  // En annan konstruktion (eller sats) flyttar prisintervallet (självkostnaden ändras) — håll priset inom det.
+  useEffect(() => {
+    setPrice((p) => Math.min(Math.max(p, priceMin), priceMax))
+  }, [priceMin, priceMax])
   const [deliveryTurns, setDeliveryTurns] = useState<number>(existingBid?.deliveryTurns ?? order.requiredDeliveryTurns)
   const [bribe, setBribe] = useState<number>(existingBid?.bribe ?? 0)
 
+  const stamps = chosenDesign ? designBidStamps(state, chosenDesign, order) : null
+  const kitReason = chosenDesign && chosenDesign.lineage !== null ? bidDesignRejection(state, { designId: chosenDesign.id, kit: true, price }, order) : null
   const yourWinChance = interpolateConfidence(winCurve, price)
   const terms = useMemo(() => orderTerms(state, order), [state, order])
   const advanceCash = advanceAmount(price, order.advancePct)
@@ -113,6 +134,44 @@ export function BidForm({
         <span className="cf-field-label">GRADE</span>
         <Segmented options={GRADES.map((g) => ({ value: g, label: g }))} value={grade} onChange={setGrade} testId="bid-grade" />
       </div>
+
+      {eligibleDesigns.length > 0 && (
+        <div className="cf-field" data-testid="bid-design-field">
+          <span className="cf-field-label">OFFER</span>
+          <Segmented
+            options={[{ value: 'standard', label: 'STANDARD' }, ...eligibleDesigns.map((d, i) => ({ value: d.id, label: `#${i + 1}` }))]}
+            value={designChoice}
+            onChange={(v) => {
+              setDesignChoice(v)
+              setKit(false)
+            }}
+            testId="bid-design"
+          />
+          {chosenDesign ? (
+            <>
+              <p className="cf-hint" data-testid="bid-design-name">
+                {chosenDesign.name} · generation {chosenDesign.generation}
+              </p>
+              <div className="bid-design-stamps" data-testid="bid-design-stamps">
+                {stamps?.battleProven && <span className="bid-design-stamp is-green" data-testid="stamp-battle-proven">BATTLE-PROVEN</span>}
+                {stamps?.fieldTrialled && <span className="bid-design-stamp is-green" data-testid="stamp-field-trialled">FIELD-TRIALLED HERE</span>}
+                <span
+                  className={`bid-design-stamp ${stamps?.requiredLevel === false ? 'is-red' : stamps?.requiredLevel ? 'is-green' : ''}`}
+                  data-testid="stamp-required-level"
+                >
+                  {stamps?.requiredLevel === null || stamps === null ? 'REQUIRED LEVEL ?' : stamps.requiredLevel ? 'REQUIRED LEVEL MET' : 'BELOW REQUIRED LEVEL'}
+                </span>
+              </div>
+              {chosenDesign.lineage !== null && (
+                <DsToggle label="Upgrade kit (quicker, thinner margin)" checked={kit} onChange={setKit} testId="bid-kit" />
+              )}
+              {kit && kitReason && <p className="cf-hint is-warning">{kitReason}</p>}
+            </>
+          ) : (
+            <p className="cf-hint">The base product — no design of your own.</p>
+          )}
+        </div>
+      )}
 
       <div className="cf-field">
         <DsSlider
@@ -190,7 +249,22 @@ export function BidForm({
       </div>
 
       <div className="form-actions">
-        <Button variant="primary" onClick={() => onSubmit({ orderId: order.id, price, deliveryTurns, grade, bribe })} testId="bid-submit">
+        <Button
+          variant="primary"
+          disabled={useKit && kitReason !== null}
+          onClick={() =>
+            onSubmit({
+              orderId: order.id,
+              price,
+              deliveryTurns,
+              grade,
+              bribe,
+              ...(designId ? { designId } : {}),
+              ...(useKit ? { kit: true } : {}),
+            })
+          }
+          testId="bid-submit"
+        >
           {existingBid ? 'Update Bid' : 'Place Bid'}
         </Button>
         {existingBid && (

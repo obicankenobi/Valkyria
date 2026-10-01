@@ -7,10 +7,12 @@
 // (skyddsräcke 5). Order valideras med validateStandingOrderChange / validateAction — samma funktioner som
 // applyActions kör — så en spärrad knapp visar orsaken i klartext.
 import { useState } from 'react'
-import { DESIGN_ENVIRONMENTS, designDisplay, officialId, previewAction, validateAction, validateStandingOrderChange } from '@seventh-front/core'
+import { DESIGN_ENVIRONMENTS, designDisplay, officialId, validateAction, validateStandingOrderChange } from '@seventh-front/core'
 import type { Design, DesignEnvironment, GameState, InvestigationChoice, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { Button, Segmented } from './designSystem.js'
-import { Panel, Tag, formatMoney } from './ui.js'
+import { DecisionDots } from './DecisionDots.js'
+import type { DecisionGauge } from './DecisionDots.js'
+import { Panel, Tag } from './ui.js'
 import { wearClass } from '../stampWear.js'
 import { AMBITION_LABEL, CATEGORY_NAME, ENVIRONMENT_LABEL, FOCUS_LABEL, designStamp, openInvestigationsFor, qualityLabel } from '../designSheet.js'
 import type { DesignStampKind } from '../designSheet.js'
@@ -47,6 +49,13 @@ const STAMP_TONE: Record<DesignStampKind, string> = {
   UNTESTED: 'is-faint',
 }
 
+// Vilka mätare utredningskortets tre svar rör (prickar, inga tal — beslutskort enligt ETAPP9 §9).
+const INQUIRY_GAUGES: Record<InvestigationChoice, readonly DecisionGauge[]> = {
+  FIX: ['cash', 'time'],
+  DENY: ['reputation', 'relations'],
+  REDESIGN: ['time', 'cash'],
+}
+
 function reason(v: { ok: true } | { ok: false; reason: string }): string | null {
   return v.ok ? null : v.reason
 }
@@ -77,7 +86,6 @@ function SheetOrders({
     ? { type: 'POLITICAL', op: 'FIELD_TRIAL', officialId: officialId(buyerId, 'procurement'), designId: design.id }
     : null
   const trialValidation = trialAction ? validateAction(state, state, trialAction) : null
-  const trialPreview = trialAction ? previewAction(state, trialAction) : null
 
   return (
     <div className="type-orders" data-testid={`type-orders-${design.id}`}>
@@ -100,6 +108,7 @@ function SheetOrders({
                     <Button variant={queued && queued.kind === 'INVESTIGATION' && queued.choice === choice ? 'primary' : 'secondary'} disabled={!validation.ok} onClick={() => onSet(change)} testId={`type-inquiry-${inq.id}-${choice}`}>
                       {choice === 'FIX' ? 'FIX IN THE FIELD' : choice === 'DENY' ? 'DENY' : 'REDESIGN'}
                     </Button>
+                    <DecisionDots gauges={INQUIRY_GAUGES[choice]} testId={`type-inquiry-${inq.id}-${choice}-dots`} />
                     {reason(validation) && <p className="cf-hint is-warning">{reason(validation)}</p>}
                   </div>
                 )
@@ -148,9 +157,9 @@ function SheetOrders({
             />
           </div>
           <p className="cf-hint">
-            {trialPreview?.cost != null ? `The batch costs ${formatMoney(trialPreview.cost)}. ` : ''}
             The class margin narrows, a fault may surface, the buyer favours the design next time — and every rival learns the result.
           </p>
+          <DecisionDots gauges={['cash', 'relations', 'rivals']} testId={`type-trial-dots-${design.id}`} />
           <Button variant="primary" disabled={!trialValidation?.ok} onClick={() => trialAction && onAddAction(trialAction)} testId={`type-trial-${design.id}`}>
             FIELD TRIAL (1 action)
           </Button>

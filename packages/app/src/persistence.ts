@@ -421,6 +421,38 @@ export async function saveTutorialSeen(seen: boolean): Promise<void> {
   }
 }
 
+// P127 (ETAPP9 §9, daterade PM): vilka PM spelaren läst. Global som tutorialSeen — ett PM som lästs en gång visas aldrig igen.
+const MEMOS_READ_KEY = 'settings:memosRead'
+
+export async function loadMemosRead(): Promise<string[]> {
+  const db = await openDb()
+  try {
+    const raw = await new Promise<string[] | undefined>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).get(MEMOS_READ_KEY)
+      request.onsuccess = () => resolve(request.result as string[] | undefined)
+      request.onerror = () => reject(request.error as Error)
+    })
+    return Array.isArray(raw) ? raw : []
+  } finally {
+    db.close()
+  }
+}
+
+export async function saveMemosRead(read: readonly string[]): Promise<void> {
+  const db = await openDb()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).put([...read], MEMOS_READ_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error as Error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
 export async function loadTutorialState(): Promise<TutorialState | null> {
   const db = await openDb()
   try {

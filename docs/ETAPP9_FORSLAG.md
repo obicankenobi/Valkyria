@@ -769,6 +769,11 @@ lämnar golden orörd.
 > forskningsspår som stående order) och typbladet (visarinstrument, klass med osäkerhet `B ±1`, stämplar UNTESTED / PROVEN IN THE FIELD / UNDER
 > REVIEW / RECALLED, provning, fältprov och utredningskortets tre svar) i THE COMPANY. `FIELD_TRIAL` och `REVERSE_ENGINEER` fick katalogpost,
 > Handboksuppslag och ikoner. Golden orörd. Se ANDRINGSLOGG 2026-10-02.
+>
+> **P127 BYGGD 2026-10-02.** Kapplöpningstavlan (väst/öst, bedömd generation som fettkritsstreck med säkerhetsstämpel) och kravkorten överst på
+> CONTRACTS, budmappens `Segmented`-val bland konstruktioner med stämplarna BATTLE-PROVEN / REQUIRED LEVEL (kravnivån bara med underrättelse),
+> beslutskortens prickar (utan tal) och fyra daterade PM som införs ett i taget (ritbordet, kravkorten, kapplöpningstavlan, upphandlingen).
+> Golden orörd. Se ANDRINGSLOGG 2026-10-02.
 
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.

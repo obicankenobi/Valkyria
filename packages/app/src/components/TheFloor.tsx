@@ -4,6 +4,7 @@
 // Inga dolda fält (trueBudget, weights, integrity)." Order.trueBudget/
 // inspectorIntegrity/weights visas ALDRIG (avsnitt 4.3) — BidForm.tsx äger
 // själva reglaget, den här filen äger bara mappen den öppnas ur.
+import { RaceBoard } from './RaceBoard.js'
 import { useState } from 'react'
 import { getProduct, orderTerms } from '@seventh-front/core'
 import type { Bid, GameState, Order, TurnSubmission } from '@seventh-front/core'
@@ -106,6 +107,9 @@ export function TheFloor({
   return (
     <>
       <h2 className="view-title">Contracts</h2>
+
+      {/* P127 (ETAPP9 §7.1/§9): kapplöpningstavlan och kravkorten. */}
+      <RaceBoard state={state} />
 
       <Panel
         title="Open Orders"

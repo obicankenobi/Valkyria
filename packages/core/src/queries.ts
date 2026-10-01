@@ -11,7 +11,7 @@ import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import { integrityBidTerm } from './traces.js'
 import type { Bloc } from './race.js'
-import { BLOCS, blocOfFaction, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, frontierGeneration, isFollowerTarget, noveltyFactor } from './race.js'
+import { BLOCS, blocOfFaction, buyerGeneration, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, frontierGeneration, isFollowerTarget, noveltyFactor } from './race.js'
 import { projectCostPerTurn, projectOverheadPerTurn, researchDuration } from './research.js'
 import {
   BALANCE_DESIGN_STEPS,
@@ -836,6 +836,24 @@ export interface DesignDisplay {
   // P117: nyhetsvärdet (0–100, avtar) och de block där konstruktionen är utfasad (offentligt — generationsstegen är rubriker).
   novelty: number
   phasedOutFor: Bloc[]
+}
+
+// P127 (ETAPP9 §9, budmappen): stämplarna vid en konstruktion i ett bud. BATTLE-PROVEN är fältryktet (offentligt). REQUIRED LEVEL jämför
+// konstruktionens generation med köparens blocks DOLDA generation, så den visas bara med underrättelse i köparens land (annars null →
+// "?"), samma grind som kreditstämpeln (skyddsräcke 4 och 5). fieldTrialled = en aktiv fältprovsbonus hos just den här köparen.
+export interface DesignBidStamps {
+  battleProven: boolean
+  requiredLevel: boolean | null
+  fieldTrialled: boolean
+}
+
+export function designBidStamps(state: GameState, design: Design, order: Pick<Order, 'buyerId'>): DesignBidStamps {
+  const known = effectiveDepth(state, order.buyerId) > 0
+  return {
+    battleProven: design.fieldRecord?.proven ?? false,
+    requiredLevel: known ? design.generation >= buyerGeneration(state, order.buyerId, design.category) : null,
+    fieldTrialled: design.trials?.[order.buyerId]?.bonusActive ?? false,
+  }
 }
 
 // P126 (ETAPP9 §9): det ritbordet visar innan en ordning köas — längd, kostnad per tur, målgeneration och avvisningsorsaken i

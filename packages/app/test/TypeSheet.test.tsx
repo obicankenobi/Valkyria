@@ -126,6 +126,10 @@ describe('typbladet (P126, §9)', () => {
     })
     fireEvent.click(screen.getByTestId('type-orders-toggle-design-1'))
     fireEvent.click(screen.getByTestId('type-trial-design-1'))
+    expect(screen.getByTestId('type-trial-dots-design-1').textContent).toContain('CASH')
+    expect(screen.getByTestId('type-trial-dots-design-1').textContent).toContain('RELATIONS')
+    expect(screen.getByTestId('type-trial-dots-design-1').textContent).toContain('RIVALS')
+    expect(screen.getByTestId('type-trial-dots-design-1').textContent).not.toMatch(/£|\d/)
     const first = onAdd.mock.calls[0]![0] as Extract<PlayerAction, { type: 'POLITICAL' }>
     expect(first.op).toBe('FIELD_TRIAL')
     expect((first as { designId: string }).designId).toBe('design-1')
@@ -138,6 +142,11 @@ describe('typbladet (P126, §9)', () => {
     expect(screen.getByTestId('type-inquiry-inv-1')).toBeTruthy()
     fireEvent.click(screen.getByTestId('type-inquiry-inv-1-FIX'))
     expect(onSet).toHaveBeenCalledWith({ kind: 'INVESTIGATION', investigationId: 'inv-1', choice: 'FIX' })
+    // Beslutskortets prickar: vilka mätare ett svar rör, utan tal.
+    expect(screen.getByTestId('type-inquiry-inv-1-FIX-dots').textContent).toContain('CASH')
+    expect(screen.getByTestId('type-inquiry-inv-1-DENY-dots').textContent).toContain('REPUTATION')
+    expect(screen.getByTestId('type-inquiry-inv-1-REDESIGN-dots').textContent).toContain('TIME')
+    expect(screen.getByTestId('type-inquiry-inv-1-FIX-dots').textContent).not.toMatch(/£|\d/)
     cleanup()
 
     setup([makeDesign()], (s) => (s.house.investigations = [inquiry('denied')]))

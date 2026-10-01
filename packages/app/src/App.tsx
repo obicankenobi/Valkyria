@@ -26,6 +26,8 @@ import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
 import { TutorialOverlay } from './components/TutorialOverlay.js'
 import { Handbook } from './components/Handbook.js'
+import { MemoSheet } from './components/MemoSheet.js'
+import { dueMemos, findMemo } from './memos.js'
 import type { HandbookTopicId } from './handbook.js'
 import type { ThisQuarterTarget } from './thisQuarter.js'
 import { useGame } from './useGame.js'
@@ -35,6 +37,7 @@ import {
   loadMotion,
   loadMuted,
   loadTextScale,
+  loadMemosRead,
   loadTutorialSeen,
   loadTutorialState,
   loadVolume,
@@ -42,6 +45,7 @@ import {
   saveMotion,
   saveMuted,
   saveTextScale,
+  saveMemosRead,
   saveTutorialSeen,
   saveTutorialState,
   saveVolume,
@@ -150,8 +154,40 @@ export function App() {
   // P91b (§9/§13, P81-20): handboken. Ingen persistens behövs — bara ett
   // öppet/stängt-läge och vilket uppslag som ska vara i fokus, samma
   // mönster som MapLegend.tsx:s (P81a) redan etablerade focusId.
+  // P127 (ETAPP9 §9, daterade PM): vilka PM som lästs (global inställning) och vilket PM som är öppet. Olästa PM visas inte förrän inläsningen
+  // svarat (annars blinkar ett redan läst PM förbi).
+  const [memosRead, setMemosRead] = useState<string[]>([])
+  const [memosLoaded, setMemosLoaded] = useState(false)
+  const [memoOpenId, setMemoOpenId] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    loadMemosRead()
+      .then((read) => {
+        if (cancelled) return
+        setMemosRead(read)
+        setMemosLoaded(true)
+      })
+      .catch(() => {
+        if (!cancelled) setMemosLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const [handbookOpen, setHandbookOpen] = useState(false)
   const [handbookFocusId, setHandbookFocusId] = useState<HandbookTopicId | null>(null)
+
+  function fileMemo(id: string | null) {
+    if (!id) return
+    setMemoOpenId(null)
+    setMemosRead((prev) => {
+      if (prev.includes(id)) return prev
+      const next = [...prev, id]
+      saveMemosRead(next).catch(() => {})
+      return next
+    })
+  }
 
   function handleOpenHandbook(topic: HandbookTopicId) {
     setHandbookFocusId(topic)
@@ -602,6 +638,8 @@ export function App() {
       <HudBar state={state} onOpenMenu={() => setPaused(true)} onOpenHandbook={handleOpenHandbook} />
       <QuarterBand
         state={state}
+        memos={memosLoaded ? dueMemos(state, memosRead) : []}
+        onOpenMemo={(id) => setMemoOpenId(id)}
         onNavigate={(target: ThisQuarterTarget) => {
           if (target.view === 'operations') setSelectedFactionId(target.factionId)
           setFocusCard(target.view === 'company' ? (target.focus ?? null) : null)
@@ -775,6 +813,19 @@ export function App() {
 
       {/* P91b (§9/§13, P81-20): handboken, nådd från Settings (ovan) ELLER
           direkt från ett HUD-tals info-ikon (Shell.tsx:s onOpenHandbook). */}
+      <MemoSheet
+        memo={memoOpenId ? (findMemo(memoOpenId) ?? null) : null}
+        onClose={() => setMemoOpenId(null)}
+        onFile={() => fileMemo(memoOpenId)}
+        onGo={() => {
+          const memo = memoOpenId ? findMemo(memoOpenId) : undefined
+          fileMemo(memoOpenId)
+          if (memo) {
+            setFocusCard(null)
+            setView(memo.view)
+          }
+        }}
+      />
       <Handbook open={handbookOpen} focusId={handbookFocusId} onClose={() => setHandbookOpen(false)} />
     </div>
   )
