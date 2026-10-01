@@ -411,10 +411,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // så miljöbrist, protokoll, motköp och rykte rör inte partierna). Attribution: med dragen avstängda är alla tre hashar bit-identiska
   // med P122:s (1b2c349323f2fb, 1fee8803ac1293, 1f93a9463ff254). balance.frozen.json följer med (nya rader: en anteckning och nio tal).
   // De nya hasharna: passive 774bcc2a4d22a, aggressive 66f6cad930cb8, balanced b61ca2e747ed5.
+  //
+  // Omfryst IGEN i P124 (ETAPP9_FORSLAG.md §8.2/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter koden).
+  // De scriptade partierna ändras på riktigt, men bara av RIVALERNAS FUSKDRAG: vid provstart drar `rivalsCheat` ett ctx.rng-drag per
+  // rival (programmeRivalCheatPct per temperament) och flyttar därmed slumpströmmen; ingen bot använder knepen, anmäler eller bjuder
+  // motköp. Attribution: med `rivalsCheat` avstängd är alla tre hashar bit-identiska med P123:s (774bcc2a4d22a, 66f6cad930cb8,
+  // b61ca2e747ed5). balance.frozen.json följer med (nya rader: en anteckning och 22 tal). De nya hasharna: passive 8bd0a4cc97a96,
+  // aggressive 1ffcde769af96b, balanced 564be11a60fa2.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '774bcc2a4d22a' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '66f6cad930cb8' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'b61ca2e747ed5' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '8bd0a4cc97a96' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1ffcde769af96b' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '564be11a60fa2' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
