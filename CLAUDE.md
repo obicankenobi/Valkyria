@@ -821,6 +821,10 @@ påskyndar motmedelskedjan (rubriken namnger huset), en vapenvila bromsar kappl�
 **P122 BYGGD 2026-10-01:** `programme.ts` — anbudsinfordringar (utlösta av kravkort, gap-chock eller en front som förlorar materiel), faserna,
 forskningsanslaget, hemstatens behörighet (9I), anmälan som stående order (`PROGRAMME`, ingen handling), `evaluateTrial` (inte `computeScore`)
 och tilldelning med delad order 70/30. Golden ändrad på riktigt (en infordran i alla tre partier, attribuerad). Vakterna orörda.
+**P123 BYGGD 2026-10-01:** det jämförande provet (sann kvalitet + prototypfaktor + mätbrus via `ctx.rng`, i köparens miljö — en miljöbrist avslöjas,
+robusta konstruktioner belönas), utvärderingsprotokollet (bara för deltagarna), litet rykte åt den som förlorar nära och motköpet
+(`PROCUREMENT`/`COUNTERPURCHASE`, en ny `PlayerAction`-typ enligt 9O). Golden ändrad på riktigt (mätningens slumpdrag, attribuerad). Vakterna orörda.
+**P120–P123 klara (P124–P125 återstår av del E).**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

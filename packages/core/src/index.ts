@@ -115,12 +115,18 @@ export {
 export type { Bloc, RequirementCard, RivalDesignDisplay } from './race.js'
 export {
   advanceProgrammes,
+  applyProcurement,
   applyProgrammeChange,
+  applyTestedReputation,
+  counterPurchaseScore,
   evaluateTrial,
   maybeAnnounceProgramme,
+  measureEntrant,
+  programmeProtocol,
   programmeBloc,
   programmeEligible,
   programmeRequirements,
+  validateProcurement,
   validateProgrammeChange,
 } from './programme.js'
-export type { TrialInputs, TrialMeasurement } from './programme.js'
+export type { ProtocolEntry, ProtocolView, TrialInputs, TrialMeasurement } from './programme.js'

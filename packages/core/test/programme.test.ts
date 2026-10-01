@@ -45,14 +45,17 @@ const B = balance as unknown as {
 }
 const EMPTY: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
-function makeCtx(state: GameState, seed = 'prog'): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
+// En rng utan prototypfaktor och mätbrus (alla heltalsdrag ger 0) — för tester som kräver exakt lika mått (P123 lade slumpen på provet).
+const NO_NOISE = { int: () => 0, chance: () => false, next: () => 0, pick: <T,>(a: readonly T[]) => a[0]!, cursor: () => 0 } as unknown as ResolveContext['rng']
+
+function makeCtx(state: GameState, seed = 'prog', rng?: ResolveContext['rng']): { ctx: ResolveContext; emitted: Omit<WireEvent, 'id' | 'turn'>[] } {
   const emitted: Omit<WireEvent, 'id' | 'turn'>[] = []
   let seq = 0
   const ctx: ResolveContext = {
     state,
     draft: state,
     submission: EMPTY,
-    rng: createRng(seed, 0),
+    rng: rng ?? createRng(seed, 0),
     emit: (e) => {
       emitted.push(e)
       return `test-${seq++}`
@@ -460,7 +463,7 @@ describe('tilldelning och delad order (P122, §8.1)', () => {
     state.rivals['brandt']!.reputation = { quality: 0, reliability: 0 }
     state.house.reputation = { ...state.house.reputation, quality: 0, reliability: 0 }
     state.house.categoryQuality.artillery = 0
-    advanceProgrammes(makeCtx(state).ctx)
+    advanceProgrammes(makeCtx(state, 'prog', NO_NOISE).ctx)
     const p = state.programmes![0]!
     expect(p.result?.split).toBeDefined()
     expect(p.result!.split!.sharePct).toBe(100 - B.programmeSplitSharePct)

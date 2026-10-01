@@ -746,6 +746,12 @@ lämnar golden orörd.
 > 70/30. Mätningen är än så länge de sanna värdena (P123 lägger miljö, prototypfaktor, brus och protokoll). **Golden ändras på riktigt**
 > (en infordran i alla tre partier; attribuerad). Vakterna orörda. Se ANDRINGSLOGG 2026-10-01.
 
+> **P123 BYGGD 2026-10-01.** Det jämförande provet mäter varje deltagare som sann kvalitet + prototypfaktor + mätbrus (`ctx.rng`) i köparens
+> miljö (en miljöbrist sänker värdet och avslöjas — robusta konstruktioner belönas), utvärderingsprotokollet (uppmätt värde per kravrad,
+> bara för deltagarna), ett litet rykte åt den som förlorar nära, och motköpet (`PROCUREMENT`/`COUNTERPURCHASE`, en ny `PlayerAction`-typ
+> enligt 9O, en handling: högre provpoäng mot lägre marginal). **Golden ändras på riktigt** (mätningens slumpdrag; attribuerad). Vakterna
+> orörda. Se ANDRINGSLOGG 2026-10-01.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

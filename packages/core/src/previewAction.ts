@@ -201,6 +201,10 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
       // RELEASE säljer TILLBAKA ett innehav (inflöde) — ingen kostnad.
       return preview(action.op === 'BUY_FORWARD' ? finiteOrNull(action.spend) : null, null)
 
+    case 'PROCUREMENT':
+      // P123: ett motköp kostar en handling men ingen kassa — priset är den lägre marginalen på serien.
+      return preview(null, null)
+
     case 'BROKER':
       // Inget upfront treasury-uttag (se applyActions.ts:s BROKER-gren) — kostnaden
       // ligger i konsekvenserna (tjänstemannens standing/scandalRisk), inte i cost.

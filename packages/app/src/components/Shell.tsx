@@ -61,7 +61,7 @@ function targetLabel(state: GameState, action: PlayerAction): string {
 }
 
 export function actionSummary(state: GameState, action: PlayerAction): { icon: ReactNode; label: string; cost: string | undefined } {
-  const op = action.type === 'INTERNAL' || action.type === 'INTEL' || action.type === 'POLITICAL' || action.type === 'MARKET' ? action.op : action.type
+  const op = action.type === 'INTERNAL' || action.type === 'INTEL' || action.type === 'POLITICAL' || action.type === 'MARKET' || action.type === 'PROCUREMENT' ? action.op : action.type
   const preview = previewAction(state, action)
   const cost = preview.cost === null ? undefined : formatMoney(preview.cost)
   const target = targetLabel(state, action)

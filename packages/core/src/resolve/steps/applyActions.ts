@@ -55,6 +55,7 @@ import { validateAction } from '../../validateAction.js'
 import { applyStandingOrders } from '../../standingOrders.js'
 import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
 import { applyReverseEngineer } from '../../capture.js'
+import { applyProcurement } from '../../programme.js'
 import { inflateAssessment, parseAssessmentTarget } from '../../race.js'
 import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
@@ -304,6 +305,11 @@ export const applyActions: ResolveStep = (ctx) => {
     // political.ts (samma mönster som P23 bröt ut crisis.ts/upkeep.ts).
     if (action.type === 'POLITICAL') {
       applyPolitical(ctx, action, bribeGainThisTurn)
+      continue
+    }
+
+    if (action.type === 'PROCUREMENT') {
+      applyProcurement(ctx, action)
       continue
     }
 

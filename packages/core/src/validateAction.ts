@@ -43,6 +43,7 @@ import { fieldTrialBatch } from './design.js'
 import { round } from './money.js'
 import { allProducts } from './pricing.js'
 import { findOfficial } from './officials.js'
+import { validateProcurement } from './programme.js'
 import { parseAssessmentTarget } from './race.js'
 import type { ActionValidation, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
 
@@ -235,6 +236,9 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
       }
       break
     }
+
+    case 'PROCUREMENT':
+      return validateProcurement(draft, action)
 
     case 'MARKET': {
       if (!(COMMODITIES as readonly string[]).includes(action.commodity)) return fail('unknown commodity')

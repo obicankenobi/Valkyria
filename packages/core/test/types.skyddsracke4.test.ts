@@ -13,8 +13,10 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Commodity, Money, PlayerAction } from '../src/types.js'
 
 describe('skyddsräcke 4 (avsnitt 6): ingen ny PlayerAction-variant', () => {
-  it('PlayerAction["type"] är exakt samma sex varianter som fanns innan P51', () => {
-    expectTypeOf<PlayerAction['type']>().toEqualTypeOf<'BROKER' | 'INTEL' | 'POLITICAL' | 'MARKET' | 'INTERNAL' | 'CRISIS'>()
+  // P123 (ETAPP9_FORSLAG.md beslut 9O, ägarbeslut): upphandlingsdragen är en ny PlayerAction-typ, `PROCUREMENT`, med en op per drag.
+  // Det är den ENDA tillagda varianten sedan P51:s sex; etapp 4:s skyddsräcke gäller i övrigt oförändrat.
+  it('PlayerAction["type"] är de sex varianter som fanns innan P51 plus PROCUREMENT (beslut 9O, P123)', () => {
+    expectTypeOf<PlayerAction['type']>().toEqualTypeOf<'BROKER' | 'INTEL' | 'POLITICAL' | 'MARKET' | 'INTERNAL' | 'CRISIS' | 'PROCUREMENT'>()
   })
 
   it('MARKET-varianten fick bara commodity tillagt (P51, avsnitt 4.5) — inga andra fält', () => {

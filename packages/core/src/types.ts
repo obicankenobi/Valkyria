@@ -941,6 +941,8 @@ export interface ProgrammeEntrant {
   houseId: 'player' | RivalId
   designId?: DesignId
   enteredTurn: number
+  // P123 (§8.2): huset har lovat lokal tillverkning (högre provpoäng, lägre marginal på serien).
+  counterPurchase?: boolean
 }
 
 export interface TrialRow {
@@ -1080,6 +1082,8 @@ export type PlayerAction =
   // ingen actionPoint (krisen är inte valfri) — applyActions.ts hanterar den
   // separat från handlingstaket, se den filens huvudkommentar.
   | { type: 'CRISIS'; choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE' }
+  // P123 (ETAPP9 §8.2, beslut 9O): dragen i upphandlingsmappen — en handling var. P123 bygger motköpet, P124 knepen.
+  | { type: 'PROCUREMENT'; op: 'COUNTERPURCHASE'; programmeId: string }
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
 // P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda. P60 (avsnitt 4.3): INFLUENCE.

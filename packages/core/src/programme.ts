@@ -11,7 +11,7 @@
 // Slump används inte här (P123 drar mätbruset med ctx.rng). Varje ändring emitterar en WireEvent med causeId (hård regel 4).
 import balanceData from './data/balance.json' with { type: 'json' }
 import { categoryReputation } from './bidTerms.js'
-import { designBaseProduct, designBenchmark, designTrueValues, frontEnvironments } from './design.js'
+import { designBaseProduct, designBenchmark, designTrueValues, frontEnvironments, revealFlaw } from './design.js'
 import { recordIncome } from './ledger.js'
 import { round } from './money.js'
 import { findOfficial } from './officials.js'
@@ -19,6 +19,7 @@ import { computeReferencePrice, computeUnitCostNow, getProduct } from './pricing
 import { blocOfFaction, buyerGeneration, designPhasedOutForBuyer, requirementCards, rivalDesignSpec } from './race.js'
 import { projectOverheadPerTurn } from './research.js'
 import { advanceAmount, computeAdvancePct } from './resolve/advance.js'
+import type { Rng } from './rng.js'
 import type { ResolveContext } from './resolve/index.js'
 import type {
   ActionValidation,
@@ -26,6 +27,7 @@ import type {
   DesignEnvironment,
   FactionId,
   GameState,
+  PlayerAction,
   Programme,
   ProgrammeEntrant,
   ProgrammeRequirement,
@@ -68,6 +70,16 @@ interface Balance {
   programmeCostPlusCapFactor: number
   programmeOverrunRelationPenalty: number
   programmeSpecialistBonus: number
+  programmePrototypeMax: number
+  programmeMeasureNoise: number
+  programmeFlawReliabilityPenalty: number
+  programmeFlawPerformancePenalty: number
+  programmeTestedMargin: number
+  programmeTestedQualityGain: number
+  programmeCounterPurchaseScore: number
+  programmeCounterPurchaseNonAlignedFactor: number
+  programmeCounterPurchaseMarginPct: number
+  qualityCategoryCap: number
   blocGenerationSchedule: Record<string, unknown>
 }
 const BALANCE = balanceData as unknown as Balance
@@ -290,6 +302,8 @@ export interface TrialMeasurement {
   unitCostFactor: number
   deliveryTurns: number
   prototypeMissing?: boolean
+  // P123 (§8.2): poäng ur ett motköp (counterPurchaseScore), adderade till provpoängen.
+  counterPurchaseScore?: number
 }
 
 export interface TrialInputs {
@@ -323,19 +337,39 @@ export function evaluateTrial(programme: Pick<Programme, 'requirements'>, measur
     const relationFactor = inputs.neutral[m.houseId] ? BALANCE.programmeNeutralRelationFactor : 1
     score += BALANCE.programmeRelationWeight * ((inputs.relation[m.houseId] ?? 0) / 100) * relationFactor
     score += BALANCE.programmeReputationWeight * ((inputs.reputation[m.houseId] ?? 0) / 100)
+    score += m.counterPurchaseScore ?? 0
     return { houseId: m.houseId, score, disqualified: null, rows }
   })
 }
 
-// Uppmätta värden för en deltagare. P122: de sanna värdena (P123 lägger miljö, prototypfaktor och mätbrus).
-function measureEntrant(state: GameState, programme: Programme, entrant: ProgrammeEntrant): TrialMeasurement {
+// Motköpets poäng i provet (§8.2): programmeCounterPurchaseScore, mer hos en NON_ALIGNMENT-tjänsteman.
+export function counterPurchaseScore(state: Pick<GameState, 'officials'>, programme: Pick<Programme, 'buyerId'>): number {
+  const official = findOfficial(state, programme.buyerId, 'procurement')
+  return BALANCE.programmeCounterPurchaseScore * (official?.agenda === 'NON_ALIGNMENT' ? BALANCE.programmeCounterPurchaseNonAlignedFactor : 1)
+}
+
+// Uppmätta värden för en deltagare (P123, §8.1 fas 4): sann kvalitet + prototypfaktor + mätbrus, dragna med `rng` (tre drag per
+// deltagare i listans ordning). Provet görs i köparens miljö: en latent brist i just den miljön sänker uppmätt tillförlitlighet och
+// prestanda. Ren — skriver ingenting i staten (avslöjandet gör resolveTrial).
+export function measureEntrant(state: GameState, programme: Programme, entrant: ProgrammeEntrant, rng: Rng): TrialMeasurement {
   const product = getProduct(programme.baseProductId)
   const deliveryTurns = product.minDelivery + 1
+  const proto = rng.int(0, BALANCE.programmePrototypeMax)
+  const noisePerformance = rng.int(-BALANCE.programmeMeasureNoise, BALANCE.programmeMeasureNoise)
+  const noiseReliability = rng.int(-BALANCE.programmeMeasureNoise, BALANCE.programmeMeasureNoise)
   if (entrant.houseId === 'player') {
     const design = entrant.designId !== undefined ? state.house.designs?.find((d) => d.id === entrant.designId) : undefined
     if (!design) return { houseId: 'player', performance: 0, reliability: 0, unitCostFactor: 1, deliveryTurns, prototypeMissing: true }
     const values = designTrueValues(design)
-    return { houseId: 'player', performance: values.performance, reliability: values.reliability, unitCostFactor: design.unitCostFactor, deliveryTurns }
+    const flaw = design.latentFlaw && design.latentFlaw.environment === programme.testEnvironment ? design.latentFlaw.severity : 0
+    return {
+      houseId: 'player',
+      performance: values.performance + proto + noisePerformance - flaw * BALANCE.programmeFlawPerformancePenalty,
+      reliability: values.reliability + proto + noiseReliability - flaw * BALANCE.programmeFlawReliabilityPenalty,
+      unitCostFactor: design.unitCostFactor,
+      deliveryTurns,
+      ...(entrant.counterPurchase ? { counterPurchaseScore: counterPurchaseScore(state, programme) } : {}),
+    }
   }
   const rival = state.rivals[entrant.houseId]!
   const spec =
@@ -344,7 +378,7 @@ function measureEntrant(state: GameState, programme: Programme, entrant: Program
     (rival.specialisation === programme.category ? BALANCE.programmeSpecialistBonus : 0)
   const own = [...(rival.designs ?? [])].reverse().find((d) => d.category === programme.category)
   const value = own ? Math.max(spec, rivalDesignSpec(own)) : spec
-  return { houseId: rival.id, performance: value, reliability: value, unitCostFactor: 1, deliveryTurns }
+  return { houseId: rival.id, performance: value + proto + noisePerformance, reliability: value + proto + noiseReliability, unitCostFactor: 1, deliveryTurns }
 }
 
 function trialInputs(state: GameState, programme: Programme, entrants: readonly ProgrammeEntrant[]): TrialInputs {
@@ -456,10 +490,11 @@ function houseName(state: GameState, id: 'player' | string): string {
 // Provet och tilldelningen: mät alla, poängsätt med evaluateTrial, utse vinnare och ev. en delad order, skriv kontrakten.
 function resolveTrial(ctx: ResolveContext, programme: Programme, label: string): void {
   const { draft, emit } = ctx
-  const measured = programme.entrants.map((e) => measureEntrant(draft, programme, e))
+  const measured = programme.entrants.map((e) => measureEntrant(draft, programme, e, ctx.rng))
   const scores = evaluateTrial(programme, measured, trialInputs(draft, programme, programme.entrants))
   const qualified = scores.filter((s) => s.disqualified === null).sort((a, b) => b.score - a.score)
   programme.result = { winner: qualified[0]?.houseId ?? null, scores, turn: draft.meta.turn }
+  recordTrialOnHouseDesign(ctx, programme)
 
   if (qualified.length === 0) {
     programme.phase = 'cancelled'
@@ -488,6 +523,7 @@ function resolveTrial(ctx: ResolveContext, programme: Programme, label: string):
   })
   award(ctx, programme, winner.houseId, winnerQty, programme.id, awardId)
   if (split) award(ctx, programme, runnerUp.houseId, secondQty, `${programme.id}-split`, awardId)
+  applyTestedReputation(ctx, programme)
 
   // Köparen har fått sitt behov täckt: serien konsumerar materielNeed (samma som en vanlig order).
   const buyer = draft.factions[programme.buyerId]
@@ -507,7 +543,9 @@ function award(ctx: ResolveContext, programme: Programme, houseId: 'player' | st
   if (houseId === 'player') {
     const entrant = programme.entrants.find((e) => e.houseId === 'player')
     const design = entrant?.designId !== undefined ? draft.house.designs.find((d) => d.id === entrant.designId) : undefined
-    const unitCost = round(computeUnitCostNow(product, 'A', draft.market.commodities) * (design ? design.unitCostFactor : 1))
+    const baseUnitCost = round(computeUnitCostNow(product, 'A', draft.market.commodities) * (design ? design.unitCostFactor : 1))
+    // P123 (§8.2): ett motköp ger lägre marginal på serien — styckkostnaden vid signering blir högre.
+    const unitCost = entrant?.counterPurchase ? round(baseUnitCost * (1 + BALANCE.programmeCounterPurchaseMarginPct / 100)) : baseUnitCost
     const front = Object.values(draft.fronts).find((f) => f.sideA === programme.buyerId || f.sideB === programme.buyerId)
     const advancePaid = advanceAmount(price, programme.prize.advancePct)
     const contract: Contract = {
@@ -573,4 +611,119 @@ function award(ctx: ResolveContext, programme: Programme, houseId: 'player' | st
 // Blocken som en infordran riktar sig till, för UI och mätning.
 export function programmeBloc(state: Pick<GameState, 'factions'>, programme: Pick<Programme, 'buyerId'>): Bloc | null {
   return blocOfFaction(state, programme.buyerId)
+}
+
+// Provet avslöjar husets konstruktions brist om provmiljön stämmer och gör att huset prövat den i miljön (testedIn, ett smalare
+// intervall). Anropas av resolveTrial innan tilldelningen.
+function recordTrialOnHouseDesign(ctx: ResolveContext, programme: Programme): void {
+  const { draft, emit } = ctx
+  const entrant = programme.entrants.find((e) => e.houseId === 'player')
+  const design = entrant?.designId !== undefined ? draft.house.designs?.find((d) => d.id === entrant.designId) : undefined
+  if (!design) return
+  const env = programme.testEnvironment.toUpperCase()
+  if (design.latentFlaw?.environment === programme.testEnvironment && revealFlaw(design)) {
+    emit({
+      severity: 'headline',
+      scope: 'house',
+      headline: `THE ${env} TRIAL REVEALS A FLAW IN THE ${design.name.toUpperCase()} (SEVERITY ${design.latentFlaw.severity})`,
+      causeId: null,
+      delta: {},
+      actorIsPlayer: true,
+      subjectId: programme.buyerId,
+    })
+  }
+  const newlyTested = !design.testedIn.includes(programme.testEnvironment)
+  const narrowed = design.uncertainty > 0
+  if (newlyTested) design.testedIn = [...design.testedIn, programme.testEnvironment]
+  if (narrowed) design.uncertainty -= 1
+  if (newlyTested || narrowed) {
+    emit({
+      severity: 'ticker',
+      scope: 'house',
+      headline: `${design.name.toUpperCase()} IS TESTED IN THE ${env} (CLASS UNCERTAINTY ±${design.uncertainty})`,
+      causeId: null,
+      delta: { [`uncertainty.${design.id}`]: narrowed ? -1 : 0 },
+      actorIsPlayer: true,
+      subjectId: programme.buyerId,
+    })
+  }
+}
+
+// Ett litet rykte åt den som förlorar nära (§8.1): en kvalificerad förlorare inom programmeTestedMargin poäng får
+// programmeTestedQualityGain på kategoriryktet (klampat vid qualityCategoryCap).
+export function applyTestedReputation(ctx: ResolveContext, programme: Programme): void {
+  const { draft, emit } = ctx
+  const result = programme.result
+  if (!result || result.winner === null || result.winner === 'player') return
+  if (!programme.entrants.some((e) => e.houseId === 'player')) return
+  const own = result.scores.find((s) => s.houseId === 'player')
+  const winner = result.scores.find((s) => s.houseId === result.winner)
+  if (!own || !winner || own.disqualified !== null) return
+  if (winner.score - own.score > BALANCE.programmeTestedMargin) return
+  const before = draft.house.categoryQuality[programme.category]
+  const after = Math.max(-BALANCE.qualityCategoryCap, Math.min(BALANCE.qualityCategoryCap, before + BALANCE.programmeTestedQualityGain))
+  if (after === before) return
+  draft.house.categoryQuality[programme.category] = after
+  emit({
+    severity: 'report',
+    scope: 'house',
+    headline: `${draft.house.name.toUpperCase()}'S ${programme.category.toUpperCase()} DESIGN IS TESTED BY THE ${buyerName(draft, programme)} MINISTRY OF DEFENCE — A SMALL BOOST TO ITS STANDING`,
+    causeId: null,
+    delta: { [`categoryQuality.${programme.category}`]: after - before },
+    actorIsPlayer: true,
+    subjectId: programme.buyerId,
+  })
+}
+
+// ── utvärderingsprotokollet (§8.1 fas 4) ─────────────────────────────────────
+
+export interface ProtocolEntry {
+  houseId: 'player' | string
+  name: string
+  disqualified: string | null
+  rows: TrialRow[]
+}
+
+export interface ProtocolView {
+  winner: 'player' | string | null
+  entries: ProtocolEntry[]
+}
+
+// Protokollet visas först när provet är gjort och bara för den som deltog (skyddsräcke 5): uppmätt värde per kravrad för alla
+// deltagare. Poängen är inte en del av protokollet.
+export function programmeProtocol(state: GameState, programme: Programme): ProtocolView | null {
+  const result = programme.result
+  if (!result || !programme.entrants.some((e) => e.houseId === 'player')) return null
+  return {
+    winner: result.winner,
+    entries: result.scores.map((s) => ({ houseId: s.houseId, name: houseName(state, s.houseId), disqualified: s.disqualified, rows: s.rows })),
+  }
+}
+
+// ── motköp (PROCUREMENT, §8.2, beslut 9O) ────────────────────────────────────
+
+export function validateProcurement(draft: GameState, action: Extract<PlayerAction, { type: 'PROCUREMENT' }>): ActionValidation {
+  const fail = (reason: string): ActionValidation => ({ ok: false, reason })
+  const programme = draft.programmes?.find((p) => p.id === action.programmeId)
+  if (!programme) return fail('unknown programme')
+  const entrant = programme.entrants.find((e) => e.houseId === 'player')
+  if (!entrant) return fail('not entered in this programme')
+  if (programme.phase !== 'announced' && programme.phase !== 'specLocked' && programme.phase !== 'development') return fail('counter-purchase is no longer possible')
+  if (entrant.counterPurchase) return fail('counter-purchase already offered')
+  return { ok: true }
+}
+
+export function applyProcurement(ctx: ResolveContext, action: Extract<PlayerAction, { type: 'PROCUREMENT' }>): void {
+  const { draft, emit } = ctx
+  const programme = draft.programmes!.find((p) => p.id === action.programmeId)!
+  programme.entrants.find((e) => e.houseId === 'player')!.counterPurchase = true
+  emit({
+    severity: 'ticker',
+    scope: 'house',
+    headline: `${draft.house.name.toUpperCase()} OFFERS LOCAL PRODUCTION IN THE ${buyerName(draft, programme)} ${programme.category.toUpperCase()} PROGRAMME (COUNTER-PURCHASE)`,
+    causeId: null,
+    delta: {},
+    actorIsPlayer: true,
+    subjectId: programme.buyerId,
+  })
 }
