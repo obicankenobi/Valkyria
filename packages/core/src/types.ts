@@ -895,6 +895,10 @@ export interface RaceState {
   // P120 (§7.3): hur ett blocks köpare UPPLEVER det andra blockets generation i en kategori — bias i generationer över sanningen. Ett
   // rykte vid ett generationsskifte eller en LEAK; köparnas budgetar följer det upplevda hotet. Utelämnas tills första biasen.
   perception?: Record<'west' | 'east', Partial<Record<TechCategory, PerceivedBias>>>
+  // P121 (§7.4): kategorier där huset redan märkts sälja till båda sidorna (turen det upptäcktes) och antalet vapenviletur som skjutit
+  // upp väntande steg. Båda utelämnas tills det inträffar.
+  bothSides?: Partial<Record<TechCategory, { sinceTurn: number }>>
+  ceasefireTurns?: number
 }
 
 export interface PerceivedBias {

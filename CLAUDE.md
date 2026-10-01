@@ -815,6 +815,9 @@ konstruktioner); attribuerad med tre körningar. Vakterna orörda. **P117–P119
 `LEAK` mot en bedömning via `targetId: 'assessment:block:kategori'`; köparnas budgetar följer det upplevda hotet), utlöpning och
 avslöjande (tjänstemän tappar förtroende, doomsday stiger). Golden ändrad på riktigt av rykteslotteriets `ctx.rng`-drag (attribuerad).
 Vakterna orörda.
+**P121 BYGGD 2026-10-01:** kapplöpningen och doomsday — generationsskiften och gap-chocker lägger på doomsday, att sälja till båda sidorna
+påskyndar motmedelskedjan (rubriken namnger huset), en vapenvila bromsar kapplöpningen och tar bort gap-premierna. Golden ändrad på riktigt
+(attribuerad). Fynd: `aggressive` NUCLEAR_EXCHANGE 21/200 — pelare 1, talen provisoriska. Vakterna orörda. **Del D (P117–P121) klar.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

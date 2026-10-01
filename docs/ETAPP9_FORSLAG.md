@@ -735,6 +735,11 @@ lämnar golden orörd.
 > utlöpning ("sanningen kommer fram") och avslöjande av en LEAK (tjänstemän tappar förtroende, doomsday stiger). **Golden ändras på
 > riktigt** av rykteslotteriet (attribuerad). Vakterna orörda. Se ANDRINGSLOGG 2026-10-01.
 
+> **P121 BYGGD 2026-10-01.** Generationsskiften och gap-chocker lägger på doomsday (`addDoomsday`); att sälja till båda sidorna
+> påskyndar motmedelskedjan, lägger på doomsday och rubriken namnger huset; en vapenvila bromsar kapplöpningen och tar bort
+> gap-premierna. **Golden ändras på riktigt** (attribuerad; "båda sidorna" sker i `aggressive`/`balanced`). **Fynd:** doomsday-kopplingen
+> märks i härnessen (`aggressive` NUCLEAR_EXCHANGE 21/200). Vakterna orörda. Se ANDRINGSLOGG 2026-10-01. **Del D (P117–P121) klar.**
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

@@ -49,6 +49,9 @@ interface Balance {
   perceivedBudgetPctPerStep: number
   leakExposedRelationPenalty: number
   leakExposedDoomsday: number
+  raceStepDoomsday: number
+  gapShockDoomsday: number
+  bothSidesDoomsday: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -195,7 +198,7 @@ export function accelerateBlocStep(ctx: ResolveContext, bloc: Bloc, category: Te
 // Turen då blockets nästa steg i kategorin sker (grundschemat minus framflyttningen), eller null om inga steg återstår.
 function nextStepTurn(state: Pick<GameState, 'race'>, bloc: Bloc, category: TechCategory): number | null {
   const scheduled = BALANCE.blocGenerationSchedule[category]?.[bloc]?.[blocGeneration(state, bloc, category) - 1]
-  return scheduled === undefined ? null : scheduled - (state.race.pulled[bloc][category] ?? 0)
+  return scheduled === undefined ? null : scheduled - (state.race.pulled[bloc][category] ?? 0) + (state.race.ceasefireTurns ?? 0)
 }
 
 // Det nya steget `race` (körs direkt före `orders`): varje block som nått sitt nästa steg i en kategori går upp en generation,
@@ -204,6 +207,19 @@ function nextStepTurn(state: Pick<GameState, 'race'>, bloc: Bloc, category: Tech
 export function advanceRace(ctx: ResolveContext): void {
   const { draft, emit } = ctx
   const turn = draft.meta.turn
+  // P121 (§7.4): en vapenvila bromsar kapplöpningen — varje vapenviletur skjuter upp alla väntande steg en tur.
+  if (Object.values(draft.fronts).some((f) => f.status === 'ceasefire')) {
+    draft.race.ceasefireTurns = (draft.race.ceasefireTurns ?? 0) + 1
+    emit({
+      severity: 'ticker',
+      scope: 'global',
+      headline: 'THE CEASEFIRE SLOWS THE ARMS RACE — PENDING REQUIREMENTS ARE DELAYED A QUARTER',
+      causeId: null,
+      delta: { 'race.ceasefireTurns': 1 },
+      actorIsPlayer: false,
+      subjectId: null,
+    })
+  }
   for (const category of RACE_CATEGORIES) {
     for (const bloc of BLOCS) {
       const due = nextStepTurn(draft, bloc, category)
@@ -219,6 +235,7 @@ export function advanceRace(ctx: ResolveContext): void {
         actorIsPlayer: false,
         subjectId: null,
       })
+      addDoomsday(ctx, BALANCE.raceStepDoomsday, stepId) // P121: varje generationsskifte drar kapplöpningen mot katastrofen
       for (const faction of Object.values(draft.factions).sort((a, b) => a.id.localeCompare(b.id))) {
         if (blocOfAlignment(faction.alignment) !== bloc) continue
         if (BALANCE.blocTechLevelStep === 0) continue
@@ -337,6 +354,42 @@ export function advancePerception(ctx: ResolveContext): void {
   }
 }
 
+// ── att sälja till båda sidorna (P121, §7.4) ────────────────────────────────
+
+// Har huset giltiga kontrakt (inte annullerade) i kategorin med köpare i VARDERA blocket?
+export function bothSidesSelling(state: Pick<GameState, 'market' | 'factions'>, category: TechCategory): boolean {
+  const blocs = new Set<Bloc>()
+  for (const c of state.market.contracts) {
+    if (c.status === 'voided' || getProduct(c.productId).category !== category) continue
+    const bloc = blocOfFaction(state, c.buyerId)
+    if (bloc) blocs.add(bloc)
+  }
+  return blocs.size === BLOCS.length
+}
+
+// Anropas varje tur från steget `race`: första gången huset märks sälja till båda sidorna i en kategori påskyndas kapplöpningen
+// (båda blockens nästa steg i motmedelskategorin, eller kategorin själv om den saknar länk — motmedelskedjan går fortare), doomsday
+// stiger och rubriken namnger huset. En gång per kategori.
+export function checkBothSides(ctx: ResolveContext): void {
+  const { draft, emit } = ctx
+  for (const category of RACE_CATEGORIES) {
+    if (draft.race.bothSides?.[category] || !bothSidesSelling(draft, category)) continue
+    ;(draft.race.bothSides ??= {})[category] = { sinceTurn: draft.meta.turn }
+    const id = emit({
+      severity: 'headline',
+      scope: 'market',
+      headline: `${draft.house.name.toUpperCase()} ARMS BOTH SIDES OF THE ${category.toUpperCase()} RACE — THE COUNTERMEASURE CHAIN ACCELERATES`,
+      causeId: null,
+      delta: { [`race.bothSides.${category}`]: 1 },
+      actorIsPlayer: true,
+      subjectId: null,
+    })
+    const target = counterCategoryOf(category) ?? category
+    for (const bloc of BLOCS) accelerateBlocStep(ctx, bloc, target, id)
+    addDoomsday(ctx, BALANCE.bothSidesDoomsday, id)
+  }
+}
+
 // ── gap-chocker (P119, §7.2) ─────────────────────────────────────────────────
 
 const otherBloc = (bloc: Bloc): Bloc => (bloc === 'west' ? 'east' : 'west')
@@ -350,7 +403,7 @@ function applyGapShock(ctx: ResolveContext, bloc: Bloc, category: TechCategory, 
   const otherGen = blocGeneration(draft, other, category)
   if (gen > otherGen) {
     ;(draft.race.gap ??= {})[category] = { leader: bloc, sinceTurn: draft.meta.turn }
-    emit({
+    const gapId = emit({
       severity: 'headline',
       scope: 'market',
       headline: `GAP SHOCK: THE ${bloc.toUpperCase()} STEPS AHEAD IN ${category.toUpperCase()} — THE ${other.toUpperCase()}'S BUYERS PAY A PREMIUM`,
@@ -359,6 +412,7 @@ function applyGapShock(ctx: ResolveContext, bloc: Bloc, category: TechCategory, 
       actorIsPlayer: false,
       subjectId: null,
     })
+    addDoomsday(ctx, BALANCE.gapShockDoomsday, gapId) // P121
     return
   }
   const gap = draft.race.gap?.[category]
@@ -386,10 +440,13 @@ export function gapShock(state: Pick<GameState, 'meta' | 'race'>, category: Tech
 
 // Överpris (procent på referenspris, budgetar följer) och förskottspåslag (procentenheter) för en köpare under en gap-chock: bara
 // den eftersläpande sidan, bara i kategorin. En formel, en källa — orders.ts bygger ordern med den.
-export function gapPremium(state: Pick<GameState, 'meta' | 'race' | 'factions'>, buyerId: FactionId, category: TechCategory): { pricePct: number; advancePts: number } {
+export function gapPremium(state: Pick<GameState, 'meta' | 'race' | 'factions' | 'fronts'>, buyerId: FactionId, category: TechCategory): { pricePct: number; advancePts: number } {
   const gap = gapShock(state, category)
   const bloc = blocOfFaction(state, buyerId)
   if (!gap || bloc === null || bloc === gap.leader) return { pricePct: 0, advancePts: 0 }
+  // P121 (§7.4): en vapenvila tar bort premien för köpare vars fronter inte längre är i krig.
+  const mine = Object.values(state.fronts).filter((f) => f.sideA === buyerId || f.sideB === buyerId)
+  if (mine.length > 0 && mine.every((f) => f.status !== 'war')) return { pricePct: 0, advancePts: 0 }
   return { pricePct: BALANCE.gapOverpricePct, advancePts: BALANCE.gapAdvanceBonusPts }
 }
 
