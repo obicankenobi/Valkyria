@@ -6,6 +6,7 @@
 // beställa, och `bidding` prövar behörighet mot generationen — ett steg som tas den här turen ska gälla redan den här turen.
 // Det ligger efter `fronts` och `rivals` så att en händelse den här turen (en stridsbeprövad konstruktion, en rivals nya
 // konstruktion) hinner påskynda ett steg som sker samma tur. Ordningen i övrigt är orörd (hård regel 7).
+import { advanceProgrammes, maybeAnnounceProgramme } from '../../programme.js'
 import { advanceDesignLifecycle, advancePerception, advanceRace, checkBothSides, processRivalDesigns } from '../../race.js'
 import type { ResolveStep } from '../index.js'
 
@@ -15,4 +16,6 @@ export const race: ResolveStep = (ctx) => {
   checkBothSides(ctx) // 1c. (P121) huset märks sälja till båda sidorna: kapplöpningen går fortare
   processRivalDesigns(ctx) // 2. rivalernas konstruktioner enligt schema (9F), läser de nya generationerna
   advanceDesignLifecycle(ctx) // 3. husets konstruktioner som nu är utfasade märks
+  advanceProgrammes(ctx) // 4. (P122) pågående utvecklingsupphandlingar: faser, anslag, prov och tilldelning
+  maybeAnnounceProgramme(ctx) // 5. (P122) en ny anbudsinfordran om något utlöser den
 }

@@ -92,6 +92,8 @@ export interface GameState {
   // här kön — bara Order.reason:s form (avsnitt 5.4:s egen jsonc-block).
   // P118 (ETAPP9 §7.1): blockens dolda generationer och framflyttningen av nästa steg. Skrivs bara av race.ts.
   race: RaceState
+  // P122 (ETAPP9 §8.1): utvecklingsupphandlingar (anbudsinfordringar). Utelämnas tills den första infordran. Skrivs bara av programme.ts.
+  programmes?: Programme[]
   pendingFormationReplacements: FormationReplacementRequest[]
   doomsday: Pct
   doomsdayPeak: Pct // för RESTRAINT i epilogen
@@ -921,6 +923,69 @@ export interface FirstInPlace {
   spec: number
 }
 
+// ── P122: utvecklingsupphandlingen (ETAPP9 §8.1) ────────────────────────────
+
+export type ProgrammePhase = 'announced' | 'specLocked' | 'development' | 'trial' | 'awarded' | 'cancelled'
+export type RequirementKind = 'performance' | 'reliability' | 'unitCost' | 'delivery'
+
+// En kravrad: ska-krav (mandatory) diskvalificerar vid underkänt, bör-krav väger bara poängen.
+export interface ProgrammeRequirement {
+  kind: RequirementKind
+  threshold: number // prestanda/tillförlitlighet: lägst; styckpris (faktor) och leverans (turer): högst
+  mandatory: boolean
+  weight: number
+}
+
+// houseId = 'player' eller en rivals id. designId = den inlämnade prototypen (saknas → diskvalificerad vid provet).
+export interface ProgrammeEntrant {
+  houseId: 'player' | RivalId
+  designId?: DesignId
+  enteredTurn: number
+}
+
+export interface TrialRow {
+  kind: RequirementKind
+  measured: number
+  threshold: number
+  mandatory: boolean
+  pass: boolean
+}
+
+// Ett utvärderingsprotokoll per deltagare: en rad per kravrad med uppmätt värde, poängen och en ev. diskvalificeringsorsak.
+export interface TrialScore {
+  houseId: 'player' | RivalId
+  score: number
+  disqualified: string | null
+  rows: TrialRow[]
+}
+
+export interface ProgrammeResult {
+  winner: 'player' | RivalId | null
+  split?: { second: 'player' | RivalId; sharePct: number }
+  scores: TrialScore[]
+  turn: number
+}
+
+export interface Programme {
+  id: string
+  buyerId: FactionId
+  category: TechCategory
+  baseProductId: ProductId
+  trigger: 'requirementCard' | 'gapShock' | 'frontLoss'
+  requirements: ProgrammeRequirement[]
+  testEnvironment: DesignEnvironment
+  grant: { kind: 'costPlus' | 'fixedPrice'; amount: Money } | null
+  prize: { quantity: number; deliveryTurns: number; unitPrice: Money; advancePct: Pct }
+  phase: ProgrammePhase
+  phaseSinceTurn: number
+  announcedTurn: number
+  entrants: ProgrammeEntrant[]
+  traces: string[] // pappersspår kopplade till upphandlingen (P125)
+  grantPaid?: Money // ackumulerat kostnad-plus-anslag (P122)
+  grantHearing?: boolean // granskningen efter ett överskridande har redan hållits
+  result?: ProgrammeResult
+}
+
 // P117: en rivals konstruktion. Kvalitetsbonusen på rivalens rykte i kategorin avtar med nyhetsvärdet.
 export interface RivalDesign {
   id: string
@@ -1055,6 +1120,10 @@ export type StandingOrderChange =
   // P112: upgradeOf = en uppgradering av en egen konstruktion i samma kategori (billigare, snabbare, lägre tak, ärver ryktet).
   | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId }
   | { kind: 'DESIGN'; op: 'CANCEL'; category: TechCategory }
+  // P122 (ETAPP9 §8.1): att anmäla sig till, lämna in en prototyp i och lämna en utvecklingsupphandling kostar ingen handling.
+  | { kind: 'PROGRAMME'; op: 'ENTER'; programmeId: string }
+  | { kind: 'PROGRAMME'; op: 'SUBMIT'; programmeId: string; designId: DesignId }
+  | { kind: 'PROGRAMME'; op: 'WITHDRAW'; programmeId: string }
   // P110 (ETAPP9 §5.3): provning i egen regi — en miljö per konstruktion åt gången; kostar pengar och tid.
   | { kind: 'TESTING'; op: 'SET'; designId: DesignId; environment: DesignEnvironment }
   | { kind: 'TESTING'; op: 'CANCEL'; designId: DesignId }

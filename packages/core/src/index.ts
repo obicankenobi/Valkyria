@@ -113,3 +113,14 @@ export {
   scheduledGeneration,
 } from './race.js'
 export type { Bloc, RequirementCard, RivalDesignDisplay } from './race.js'
+export {
+  advanceProgrammes,
+  applyProgrammeChange,
+  evaluateTrial,
+  maybeAnnounceProgramme,
+  programmeBloc,
+  programmeEligible,
+  programmeRequirements,
+  validateProgrammeChange,
+} from './programme.js'
+export type { TrialInputs, TrialMeasurement } from './programme.js'

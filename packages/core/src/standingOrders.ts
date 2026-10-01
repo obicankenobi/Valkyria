@@ -10,6 +10,7 @@ import { round } from './money.js'
 import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
 import { applyInvestigationChoice, validateInvestigationChoice } from './investigations.js'
+import { applyProgrammeChange, validateProgrammeChange } from './programme.js'
 import { frontierGeneration, isFollowerTarget } from './race.js'
 import { BALANCE_DESIGN_STEPS, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
@@ -108,6 +109,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       }
       return { ok: true }
     }
+    case 'PROGRAMME':
+      return validateProgrammeChange(_state, draft, change)
     case 'INVESTIGATION': {
       const reason = validateInvestigationChoice(house, change)
       return reason ? fail(reason) : { ok: true }
@@ -288,6 +291,9 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         }
         break
       }
+      case 'PROGRAMME':
+        applyProgrammeChange(ctx, change)
+        break
       case 'RESEARCH': {
         // P108: ett spår per kategori. SET skriver över (byte av tempo), CANCEL tar bort spåret men låter ett
         // pågående projekt löpa klart. Projektet startar i startTrackedResearch (research.ts) från sinceTurn.

@@ -818,6 +818,9 @@ Vakterna orörda.
 **P121 BYGGD 2026-10-01:** kapplöpningen och doomsday — generationsskiften och gap-chocker lägger på doomsday, att sälja till båda sidorna
 påskyndar motmedelskedjan (rubriken namnger huset), en vapenvila bromsar kapplöpningen och tar bort gap-premierna. Golden ändrad på riktigt
 (attribuerad). Fynd: `aggressive` NUCLEAR_EXCHANGE 21/200 — pelare 1, talen provisoriska. Vakterna orörda. **Del D (P117–P121) klar.**
+**P122 BYGGD 2026-10-01:** `programme.ts` — anbudsinfordringar (utlösta av kravkort, gap-chock eller en front som förlorar materiel), faserna,
+forskningsanslaget, hemstatens behörighet (9I), anmälan som stående order (`PROGRAMME`, ingen handling), `evaluateTrial` (inte `computeScore`)
+och tilldelning med delad order 70/30. Golden ändrad på riktigt (en infordran i alla tre partier, attribuerad). Vakterna orörda.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

@@ -27,6 +27,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'INVESTIGATION':
       // P113: ett svar per utredning.
       return `investigation:${change.investigationId}`
+    case 'PROGRAMME':
+      // P122: en köad ändring per infordran och slag (anmälan, prototyp, utträde). Upphandlingsmappen byggs i P128.
+      return `programme:${change.programmeId}:${change.op}`
   }
 }
 

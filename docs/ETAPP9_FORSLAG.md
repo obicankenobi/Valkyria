@@ -740,6 +740,12 @@ lämnar golden orörd.
 > gap-premierna. **Golden ändras på riktigt** (attribuerad; "båda sidorna" sker i `aggressive`/`balanced`). **Fynd:** doomsday-kopplingen
 > märks i härnessen (`aggressive` NUCLEAR_EXCHANGE 21/200). Vakterna orörda. Se ANDRINGSLOGG 2026-10-01. **Del D (P117–P121) klar.**
 
+> **P122 BYGGD 2026-10-01.** `programme.ts`: anbudsinfordran utlöst av ett kravkort, en gap-chock eller en front som förlorar materiel,
+> faserna announced → specLocked → development → trial → awarded, forskningsanslaget (kostnad plus / fast pris), hemstatens behörighet
+> (9I), anmälan som stående order (`PROGRAMME`, ingen handling), `evaluateTrial` (inte `computeScore`) och tilldelning med delad order
+> 70/30. Mätningen är än så länge de sanna värdena (P123 lägger miljö, prototypfaktor, brus och protokoll). **Golden ändras på riktigt**
+> (en infordran i alla tre partier; attribuerad). Vakterna orörda. Se ANDRINGSLOGG 2026-10-01.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

@@ -62,6 +62,8 @@ function describeChange(change: StandingOrderChange): string {
       return change.op === 'CANCEL'
         ? `CANCEL ${change.category.toUpperCase()} DESIGN`
         : `${change.category.toUpperCase()} DESIGN · ${change.focus.toUpperCase()} · ${change.ambition.toUpperCase()}`
+    case 'PROGRAMME':
+      return change.op === 'SUBMIT' ? `SUBMIT ${change.designId} TO ${change.programmeId}` : `${change.op} ${change.programmeId}`
     case 'RESEARCH':
       return change.op === 'CANCEL' ? `CANCEL ${change.category.toUpperCase()} RESEARCH` : `${change.category.toUpperCase()} RESEARCH · ${change.pace.toUpperCase()}`
   }
