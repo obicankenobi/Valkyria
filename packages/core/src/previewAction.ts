@@ -32,6 +32,9 @@ import { isRepayPayload, isRndPayload } from './validateAction.js'
 import type { ActionPreview, GameState, Money, PlayerAction, Pct } from './types.js'
 
 interface Balance {
+  programmeBoardBribeCost: number
+  programmeFalsifyCost: number
+  programmeWriteSpecBribeCost: number
   reverseEngineerCost: number
   headStartCap: number
   fieldTrialUncertaintySteps: number
@@ -202,8 +205,14 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
       return preview(action.op === 'BUY_FORWARD' ? finiteOrNull(action.spend) : null, null)
 
     case 'PROCUREMENT':
-      // P123: ett motköp kostar en handling men ingen kassa — priset är den lägre marginalen på serien.
-      return preview(null, null)
+      // P123/P124: motköp, handbyggt exemplar och underbud kostar en handling men ingen kassa; muta och förfalskning kostar pengar.
+      return preview(
+        action.op === 'BRIBE_BOARD' ? BALANCE.programmeBoardBribeCost
+        : action.op === 'FALSIFY' ? BALANCE.programmeFalsifyCost
+        : action.op === 'WRITE_SPEC' && action.bribe ? BALANCE.programmeWriteSpecBribeCost
+        : null,
+        null,
+      )
 
     case 'BROKER':
       // Inget upfront treasury-uttag (se applyActions.ts:s BROKER-gren) — kostnaden

@@ -752,6 +752,11 @@ lämnar golden orörd.
 > enligt 9O, en handling: högre provpoäng mot lägre marginal). **Golden ändras på riktigt** (mätningens slumpdrag; attribuerad). Vakterna
 > orörda. Se ANDRINGSLOGG 2026-10-01.
 
+> **P124 BYGGD 2026-10-02.** De sex knepen i upphandlingsmappen (`PROCUREMENT`: skriva kravet, handbyggt exemplar, muta nämnden, förfalska
+> protokollet, underbud + motköp), `SABOTAGE`/`LEAK` mot en upphandling, rivalernas fusk efter temperament och anmälan av en rival (ingen
+> handling). Varje trick ger ett pappersspår (`traces.ts`, grunden för P125). **Golden ändras på riktigt** (rivalernas fuskdrag; attribuerad).
+> Vakterna orörda. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

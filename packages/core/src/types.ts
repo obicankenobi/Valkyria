@@ -94,6 +94,8 @@ export interface GameState {
   race: RaceState
   // P122 (ETAPP9 §8.1): utvecklingsupphandlingar (anbudsinfordringar). Utelämnas tills den första infordran. Skrivs bara av programme.ts.
   programmes?: Programme[]
+  // P124 (ETAPP9 §8.3): pappersspåren — ett per korrupt handling. Utelämnas tills det första. Skrivs bara av traces.ts.
+  traces?: PaperTrace[]
   pendingFormationReplacements: FormationReplacementRequest[]
   doomsday: Pct
   doomsdayPeak: Pct // för RESTRAINT i epilogen
@@ -943,6 +945,35 @@ export interface ProgrammeEntrant {
   enteredTurn: number
   // P123 (§8.2): huset har lovat lokal tillverkning (högre provpoäng, lägre marginal på serien).
   counterPurchase?: boolean
+  // P124 (§8.2): knepen. handbuilt/boardBribed/falsified/lowball är husets (eller en rivals, boardBribed) drag; sabotaged/leaked är
+  // husets SABOTAGE/LEAK mot en rival; reported = rivalen är redan anmäld; barred = diskvalificerad av en anmälan.
+  handbuilt?: boolean
+  boardBribed?: boolean
+  falsified?: boolean
+  lowball?: boolean
+  sabotaged?: boolean
+  leaked?: boolean
+  reported?: boolean
+  barred?: string
+}
+
+// ── P124/P125: pappersspåret (ETAPP9 §8.3) ───────────────────────────────────
+
+export type TraceKind = 'writeSpec' | 'handbuilt' | 'bribeBoard' | 'falsify' | 'bidBribe' | 'bribe' | 'broker' | 'favour' | 'legal'
+
+// Ett spår per korrupt handling: vem, vilken tjänsteman, vilken sorts handling, hur allvarlig, vilken tur. open = ännu dolt,
+// surfaced = har kommit fram (P125:s utredningskort), closed = avgjort, swept = sopat (juridisk rådgivning).
+export interface PaperTrace {
+  id: string
+  houseId: 'player' | RivalId
+  officialId: OfficialId | null
+  buyerId: FactionId | null
+  kind: TraceKind
+  severity: 1 | 2 | 3
+  turn: number
+  programmeId?: string
+  contractId?: string
+  status: 'open' | 'surfaced' | 'closed' | 'swept'
 }
 
 export interface TrialRow {
@@ -982,9 +1013,11 @@ export interface Programme {
   phaseSinceTurn: number
   announcedTurn: number
   entrants: ProgrammeEntrant[]
-  traces: string[] // pappersspår kopplade till upphandlingen (P125)
+  traces: string[] // id:n på PaperTrace kopplade till upphandlingen (P124/P125)
   grantPaid?: Money // ackumulerat kostnad-plus-anslag (P122)
   grantHearing?: boolean // granskningen efter ett överskridande har redan hållits
+  // P124 (§8.2): ett underbud som vunnit — serien tecknades till ett lägre pris; tilläggsbeställningen kommer efter några turer.
+  lowball?: { houseId: 'player' | RivalId; awardedTurn: number; discount: Money; contractId: string }
   result?: ProgrammeResult
 }
 
@@ -1083,7 +1116,9 @@ export type PlayerAction =
   // separat från handlingstaket, se den filens huvudkommentar.
   | { type: 'CRISIS'; choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE' }
   // P123 (ETAPP9 §8.2, beslut 9O): dragen i upphandlingsmappen — en handling var. P123 bygger motköpet, P124 knepen.
-  | { type: 'PROCUREMENT'; op: 'COUNTERPURCHASE'; programmeId: string }
+  | { type: 'PROCUREMENT'; op: 'COUNTERPURCHASE' | 'HANDBUILT' | 'BRIBE_BOARD' | 'FALSIFY' | 'LOWBALL'; programmeId: string }
+  // P124: att skriva kravet — en kravrad lutas mot husets konstruktion; kräver relation över ett golv, eller en muta (bribe).
+  | { type: 'PROCUREMENT'; op: 'WRITE_SPEC'; programmeId: string; requirementKind: RequirementKind; bribe?: boolean }
 
 export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
 // P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda. P60 (avsnitt 4.3): INFLUENCE.
@@ -1128,6 +1163,8 @@ export type StandingOrderChange =
   | { kind: 'PROGRAMME'; op: 'ENTER'; programmeId: string }
   | { kind: 'PROGRAMME'; op: 'SUBMIT'; programmeId: string; designId: DesignId }
   | { kind: 'PROGRAMME'; op: 'WITHDRAW'; programmeId: string }
+  // P124 (§8.2): att anmäla en rival som fuskat kostar ingen handling (9O) men kräver underrättelse i köparens land.
+  | { kind: 'PROGRAMME'; op: 'REPORT'; programmeId: string; rivalId: RivalId }
   // P110 (ETAPP9 §5.3): provning i egen regi — en miljö per konstruktion åt gången; kostar pengar och tid.
   | { kind: 'TESTING'; op: 'SET'; designId: DesignId; environment: DesignEnvironment }
   | { kind: 'TESTING'; op: 'CANCEL'; designId: DesignId }

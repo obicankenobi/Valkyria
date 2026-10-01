@@ -12,12 +12,14 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { categoryReputation } from './bidTerms.js'
 import { designBaseProduct, designBenchmark, designTrueValues, frontEnvironments, revealFlaw } from './design.js'
-import { recordIncome } from './ledger.js'
+import { recordExpense, recordIncome } from './ledger.js'
 import { round } from './money.js'
 import { findOfficial } from './officials.js'
 import { computeReferencePrice, computeUnitCostNow, getProduct } from './pricing.js'
 import { blocOfFaction, buyerGeneration, designPhasedOutForBuyer, requirementCards, rivalDesignSpec } from './race.js'
+import { effectiveDepth } from './queries.js'
 import { projectOverheadPerTurn } from './research.js'
+import { recordTrace } from './traces.js'
 import { advanceAmount, computeAdvancePct } from './resolve/advance.js'
 import type { Rng } from './rng.js'
 import type { ResolveContext } from './resolve/index.js'
@@ -80,6 +82,27 @@ interface Balance {
   programmeCounterPurchaseNonAlignedFactor: number
   programmeCounterPurchaseMarginPct: number
   qualityCategoryCap: number
+  programmeWriteSpecRelationFloor: number
+  programmeWriteSpecBribeCost: number
+  programmeSpecTiltPoints: number
+  programmeSpecTiltWeight: number
+  programmeRefuseIntegrityFloor: number
+  programmeRefusePctPerPoint: number
+  programmeRefuseRelationPenalty: number
+  programmeHandbuiltBonus: number
+  programmeBoardBribeCost: number
+  programmeBoardBribeBonus: number
+  programmeFalsifyCost: number
+  programmeLowballDiscountPct: number
+  programmeLowballScore: number
+  programmeLowballOverrunTurns: number
+  programmeLowballRecoupFactor: number
+  programmeLowballHearingPct: number
+  programmeLowballHearingRelationPenalty: number
+  programmeRivalCheatPct: Record<string, number>
+  programmeReportRelationPenalty: number
+  programmeSabotagePenalty: number
+  programmeLeakPenalty: number
   blocGenerationSchedule: Record<string, unknown>
 }
 const BALANCE = balanceData as unknown as Balance
@@ -256,6 +279,14 @@ export function validateProgrammeChange(_state: Readonly<GameState>, draft: Game
       if (programme.phase === 'trial' || !isOpen(programme)) return fail('the programme is closed for changes')
       return { ok: true }
     }
+    case 'REPORT': {
+      if (!isOpen(programme)) return fail('the programme is closed for changes')
+      const rival = programme.entrants.find((e) => e.houseId === change.rivalId && e.houseId !== 'player')
+      if (!rival) return fail('unknown entrant')
+      if (rival.reported) return fail('that rival has already been reported')
+      if (effectiveDepth(draft, programme.buyerId) === 0) return fail('you need intelligence in the buyer country to report a rival')
+      return { ok: true }
+    }
     case 'SUBMIT': {
       if (!entered) return fail('not entered in this programme')
       if (!isOpen(programme)) return fail('the programme is closed for changes')
@@ -286,6 +317,26 @@ export function applyProgrammeChange(ctx: ResolveContext, change: Extract<Standi
       emit({ severity: 'ticker', scope: 'house', headline: `${house} SUBMITS THE ${design.name.toUpperCase()} TO THE ${buyer} ${programme.category.toUpperCase()} PROGRAMME`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: programme.buyerId })
       break
     }
+    case 'REPORT': {
+      const rival = programme.entrants.find((e) => e.houseId === change.rivalId)!
+      const rivalName = houseName(draft, rival.houseId).toUpperCase()
+      rival.reported = true
+      if (rival.boardBribed) {
+        rival.barred = 'DISQUALIFIED FOR IRREGULARITIES'
+        const reportId = emit({ severity: 'headline', scope: 'market', headline: `${house} REPORTS ${rivalName} TO THE ${buyer} MINISTRY — IRREGULARITIES CONFIRMED, ${rivalName} IS DISQUALIFIED FROM THE ${programme.category.toUpperCase()} PROGRAMME`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: programme.buyerId })
+        for (const trace of draft.traces ?? []) {
+          if (trace.programmeId === programme.id && trace.houseId === rival.houseId && trace.status === 'open') {
+            trace.status = 'surfaced'
+            emit({ severity: 'ticker', scope: 'market', headline: `THE ${buyer} MINISTRY OPENS ITS FILE ON ${rivalName}`, causeId: reportId, delta: { [`traces.${trace.id}`]: 0 }, actorIsPlayer: false, subjectId: rival.houseId })
+          }
+        }
+      } else {
+        const official = findOfficial(draft, programme.buyerId, 'procurement')
+        if (official) official.relationToPlayer = Math.max(0, official.relationToPlayer - BALANCE.programmeReportRelationPenalty)
+        emit({ severity: 'report', scope: 'house', headline: `${house}'S REPORT AGAINST ${rivalName} PROVES FALSE — THE ${buyer} MINISTRY RESENTS THE ACCUSATION`, causeId: null, delta: { [`relationToPlayer.${programme.buyerId}`]: -BALANCE.programmeReportRelationPenalty }, actorIsPlayer: true, subjectId: programme.buyerId })
+      }
+      break
+    }
     case 'WITHDRAW':
       programme.entrants = programme.entrants.filter((e) => e.houseId !== 'player')
       emit({ severity: 'ticker', scope: 'house', headline: `${house} WITHDRAWS FROM THE ${buyer} ${programme.category.toUpperCase()} PROGRAMME`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: programme.buyerId })
@@ -304,6 +355,10 @@ export interface TrialMeasurement {
   prototypeMissing?: boolean
   // P123 (§8.2): poäng ur ett motköp (counterPurchaseScore), adderade till provpoängen.
   counterPurchaseScore?: number
+  // P124: övriga poängjusteringar (underbud, läckor), ett förfalskat protokoll (ska-krav räknas som godkända) och en diskvalificering.
+  scoreAdjust?: number
+  falsified?: boolean
+  barred?: string
 }
 
 export interface TrialInputs {
@@ -320,8 +375,11 @@ export function evaluateTrial(programme: Pick<Programme, 'requirements'>, measur
     const rows: TrialRow[] = programme.requirements.map((r) => {
       const value = r.kind === 'performance' ? m.performance : r.kind === 'reliability' ? m.reliability : r.kind === 'unitCost' ? m.unitCostFactor : m.deliveryTurns
       const higherIsBetter = r.kind === 'performance' || r.kind === 'reliability'
-      return { kind: r.kind, measured: value, threshold: r.threshold, mandatory: r.mandatory, pass: higherIsBetter ? value >= r.threshold : value <= r.threshold }
+      const real = higherIsBetter ? value >= r.threshold : value <= r.threshold
+      // P124: ett förfalskat protokoll visar ett underkänt ska-krav som godkänt (uppmätt värde står kvar — det är förfalskningen).
+      return { kind: r.kind, measured: value, threshold: r.threshold, mandatory: r.mandatory, pass: real || (m.falsified === true && r.mandatory) }
     })
+    if (m.barred) return { houseId: m.houseId, score: 0, disqualified: m.barred, rows }
     if (m.prototypeMissing) return { houseId: m.houseId, score: 0, disqualified: 'NO PROTOTYPE SUBMITTED', rows }
     const failed = rows.find((row) => row.mandatory && !row.pass)
     if (failed) return { houseId: m.houseId, score: 0, disqualified: `FAILED MANDATORY REQUIREMENT: ${failed.kind.toUpperCase()}`, rows }
@@ -337,7 +395,7 @@ export function evaluateTrial(programme: Pick<Programme, 'requirements'>, measur
     const relationFactor = inputs.neutral[m.houseId] ? BALANCE.programmeNeutralRelationFactor : 1
     score += BALANCE.programmeRelationWeight * ((inputs.relation[m.houseId] ?? 0) / 100) * relationFactor
     score += BALANCE.programmeReputationWeight * ((inputs.reputation[m.houseId] ?? 0) / 100)
-    score += m.counterPurchaseScore ?? 0
+    score += (m.counterPurchaseScore ?? 0) + (m.scoreAdjust ?? 0)
     return { houseId: m.houseId, score, disqualified: null, rows }
   })
 }
@@ -362,13 +420,17 @@ export function measureEntrant(state: GameState, programme: Programme, entrant: 
     if (!design) return { houseId: 'player', performance: 0, reliability: 0, unitCostFactor: 1, deliveryTurns, prototypeMissing: true }
     const values = designTrueValues(design)
     const flaw = design.latentFlaw && design.latentFlaw.environment === programme.testEnvironment ? design.latentFlaw.severity : 0
+    // P124 (§8.2): ett handbyggt exemplar höjer prototypfaktorn, en mutad nämnd ger ett bättre protokoll, ett underbud poäng.
+    const lift = (entrant.handbuilt ? BALANCE.programmeHandbuiltBonus : 0) + (entrant.boardBribed ? BALANCE.programmeBoardBribeBonus : 0)
     return {
       houseId: 'player',
-      performance: values.performance + proto + noisePerformance - flaw * BALANCE.programmeFlawPerformancePenalty,
-      reliability: values.reliability + proto + noiseReliability - flaw * BALANCE.programmeFlawReliabilityPenalty,
+      performance: values.performance + proto + lift + noisePerformance - flaw * BALANCE.programmeFlawPerformancePenalty,
+      reliability: values.reliability + proto + lift + noiseReliability - flaw * BALANCE.programmeFlawReliabilityPenalty,
       unitCostFactor: design.unitCostFactor,
       deliveryTurns,
       ...(entrant.counterPurchase ? { counterPurchaseScore: counterPurchaseScore(state, programme) } : {}),
+      ...(entrant.lowball ? { scoreAdjust: BALANCE.programmeLowballScore } : {}),
+      ...(entrant.falsified ? { falsified: true } : {}),
     }
   }
   const rival = state.rivals[entrant.houseId]!
@@ -378,7 +440,17 @@ export function measureEntrant(state: GameState, programme: Programme, entrant: 
     (rival.specialisation === programme.category ? BALANCE.programmeSpecialistBonus : 0)
   const own = [...(rival.designs ?? [])].reverse().find((d) => d.category === programme.category)
   const value = own ? Math.max(spec, rivalDesignSpec(own)) : spec
-  return { houseId: rival.id, performance: value + proto + noisePerformance, reliability: value + proto + noiseReliability, unitCostFactor: 1, deliveryTurns }
+  // P124: en rival kan ha mutat nämnden (bättre protokoll), vara sabotagedrabbad (sämre) eller läckt mot (lägre poäng) eller anmäld.
+  const lift = (rival.id && entrant.boardBribed ? BALANCE.programmeBoardBribeBonus : 0) - (entrant.sabotaged ? BALANCE.programmeSabotagePenalty : 0)
+  return {
+    houseId: rival.id,
+    performance: value + proto + lift + noisePerformance,
+    reliability: value + proto + lift + noiseReliability,
+    unitCostFactor: 1,
+    deliveryTurns,
+    ...(entrant.leaked ? { scoreAdjust: -BALANCE.programmeLeakPenalty } : {}),
+    ...(entrant.barred ? { barred: entrant.barred } : {}),
+  }
 }
 
 function trialInputs(state: GameState, programme: Programme, entrants: readonly ProgrammeEntrant[]): TrialInputs {
@@ -406,6 +478,7 @@ function trialInputs(state: GameState, programme: Programme, entrants: readonly 
 export function advanceProgrammes(ctx: ResolveContext): void {
   const { draft } = ctx
   for (const programme of draft.programmes ?? []) {
+    if (programme.phase === 'awarded' && programme.lowball) settleLowball(ctx, programme)
     if (!isOpen(programme)) continue
     const turn = draft.meta.turn
     const buyer = draft.factions[programme.buyerId]?.name.toUpperCase() ?? programme.buyerId.toUpperCase()
@@ -422,7 +495,10 @@ export function advanceProgrammes(ctx: ResolveContext): void {
         break
       case 'development':
         reimburseCostPlus(ctx, programme, label)
-        if (turn >= programme.phaseSinceTurn + BALANCE.programmeDevelopmentTurns) setPhase(ctx, programme, 'trial', `${label}: PROTOTYPES ARE DUE FOR THE COMPARATIVE TRIAL`)
+        if (turn >= programme.phaseSinceTurn + BALANCE.programmeDevelopmentTurns) {
+          const trialId = setPhase(ctx, programme, 'trial', `${label}: PROTOTYPES ARE DUE FOR THE COMPARATIVE TRIAL`)
+          rivalsCheat(ctx, programme, trialId)
+        }
         break
       case 'trial':
         if (turn >= programme.phaseSinceTurn + 1) resolveTrial(ctx, programme, label)
@@ -535,7 +611,10 @@ function award(ctx: ResolveContext, programme: Programme, houseId: 'player' | st
   const { draft, emit } = ctx
   if (quantity <= 0) return
   const product = getProduct(programme.baseProductId)
-  const price = quantity * programme.prize.unitPrice
+  const listPrice = quantity * programme.prize.unitPrice
+  // P124 (§8.2): ett underbud tecknar serien till ett lägre pris; tilläggsbeställningen kommer senare (settleLowball).
+  const lowballing = houseId === 'player' && programme.entrants.find((e) => e.houseId === 'player')?.lowball === true
+  const price = lowballing ? round(listPrice * (1 - BALANCE.programmeLowballDiscountPct / 100)) : listPrice
   const buyer = draft.factions[programme.buyerId]
   if (buyer) buyer.militaryBudget = Math.max(0, buyer.militaryBudget - price)
   const dueTurn = draft.meta.turn + programme.prize.deliveryTurns
@@ -566,6 +645,9 @@ function award(ctx: ResolveContext, programme: Programme, houseId: 'player' | st
       ...(design ? { designId: design.id } : {}),
     }
     draft.market.contracts.push(contract)
+    if (lowballing) programme.lowball = { houseId: 'player', awardedTurn: draft.meta.turn, discount: listPrice - price, contractId: contract.id }
+    // Husets spår i den här upphandlingen kopplas till kontraktet (P125: ett upptäckt spår kan häva det).
+    for (const trace of draft.traces ?? []) if (trace.programmeId === programme.id && trace.houseId === 'player' && trace.contractId === undefined) trace.contractId = contract.id
     if (advancePaid > 0) {
       draft.house.treasury += advancePaid
       draft.house.revenueByTurn[draft.meta.turn] = (draft.house.revenueByTurn[draft.meta.turn] ?? 0) + advancePaid
@@ -702,28 +784,189 @@ export function programmeProtocol(state: GameState, programme: Programme): Proto
 
 // ── motköp (PROCUREMENT, §8.2, beslut 9O) ────────────────────────────────────
 
+const TRICK_PHASES: Programme['phase'][] = ['development', 'trial']
+
+function cheatCost(op: 'BRIBE_BOARD' | 'FALSIFY'): number {
+  return op === 'BRIBE_BOARD' ? BALANCE.programmeBoardBribeCost : BALANCE.programmeFalsifyCost
+}
+
+// Konstruktionen en kravlutning riktas mot: den inlämnade, annars husets första aktiva i kategorin.
+function tiltDesign(draft: GameState, programme: Programme, entrant: ProgrammeEntrant) {
+  const designs = draft.house.designs ?? []
+  const submitted = entrant.designId !== undefined ? designs.find((d) => d.id === entrant.designId) : undefined
+  return submitted ?? designs.find((d) => d.category === programme.category && d.baseProductId === programme.baseProductId && d.status === 'active')
+}
+
 export function validateProcurement(draft: GameState, action: Extract<PlayerAction, { type: 'PROCUREMENT' }>): ActionValidation {
   const fail = (reason: string): ActionValidation => ({ ok: false, reason })
   const programme = draft.programmes?.find((p) => p.id === action.programmeId)
   if (!programme) return fail('unknown programme')
   const entrant = programme.entrants.find((e) => e.houseId === 'player')
   if (!entrant) return fail('not entered in this programme')
-  if (programme.phase !== 'announced' && programme.phase !== 'specLocked' && programme.phase !== 'development') return fail('counter-purchase is no longer possible')
-  if (entrant.counterPurchase) return fail('counter-purchase already offered')
-  return { ok: true }
+  switch (action.op) {
+    case 'COUNTERPURCHASE':
+      if (programme.phase !== 'announced' && programme.phase !== 'specLocked' && programme.phase !== 'development') return fail('counter-purchase is no longer possible')
+      if (entrant.counterPurchase) return fail('counter-purchase already offered')
+      return { ok: true }
+    case 'WRITE_SPEC': {
+      if (programme.phase !== 'announced') return fail('the requirements are locked')
+      if (action.requirementKind !== 'performance' && action.requirementKind !== 'reliability' && action.requirementKind !== 'unitCost') return fail('that requirement cannot be influenced')
+      if (!tiltDesign(draft, programme, entrant)) return fail('no design to tilt the requirements towards')
+      if (action.bribe) return draft.house.treasury >= BALANCE.programmeWriteSpecBribeCost ? { ok: true } : fail('not enough cash for the bribe')
+      const official = findOfficial(draft, programme.buyerId, 'procurement')
+      return (official?.relationToPlayer ?? 0) >= BALANCE.programmeWriteSpecRelationFloor ? { ok: true } : fail('relation too low to influence the requirements')
+    }
+    case 'HANDBUILT':
+      if (!TRICK_PHASES.includes(programme.phase)) return fail('prototypes are built later in the programme')
+      return entrant.handbuilt ? fail('already offered') : { ok: true }
+    case 'BRIBE_BOARD':
+    case 'FALSIFY': {
+      if (!TRICK_PHASES.includes(programme.phase)) return fail('the test board is not convened yet')
+      const done = action.op === 'BRIBE_BOARD' ? entrant.boardBribed : entrant.falsified
+      if (done) return fail('already offered')
+      return draft.house.treasury >= cheatCost(action.op) ? { ok: true } : fail('not enough cash for the bribe')
+    }
+    case 'LOWBALL':
+      if (!isOpen(programme)) return fail('the programme is closed for changes')
+      return entrant.lowball ? fail('already offered') : { ok: true }
+  }
+}
+
+function spend(ctx: ResolveContext, amount: number): void {
+  ctx.draft.house.treasury -= amount
+  recordExpense(ctx.draft, 'political', amount)
 }
 
 export function applyProcurement(ctx: ResolveContext, action: Extract<PlayerAction, { type: 'PROCUREMENT' }>): void {
   const { draft, emit } = ctx
   const programme = draft.programmes!.find((p) => p.id === action.programmeId)!
-  programme.entrants.find((e) => e.houseId === 'player')!.counterPurchase = true
+  const entrant = programme.entrants.find((e) => e.houseId === 'player')!
+  const house = draft.house.name.toUpperCase()
+  const buyer = buyerName(draft, programme)
+  const where = `THE ${buyer} ${programme.category.toUpperCase()} PROGRAMME`
+  const official = findOfficial(draft, programme.buyerId, 'procurement')
+  const trace = (kind: 'writeSpec' | 'handbuilt' | 'bribeBoard' | 'falsify', severity: 1 | 2 | 3, causeId: string | null) =>
+    recordTrace(ctx, { houseId: 'player', officialId: official?.id ?? null, buyerId: programme.buyerId, kind, severity, programmeId: programme.id }, causeId)
+  switch (action.op) {
+    case 'COUNTERPURCHASE':
+      entrant.counterPurchase = true
+      emit({ severity: 'ticker', scope: 'house', headline: `${house} OFFERS LOCAL PRODUCTION IN ${where} (COUNTER-PURCHASE)`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: programme.buyerId })
+      break
+    case 'WRITE_SPEC': {
+      // En tjänsteman med hög integritet kan vägra och rapportera: relationen sjunker och kravet rörs inte.
+      const integrity = official?.integrity ?? 0
+      if (integrity > BALANCE.programmeRefuseIntegrityFloor && ctx.rng.chance((integrity - BALANCE.programmeRefuseIntegrityFloor) * BALANCE.programmeRefusePctPerPoint)) {
+        if (official) official.relationToPlayer = Math.max(0, official.relationToPlayer - BALANCE.programmeRefuseRelationPenalty)
+        emit({ severity: 'report', scope: 'house', headline: `THE ${buyer} PROCUREMENT OFFICIAL REFUSES ${house}'S APPROACH ON THE REQUIREMENTS AND REPORTS IT`, causeId: null, delta: { [`relationToPlayer.${programme.buyerId}`]: -BALANCE.programmeRefuseRelationPenalty }, actorIsPlayer: true, subjectId: programme.buyerId })
+        break
+      }
+      if (action.bribe) spend(ctx, BALANCE.programmeWriteSpecBribeCost)
+      const design = tiltDesign(draft, programme, entrant)!
+      const values = designTrueValues(design)
+      const row = programme.requirements.find((r) => r.kind === action.requirementKind)!
+      if (row.kind === 'unitCost') row.threshold = Math.max(design.unitCostFactor, Math.round((row.threshold - BALANCE.programmeSpecTiltPoints / 100) * 100) / 100)
+      else row.threshold = Math.max(row.threshold, Math.min(row.kind === 'performance' ? values.performance : values.reliability, row.threshold + BALANCE.programmeSpecTiltPoints))
+      row.weight += BALANCE.programmeSpecTiltWeight
+      const id = emit({ severity: 'ticker', scope: 'house', headline: `${house} SHAPES THE ${row.kind.toUpperCase()} REQUIREMENT OF ${where}`, causeId: null, delta: action.bribe ? { treasury: -BALANCE.programmeWriteSpecBribeCost } : {}, actorIsPlayer: true, subjectId: programme.buyerId })
+      trace('writeSpec', 1, id)
+      break
+    }
+    case 'HANDBUILT': {
+      entrant.handbuilt = true
+      const id = emit({ severity: 'ticker', scope: 'house', headline: `${house} SENDS A HAND-BUILT TEST ARTICLE TO ${where}`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: programme.buyerId })
+      trace('handbuilt', 2, id)
+      break
+    }
+    case 'BRIBE_BOARD': {
+      spend(ctx, BALANCE.programmeBoardBribeCost)
+      entrant.boardBribed = true
+      const id = emit({ severity: 'ticker', scope: 'house', headline: `${house} PAYS THE TEST BOARD OF ${where} (−£${BALANCE.programmeBoardBribeCost.toLocaleString('en-GB')})`, causeId: null, delta: { treasury: -BALANCE.programmeBoardBribeCost }, actorIsPlayer: true, subjectId: programme.buyerId })
+      trace('bribeBoard', 2, id)
+      break
+    }
+    case 'FALSIFY': {
+      spend(ctx, BALANCE.programmeFalsifyCost)
+      entrant.falsified = true
+      const id = emit({ severity: 'ticker', scope: 'house', headline: `${house} FORGES THE TEST PROTOCOL OF ${where} (−£${BALANCE.programmeFalsifyCost.toLocaleString('en-GB')})`, causeId: null, delta: { treasury: -BALANCE.programmeFalsifyCost }, actorIsPlayer: true, subjectId: programme.buyerId })
+      trace('falsify', 3, id)
+      break
+    }
+    case 'LOWBALL':
+      entrant.lowball = true
+      emit({ severity: 'ticker', scope: 'house', headline: `${house} SUBMITS AN AGGRESSIVELY LOW PRICE IN ${where}`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: programme.buyerId })
+      break
+  }
+}
+
+// Vid provstart kan varje rival fuska efter temperament (ctx.rng, ett drag per rival i listans ordning): muta nämnden, med ett spår.
+function rivalsCheat(ctx: ResolveContext, programme: Programme, causeId: string): void {
+  const { draft } = ctx
+  const official = findOfficial(draft, programme.buyerId, 'procurement')
+  for (const entrant of programme.entrants) {
+    if (entrant.houseId === 'player') continue
+    const rival = draft.rivals[entrant.houseId]
+    if (!rival || entrant.boardBribed) continue
+    if (!ctx.rng.chance(BALANCE.programmeRivalCheatPct[rival.temperament] ?? 0)) continue
+    entrant.boardBribed = true
+    recordTrace(ctx, { houseId: rival.id, officialId: official?.id ?? null, buyerId: programme.buyerId, kind: 'bribeBoard', severity: 2, programmeId: programme.id }, causeId)
+  }
+}
+
+// Tilläggsbeställningen efter ett underbud (C-5A, §8.2): intäkt värd rabatten × återvinningsfaktorn; ibland en utfrågning som
+// halverar återstoden av serien och sänker relationen. En gång per underbud.
+function settleLowball(ctx: ResolveContext, programme: Programme): void {
+  const { draft, emit } = ctx
+  const low = programme.lowball
+  if (!low || draft.meta.turn < low.awardedTurn + BALANCE.programmeLowballOverrunTurns) return
+  const contract = draft.market.contracts.find((c) => c.id === low.contractId)
+  delete programme.lowball
+  if (!contract || contract.status === 'voided') return
+  const extra = round(low.discount * BALANCE.programmeLowballRecoupFactor)
+  draft.house.treasury += extra
+  draft.house.revenueByTurn[draft.meta.turn] = (draft.house.revenueByTurn[draft.meta.turn] ?? 0) + extra
+  recordIncome(draft, 'contracts', extra)
+  const id = emit({ severity: 'report', scope: 'house', headline: `THE ${buyerName(draft, programme)} MINISTRY PLACES A SUPPLEMENTARY ORDER WITH ${draft.house.name.toUpperCase()}: +£${extra.toLocaleString('en-GB')} AFTER THE LOW BID`, causeId: null, delta: { treasury: extra }, actorIsPlayer: true, subjectId: programme.buyerId })
+  if (!ctx.rng.chance(BALANCE.programmeLowballHearingPct)) return
+  const remaining = contract.quantity - contract.unitsDelivered
+  const newQuantity = contract.unitsDelivered + Math.ceil(remaining / 2)
+  contract.price = round((contract.price * newQuantity) / contract.quantity)
+  contract.quantity = newQuantity
+  const official = findOfficial(draft, programme.buyerId, 'procurement')
+  if (official) official.relationToPlayer = Math.max(0, official.relationToPlayer - BALANCE.programmeLowballHearingRelationPenalty)
+  emit({ severity: 'headline', scope: 'house', headline: `COST HEARING: THE ${buyerName(draft, programme)} LEGISLATURE QUESTIONS ${draft.house.name.toUpperCase()}'S LOW BID AND HALVES THE REMAINING ORDER`, causeId: id, delta: { [`relationToPlayer.${programme.buyerId}`]: -BALANCE.programmeLowballHearingRelationPenalty }, actorIsPlayer: true, subjectId: programme.buyerId })
+}
+
+// SABOTAGE/LEAK mot en upphandling (§8.2): "programme:<id>:<rival>". Målet är en rival som deltar i en öppen infordran.
+export function parseProgrammeTarget(targetId: string | undefined): { programmeId: string; rivalId: string } | null {
+  if (!targetId) return null
+  const [prefix, programmeId, rivalId] = targetId.split(':')
+  return prefix === 'programme' && programmeId && rivalId ? { programmeId, rivalId } : null
+}
+
+export function validProgrammeTarget(state: GameState, targetId: string | undefined): boolean {
+  const target = parseProgrammeTarget(targetId)
+  const programme = target ? state.programmes?.find((p) => p.id === target.programmeId) : undefined
+  return !!target && !!programme && isOpen(programme) && programme.entrants.some((e) => e.houseId === target.rivalId && e.houseId !== 'player')
+}
+
+// En lyckad SABOTAGE/LEAK mot en deltagande rival: flaggan läses av measureEntrant.
+export function applyProgrammeIntel(ctx: ResolveContext, op: 'SABOTAGE' | 'LEAK', targetId: string, nation: string): void {
+  const { draft, emit } = ctx
+  const target = parseProgrammeTarget(targetId)!
+  const programme = draft.programmes!.find((p) => p.id === target.programmeId)!
+  const entrant = programme.entrants.find((e) => e.houseId === target.rivalId)!
+  if (op === 'SABOTAGE') entrant.sabotaged = true
+  else entrant.leaked = true
+  const rival = houseName(draft, target.rivalId).toUpperCase()
+  const house = draft.house.name.toUpperCase()
+  const where = `THE ${buyerName(draft, programme)} ${programme.category.toUpperCase()} PROGRAMME`
   emit({
-    severity: 'ticker',
-    scope: 'house',
-    headline: `${draft.house.name.toUpperCase()} OFFERS LOCAL PRODUCTION IN THE ${buyerName(draft, programme)} ${programme.category.toUpperCase()} PROGRAMME (COUNTER-PURCHASE)`,
+    severity: 'report',
+    scope: 'market',
+    headline: op === 'SABOTAGE' ? `${house} SABOTAGES ${rival}'S PROTOTYPE IN ${where}` : `${house} LEAKS DAMAGING FILES ABOUT ${rival} TO ${where}`,
     causeId: null,
     delta: {},
     actorIsPlayer: true,
-    subjectId: programme.buyerId,
+    subjectId: nation,
   })
 }

@@ -43,7 +43,7 @@ import { fieldTrialBatch } from './design.js'
 import { round } from './money.js'
 import { allProducts } from './pricing.js'
 import { findOfficial } from './officials.js'
-import { validateProcurement } from './programme.js'
+import { validateProcurement, validProgrammeTarget } from './programme.js'
 import { parseAssessmentTarget } from './race.js'
 import type { ActionValidation, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
 
@@ -222,6 +222,8 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
             if (draft.race.perception?.[perceiver]?.[target.category]) return fail('that assessment is already inflated')
             return ok()
           }
+          // P124 (ETAPP9 §8.2): SABOTAGE och LEAK kan ha en upphandling som mål ("programme:<id>:<rival>").
+          if (action.targetId?.startsWith('programme:')) return validProgrammeTarget(draft, action.targetId) ? ok() : fail('unknown programme target')
           const rival = action.targetId ? draft.rivals[action.targetId] : undefined
           if (!rival) return fail('unknown rival target')
           return ok()

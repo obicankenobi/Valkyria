@@ -825,6 +825,10 @@ och tilldelning med delad order 70/30. Golden ändrad på riktigt (en infordran 
 robusta konstruktioner belönas), utvärderingsprotokollet (bara för deltagarna), litet rykte åt den som förlorar nära och motköpet
 (`PROCUREMENT`/`COUNTERPURCHASE`, en ny `PlayerAction`-typ enligt 9O). Golden ändrad på riktigt (mätningens slumpdrag, attribuerad). Vakterna orörda.
 **P120–P123 klara (P124–P125 återstår av del E).**
+**P124 BYGGD 2026-10-02:** de sex knepen (`PROCUREMENT`: `WRITE_SPEC`/`HANDBUILT`/`BRIBE_BOARD`/`FALSIFY`/`LOWBALL` + motköp), `SABOTAGE`/`LEAK` mot en
+upphandling (`targetId: 'programme:<id>:<rival>'`), rivalernas fusk efter temperament vid provstart och anmälan av en rival (stående order, ingen
+handling). Varje trick ger ett pappersspår (`traces.ts`, `GameState.traces`; P125 låter det komma fram). Golden ändrad på riktigt (rivalernas
+fuskdrag, attribuerad). Vakterna orörda.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
