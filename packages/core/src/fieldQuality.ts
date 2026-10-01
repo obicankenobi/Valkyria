@@ -6,6 +6,7 @@
 // avgjort; varje ändring emitterar en WireEvent med causeId (hård regel 4).
 import balanceData from './data/balance.json' with { type: 'json' }
 import { designTrueValues, frontEnvironments } from './design.js'
+import { addCounterDemand } from './race.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { Contract, Design, Front, GameState, House, TechCategory } from './types.js'
 
@@ -106,19 +107,20 @@ export function provenThreshold(state: Pick<GameState, 'house' | 'market'>, desi
 }
 
 // Ger EN konstruktion ett fälttillfälle (också via ett fältprov, P115). Når den tröskeln blir den stridsbeprövad med
-// `provenHeadline` och funktionen returnerar sant; annars emitterar den inget (anroparen bestämmer om en rad behövs).
+// `provenHeadline` och funktionen returnerar rubrikens id; annars emitterar den inget och returnerar null (anroparen
+// bestämmer om en rad behövs).
 export function grantFieldOccasion(
   ctx: ResolveContext,
   design: Design,
   provenHeadline: string,
   causeId: string | null,
   subjectId: string | null,
-): boolean {
+): string | null {
   const { draft, emit } = ctx
   design.fieldRecord.occasions += 1
-  if (design.fieldRecord.proven || design.fieldRecord.occasions < provenThreshold(draft, design)) return false
+  if (design.fieldRecord.proven || design.fieldRecord.occasions < provenThreshold(draft, design)) return null
   design.fieldRecord.proven = true
-  emit({
+  return emit({
     severity: 'headline',
     scope: 'front',
     headline: provenHeadline,
@@ -127,7 +129,6 @@ export function grantFieldOccasion(
     actorIsPlayer: true,
     subjectId,
   })
-  return true
 }
 
 // Ger varje konstruktion som levererats till sidan på fronten ett fälttillfälle. Den som når tröskeln blir stridsbeprövad
@@ -147,7 +148,7 @@ export function awardFieldOccasions(
     const design = draft.house.designs?.find((d) => d.id === designId)
     if (!design) continue
     const name = design.name.toUpperCase()
-    const provenNow = grantFieldOccasion(
+    const provenId = grantFieldOccasion(
       ctx,
       design,
       kind === 'hold'
@@ -156,7 +157,10 @@ export function awardFieldOccasions(
       causeId,
       front.id,
     )
-    if (!provenNow) {
+    if (provenId !== null) {
+      // P117 (§6.6): en stark (stridsbeprövad) konstruktion skapar efterfrågan på dess motmedel hos motsidan på fronten.
+      addCounterDemand(ctx, [side === 'a' ? front.sideB : front.sideA], design.category, name, provenId)
+    } else {
       emit({
         severity: 'ticker',
         scope: 'front',

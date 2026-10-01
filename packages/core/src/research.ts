@@ -7,6 +7,7 @@
 // kategorin nått techLevel 10 eller spåret sägs upp. Krasprogrammet (REPRIORITISE_RND, kostar en handling):
 // halverad tid, dubbel totalkostnad och inga bud i kategorin nästa kvartal.
 import balanceData from './data/balance.json' with { type: 'json' }
+import { enemySystemName } from './capture.js'
 import { round } from './money.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { ResolveContext } from './resolve/index.js'
@@ -21,6 +22,7 @@ interface Balance {
   chiefEngineerTurnsSaved: number
   specialisationRndCostFactor: number
   fixedCosts: { rndOverhead: number }
+  counterResearchTurnsSaved: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -63,8 +65,9 @@ export function isBidLocked(house: Pick<House, 'rndBidLock'>, category: TechCate
   return house.rndBidLock?.[category] === turn
 }
 
-function newProject(house: House, category: TechCategory, kind: ProjectKind, turn: number): RndProject {
-  const turns = researchDuration(house, kind)
+function newProject(house: House, category: TechCategory, kind: ProjectKind, turn: number, counterTo?: string): RndProject {
+  // P117 (§6.6): ett projekt riktat mot ett studerat fiendesystem går counterResearchTurnsSaved turer fortare.
+  const turns = Math.max(1, researchDuration(house, kind) - (counterTo ? BALANCE.counterResearchTurnsSaved : 0))
   const project: RndProject = {
     id: `rnd-${category}-${turn}-${kind}`,
     category,
@@ -73,6 +76,7 @@ function newProject(house: House, category: TechCategory, kind: ProjectKind, tur
     costFactor: projectCostPerTurn(kind),
   }
   if (kind === 'crash') project.crash = true
+  if (counterTo) project.counterTo = counterTo
   return project
 }
 
@@ -88,12 +92,14 @@ export function startTrackedResearch(ctx: ResolveContext): void {
     if (!track || draft.meta.turn < track.sinceTurn) continue
     if (house.techLevel[category] >= MAX_TECH_LEVEL) continue
     if (house.rnd.some((p) => p.category === category && !p.design)) continue
-    const project = newProject(house, category, track.pace, draft.meta.turn)
+    // Ett riktat spår förutsätter att systemet fortfarande är studerat (annars löper det som ett vanligt spår).
+    const counterTo = track.counterTo && (house.studiedSystems?.[track.counterTo] ?? 0) > 0 ? track.counterTo : undefined
+    const project = newProject(house, category, track.pace, draft.meta.turn, counterTo)
     house.rnd.push(project)
     emit({
       severity: 'ticker',
       scope: 'house',
-      headline: `RESEARCH TRACK: ${category.toUpperCase()} PROJECT STARTS (${track.pace.toUpperCase()} PACE, ${project.turnsTotal} TURNS)`,
+      headline: `RESEARCH TRACK: ${category.toUpperCase()} PROJECT STARTS (${track.pace.toUpperCase()} PACE, ${project.turnsTotal} TURNS${counterTo ? `, AIMED AT THE ${enemySystemName(counterTo.slice(0, counterTo.length - category.length - 1), category).toUpperCase()}` : ''})`,
       causeId: null,
       delta: {},
       actorIsPlayer: true,

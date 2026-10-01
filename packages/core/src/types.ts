@@ -305,6 +305,9 @@ export interface House {
   // system huset studerat med REVERSE_ENGINEER (P117:s motmedelsforskning läser den). Båda utelämnas tills något fångats.
   capturedMateriel?: CapturedMateriel[]
   studiedSystems?: Record<string, number>
+  // P117 (§6.6): färdiga motmedel mot ett namngivet fiendesystem (id = `${faktion}-${kategori}`), med turen det blev klart.
+  // Utelämnas tills ett riktat forskningsprojekt blivit klart.
+  counters?: Record<string, { factionId: FactionId; category: TechCategory; turn: number }>
   // P113 (ETAPP9 §5.6): utredningar efter olycksfåglar i fält. Ett sparat parti från före P113 saknar fältet och läses som tomt.
   investigations: Investigation[]
 }
@@ -354,6 +357,8 @@ export interface RndProject {
   // techLevel + 1. Delar kön, kostnadsmekaniken (costFactor, specialiseringens halvering), chefsingenjörens
   // kortning och erfarenhetsförsprånget med teknikprojekten.
   design?: DesignProjectSpec
+  // P117 (§6.6): projektet är riktat mot ett namngivet, studerat fiendesystem (id = `${faktion}-${kategori}`).
+  counterTo?: string
 }
 
 // P109 (ETAPP9 §5.2): ritbordsuppdraget. Inriktningen väljer spelstil, ambitionen hur långt förbi det tidsenliga
@@ -422,6 +427,9 @@ export interface Design {
   // motståndarens block kan därefter kopiera den (copiedBy); varje kopia sänker budtermen.
   captured?: { turn: number; byFactionId: FactionId; eventId: string | null }
   copiedBy?: RivalId[]
+  // P117 (§6.3): turen då utfasningen för ett block märktes (av advanceDesignLifecycle) — bara en markering för rubriken
+  // och visningen. Behörigheten läses alltid ur generationen (designPhasedOutForBuyer), aldrig ur den här flaggan.
+  phasedOut?: Partial<Record<'west' | 'east', number>>
 }
 
 // P116: ett namngivet fiendesystem (data/enemySystems.json) huset fått överlämnat — id = `${faktion}-${kategori}`.
@@ -866,6 +874,19 @@ export interface RivalHouse {
   // implementationsmekanism för kadensen) — se ANDRINGSLOGG.md, samma sorts
   // nödvändiga, PROVISORISKA tillägg som house.foundingCapital/scandalUntilTurn.
   supplyPlayCooldownUntilTurn: number | null
+
+  // P117 (ETAPP9 §6.3, beslut 9F): rivalens konstruktioner, enligt schema (balance.rivalDesignSchedule). Enkla — ingen
+  // egen forskningsmodell. Saknas i ett sparat parti från före P117 och läses då som inga.
+  designs?: RivalDesign[]
+}
+
+// P117: en rivals konstruktion. Kvalitetsbonusen på rivalens rykte i kategorin avtar med nyhetsvärdet.
+export interface RivalDesign {
+  id: string
+  name: string
+  category: TechCategory
+  generation: number
+  introducedTurn: number
 }
 
 // Se ETAPP2_TEKNISK_SPEC.md avsnitt 2.1/2.3. Symmetrisk motsvarighet till Contract,
@@ -986,7 +1007,7 @@ export type StandingOrderChange =
   // Stationsläge: tyst, normal eller aktiv.
   | { kind: 'STATION'; stationId: string; mode: StationMode }
   // P108 (ETAPP9_FORSLAG.md §4.5): forskningsspår — ett per kategori, i takten låg/normal/hög. SET eller CANCEL.
-  | { kind: 'RESEARCH'; op: 'SET'; category: TechCategory; pace: ResearchPace }
+  | { kind: 'RESEARCH'; op: 'SET'; category: TechCategory; pace: ResearchPace; counterTo?: string }
   | { kind: 'RESEARCH'; op: 'CANCEL'; category: TechCategory }
   // P109 (ETAPP9_FORSLAG.md §5.2): ritbordsuppdraget — starta ett designprojekt (inriktning + ambition) eller
   // avbryt det pågående i kategorin. Kostar ingen handling.
@@ -1029,6 +1050,8 @@ export interface StationStandingOrder {
 export interface ResearchTrackOrder {
   pace: ResearchPace
   sinceTurn: number
+  // P117 (§6.6): spåret riktar varje nytt projekt mot ett studerat fiendesystem.
+  counterTo?: string
 }
 
 // P110: en pågående provning. turnsRun räknar turer den gällt (sinceTurn och framåt).

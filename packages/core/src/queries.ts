@@ -9,6 +9,8 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
+import type { Bloc } from './race.js'
+import { BLOCS, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, noveltyFactor } from './race.js'
 import {
   QUALITY_CLASSES,
   buyerPreferenceMix,
@@ -517,7 +519,9 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order),
+    category: product.category,
+    turn: state.meta.turn,
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -590,7 +594,9 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order),
+    category: product.category,
+    turn: state.meta.turn,
   }
 
   const points: PlayerWinCurvePoint[] = []
@@ -624,6 +630,9 @@ interface WinBandInputs {
   // P106: teknik- och specialiseringstermen (bidTerms.ts), en gång räknad av anroparen ur state.house —
   // samma tal bidding.ts lägger på spelarens poäng efter computeScore.
   playerBidTerm: number
+  // P117: produktens kategori och turen, för rivalernas konstruktionsbonus (effectiveRivalReputation).
+  category: TechCategory
+  turn: number
 }
 
 // Monte Carlo-skattning för EN prispunkt: kör MONTE_CARLO_SAMPLES simulerade
@@ -676,7 +685,7 @@ function computeWinAtPrice(hashRng: Rng, p: WinBandInputs, price: Money): Pct {
         weights: p.order.weights,
         inspectorIntegrity: p.integrity,
         relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
-        reputation: rival.reputation,
+        reputation: effectiveRivalReputation(rival, p.category, p.turn), // P117: samma som bidding.ts
         blocTerm: rivalBlocTerm(rival, p.factionAlignment) * p.blocMultiplier,
       })
       if (rivalScore >= playerScore) beatsAllRivals = false
@@ -811,6 +820,9 @@ export interface DesignDisplay {
   flaw: DesignFlaw | null
   testedIn: Design['testedIn']
   fieldRecord: Design['fieldRecord']
+  // P117: nyhetsvärdet (0–100, avtar) och de block där konstruktionen är utfasad (offentligt — generationsstegen är rubriker).
+  novelty: number
+  phasedOutFor: Bloc[]
 }
 
 export function designDisplay(state: GameState, design: Design): DesignDisplay {
@@ -835,6 +847,8 @@ export function designDisplay(state: GameState, design: Design): DesignDisplay {
     flaw: design.flawRevealed ? design.latentFlaw : null,
     testedIn: design.testedIn,
     fieldRecord: design.fieldRecord,
+    novelty: Math.round(noveltyFactor(design, state.meta.turn) * 100),
+    phasedOutFor: BLOCS.filter((bloc) => designPhasedOutForBloc(state, design, bloc)),
   }
 }
 

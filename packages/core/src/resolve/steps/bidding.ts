@@ -4,6 +4,7 @@ import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCo
 import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
 import { KIT_UNIT_COST_FACTOR, bidDesignRejection, designBidTerm, kitBidTerm } from '../../design.js'
 import { round } from '../../money.js'
+import { counterBidTerm, effectiveRivalReputation } from '../../race.js'
 import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
@@ -168,7 +169,7 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + counterBidTerm(draft, order),
           ...(design ? { designId: design.id } : {}),
           ...(playerBid.kit ? { kit: true } : {}),
         })
@@ -211,7 +212,7 @@ export const bidding: ResolveStep = (ctx) => {
         weights: order.weights,
         inspectorIntegrity: officialIntegrity,
         relationToPlayer: rival.relations[order.buyerId] ?? 0,
-        reputation: rival.reputation,
+        reputation: effectiveRivalReputation(rival, product.category, draft.meta.turn), // P117: rivalens nyaste konstruktion
         blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) * blocMultiplier : 0,
       })
       candidates.push({

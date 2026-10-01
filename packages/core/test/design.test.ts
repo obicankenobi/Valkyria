@@ -323,9 +323,10 @@ describe('bud med en konstruktion — en formel, en källa (P109, skyddsräcke 3
   })
 
   it('termen (P111: köparviktad och relativ) är 0 för en konstruktion på riktmärket, positiv över och negativ under, begränsad till ±designBidWeight', () => {
-    const strong = designWith({ performance: 90, reliability: 90, trueQuality: 90 })
-    const weak = designWith({ performance: 10, reliability: 10, trueQuality: 10, unitCostFactor: 1 })
-    const neutral = designWith({ performance: B.designBenchmarkBase, reliability: B.designBenchmarkBase, trueQuality: B.designBenchmarkBase })
+    // introducedTurn -100: nyhetsvärdet (P117) har avtagit, så termen är den rena köparviktade jämförelsen.
+    const strong = designWith({ performance: 90, reliability: 90, trueQuality: 90, introducedTurn: -100 })
+    const weak = designWith({ performance: 10, reliability: 10, trueQuality: 10, unitCostFactor: 1, introducedTurn: -100 })
+    const neutral = designWith({ performance: B.designBenchmarkBase, reliability: B.designBenchmarkBase, trueQuality: B.designBenchmarkBase, introducedTurn: -100 })
     const state = fresh()
     const order = orderFor(state)
     expect(designBidTerm(state, neutral, order)).toBeCloseTo(0, 9)

@@ -707,6 +707,14 @@ lämnar golden orörd.
 > omsätter i forskningsförsprång och `studiedSystems`. **Golden ändras på riktigt** (överlämningen sker i alla tre partier);
 > attribuerad genom att hook-raden bortkommenterad ger P113:s hashar. Se ANDRINGSLOGG 2026-09-30.
 
+> **P117 BYGGD 2026-10-01.** `race.ts`: motmedelskedjan (pansar → infanteri, flyg → artilleri, luftvärn → elektronik; en orders
+> värde efterfrågan hos motsidan när en konstruktion blir stridsbeprövad eller en rival släpper en ny), forskningsspår riktade mot ett
+> studerat fiendesystem (`counterTo`, kortare projekt + ett motmedel med budbonus), nyhetsvärde som avtar, rivalernas konstruktioner
+> enligt schema (9F, syns med underrättelse) och automatisk utfasning av äldre generationer (`designPhaseOutKeep`). Generationen är
+> än så länge P109:s provisoriska tidsschema — P118 byter källa. **Golden ändras på riktigt** (rivalkonstruktionerna sker i alla tre
+> partier); attribuerad genom att bortkommentera `processRivalDesigns`. **Fynd:** motmedelsefterfrågan är den starkaste spaken —
+> 1 order flyttade `capacity` till 79 % vinst, 0,25 håller vakterna. Se ANDRINGSLOGG 2026-10-01.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

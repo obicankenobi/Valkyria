@@ -2,6 +2,7 @@
 // Utbruten ur applyActions.ts i P23 (ETAPP2_TEKNISK_SPEC.md avsnitt 7) —
 // oförändrad logik, bara flyttad. Se ANDRINGSLOGG.md.
 import balanceData from '../data/balance.json' with { type: 'json' }
+import { enemySystemName } from '../capture.js'
 import { standingStationMode } from '../standingOrders.js'
 import type { ResolveContext } from './index.js'
 import { revealFlaw, rollDesign } from '../design.js'
@@ -37,7 +38,7 @@ export interface DesignCompletionContext {
 }
 
 export function advanceRndQueue(
-  house: Pick<House, 'rnd' | 'techLevel' | 'staff' | 'name'> & Partial<Pick<House, 'researchHeadStart' | 'designs'>>,
+  house: Pick<House, 'rnd' | 'techLevel' | 'staff' | 'name'> & Partial<Pick<House, 'researchHeadStart' | 'designs' | 'counters'>>,
   emit: Emit,
   designCtx?: DesignCompletionContext,
 ): void {
@@ -95,6 +96,21 @@ export function advanceRndQueue(
         subjectId: null,
       })
       continue
+    }
+    if (project.counterTo) {
+      // P117 (§6.6): ett projekt riktat mot ett namngivet fiendesystem ger ett motmedel mot just det (budbonus hos köpare vars
+      // front möter faktionen), utöver techLevel-höjningen.
+      const factionId = project.counterTo.slice(0, project.counterTo.length - project.category.length - 1)
+      ;(house.counters ??= {})[project.counterTo] = { factionId, category: project.category, turn: designCtx?.turn ?? 0 }
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `${house.name.toUpperCase()} FIELDS A ${project.category.toUpperCase()} COUNTER TO THE ${enemySystemName(factionId, project.category).toUpperCase()}`,
+        causeId: null,
+        delta: { [`counters.${project.counterTo}`]: 1 },
+        actorIsPlayer: true,
+        subjectId: factionId,
+      })
     }
     house.techLevel[project.category] += 1
     emit({

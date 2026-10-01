@@ -100,6 +100,11 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
         return house.standingOrders?.research?.[change.category] ? { ok: true } : fail('no research track for that category')
       }
       if (!(PACES as readonly string[]).includes(change.pace)) return fail('unknown research pace')
+      if (change.counterTo !== undefined) {
+        // P117 (§6.6): ett spår kan riktas mot ett fiendesystem huset studerat med REVERSE_ENGINEER, i samma kategori.
+        if ((house.studiedSystems?.[change.counterTo] ?? 0) <= 0) return fail('that enemy system has not been studied')
+        if (!change.counterTo.endsWith(`-${change.category}`)) return fail('that system is in another category')
+      }
       return { ok: true }
     }
     case 'INVESTIGATION': {
@@ -296,7 +301,7 @@ export function applyStandingOrders(ctx: ResolveContext): void {
             subjectId: null,
           })
         } else {
-          research[change.category] = { pace: change.pace, sinceTurn: from }
+          research[change.category] = { pace: change.pace, sinceTurn: from, ...(change.counterTo ? { counterTo: change.counterTo } : {}) }
           emit({
             severity: 'ticker',
             scope: 'house',

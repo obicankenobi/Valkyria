@@ -6,7 +6,9 @@
 // designBidTerm, och den läggs EFTER computeScore (skyddsräcke 1). Ett bud utan konstruktion får ingen term.
 import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
+import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
+import { currentGeneration, designPhasedOutForBuyer, noveltyBonus } from './race.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { Rng } from './rng.js'
 import type {
@@ -90,15 +92,6 @@ export const DESIGN_AMBITIONS: readonly DesignAmbition[] = ['timely', 'forward',
 export const DESIGN_ENVIRONMENTS: readonly DesignEnvironment[] = ['jungle', 'monsoon', 'mine', 'wear']
 export const QUALITY_CLASSES: readonly QualityClass[] = ['A', 'B', 'C', 'D']
 
-// Typnamn per kategori (beslut 9L: "H&V M64 Field Gun").
-const TYPE_NAME: Record<TechCategory, string> = {
-  infantry: 'Rifle',
-  artillery: 'Field Gun',
-  armour: 'APC',
-  aviation: 'Helicopter',
-  naval: 'Patrol Boat',
-  electronics: 'Radio Suite',
-}
 
 // Kategorins basprodukt: den icke-restricted produkt en konstruktion bygger på och bjuds på ordrar för (9B).
 export function designBaseProduct(category: TechCategory): Product {
@@ -107,11 +100,8 @@ export function designBaseProduct(category: TechCategory): Product {
   return product
 }
 
-// Den tidsenliga generationen vid en viss tur — ett PROVISORISKT tidsschema (kliv var generationStepTurns:e tur,
-// ägarbeslut 2026-09-30). P118 ersätter det med blockens dolda generationer; ambitionen mäts mot samma funktion.
-export function currentGeneration(turn: number): number {
-  return 1 + Math.floor(turn / BALANCE.generationStepTurns)
-}
+// Den tidsenliga generationen (P109) bor sedan P117 i race.ts (som P118 gör om till blockens generationer); återexporteras här.
+export { currentGeneration }
 
 function chiefEngineerSaves(house: Pick<House, 'staff'>): number {
   return house.staff.chiefEngineer > BALANCE.chiefEngineerProjectThreshold ? BALANCE.chiefEngineerTurnsSaved : 0
@@ -141,16 +131,10 @@ function clampPct(value: number): Pct {
   return Math.max(0, Math.min(100, Math.round(value)))
 }
 
-function initialsOf(houseName: string): string {
-  const words = houseName.split(/\s+/).filter((w) => w.length > 0 && w !== '&')
-  const initials = words.map((w) => w[0]!.toUpperCase())
-  return houseName.includes('&') ? initials.join('&') : initials.join('')
-}
-
 // "H&V M64 Field Gun" (9L): husets initialer + beteckning (M + årtal) + typ. En andra konstruktion med samma namn får
 // ett löpnummer så att namnen förblir unika.
 export function designName(house: Pick<House, 'name' | 'designs'>, category: TechCategory, year: number): string {
-  const base = `${initialsOf(house.name)} M${String(year % 100).padStart(2, '0')} ${TYPE_NAME[category]}`
+  const base = `${initialsOf(house.name)} ${designDesignation(year)} ${TYPE_NAME[category]}`
   const same = house.designs.filter((d) => d.name === base || d.name.startsWith(`${base} Mk `)).length
   return same === 0 ? base : `${base} Mk ${same + 1}`
 }
@@ -339,7 +323,8 @@ export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fro
   const trialBonus = design.trials?.[order.buyerId]?.bonusActive ? BALANCE.fieldTrialBidBonus : 0
   // P116: varje rival som kopierat den fångade konstruktionen sänker dess värde (egenskaper som tappar värde när andra kopierar).
   const copyPenalty = (design.copiedBy?.length ?? 0) * BALANCE.copyBidPenalty
-  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0) + trialBonus - copyPenalty
+  // P117: ett nyhetsvärde som avtar (en ny konstruktion drar uppmärksamhet; den åldras av sig själv).
+  return BALANCE.designBidWeight * relative + (design.fieldRecord?.proven ? BALANCE.provenBidBonus : 0) + trialBonus - copyPenalty + noveltyBonus(design, state.meta.turn)
 }
 
 // P115 (§6.4): fältprovets sats — en mindre del av basproduktens minsta orderkvantitet, till självkostnad.
@@ -489,13 +474,16 @@ export function kitBidRejection(
 
 // Hela prövningen av ett bud som bär en konstruktion och/eller en sats (bidding.ts). null = godtaget.
 export function bidDesignRejection(
-  state: Pick<GameState, 'house' | 'market'>,
+  state: Pick<GameState, 'house' | 'market' | 'meta' | 'factions'>,
   bid: { designId?: string; kit?: boolean; price: number },
   order: Pick<Order, 'buyerId' | 'productId' | 'referencePrice'>,
 ): string | null {
   if (bid.designId === undefined) return bid.kit ? 'an upgrade kit needs an upgraded design' : null
   const rejection = designBidRejection(state.house, bid.designId, order.productId)
   if (rejection) return rejection
+  // P117 (§6.3): en konstruktion vars generation fasats ut för köparens block kan inte längre bjudas.
+  const offered = state.house.designs.find((d) => d.id === bid.designId)!
+  if (designPhasedOutForBuyer(state, offered, order.buyerId)) return 'design phased out for this buyer'
   if (!bid.kit) return null
   return kitBidRejection(state, state.house.designs.find((d) => d.id === bid.designId)!, order, bid.price)
 }

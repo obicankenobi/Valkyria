@@ -795,6 +795,12 @@ smalnar av, fälttillfälle, miljöbrist avslöjas, bonus i köparens nästa upp
 **P116 BYGGD 2026-09-30:** fångad materiel och `REVERSE_ENGINEER` (`capture.ts`): motståndaren fångar/rival kopierar
 konstruktioner, köpare överlämnar fiendens materiel, verbet ger forskningsförsprång. **Golden ändrad på riktigt** (överlämningen
 sker i alla tre partier) och attribuerad via den enda hook-raden. **P114–P116 (del C, "Fältet", utom P117) klara.**
+**P117 BYGGD 2026-10-01:** `race.ts` — motmedelskedjor (pansar → infanteri, flyg → artilleri, luftvärn → elektronik; efterfrågan hos
+motsidan, forskning riktad mot ett studerat fiendesystem), nyhetsvärde, rivalernas konstruktioner enligt schema (9F) och
+automatisk utfasning av äldre generationer. Generationen är fortfarande det provisoriska tidsschemat (P118 byter källa).
+**Golden ändrad på riktigt** (rivalkonstruktionerna sker i alla tre partier), attribuerad via `processRivalDesigns`.
+**Fynd:** motmedelsefterfrågan är den starkaste spaken — `counterDemandOrders` 1 flyttade `capacity` från 0,7 till 79 % vinst,
+0,25 håller vakterna. **P114–P117 (del C, "Fältet") klara.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

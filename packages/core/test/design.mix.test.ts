@@ -146,8 +146,9 @@ describe('relativ bedömning (P111, §5.4)', () => {
   it('termen är begränsad till ±designBidWeight', () => {
     const state = withAgenda('MODERNISE')
     const order = orderFor(state)
-    const huge = design({ performance: 100, reliability: 100, trueQuality: 100, unitCostFactor: 0.5 })
-    const awful = design({ performance: 0, reliability: 0, trueQuality: 0, unitCostFactor: 2 })
+    // introducedTurn -100: nyhetsvärdet (P117) har avtagit.
+    const huge = design({ performance: 100, reliability: 100, trueQuality: 100, unitCostFactor: 0.5, introducedTurn: -100 })
+    const awful = design({ performance: 0, reliability: 0, trueQuality: 0, unitCostFactor: 2, introducedTurn: -100 })
     expect(designBidTerm(state, huge, order)).toBeLessThanOrEqual(B.designBidWeight)
     expect(designBidTerm(state, awful, order)).toBeGreaterThanOrEqual(-B.designBidWeight)
   })
