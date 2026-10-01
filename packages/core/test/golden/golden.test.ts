@@ -397,10 +397,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // hashar bit-identiska med P120:s (1620f95a2f0ff7, feede904471ab, b6ee913fa1cb6); med bara checkBothSides och vapenvilan avstängda
   // är passive-hashen oförändrad medan aggressive och balanced skiljer sig. balance.frozen.json följer med (nya rader: en anteckning
   // och tre tal). De nya hasharna: passive 10d0bd19b58ec, aggressive 13f7efa0f046f1, balanced 25bf2c27b8ee1.
+  //
+  // Omfryst IGEN i P122 (ETAPP9_FORSLAG.md §8.1/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter koden).
+  // De scriptade partierna ändras på riktigt: kravkortet vid tur 3 utlöser en anbudsinfordran (GameState.programmes, nytt valfritt
+  // fält) i alla tre partier, den går genom alla faser och en rival vinner serien (ingen bot anmäler sig). Attribution: med
+  // `maybeAnnounceProgramme` avstängd är alla tre hashar bit-identiska med P121:s (10d0bd19b58ec, 13f7efa0f046f1, 25bf2c27b8ee1).
+  // balance.frozen.json följer med (nya rader: en anteckning och 28 tal). De nya hasharna: passive 1b2c349323f2fb, aggressive
+  // 1fee8803ac1293, balanced 1f93a9463ff254.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '10d0bd19b58ec' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '13f7efa0f046f1' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '25bf2c27b8ee1' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1b2c349323f2fb' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1fee8803ac1293' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1f93a9463ff254' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
