@@ -17,7 +17,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForFront, computeReferencePrice, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
-import { gapPremium } from '../../race.js'
+import { gapPremium, perceivedBudgetPct } from '../../race.js'
 import { computeAdvancePct } from '../advance.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
 import type { Agenda, Faction, FactionId, FrontId, GameState, Official, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
@@ -81,7 +81,7 @@ interface NewOrderParams {
   trueBudgetCapFactor: number | null
   // P119 (ETAPP9 §7.2): gap-chockens överpris och förskottspåslag för köparen i den här kategorin (0 utan chock). Beräknas av
   // anroparen ur draft (race.ts gapPremium) — buildOrder har inget tillstånd.
-  racePremium?: { pricePct: number; advancePts: number }
+  racePremium?: { pricePct: number; advancePts: number; budgetPct?: number }
 }
 
 function buildOrder(p: NewOrderParams): Order {
@@ -100,7 +100,9 @@ function buildOrder(p: NewOrderParams): Order {
   // aldrig ett golv. Draget slumpas ALLTID (rngCursor rör sig identiskt oavsett
   // tak — samma determinism-krav som resten av filen), bara resultatet klampas.
   const trueBudgetFactor = p.trueBudgetCapFactor === null ? rolledTrueBudgetFactor : Math.min(rolledTrueBudgetFactor, p.trueBudgetCapFactor)
-  const trueBudget = round(referencePrice * trueBudgetFactor)
+  // P120: köparnas budgetar följer det UPPLEVDA hotet (ett rykte eller en LEAK), inte det verkliga — priset är oförändrat.
+  const rolledTrueBudget = round(referencePrice * trueBudgetFactor)
+  const trueBudget = racePremium.budgetPct ? round(rolledTrueBudget * (1 + racePremium.budgetPct / 100)) : rolledTrueBudget
 
   const statedBudgetFactor =
     p.rng.next() * (BALANCE.statedBudgetMaxFactor - BALANCE.statedBudgetMinFactor) + BALANCE.statedBudgetMinFactor
@@ -288,7 +290,7 @@ export const orders: ResolveStep = (ctx) => {
         reason: { kind: 'SCRIPTED' },
         frontId: null,
         trueBudgetCapFactor: buyer.trueBudgetCapFactor ?? null,
-        racePremium: gapPremium(draft, scripted.buyerId, product.category), // P119
+        racePremium: { ...gapPremium(draft, scripted.buyerId, product.category), budgetPct: perceivedBudgetPct(draft, scripted.buyerId, product.category) }, // P119/P120
       })
       draft.market.openOrders.push(order)
       emit({
@@ -461,7 +463,7 @@ function tryIssueOrder(
     reason,
     frontId,
     trueBudgetCapFactor: faction.trueBudgetCapFactor ?? null,
-    racePremium: gapPremium(draft, factionId, product.category), // P119: gap-chockens överpris och förskott
+    racePremium: { ...gapPremium(draft, factionId, product.category), budgetPct: perceivedBudgetPct(draft, factionId, product.category) }, // P119: gap-chockens överpris och förskott; P120: upplevt hot
   })
   draft.market.openOrders.push(order)
   return { order, product, quantity }

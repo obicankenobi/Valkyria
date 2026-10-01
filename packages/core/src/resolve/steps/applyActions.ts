@@ -55,6 +55,7 @@ import { validateAction } from '../../validateAction.js'
 import { applyStandingOrders } from '../../standingOrders.js'
 import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
 import { applyReverseEngineer } from '../../capture.js'
+import { inflateAssessment, parseAssessmentTarget } from '../../race.js'
 import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
@@ -383,6 +384,38 @@ export const applyActions: ResolveStep = (ctx) => {
         // SUCCESS-effekten skiljer de tre åt.
         case 'LEAK': {
           const station = house.stations.find((s) => s.id === action.stationId)!
+          // P120 (ETAPP9 §7.3): en LEAK mot en bedömning blåser upp den hos motsidans köpare (ett upplevt gap), lyckandechansen och
+          // bestraffningen vid misslyckande är desamma som för övriga LEAK.
+          const assessment = parseAssessmentTarget(action.targetId)
+          if (assessment) {
+            house.treasury -= BALANCE.intelCovertOpCost
+            recordExpense(draft, 'intel', BALANCE.intelCovertOpCost)
+            if (rng.chance(intelOpSuccessPct(draft, station.nation))) {
+              const perceiver = assessment.bloc === 'west' ? 'east' : 'west'
+              const publicId = inflateAssessment(ctx, perceiver, assessment.category, 'leak', null)
+              emit({
+                severity: 'ticker',
+                scope: 'house',
+                headline: `${house.name.toUpperCase()}'S LEAK INFLATES THE ${assessment.bloc.toUpperCase()}'S ${assessment.category.toUpperCase()} ASSESSMENT IN THE ${perceiver.toUpperCase()}'S MINISTRIES (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+                causeId: publicId,
+                delta: { treasury: -BALANCE.intelCovertOpCost },
+                actorIsPlayer: true,
+                subjectId: station.nation,
+              })
+            } else {
+              emit({
+                severity: 'ticker',
+                scope: 'house',
+                headline: `${house.name.toUpperCase()}'S LEAK IN ${nationDisplayName(draft, station.nation)} IS TRACED BACK (−£${BALANCE.intelCovertOpCost.toLocaleString('en-GB')})`,
+                causeId: null,
+                delta: { treasury: -BALANCE.intelCovertOpCost },
+                actorIsPlayer: true,
+                subjectId: station.nation,
+              })
+              markIntelOpCaught(draft, station, emit)
+            }
+            break
+          }
           const rivalId = action.targetId!
           const rival = draft.rivals[rivalId]!
           house.treasury -= BALANCE.intelCovertOpCost

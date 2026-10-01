@@ -10,7 +10,7 @@ import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import type { Bloc } from './race.js'
-import { BLOCS, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, noveltyFactor } from './race.js'
+import { BLOCS, blocOfFaction, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, noveltyFactor } from './race.js'
 import {
   QUALITY_CLASSES,
   buyerPreferenceMix,
@@ -865,4 +865,44 @@ export function buyerPreferenceDisplay(
 ): PreferenceMix | null {
   if (effectiveDepth(state, order.buyerId) === 0) return null
   return buyerPreferenceMix(state, order, category)
+}
+
+// ── bedömningar (P120, ETAPP9 §7.3) ──────────────────────────────────────────
+
+export interface RaceAssessment {
+  bloc: Bloc
+  category: TechCategory
+  low: number
+  high: number
+  confidence: 'CONFIRMED' | 'HIGH' | 'MEDIUM' | 'LOW'
+  stamp: string
+}
+
+const ASSESSMENT_WIDTH = (balanceData as unknown as { assessmentWidthByDepth: number[] }).assessmentWidthByDepth
+
+// Underrättelsebedömningen av ett blocks generation i en kategori (skyddsräcke 5: spelaren ser aldrig generationen). Ett intervall som
+// alltid innehåller sanningen men inte pekar ut den (mittpunkten förskjuts hash-seedat, aldrig ur spelets Rng, inom ±bredden), med
+// bredd efter bästa underrättelsedjup i blockets länder: en aktiv station, ett steg sämre om dess täckning varken är militär eller
+// industri, +1 med en skicklig chefsförsäljare. Stämpeln anger säkerheten.
+export function raceAssessment(state: GameState, bloc: Bloc, category: TechCategory): RaceAssessment {
+  let depth = 0
+  for (const s of state.house.stations) {
+    if (s.status !== 'active' || blocOfFaction(state, s.nation) !== bloc) continue
+    const covered = s.coverage.includes('military') || s.coverage.includes('industry')
+    depth = Math.max(depth, s.depth - (covered ? 0 : 1))
+  }
+  const eff = Math.max(0, Math.min(5, depth + (state.house.staff.chiefSalesman > 75 ? 1 : 0)))
+  const width = ASSESSMENT_WIDTH[eff] ?? 0
+  const truth = state.race.generation[bloc][category]
+  const rng = createRng(`${state.meta.seed}:assess:${bloc}:${category}:${truth}:${width}`, 0)
+  const center = truth + (width > 0 ? rng.int(-width, width) : 0)
+  const confidence = width === 0 ? 'CONFIRMED' : width === 1 ? 'HIGH' : width === 2 ? 'MEDIUM' : 'LOW'
+  return {
+    bloc,
+    category,
+    low: Math.max(1, Math.min(truth, center - width)),
+    high: Math.max(truth, center + width),
+    confidence,
+    stamp: confidence === 'CONFIRMED' ? 'CONFIRMED' : `ESTIMATE — ${confidence} CONFIDENCE`,
+  }
 }

@@ -730,6 +730,11 @@ lämnar golden orörd.
 > men bara av gap-chocken (ingen claim sker i de scriptade partierna — botarna har inga konstruktioner); attribuerad med tre
 > körningar. Vakterna orörda. Se ANDRINGSLOGG 2026-10-01.
 
+> **P120 BYGGD 2026-10-01.** Bedömningen som ett intervall med säkerhetsstämpel (`raceAssessment`), falska gap (rykten vid
+> generationsskiften och `LEAK` mot en bedömning blåser upp köparnas upplevda hot; budgetarna följer det upplevda, referenspriset inte),
+> utlöpning ("sanningen kommer fram") och avslöjande av en LEAK (tjänstemän tappar förtroende, doomsday stiger). **Golden ändras på
+> riktigt** av rykteslotteriet (attribuerad). Vakterna orörda. Se ANDRINGSLOGG 2026-10-01.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

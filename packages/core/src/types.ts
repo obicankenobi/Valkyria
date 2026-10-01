@@ -892,6 +892,16 @@ export interface RaceState {
   gap?: Partial<Record<TechCategory, GapShock>>
   // P119 (§7.2): första hus på plats på blockets nuvarande nivå, per block och kategori. Utelämnas tills första claimen.
   firstInPlace?: Record<'west' | 'east', Partial<Record<TechCategory, FirstInPlace>>>
+  // P120 (§7.3): hur ett blocks köpare UPPLEVER det andra blockets generation i en kategori — bias i generationer över sanningen. Ett
+  // rykte vid ett generationsskifte eller en LEAK; köparnas budgetar följer det upplevda hotet. Utelämnas tills första biasen.
+  perception?: Record<'west' | 'east', Partial<Record<TechCategory, PerceivedBias>>>
+}
+
+export interface PerceivedBias {
+  bias: number
+  sinceTurn: number
+  source: 'rumour' | 'leak'
+  causeId: string | null
 }
 
 export interface GapShock {

@@ -43,6 +43,7 @@ import { fieldTrialBatch } from './design.js'
 import { round } from './money.js'
 import { allProducts } from './pricing.js'
 import { findOfficial } from './officials.js'
+import { parseAssessmentTarget } from './race.js'
 import type { ActionValidation, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
 
 interface Balance {
@@ -212,6 +213,14 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
         case 'SABOTAGE': {
           const station = house.stations.find((s) => s.id === action.stationId)
           if (!station) return fail('unknown station')
+          // P120 (ETAPP9 §7.3): en LEAK kan ha en bedömning som mål ("assessment:block:kategori") i stället för en rival.
+          if (action.op === 'LEAK' && action.targetId?.startsWith('assessment:')) {
+            const target = parseAssessmentTarget(action.targetId)
+            if (!target) return fail('unknown assessment target')
+            const perceiver = target.bloc === 'west' ? 'east' : 'west'
+            if (draft.race.perception?.[perceiver]?.[target.category]) return fail('that assessment is already inflated')
+            return ok()
+          }
           const rival = action.targetId ? draft.rivals[action.targetId] : undefined
           if (!rival) return fail('unknown rival target')
           return ok()

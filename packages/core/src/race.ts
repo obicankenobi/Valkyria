@@ -11,8 +11,9 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { getProduct } from './pricing.js'
+import { addDoomsday } from './resolve/doomsdayGate.js'
 import type { ResolveContext } from './resolve/index.js'
-import type { Design, FactionId, FirstInPlace, GameState, GapShock, House, Order, RaceState, RivalDesign, RivalHouse, TechCategory } from './types.js'
+import type { Design, FactionId, FirstInPlace, GameState, GapShock, House, Order, PerceivedBias, RaceState, RivalDesign, RivalHouse, TechCategory } from './types.js'
 
 interface Balance {
   blocGenerationSchedule: Record<string, Record<Bloc, number[]>>
@@ -41,6 +42,13 @@ interface Balance {
   yardstickScale: number
   designBenchmarkBase: number
   benchmarkPerGeneration: number
+  falseGapChancePct: number
+  falseGapLifeTurns: number
+  leakExposeChancePct: number
+  leakLifeTurns: number
+  perceivedBudgetPctPerStep: number
+  leakExposedRelationPenalty: number
+  leakExposedDoomsday: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -226,6 +234,105 @@ export function advanceRace(ctx: ResolveContext): void {
         })
       }
       applyGapShock(ctx, bloc, category, stepId)
+      maybeRumour(ctx, bloc, category, stepId)
+    }
+  }
+}
+
+// ── bedömningar och falska gap (P120, §7.3) ─────────────────────────────────
+
+const BLOC_ADJECTIVE: Record<Bloc, string> = { west: 'WESTERN', east: 'EASTERN' }
+
+// "assessment:<block>:<kategori>" — LEAK:s mål när det är en bedömning i stället för en rival (PlayerAction['type'] oförändrad).
+export function parseAssessmentTarget(targetId: string | undefined): { bloc: Bloc; category: TechCategory } | null {
+  if (!targetId) return null
+  const [prefix, bloc, category] = targetId.split(':')
+  if (prefix !== 'assessment' || (bloc !== 'west' && bloc !== 'east')) return null
+  if (!category || !(category in BALANCE.blocGenerationSchedule)) return null
+  return { bloc, category: category as TechCategory }
+}
+
+// Biasen i en kategori hos ett blocks köpare (hur de upplever det andra blockets försprång), eller null.
+function perceivedBias(state: Pick<GameState, 'race'>, bloc: Bloc, category: TechCategory): PerceivedBias | null {
+  return state.race.perception?.[bloc]?.[category] ?? null
+}
+
+// Köparens upplevda hot som budgetpåslag (procent): perceivedBudgetPctPerStep per biassteg hos köparens block i kategorin. Bara den
+// uppblåsta delen — det verkliga försprånget ger redan gap-chockens överpris (P119). En formel, en källa: orders.ts läser den.
+export function perceivedBudgetPct(state: Pick<GameState, 'race' | 'factions'>, buyerId: FactionId, category: TechCategory): number {
+  const bloc = blocOfFaction(state, buyerId)
+  if (bloc === null) return 0
+  const bias = perceivedBias(state, bloc, category)
+  return bias ? BALANCE.perceivedBudgetPctPerStep * bias.bias : 0
+}
+
+// Sätter en bias hos `perceiver`-blockets köpare i kategorin (om ingen finns) med en offentlig rubrik som inte namnger någon.
+export function inflateAssessment(ctx: ResolveContext, perceiver: Bloc, category: TechCategory, source: PerceivedBias['source'], causeId: string | null): string | null {
+  const { draft, emit } = ctx
+  if (perceivedBias(draft, perceiver, category)) return null
+  const table = (draft.race.perception ??= { west: {}, east: {} })
+  const rival = otherBloc(perceiver)
+  const eventId = emit({
+    severity: 'report',
+    scope: 'market',
+    headline: `RUMOURS OF A ${BLOC_ADJECTIVE[rival]} LEAP IN ${category.toUpperCase()} UNSETTLE THE ${perceiver.toUpperCase()}'S MINISTRIES`,
+    causeId,
+    delta: { [`race.perception.${perceiver}.${category}`]: 1 },
+    actorIsPlayer: false,
+    subjectId: null,
+  })
+  table[perceiver][category] = { bias: 1, sinceTurn: draft.meta.turn, source, causeId: eventId }
+  return eventId
+}
+
+// Vid ett generationsskifte kan det andra blockets köpare få ett rykte om att försprånget är ett steg större (ctx.rng, bara när ett
+// steg faktiskt sker).
+function maybeRumour(ctx: ResolveContext, bloc: Bloc, category: TechCategory, stepId: string): void {
+  if (!ctx.rng.chance(BALANCE.falseGapChancePct)) return
+  inflateAssessment(ctx, otherBloc(bloc), category, 'rumour', stepId)
+}
+
+// Varje tur: en bias löper ut när sanningen kommer fram (efterfrågan sjunker), och en LEAK-bias kan avslöjas (ctx.rng, bara för
+// biaser äldre än den här turen): då tappar det panikslagna blockets tjänstemän förtroende och doomsday stiger.
+export function advancePerception(ctx: ResolveContext): void {
+  const { draft, emit, rng } = ctx
+  const table = draft.race.perception
+  if (!table) return
+  for (const bloc of BLOCS) {
+    for (const category of RACE_CATEGORIES) {
+      const entry = table[bloc][category]
+      if (!entry || entry.sinceTurn >= draft.meta.turn) continue
+      const age = draft.meta.turn - entry.sinceTurn
+      if (entry.source === 'leak' && rng.chance(BALANCE.leakExposeChancePct)) {
+        delete table[bloc][category]
+        const exposedId = emit({
+          severity: 'headline',
+          scope: 'market',
+          headline: `${draft.house.name.toUpperCase()} EXPOSED AS THE SOURCE OF THE ${category.toUpperCase()} SCARE — THE ${bloc.toUpperCase()}'S MINISTRIES LOSE TRUST`,
+          causeId: entry.causeId,
+          delta: { [`race.perception.${bloc}.${category}`]: -1, [`relationToPlayer.${bloc}`]: -BALANCE.leakExposedRelationPenalty },
+          actorIsPlayer: true,
+          subjectId: null,
+        })
+        for (const official of Object.values(draft.officials)) {
+          if (blocOfFaction(draft, official.factionId) === bloc) official.relationToPlayer = Math.max(0, official.relationToPlayer - BALANCE.leakExposedRelationPenalty)
+        }
+        addDoomsday(ctx, BALANCE.leakExposedDoomsday, exposedId)
+        continue
+      }
+      const life = entry.source === 'leak' ? BALANCE.leakLifeTurns : BALANCE.falseGapLifeTurns
+      if (age >= life) {
+        delete table[bloc][category]
+        emit({
+          severity: 'report',
+          scope: 'market',
+          headline: `THE ${category.toUpperCase()} GAP PROVES A MYTH — THE ${bloc.toUpperCase()}'S DEMAND SUBSIDES`,
+          causeId: entry.causeId,
+          delta: { [`race.perception.${bloc}.${category}`]: -1 },
+          actorIsPlayer: false,
+          subjectId: null,
+        })
+      }
     }
   }
 }

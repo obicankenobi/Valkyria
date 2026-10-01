@@ -811,6 +811,10 @@ Golden ändrad på riktigt (attribuerad).
 (`claimFirstInPlace`, husets bonus avtar och försvinner när blocket kliver igen) och efterföljarrabatt på designprojekt mot en redan
 fältad nivå. Golden ändrad på riktigt men bara av gap-chocken (ingen claim sker i de scriptade partierna, botarna har inga
 konstruktioner); attribuerad med tre körningar. Vakterna orörda. **P117–P119 (del D utom P120–P121) klara — P120 är nästa.**
+**P120 BYGGD 2026-10-01:** bedömningar som intervall med säkerhetsstämpel (`raceAssessment`), falska gap (rykten vid generationsskiften,
+`LEAK` mot en bedömning via `targetId: 'assessment:block:kategori'`; köparnas budgetar följer det upplevda hotet), utlöpning och
+avslöjande (tjänstemän tappar förtroende, doomsday stiger). Golden ändrad på riktigt av rykteslotteriets `ctx.rng`-drag (attribuerad).
+Vakterna orörda.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
