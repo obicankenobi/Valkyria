@@ -413,7 +413,8 @@ describe('anmälan av en rival (stående order, ingen handling) (P124, §8.2)', 
     const brandt = r.state.programmes![0]!.entrants.find((e) => e.houseId === 'brandt')!
     expect(brandt.barred).toContain('IRREGULARITIES')
     expect(r.wire.some((e) => e.actorIsPlayer && e.headline.includes('REPORTS'))).toBe(true)
-    expect(r.state.traces!.find((t) => t.id === 'trace-1')!.status).toBe('surfaced')
+    // P125: den anmälda rivalens spår får sina följder samma tur och stängs (P124 lämnade det 'surfaced').
+    expect(r.state.traces!.find((t) => t.id === 'trace-1')!.status).toBe('closed')
     // Den diskvalificerade rivalen kan inte vinna provet.
     const score = r.state.programmes![0]!.result?.scores.find((x) => x.houseId === 'brandt')
     if (score) expect(score.disqualified).toContain('IRREGULARITIES')

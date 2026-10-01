@@ -3,7 +3,7 @@
 // historiken FÖRE inläsningen finns inte att återskapa, så P97-grafen får tåla en huvudbok
 // som inte börjar på tur 0.
 import { describe, expect, it } from 'vitest'
-import { createInitialState, resolveTurn, scheduledGeneration } from '@seventh-front/core'
+import { INTEGRITY_START, createInitialState, resolveTurn, scheduledGeneration } from '@seventh-front/core'
 import type { GameState } from '@seventh-front/core'
 import { migrate } from '../src/persistence'
 
@@ -92,6 +92,17 @@ describe('migrate (P96-uppföljning)', () => {
     fresh.state.house.researchHeadStart.naval = 1.25
     const kept = migrate(fresh)!
     expect(kept.state.house.researchHeadStart.naval).toBe(1.25)
+  })
+
+  it('(P125) ger ett gammalt sparat parti utan reputation.integrity startvärdet, och ett befintligt värde rörs inte', () => {
+    const save = oldSave()
+    delete (save.state.house.reputation as Partial<GameState['house']['reputation']>).integrity
+    const migrated = migrate(save)!
+    expect(migrated.state.house.reputation.integrity).toBe(INTEGRITY_START)
+    expect(() => resolveTurn(migrated.state, migrated.draft)).not.toThrow()
+    const kept = oldSave()
+    kept.state.house.reputation.integrity = 83
+    expect(migrate(kept)!.state.house.reputation.integrity).toBe(83)
   })
 
   it('(P118) ger ett gammalt sparat parti utan race de generationer grundschemat ger vid dess tur, höjer köparnas techLevel i takt med dem, och rör inget som redan finns', () => {

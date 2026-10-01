@@ -30,6 +30,12 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'PROGRAMME':
       // P122: en köad ändring per infordran och slag (anmälan, prototyp, utträde). Upphandlingsmappen byggs i P128.
       return `programme:${change.programmeId}:${change.op}`
+    case 'TRACE':
+      // P125: ett svar per spår (utredningskortet byggs i P128).
+      return `trace:${change.traceId}`
+    case 'LEGAL':
+      // P125: juridisk rådgivning är ett enda läge (SET och CANCEL delar nyckel).
+      return 'legal'
   }
 }
 

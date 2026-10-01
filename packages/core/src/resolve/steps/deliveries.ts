@@ -172,7 +172,7 @@ function resolveDeliveryFront(fronts: GameState['fronts'], buyerId: string, fron
 // revenueByTurn minskas). Kassan täcker det den räcker till; resten blir skuld och bokförs som
 // ett lån (financing.loans) — så både kassa- och skuldidentiteten i huvudboken håller utan en
 // ny rad. Kassa under noll räknas som noll: ingen "återbetalning" ur ett underskott.
-function refundAdvance(ctx: ResolveContext, contract: Contract, buyerName: string, causeId: string): void {
+export function refundAdvance(ctx: ResolveContext, contract: Contract, buyerName: string, causeId: string): void {
   const { draft, emit } = ctx
   const house = draft.house
   const refund = contract.advancePaid

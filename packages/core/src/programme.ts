@@ -272,6 +272,7 @@ export function validateProgrammeChange(_state: Readonly<GameState>, draft: Game
       if (programme.phase !== 'announced') return fail('the programme is closed for entries')
       if (!programmeEligible(draft.house.homeState, blocOfFaction(draft, programme.buyerId))) return fail('your home state bars you from this ministry')
       if (entered) return fail('already entered')
+      if ((draft.house.suspendedFrom?.[programme.buyerId] ?? 0) > draft.meta.turn) return fail('suspended from this buyer') // P125
       return { ok: true }
     }
     case 'WITHDRAW': {

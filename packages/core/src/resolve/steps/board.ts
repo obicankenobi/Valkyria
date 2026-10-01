@@ -79,11 +79,29 @@ function runReview(ctx: ResolveContext): void {
 
   target.lastReviewTurn = turn
 
+  // P125 (§8.3): ett avslöjat spår lämnar ett avdrag på nästa granskning — dras en gång och nollställs med en rad.
+  let deduction = 0
+  delete target.lastDeduction // ett tidigare avdrag gäller inte den här granskningen
+  if ((house.boardDeduction ?? 0) > 0) {
+    deduction = house.boardDeduction!
+    target.lastDeduction = deduction
+    house.boardDeduction = 0
+    emit({
+      severity: 'report',
+      scope: 'house',
+      headline: `BOARD REVIEW (TURN ${turn}): A DEDUCTION OF ${deduction} FOR THE SCANDAL IS APPLIED TO THE RESULT`,
+      causeId: null,
+      delta: { boardDeduction: -deduction },
+      actorIsPlayer: false,
+      subjectId: null,
+    })
+  }
+
   // P53b: kvadratisk bana, inte linjär — samma threshold vid dueTurn, lägre krav
   // tidigt (se filens huvudkommentar).
   const expectedProgress = computeExpectedProgress(target.threshold, turn, target.dueTurn)
   const passMark = expectedProgress * (1 - BALANCE.boardReviewTolerance)
-  const passed = target.progressSnapshot >= passMark
+  const passed = target.progressSnapshot - deduction >= passMark
 
   if (passed) {
     // P30 (ETAPP2_TEKNISK_SPEC.md avsnitt 5.1): reviewsFailed räknade tidigare

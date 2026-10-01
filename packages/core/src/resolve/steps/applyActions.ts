@@ -56,6 +56,7 @@ import { applyStandingOrders } from '../../standingOrders.js'
 import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
 import { applyReverseEngineer } from '../../capture.js'
 import { applyProcurement, applyProgrammeIntel, parseProgrammeTarget } from '../../programme.js'
+import { recordTrace } from '../../traces.js'
 import { inflateAssessment, parseAssessmentTarget } from '../../race.js'
 import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
@@ -676,7 +677,7 @@ export const applyActions: ResolveStep = (ctx) => {
         station.exposure = Math.min(100, station.exposure + BALANCE.brokerScandalRiskGain)
       }
 
-      emit({
+      const brokerId = emit({
         severity: 'headline',
         scope: 'market',
         headline: `${house.name.toUpperCase()} BROKERS A DIRECT DEAL WITH ${faction.name.toUpperCase()} — ${product.name.toUpperCase()} × ${action.quantity}`,
@@ -685,6 +686,8 @@ export const applyActions: ResolveStep = (ctx) => {
         actorIsPlayer: true,
         subjectId: action.buyerId,
       })
+      // P125 (beslut 9N): en direktaffär förbi anbudet ger ett spår (allvar 2) kopplat till kontraktet.
+      recordTrace(ctx, { houseId: 'player', officialId: official.id, buyerId: action.buyerId, kind: 'broker', severity: 2, contractId: contract.id }, brokerId)
       continue
     }
   }

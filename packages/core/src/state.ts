@@ -48,6 +48,8 @@ interface Balance {
   relationsNeutralStart: number
   // P60 (ETAPP5_TEKNISK_SPEC.md avsnitt 4.3): startvärde för Faction.counterIntelligence.
   counterIntelligenceDefault: number
+  // P125: startvärdet för House.reputation.integrity.
+  integrityStart: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -109,7 +111,7 @@ export interface ScenarioFile {
     lineCount: number
     unitsPerLineTurnDefault: number
     staff: House['staff']
-    reputation: House['reputation']
+    reputation: Omit<House['reputation'], 'integrity'>
     techLevelDefault: number
     techLevelSpecialisationBonus: number
     station: {
@@ -269,7 +271,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     rnd: [],
     stations: [station],
     staff: { ...seed.staff },
-    reputation: { ...seed.reputation },
+    reputation: { ...seed.reputation, integrity: BALANCE.integrityStart },
     techLevel: techLevelWithSpecialisationBonus(
       seed.techLevelDefault,
       seed.specialisation,

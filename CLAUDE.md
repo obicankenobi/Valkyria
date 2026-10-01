@@ -829,6 +829,13 @@ robusta konstruktioner belönas), utvärderingsprotokollet (bara för deltagarna
 upphandling (`targetId: 'programme:<id>:<rival>'`), rivalernas fusk efter temperament vid provstart och anmälan av en rival (stående order, ingen
 handling). Varje trick ger ett pappersspår (`traces.ts`, `GameState.traces`; P125 låter det komma fram). Golden ändrad på riktigt (rivalernas
 fuskdrag, attribuerad). Vakterna orörda.
+**P125 BYGGD 2026-10-02:** pappersspåret för ALL korruption (`traces.ts`): spår kommer fram med en chans efter tjänstemannens `scandalRisk`, landets motspionage och tiden
+(ett `ctx.rng`-drag per öppet spår), utredningskortet (stående order `TRACE`: förneka / offra en direktör / förlikas; frist 3 turer, standard = förnekande), följder efter allvar
+(integritet, kvalitetsrykte, hävt kontrakt, avstängning hos köparen `House.suspendedFrom`, tjänstemans anseende, styrelseavdrag, tjänsteman faller → `replaceOfficial`), regimskiften
+som öppnar arkiven (`openArchives`), juridisk rådgivning (stående order `LEGAL`) och rent rykte (`House.reputation.integrity`, `integrityBidTerm`, `scenarioVerdict().cleanHouse`).
+`BRIBE`, `FAVOUR`, `BROKER` och mutan i vanliga bud ger spår (9N). **Golden ändrad på riktigt** (attribuerad: med de fyra P125-delarna avstängda bit-identisk med P124). **Fynd:**
+FAVOUR-spåren (botarna kallar in 8–10 per parti) flyttade `balanced-pwc` (99 → 83 %) och `human` när spårtalen var för höga — talen sänktes tills vakterna höll (human 77,5, balanced 37,
+aggressive 19, capacity 2, passive 0, balanced-pwc 99 %). Ingen bot svarar på kort eller skaffar rådgivare (P129); kortet saknar UI (P128).
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

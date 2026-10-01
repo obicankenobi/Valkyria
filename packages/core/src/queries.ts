@@ -9,6 +9,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
+import { integrityBidTerm } from './traces.js'
 import type { Bloc } from './race.js'
 import { BLOCS, blocOfFaction, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, noveltyFactor } from './race.js'
 import {
@@ -222,7 +223,8 @@ export function boardMemo(state: GameState, reviewedTurn: number): BoardMemo | n
 
   const capital = state.house.foundingCapital
   const required = boardReviewRequirement(target, reviewedTurn)
-  const current = target.progressSnapshot
+  // P125: ett avdrag för ett avslöjat spår drogs från just den här granskningen.
+  const current = target.progressSnapshot - (target.lastReviewTurn === reviewedTurn ? (target.lastDeduction ?? 0) : 0)
 
   const ledgerEntry = state.ledger.find((e) => e.turn === reviewedTurn)
   const items: BoardMemoItem[] = []
@@ -519,7 +521,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
     raceState: state,
@@ -595,7 +597,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
     raceState: state,

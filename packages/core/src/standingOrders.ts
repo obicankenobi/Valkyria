@@ -11,6 +11,7 @@ import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
 import { applyInvestigationChoice, validateInvestigationChoice } from './investigations.js'
 import { applyProgrammeChange, validateProgrammeChange } from './programme.js'
+import { applyLegalChange, applyTraceChange, validateLegalChange, validateTraceChange } from './traces.js'
 import { frontierGeneration, isFollowerTarget } from './race.js'
 import { BALANCE_DESIGN_STEPS, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
@@ -111,6 +112,10 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
     }
     case 'PROGRAMME':
       return validateProgrammeChange(_state, draft, change)
+    case 'TRACE':
+      return validateTraceChange(draft, change)
+    case 'LEGAL':
+      return validateLegalChange(draft, change)
     case 'INVESTIGATION': {
       const reason = validateInvestigationChoice(house, change)
       return reason ? fail(reason) : { ok: true }
@@ -220,6 +225,13 @@ export function applyStandingOrders(ctx: ResolveContext): void {
       case 'INVESTIGATION':
         // P113: utredningskortets val (ingen handling, ingen fördröjning — utredningen är redan öppen).
         applyInvestigationChoice(ctx, change)
+        break
+      case 'TRACE':
+        // P125: pappersspårets kort (ingen handling, ingen fördröjning — spåret har redan kommit fram).
+        applyTraceChange(ctx, change)
+        break
+      case 'LEGAL':
+        applyLegalChange(ctx, change)
         break
       case 'TESTING': {
         // P110: provning i egen regi. SET byter miljö och börjar om räkningen (från nästa tur); CANCEL avbryter.

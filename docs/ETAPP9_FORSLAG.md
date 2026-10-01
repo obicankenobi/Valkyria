@@ -756,6 +756,14 @@ lämnar golden orörd.
 > protokollet, underbud + motköp), `SABOTAGE`/`LEAK` mot en upphandling, rivalernas fusk efter temperament och anmälan av en rival (ingen
 > handling). Varje trick ger ett pappersspår (`traces.ts`, grunden för P125). **Golden ändras på riktigt** (rivalernas fuskdrag; attribuerad).
 > Vakterna orörda. Se ANDRINGSLOGG 2026-10-02.
+>
+> **P125 BYGGD 2026-10-02.** Pappersspåret för ALL korruption: spår som kommer fram (`advanceTraces`, chans efter tjänstemannens
+> `scandalRisk`, landets motspionage och tiden), utredningskortet (förneka / offra en direktör / förlikas, frist 3 turer, standard =
+> förnekande), följder efter allvar (rykte, hävt kontrakt, avstängning hos köparen, styrelseavdrag, tjänsteman faller →
+> `replaceOfficial`), regimskiften som öppnar arkiven, juridisk rådgivning (stående order) och rent rykte (`reputation.integrity`,
+> `integrityBidTerm`, `cleanHouse`). Mutan i vanliga bud, `BRIBE`, `FAVOUR` och `BROKER` ger spår (beslut 9N). **Golden ändras på riktigt**
+> (attribuerad). **Fynd:** FAVOUR-spåren (botarna kallar in 8–10 per parti) flyttade `balanced-pwc` och `human` när spårtalen var för
+> höga — talen sänktes tills vakterna höll. Se ANDRINGSLOGG 2026-10-02.
 
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.

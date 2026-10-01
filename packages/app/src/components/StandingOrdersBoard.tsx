@@ -66,6 +66,10 @@ function describeChange(change: StandingOrderChange): string {
       return change.op === 'SUBMIT' ? `SUBMIT ${change.designId} TO ${change.programmeId}` : `${change.op} ${change.programmeId}`
     case 'RESEARCH':
       return change.op === 'CANCEL' ? `CANCEL ${change.category.toUpperCase()} RESEARCH` : `${change.category.toUpperCase()} RESEARCH · ${change.pace.toUpperCase()}`
+    case 'TRACE':
+      return `${change.choice} · ${change.traceId}`
+    case 'LEGAL':
+      return change.op === 'CANCEL' ? 'DISMISS LEGAL COUNSEL' : 'RETAIN LEGAL COUNSEL'
   }
 }
 

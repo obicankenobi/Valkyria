@@ -3,6 +3,7 @@
 // lagrad"-princip som bidEstimate/ActionPreview (queries.ts). Räknar om alla
 // fyra epilogaxlar (CAPITAL/REACH/SHADOW/RESTRAINT), slutkortet, vändpunkterna
 // och (om partiet slutade i NUCLEAR_EXCHANGE) kärnvapenepilogen.
+import { cleanHouse } from './traces.js'
 import type { ChronicleEntry, GameState, NuclearEpilogue, ScenarioVerdict } from './types.js'
 
 // DESIGN.md §17, ordagrant: "CAPITAL slutkassa + tillgångar". house.commodityHoldings
@@ -121,5 +122,6 @@ export function scenarioVerdict(state: GameState): ScenarioVerdict {
     ending,
     turningPoints: computeTurningPoints(state.chronicle),
     nuclearEpilogue: ending?.code === 'NUCLEAR_EXCHANGE' ? buildNuclearEpilogue(state, ending.turn) : null,
+    cleanHouse: cleanHouse(state),
   }
 }

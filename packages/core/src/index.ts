@@ -55,6 +55,8 @@ export { officialId, findOfficial } from './officials.js'
 // använder (P79). ActionValidation/ActionPreview exporteras redan via
 // `export * from './types.js'` ovan.
 export { validateAction } from './validateAction.js'
+// P125: pappersspåret — gränssnittet (P128) läser sannolikhet, rent rykte och avstängning ur samma funktioner som reglerna.
+export { INTEGRITY_START, cleanHouse, integrityBidTerm, isSuspendedFrom, traceSurfaceChancePct } from './traces.js'
 export { previewAction } from './previewAction.js'
 // P85: THE COMPANY behöver samma vaktade konstanter INTERNAL/MARKET-formulären
 // redan valideras mot (validateAction.ts), i stället för att TheHouse.tsx

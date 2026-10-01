@@ -12,7 +12,7 @@
 // P12:s klart när-villkor ("ett parti kan stängas och återupptas MITT I en tur
 // utan förlust") kräver det uttryckligen; att bara spara efter resolveTurn hade
 // tappat ett halvifyllt anbud vid en omladdning.
-import { BLOCS, blocOfAlignment, initialRace, scheduledGeneration } from '@seventh-front/core'
+import { BLOCS, INTEGRITY_START, blocOfAlignment, initialRace, scheduledGeneration } from '@seventh-front/core'
 import type { Contract, GameState, Order, TurnSubmission } from '@seventh-front/core'
 import type { TutorialState } from './tutorial.js'
 
@@ -144,6 +144,11 @@ export function migrate(saved: SavedGame): SavedGame | null {
           }
         }
         state = { ...state, race, factions }
+      }
+      // P125: reputation.integrity (rent rykte) tillkom på House. Ett sparat parti från före P125 saknar det och skulle
+      // ge NaN i integrityBidTerm; det får startvärdet. Spåren (GameState.traces) är valfria och läses defensivt.
+      if (typeof (state.house.reputation as Partial<GameState['house']['reputation']>).integrity !== 'number') {
+        state = { ...state, house: { ...state.house, reputation: { ...state.house.reputation, integrity: INTEGRITY_START } } }
       }
       return state === saved.state ? saved : { ...saved, state }
     }

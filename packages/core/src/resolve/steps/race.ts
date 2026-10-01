@@ -7,6 +7,7 @@
 // Det ligger efter `fronts` och `rivals` så att en händelse den här turen (en stridsbeprövad konstruktion, en rivals nya
 // konstruktion) hinner påskynda ett steg som sker samma tur. Ordningen i övrigt är orörd (hård regel 7).
 import { advanceProgrammes, maybeAnnounceProgramme } from '../../programme.js'
+import { advanceTraces } from '../../traces.js'
 import { advanceDesignLifecycle, advancePerception, advanceRace, checkBothSides, processRivalDesigns } from '../../race.js'
 import type { ResolveStep } from '../index.js'
 
@@ -18,4 +19,5 @@ export const race: ResolveStep = (ctx) => {
   advanceDesignLifecycle(ctx) // 3. husets konstruktioner som nu är utfasade märks
   advanceProgrammes(ctx) // 4. (P122) pågående utvecklingsupphandlingar: faser, anslag, prov och tilldelning
   maybeAnnounceProgramme(ctx) // 5. (P122) en ny anbudsinfordran om något utlöser den
+  advanceTraces(ctx) // 6. (P125) pappersspåret: spår som kommer fram, utredningskort, juridisk rådgivning, rent rykte
 }

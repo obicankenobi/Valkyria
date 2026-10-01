@@ -180,6 +180,7 @@ export type ChronicleKind =
   | 'contract'
   | 'ceasefire'
   | 'casualty' // P113: en rapport från fältet om en konstruktion (utredning öppnas) eller ett avslöjat förnekande
+  | 'scandal' // P125: ett spår har kommit fram (husets eget eller en rivals) eller ett avslöjat täckelse
 
 export interface ChronicleEntry {
   turn: number
@@ -202,6 +203,8 @@ export interface ScenarioVerdict {
   ending: { code: EndingCode; headline: string; turn: number } | null // null: scenariot pågår
   turningPoints: ChronicleEntry[] // upp till tre, rankade efter |doomsdayDelta|
   nuclearEpilogue: NuclearEpilogue | null // bara satt när ending.code === 'NUCLEAR_EXCHANGE'
+  // P125 (§8.4): ett rent hus — hög integritet och inget avslöjat spår i partiet (en fjärde, tyst epilogaxel).
+  cleanHouse: boolean
 }
 
 // DESIGN.md §6.3, ordagrant: "vad ditt hus levererade under de sista tolv
@@ -239,7 +242,14 @@ export interface House {
     reliability: Pct // faller vid missad leveransdeadline
     westStanding: Pct
     eastStanding: Pct
+    // P125 (ETAPP9 §8.4, beslut 9N): "rent rykte" — stiger långsamt (traceCleanTurns), sjunker kraftigt när ett spår
+    // kommer fram. Läses av integrityBidTerm (hög-integritets-tjänstemän gillar ett rent hus) och epilogen (cleanHouse).
+    integrity: Pct
   }
+  // P125: köpare som stängt huset ute från anbud till och med (exklusivt) den turen — sätts när ett spår avslöjas.
+  suspendedFrom?: Record<FactionId, number>
+  // P125: avdrag på styrelsens nästa granskning (i samma enhet som progressSnapshot); nollställs av board.ts.
+  boardDeduction?: number
   techLevel: Record<TechCategory, number> // 0–10
   boardTarget: BoardTarget
   exposureEvents: number[] // turnindex för exponerade stationer
@@ -333,6 +343,8 @@ export interface BoardTarget {
   reviewTurns: number[] // [8, 14] i 20-turersskivan
   reviewsFailed: number // två i rad → BUYOUT
   lastReviewTurn: number | null
+  // P125: avdraget (skandal) som drogs från den senaste granskningens framsteg — PM:et (boardMemo) räknar med det.
+  lastDeduction?: number
 }
 
 export interface ProductionLine {
@@ -974,7 +986,16 @@ export interface PaperTrace {
   programmeId?: string
   contractId?: string
   status: 'open' | 'surfaced' | 'closed' | 'swept'
+  // P125: när spåret kom fram, fristen för utredningskortet, husets val och hur det slutade.
+  surfacedTurn?: number
+  deadlineTurn?: number
+  choice?: TraceChoice
+  choiceTurn?: number // turen valet gjordes (ett förnekande kan avslöjas först från nästa tur)
+  resolution?: 'denied' | 'sacrificed' | 'settled' | 'exposed'
 }
+
+// P125: utredningskortets tre dåliga vägar (förneka / offra någon / förlikas).
+export type TraceChoice = 'DENY' | 'SACRIFICE' | 'SETTLE'
 
 export interface TrialRow {
   kind: RequirementKind
@@ -1170,6 +1191,10 @@ export type StandingOrderChange =
   | { kind: 'TESTING'; op: 'CANCEL'; designId: DesignId }
   // P113: utredningskortets val — ingen handling.
   | { kind: 'INVESTIGATION'; investigationId: string; choice: InvestigationChoice }
+  // P125 (§8.3): pappersspårets kort — förneka, offra en direktör (role) eller förlikas. Kostar ingen handling.
+  | { kind: 'TRACE'; op: 'RESPOND'; traceId: string; choice: TraceChoice; role?: keyof House['staff'] }
+  // P125: juridisk rådgivning — en stående order som sänker chansen att spår kommer fram. Kostar ingen handling.
+  | { kind: 'LEGAL'; op: 'SET' | 'CANCEL' }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1220,6 +1245,8 @@ export interface StandingOrders {
   research?: Partial<Record<TechCategory, ResearchTrackOrder>>
   // P110: pågående provningar, per konstruktion. Saknas i ett sparat parti från före P110 — läses som inga.
   testing?: Record<DesignId, DesignTestOrder>
+  // P125: juridisk rådgivning i kraft från och med sinceTurn.
+  legal?: { sinceTurn: number }
 }
 
 export interface TurnSubmission {

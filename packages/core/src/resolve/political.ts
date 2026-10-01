@@ -21,6 +21,7 @@ import { replaceOfficial } from '../officials.js'
 import { fieldTrialBatch, frontEnvironments, revealFlaw } from '../design.js'
 import { grantFieldOccasion } from '../fieldQuality.js'
 import { recordExpense } from '../ledger.js'
+import { openArchives, recordTrace } from '../traces.js'
 import { round } from '../money.js'
 import { assassinateReductionFactor, backChannelGain, fundCoupBonusPct, stageIncidentHeatScale } from '../spendCurves.js'
 import type { ResolveContext } from './index.js'
@@ -278,7 +279,7 @@ function applyOfficialTargetedPolitical(
     const charged = round(gain * BALANCE.favourRelationCostPerPoint)
     house.favourMarginSpent += charged
     house.favourMarginOwed = (house.favourMarginOwed ?? 0) + charged
-    emit({
+    const favourId = emit({
       severity: 'ticker',
       scope: 'faction',
       headline: `${house.name.toUpperCase()} DOES ${official.name.toUpperCase()} A FAVOUR (MARGIN OWED £${charged.toLocaleString('en-GB')}, DEDUCTED FROM THE NEXT DELIVERIES)`,
@@ -287,6 +288,8 @@ function applyOfficialTargetedPolitical(
       actorIsPlayer: true,
       subjectId: official.factionId,
     })
+    // P125 (beslut 9N): ett inkallat gentjänst-spår.
+    recordTrace(ctx, { houseId: 'player', officialId: official.id, buyerId: official.factionId, kind: 'favour', severity: 1 }, favourId)
     return
   }
 
@@ -328,7 +331,7 @@ function applyOfficialTargetedPolitical(
   const scandalGain = Math.min(action.spend / BALANCE.bribeScandalRiskCostPerPoint, 100 - official.scandalRisk)
   official.scandalRisk += scandalGain
 
-  emit({
+  const bribeId = emit({
     severity: 'ticker',
     scope: 'faction',
     headline: `${house.name.toUpperCase()} CULTIVATES ${official.name.toUpperCase()} (−£${action.spend.toLocaleString('en-GB')})`,
@@ -337,6 +340,8 @@ function applyOfficialTargetedPolitical(
     actorIsPlayer: true,
     subjectId: official.factionId,
   })
+  // P125 (beslut 9N): en direkt muta ger ett spår.
+  recordTrace(ctx, { houseId: 'player', officialId: official.id, buyerId: official.factionId, kind: 'bribe', severity: 1 }, bribeId)
 }
 
 // P60 (avsnitt 4.3): "betala för att flytta en faktions publicSupport eller
@@ -521,6 +526,8 @@ function applyFundCoup(ctx: ResolveContext, action: Extract<PoliticalAction, { o
     // PolicyDecision-varianten aldrig satte.
     target.preferredSupplier = 'player'
     target.preferredSupplierUntilTurn = draft.meta.turn + BALANCE.fundCoupPreferredSupplierTurns
+    // P125 (§8.3): "regimskiften öppnar arkiven" — varje öppet spår hos den falna regimen kan nu komma fram.
+    openArchives(ctx, target.id, coupId)
   } else {
     const before = target.counterIntelligence
     target.counterIntelligence = Math.min(100, before + BALANCE.fundCoupCaughtCounterIntelligenceGain)

@@ -7,6 +7,7 @@ import { round } from '../../money.js'
 import { counterBidTerm, effectiveRivalReputation, firstInPlaceBidTerm } from '../../race.js'
 import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
+import { integrityBidTerm, isSuspendedFrom, recordTrace } from '../../traces.js'
 import { recordIncome } from '../../ledger.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
@@ -77,6 +78,7 @@ export const bidding: ResolveStep = (ctx) => {
     const playerBid = playerBids[0]
 
     const candidates: Candidate[] = []
+    let bribeTraceId: string | null = null // P125: spåret efter en muta i budet, kopplas till kontraktet om budet vinner
     // P109: en konstruktion i budet prövas mot huset och ordern innan något annat räknas.
     const designRejection = playerBid ? bidDesignRejection(draft, playerBid, order) : null
 
@@ -88,6 +90,18 @@ export const bidding: ResolveStep = (ctx) => {
           severity: 'ticker',
           scope: 'market',
           headline: `BID ON ${order.id} DISQUALIFIED: PRICE EXCEEDS BUYER'S TRUE BUDGET`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
+      } else if (isSuspendedFrom(draft.house, order.buyerId, draft.meta.turn)) {
+        // P125 (§8.3): ett avslöjat spår kan stänga huset ute från en köpare en tid.
+        rejected.push({ action: playerBid, reason: 'suspended from this buyer' })
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()} IS SUSPENDED FROM TENDERING TO ${buyerName}`,
           causeId: null,
           delta: {},
           actorIsPlayer: true,
@@ -147,6 +161,10 @@ export const bidding: ResolveStep = (ctx) => {
         })
       } else {
         const design = playerBid.designId !== undefined ? draft.house.designs.find((d) => d.id === playerBid.designId) : undefined
+        if (playerBid.bribe > 0) {
+          // P125 (beslut 9N): mutan i ett vanligt bud ger ett spår hos köparen.
+          bribeTraceId = recordTrace(ctx, { houseId: 'player', officialId: order.officialId, buyerId: order.buyerId, kind: 'bidBribe', severity: 1 }, null).id
+        }
         const score = computeScore({
           bidPrice: playerBid.price,
           bidDeliveryTurns: playerBid.deliveryTurns,
@@ -169,7 +187,7 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order),
           ...(design ? { designId: design.id } : {}),
           ...(playerBid.kit ? { kit: true } : {}),
         })
@@ -286,6 +304,10 @@ export const bidding: ResolveStep = (ctx) => {
         ...(winner.kit ? { kit: true } : {}),
       }
       draft.market.contracts.push(contract)
+      if (bribeTraceId !== null && winner.bribe > 0) {
+        const bribeTrace = draft.traces?.find((t) => t.id === bribeTraceId)
+        if (bribeTrace) bribeTrace.contractId = contract.id
+      }
       // P115: fältprovets bonus hos den här köparen är förbrukad — "nästa upphandling" var den här.
       const trial = winningDesign?.trials?.[order.buyerId]
       if (trial) trial.bonusActive = false
