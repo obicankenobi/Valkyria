@@ -389,10 +389,18 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // enda raden i `maybeRumour` avstängd är alla tre hashar bit-identiska med P119:s (1a030467da4f13, 191569dec71a53,
   // 149707a8a20d95). balance.frozen.json följer med (nya rader: en anteckning och åtta tal). De nya hasharna: passive
   // 1620f95a2f0ff7, aggressive feede904471ab, balanced b6ee913fa1cb6.
+  //
+  // Omfryst IGEN i P121 (ETAPP9_FORSLAG.md §7.4/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter koden).
+  // De scriptade partierna ändras på riktigt: varje generationsskifte och gap-chock lägger på doomsday (i alla tre partier), och
+  // `checkBothSides` märker att huset säljer till båda sidorna (i aggressive- och balanced-partierna men inte i passive-partiet;
+  // ingen vapenvila förekommer). Attribution: med doomsday-kopplingen, checkBothSides och vapenviloblocket avstängda är alla tre
+  // hashar bit-identiska med P120:s (1620f95a2f0ff7, feede904471ab, b6ee913fa1cb6); med bara checkBothSides och vapenvilan avstängda
+  // är passive-hashen oförändrad medan aggressive och balanced skiljer sig. balance.frozen.json följer med (nya rader: en anteckning
+  // och tre tal). De nya hasharna: passive 10d0bd19b58ec, aggressive 13f7efa0f046f1, balanced 25bf2c27b8ee1.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1620f95a2f0ff7' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'feede904471ab' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'b6ee913fa1cb6' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '10d0bd19b58ec' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '13f7efa0f046f1' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '25bf2c27b8ee1' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
