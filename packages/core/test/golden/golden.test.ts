@@ -355,10 +355,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // bit-identiska med P113:s (c799ecdd5bd39, 8b4c7721789cc, da588da434161) — inget annat i P116 (kopiering, verbet) rör
   // partierna. balance.frozen.json följer med (nya rader: en anteckning och sju tal). De nya hasharna: passive
   // 3952e3b974b05, aggressive 143653a4a5c867, balanced 92d255177e644.
+  //
+  // Omfryst IGEN i P117 (ETAPP9_FORSLAG.md §6.3/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter
+  // koden). De scriptade partierna ändras på riktigt: rivalerna får konstruktioner enligt schema (meridian tur 4 och 11, brandt 6
+  // och 13, costigan 8 och 15; RivalHouse.designs, en rubrik per konstruktion), vilket ger rivalens rykte en kvalitetsbonus i
+  // sin kategori och motmedelsefterfrågan hos motsatta blockets köpare. Med den ENA raden `processRivalDesigns(ctx)` i rivals-
+  // steget bortkommenterad är alla tre hashar bit-identiska med P116:s (3952e3b974b05, 143653a4a5c867, 92d255177e644) — inget
+  // annat i P117 (nyhetsvärde, utfasning, motmedelsforskning, counterBidTerm) rör partierna, eftersom ingen bot har konstruktioner.
+  // balance.frozen.json följer med (nya rader: en anteckning och tio tal). De nya hasharna: passive 9d17c10fad501, aggressive
+  // 3e99092d65ea5, balanced d72eaa2ef55c5.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '3952e3b974b05' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '143653a4a5c867' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '92d255177e644' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '9d17c10fad501' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '3e99092d65ea5' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'd72eaa2ef55c5' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
