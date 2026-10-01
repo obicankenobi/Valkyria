@@ -8,7 +8,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
-import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus } from './race.js'
+import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus, yardstickAgainstPlayer } from './race.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { Rng } from './rng.js'
 import type {
@@ -68,6 +68,8 @@ interface Balance {
   fieldTrialBatchFraction: number
   fieldTrialBidBonus: number
   copyBidPenalty: number
+  followerCostFactor: number
+  followerTurnsSaved: number
   doctrineProfile: Record<string, Partial<Record<TechCategory, number>>>
 }
 
@@ -313,7 +315,9 @@ export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fro
   const values = designTrueValues(design)
   const costScore = Math.max(0, Math.min(100, COST_BENCHMARK + (1 - design.unitCostFactor) * 100))
   const value = mix.performance * values.performance + mix.reliability * values.reliability + mix.cost * costScore
-  const benchmark = designBenchmark(buyerGeneration(state, order.buyerId, design.category))
+  // P119: en rivals specifikationer som först på plats hos köparens block är en måttstock husets konstruktion bedöms mot (aldrig lägre
+  // än generationens riktmärke).
+  const benchmark = Math.max(designBenchmark(buyerGeneration(state, order.buyerId, design.category)), yardstickAgainstPlayer(state, order.buyerId, design.category) ?? 0)
   const benchmarkValue = (mix.performance + mix.reliability) * benchmark + mix.cost * COST_BENCHMARK
   const relative = Math.max(-1, Math.min(1, (value - benchmarkValue) / 50))
   // P114: stridsbeprövad syns hos alla köpare som en bonus (utanför ±designBidWeight — den är ett ryktesbevis, inte en värdering).
@@ -374,19 +378,21 @@ export function validateDesignStart(
   return null
 }
 
-export function newDesignProject(house: House, spec: DesignProjectSpec & { category: TechCategory }, turn: number): RndProject {
+export function newDesignProject(house: House, spec: DesignProjectSpec & { category: TechCategory }, turn: number, follower = false): RndProject {
   const upgrade = spec.upgradeOf !== null
   const redesign = spec.redesignOf !== undefined && spec.redesignOf !== null
   // P113: en omkonstruktion går ännu fortare än en uppgradering — huset har lärt sig (redesignTurnsFactor).
-  const turns = redesign
+  const baseTurns = redesign
     ? Math.max(1, Math.round(designDuration(house, spec.ambition, true) * BALANCE.redesignTurnsFactor))
     : designDuration(house, spec.ambition, upgrade)
+  // P119 (princip 5): ett efterföljarprojekt — mot en nivå som redan fältats — är billigare och kortare.
+  const turns = follower ? Math.max(1, baseTurns - BALANCE.followerTurnsSaved) : baseTurns
   return {
     id: `rnd-design-${spec.category}-${turn}`,
     category: spec.category,
     turnsRemaining: turns,
     turnsTotal: turns,
-    costFactor: designCostPerTurn(spec.ambition, upgrade),
+    costFactor: designCostPerTurn(spec.ambition, upgrade) * (follower ? BALANCE.followerCostFactor : 1),
     design: {
       focus: spec.focus,
       ambition: spec.ambition,

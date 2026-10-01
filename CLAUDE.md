@@ -807,6 +807,10 @@ motmedelskedjan, utfasning och riktmärke läst ur blockets generation. **Fynd:*
 loss scenariots uppdämda efterfrågan och flyttar vakterna (`capacity` 0,7 → 70 %, `passive` 0 → 96 %), så datan har
 `blocTechLevelStep` 0 — mekanismen är byggd och testad men av tills ägaren/P130 omkalibrerar `boardTarget`/behovsuppbyggnaden.
 Golden ändrad på riktigt (attribuerad).
+**P119 BYGGD 2026-10-01:** gap-chocker (överpris och förskottspåslag på den eftersläpande sidans ordrar), först på plats med måttstock
+(`claimFirstInPlace`, husets bonus avtar och försvinner när blocket kliver igen) och efterföljarrabatt på designprojekt mot en redan
+fältad nivå. Golden ändrad på riktigt men bara av gap-chocken (ingen claim sker i de scriptade partierna, botarna har inga
+konstruktioner); attribuerad med tre körningar. Vakterna orörda. **P117–P119 (del D utom P120–P121) klara — P120 är nästa.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

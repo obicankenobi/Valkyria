@@ -723,6 +723,13 @@ lämnar golden orörd.
 > byggd men av tills ägaren/P130 omkalibrerar. **Golden ändras på riktigt**, attribuerad (avstängt steg → bara `RivalDesign.generation`
 > skiljer). Se ANDRINGSLOGG 2026-10-01.
 
+> **P119 BYGGD 2026-10-01.** Gap-chock (rubrik, överpris `gapOverpricePct` och förskottspåslag på den eftersläpande sidans ordrar i
+> `gapShockTurns` turer, stängs när sidan matchar), först på plats (`claimFirstInPlace` vid leverans med en konstruktion eller en
+> rivals leverans, en gång per nivå, husets bonus avtar och försvinner när blocket kliver igen) med måttstocken (den förstas
+> specifikationer bedömer de andra), och efterföljarrabatt på designprojekt mot en redan fältad nivå. **Golden ändras på riktigt**
+> men bara av gap-chocken (ingen claim sker i de scriptade partierna — botarna har inga konstruktioner); attribuerad med tre
+> körningar. Vakterna orörda. Se ANDRINGSLOGG 2026-10-01.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

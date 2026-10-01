@@ -10,7 +10,7 @@ import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import type { Bloc } from './race.js'
-import { BLOCS, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, noveltyFactor } from './race.js'
+import { BLOCS, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, noveltyFactor } from './race.js'
 import {
   QUALITY_CLASSES,
   buyerPreferenceMix,
@@ -519,9 +519,10 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
+    raceState: state,
   })
 
   return { rivalPriceLow, rivalPriceHigh, lowestRivalHouse, winBand, yourUnitCost }
@@ -594,9 +595,10 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
+    raceState: state,
   }
 
   const points: PlayerWinCurvePoint[] = []
@@ -633,6 +635,8 @@ interface WinBandInputs {
   // P117: produktens kategori och turen, för rivalernas konstruktionsbonus (effectiveRivalReputation).
   category: TechCategory
   turn: number
+  // P119: kapplöpningstillståndet (måttstock, först på plats) för rivalens rykte.
+  raceState: Pick<GameState, 'race' | 'factions'>
 }
 
 // Monte Carlo-skattning för EN prispunkt: kör MONTE_CARLO_SAMPLES simulerade
@@ -685,7 +689,7 @@ function computeWinAtPrice(hashRng: Rng, p: WinBandInputs, price: Money): Pct {
         weights: p.order.weights,
         inspectorIntegrity: p.integrity,
         relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
-        reputation: effectiveRivalReputation(rival, p.category, p.turn), // P117: samma som bidding.ts
+        reputation: effectiveRivalReputation(rival, p.category, p.turn, { state: p.raceState, buyerId: p.order.buyerId }), // P117/P119: samma som bidding.ts
         blocTerm: rivalBlocTerm(rival, p.factionAlignment) * p.blocMultiplier,
       })
       if (rivalScore >= playerScore) beatsAllRivals = false

@@ -10,7 +10,7 @@ import { round } from './money.js'
 import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
 import { applyInvestigationChoice, validateInvestigationChoice } from './investigations.js'
-import { frontierGeneration } from './race.js'
+import { frontierGeneration, isFollowerTarget } from './race.js'
 import { BALANCE_DESIGN_STEPS, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
 import type {
@@ -262,16 +262,18 @@ export function applyStandingOrders(ctx: ResolveContext): void {
             subjectId: null,
           })
         } else {
+          const targetGeneration = frontierGeneration(draft, change.category) + BALANCE_DESIGN_STEPS[change.ambition]
           const project = newDesignProject(
             draft.house,
             {
               category: change.category,
               focus: change.focus,
               ambition: change.ambition,
-              targetGeneration: frontierGeneration(draft, change.category) + BALANCE_DESIGN_STEPS[change.ambition],
+              targetGeneration,
               upgradeOf: change.upgradeOf ?? null,
             },
             turn,
+            isFollowerTarget(draft, change.category, targetGeneration), // P119: efterföljare betalar mindre
           )
           draft.house.rnd.push(project)
           emit({

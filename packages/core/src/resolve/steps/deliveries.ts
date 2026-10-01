@@ -29,6 +29,7 @@ import { getProduct, resolveBom } from '../../pricing.js'
 import { addDoomsday } from '../doomsdayGate.js'
 import { allocateByWeight } from '../allocateByWeight.js'
 import { designFieldFactor, recordFrontDelivery } from '../../fieldQuality.js'
+import { claimFirstInPlace, rivalDesignSpec } from '../../race.js'
 import { exposeDenials, onDesignDelivery } from '../../investigations.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Contract, Doctrine, Front, GameState, Grade, Product, TechCategory } from '../../types.js'
@@ -284,6 +285,10 @@ export const deliveries: ResolveStep = (ctx) => {
       addDoomsday(ctx, rng.int(min, max), deliveryId)
     }
 
+    // P119 (§7.2): första leveransen av en konstruktion på blockets nya nivå gör huset först på plats hos det blocket.
+    const claimDesign = contract.designId !== undefined ? draft.house.designs?.find((d) => d.id === contract.designId) : undefined
+    if (claimDesign) claimFirstInPlace(ctx, 'player', contract.buyerId, product.category, claimDesign.generation, (claimDesign.performance + claimDesign.reliability) / 2, deliveryId)
+
     // Materiel in på front (PIPELINE-kommentaren, spec 3.2) + attribution (spec 5,
     // "Attribution bokförs per levererande hus" — Front.attribution kommenteras i
     // types.ts som "levererade enheter", så den räknas upp direkt här, inte vid en
@@ -499,6 +504,10 @@ export const deliveries: ResolveStep = (ctx) => {
           actorIsPlayer: false,
           subjectId: contract.buyerId,
         })
+
+        // P119 (§7.2): en rival som levererar sin nyaste konstruktion på blockets nya nivå är först på plats hos det blocket.
+        const rivalDesign = [...(rival.designs ?? [])].reverse().find((d) => d.category === product.category)
+        if (rivalDesign) claimFirstInPlace(ctx, rival.id, contract.buyerId, product.category, rivalDesign.generation, rivalDesignSpec(rivalDesign), deliveryId)
 
         // Attribution + teaterns leveransräknare i SAMMA steg, SAMMA tur — innan
         // heat.ts (senare i samma pipeline-passage) läser och nollställer den. Det

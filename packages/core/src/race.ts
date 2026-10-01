@@ -1,6 +1,6 @@
 // race — P117 (ETAPP9_FORSLAG.md §6.3 och §6.6, beslut 9F) och P118 (§7.1, beslut 9H). Motmedelskedjor, livscykel och automatisk
 // utfasning, och blockens kapplöpning: dolda generationer per block och kategori, kravkort och köpare som följer sitt block.
-// P119–P121 bygger gap-chocker, bedömningar och doomsday ovanpå.
+// P119 (§7.2): gap-chocker, först på plats (med måttstock) och efterföljarrabatt. P120–P121 bygger bedömningar och doomsday.
 //
 // Livscykeln sker av sig själv (princip 4): en ny konstruktion har ett nyhetsvärde som avtar, rivalernas konstruktioner (9F)
 // kommer enligt schema, och när en generation fasas ut förlorar äldre konstruktioner behörighet i det blocket automatiskt.
@@ -12,7 +12,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { getProduct } from './pricing.js'
 import type { ResolveContext } from './resolve/index.js'
-import type { Design, FactionId, GameState, House, Order, RaceState, RivalHouse, TechCategory } from './types.js'
+import type { Design, FactionId, FirstInPlace, GameState, GapShock, House, Order, RaceState, RivalDesign, RivalHouse, TechCategory } from './types.js'
 
 interface Balance {
   blocGenerationSchedule: Record<string, Record<Bloc, number[]>>
@@ -31,6 +31,16 @@ interface Balance {
   rivalDesignLifeTurns: number
   designPhaseOutKeep: number
   needCeiling: number
+  gapShockTurns: number
+  gapOverpricePct: number
+  gapAdvanceBonusPts: number
+  firstInPlaceBidBonus: number
+  firstInPlaceLifeTurns: number
+  rivalFirstInPlaceQualityBonus: number
+  rivalDesignSpecEdge: number
+  yardstickScale: number
+  designBenchmarkBase: number
+  benchmarkPerGeneration: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -215,8 +225,135 @@ export function advanceRace(ctx: ResolveContext): void {
           subjectId: faction.id,
         })
       }
+      applyGapShock(ctx, bloc, category, stepId)
     }
   }
+}
+
+// ── gap-chocker (P119, §7.2) ─────────────────────────────────────────────────
+
+const otherBloc = (bloc: Bloc): Bloc => (bloc === 'west' ? 'east' : 'west')
+
+// Anropas direkt efter att `bloc` klivit upp i `category`: tar steget ett försprång mot det andra blocket blir det en gap-chock
+// (en rubrik, lagrad i race.gap); matchar det en pågående chock stängs den (en rad).
+function applyGapShock(ctx: ResolveContext, bloc: Bloc, category: TechCategory, stepId: string): void {
+  const { draft, emit } = ctx
+  const other = otherBloc(bloc)
+  const gen = blocGeneration(draft, bloc, category)
+  const otherGen = blocGeneration(draft, other, category)
+  if (gen > otherGen) {
+    ;(draft.race.gap ??= {})[category] = { leader: bloc, sinceTurn: draft.meta.turn }
+    emit({
+      severity: 'headline',
+      scope: 'market',
+      headline: `GAP SHOCK: THE ${bloc.toUpperCase()} STEPS AHEAD IN ${category.toUpperCase()} — THE ${other.toUpperCase()}'S BUYERS PAY A PREMIUM`,
+      causeId: stepId,
+      delta: { [`race.gap.${category}`]: 1 },
+      actorIsPlayer: false,
+      subjectId: null,
+    })
+    return
+  }
+  const gap = draft.race.gap?.[category]
+  if (gap && gap.leader === other && gen >= otherGen) {
+    delete draft.race.gap![category]
+    emit({
+      severity: 'report',
+      scope: 'market',
+      headline: `THE ${category.toUpperCase()} GAP CLOSES: THE ${bloc.toUpperCase()} MATCHES THE ${other.toUpperCase()}`,
+      causeId: stepId,
+      delta: { [`race.gap.${category}`]: -1 },
+      actorIsPlayer: false,
+      subjectId: null,
+    })
+  }
+}
+
+// Gap-chocken i en kategori om den är aktiv: inom gapShockTurns turer från steget OCH medan det andra blocket fortfarande ligger efter.
+export function gapShock(state: Pick<GameState, 'meta' | 'race'>, category: TechCategory): GapShock | null {
+  const gap = state.race.gap?.[category]
+  if (!gap || state.meta.turn >= gap.sinceTurn + BALANCE.gapShockTurns) return null
+  if (blocGeneration(state, otherBloc(gap.leader), category) >= blocGeneration(state, gap.leader, category)) return null
+  return gap
+}
+
+// Överpris (procent på referenspris, budgetar följer) och förskottspåslag (procentenheter) för en köpare under en gap-chock: bara
+// den eftersläpande sidan, bara i kategorin. En formel, en källa — orders.ts bygger ordern med den.
+export function gapPremium(state: Pick<GameState, 'meta' | 'race' | 'factions'>, buyerId: FactionId, category: TechCategory): { pricePct: number; advancePts: number } {
+  const gap = gapShock(state, category)
+  const bloc = blocOfFaction(state, buyerId)
+  if (!gap || bloc === null || bloc === gap.leader) return { pricePct: 0, advancePts: 0 }
+  return { pricePct: BALANCE.gapOverpricePct, advancePts: BALANCE.gapAdvanceBonusPts }
+}
+
+// ── först på plats och måttstocken (P119, §7.2) ──────────────────────────────
+
+function currentClaim(state: Pick<GameState, 'race'>, bloc: Bloc, category: TechCategory): FirstInPlace | null {
+  const claim = state.race.firstInPlace?.[bloc]?.[category]
+  return claim && claim.generation === blocGeneration(state, bloc, category) ? claim : null
+}
+
+const claimFade = (claim: FirstInPlace, turn: number): number => Math.max(0, 1 - Math.max(0, turn - claim.turn) / BALANCE.firstInPlaceLifeTurns)
+
+// Det första huset (spelaren via en leverans med en konstruktion, en rival via en leverans) som levererar till ett block på dess
+// nya nivå — blockets generation är minst 2 och konstruktionens generation når den — blir först på plats. En gång per nivå.
+export function claimFirstInPlace(
+  ctx: ResolveContext,
+  holder: 'player' | string,
+  buyerId: FactionId,
+  category: TechCategory,
+  designGeneration: number,
+  spec: number,
+  causeId: string | null,
+): boolean {
+  const { draft, emit } = ctx
+  const bloc = blocOfFaction(draft, buyerId)
+  if (bloc === null) return false
+  const generation = blocGeneration(draft, bloc, category)
+  if (generation < 2 || designGeneration < generation) return false
+  const existing = draft.race.firstInPlace?.[bloc]?.[category]
+  if (existing && existing.generation >= generation) return false
+  const table = (draft.race.firstInPlace ??= { west: {}, east: {} })
+  table[bloc][category] = { generation, holder, turn: draft.meta.turn, spec }
+  const name = holder === 'player' ? draft.house.name : (draft.rivals[holder]?.name ?? holder)
+  emit({
+    severity: 'headline',
+    scope: 'market',
+    headline: `${name.toUpperCase()} IS FIRST IN PLACE WITH THE NEW ${category.toUpperCase()} GENERATION FOR THE ${bloc.toUpperCase()}`,
+    causeId,
+    delta: { [`race.firstInPlace.${bloc}.${category}`]: 1 },
+    actorIsPlayer: holder === 'player',
+    subjectId: buyerId,
+  })
+  return true
+}
+
+// Husets bonus som först på plats: firstInPlaceBidBonus avtagande över firstInPlaceLifeTurns, hos det blocket i kategorin, tills
+// blocket kliver igen. En term efter computeScore (skyddsräcke 1), delad av bidding.ts, bidEstimate och playerWinCurve.
+export function firstInPlaceBidTerm(state: Pick<GameState, 'meta' | 'race' | 'factions'>, order: Pick<Order, 'buyerId' | 'productId'>): number {
+  const bloc = blocOfFaction(state, order.buyerId)
+  if (bloc === null) return 0
+  const claim = currentClaim(state, bloc, getProduct(order.productId).category)
+  return claim && claim.holder === 'player' ? BALANCE.firstInPlaceBidBonus * claimFade(claim, state.meta.turn) : 0
+}
+
+// Måttstocken husets konstruktioner bedöms mot hos en köpares block: en RIVALS specifikationer om den är först på plats (husets
+// egen måttstock bedömer inte huset). null = ingen.
+export function yardstickAgainstPlayer(state: Pick<GameState, 'race' | 'factions'>, buyerId: FactionId, category: TechCategory): number | null {
+  const bloc = blocOfFaction(state, buyerId)
+  if (bloc === null) return null
+  const claim = currentClaim(state, bloc, category)
+  return claim && claim.holder !== 'player' ? claim.spec : null
+}
+
+// Den högsta nivå något block fått fältad (0 = ingen), och om ett designprojekt mot `target` därmed är ett efterföljarprojekt.
+export function fieldedGeneration(state: Pick<GameState, 'race'>, category: TechCategory): number {
+  return Math.max(0, ...BLOCS.map((b) => state.race.firstInPlace?.[b]?.[category]?.generation ?? 0))
+}
+
+export function isFollowerTarget(state: Pick<GameState, 'race'>, category: TechCategory, target: number): boolean {
+  const fielded = fieldedGeneration(state, category)
+  return fielded > 0 && target <= fielded
 }
 
 export interface RequirementCard {
@@ -300,19 +437,33 @@ export function processRivalDesigns(ctx: ResolveContext): void {
   }
 }
 
+// En rivalkonstruktions specifikationer (9F: enkla): riktmärket för dess generation plus rivalDesignSpecEdge.
+export function rivalDesignSpec(design: Pick<RivalDesign, 'generation'>): number {
+  return BALANCE.designBenchmarkBase + BALANCE.benchmarkPerGeneration * (design.generation - 1) + BALANCE.rivalDesignSpecEdge
+}
+
 // Rivalens rykte i en kategori: kvalitetsbonus ur dess nyaste konstruktion där, avtagande över rivalDesignLifeTurns. Samma
-// funktion läses av bidding.ts och bidEstimate/playerWinCurve (en formel, en källa). Inga designs → rykteobjektet orört.
+// funktion läses av bidding.ts och bidEstimate/playerWinCurve (en formel, en källa). Inga designs och inget race-sammanhang →
+// rykteobjektet orört. Med `race` (köparens block via buyerId) tillkommer (P119): husets måttstock skalar ned en svagare
+// rivalkonstruktions bonus (1 + (rivalens spec − måttstock)/yardstickScale, golvat 0, högst 1), och en rival som är först på
+// plats hos blocket får rivalFirstInPlaceQualityBonus (avtagande som husets).
 export function effectiveRivalReputation(
-  rival: Pick<RivalHouse, 'reputation' | 'designs'>,
+  rival: Pick<RivalHouse, 'id' | 'reputation' | 'designs'>,
   category: TechCategory,
   turn: number,
+  race?: { state: Pick<GameState, 'race' | 'factions'>; buyerId: FactionId },
 ): RivalHouse['reputation'] {
+  const bloc = race ? blocOfFaction(race.state, race.buyerId) : null
+  const claim = race && bloc ? currentClaim(race.state, bloc, category) : null
+  const houseYardstick = claim && claim.holder === 'player' ? claim.spec : null
   let bonus = 0
   for (const d of rival.designs ?? []) {
     if (d.category !== category) continue
     const fade = Math.max(0, 1 - Math.max(0, turn - d.introducedTurn) / BALANCE.rivalDesignLifeTurns)
-    bonus = Math.max(bonus, BALANCE.rivalDesignQualityBonus * fade)
+    const judged = houseYardstick === null ? 1 : Math.max(0, Math.min(1, 1 + (rivalDesignSpec(d) - houseYardstick) / BALANCE.yardstickScale))
+    bonus = Math.max(bonus, BALANCE.rivalDesignQualityBonus * fade * judged)
   }
+  if (claim && claim.holder === rival.id) bonus += BALANCE.rivalFirstInPlaceQualityBonus * claimFade(claim, turn)
   if (bonus === 0) return rival.reputation
   return { quality: rival.reputation.quality + bonus, reliability: rival.reputation.reliability }
 }

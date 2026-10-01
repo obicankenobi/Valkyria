@@ -887,6 +887,24 @@ export interface RivalHouse {
 export interface RaceState {
   generation: Record<'west' | 'east', Record<TechCategory, number>>
   pulled: Record<'west' | 'east', Partial<Record<TechCategory, number>>>
+  // P119 (§7.2): pågående gap-chock per kategori (blocket som tog steget och när). Aktiv i gapShockTurns turer eller tills det
+  // andra blocket matchar. Utelämnas tills första gapet.
+  gap?: Partial<Record<TechCategory, GapShock>>
+  // P119 (§7.2): första hus på plats på blockets nuvarande nivå, per block och kategori. Utelämnas tills första claimen.
+  firstInPlace?: Record<'west' | 'east', Partial<Record<TechCategory, FirstInPlace>>>
+}
+
+export interface GapShock {
+  leader: 'west' | 'east'
+  sinceTurn: number
+}
+
+// holder = 'player' eller en rivals id; spec = (prestanda + tillförlitlighet) / 2 för konstruktionen som levererades.
+export interface FirstInPlace {
+  generation: number
+  holder: string
+  turn: number
+  spec: number
 }
 
 // P117: en rivals konstruktion. Kvalitetsbonusen på rivalens rykte i kategorin avtar med nyhetsvärdet.

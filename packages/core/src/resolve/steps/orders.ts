@@ -17,6 +17,7 @@ import balanceData from '../../data/balance.json' with { type: 'json' }
 import { round } from '../../money.js'
 import { allProducts, BALANCE, computeHeatForFront, computeReferencePrice, getProduct } from '../../pricing.js'
 import { findOfficial } from '../../officials.js'
+import { gapPremium } from '../../race.js'
 import { computeAdvancePct } from '../advance.js'
 import type { ResolveStep, ResolveContext } from '../index.js'
 import type { Agenda, Faction, FactionId, FrontId, GameState, Official, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
@@ -78,10 +79,17 @@ interface NewOrderParams {
   // P57 (avsnitt 3.4): PRICE_CAP skriver Faction.trueBudgetCapFactor — ett
   // permanent tak på faktorn nedan, `null` = inget tak (ordinarie intervall).
   trueBudgetCapFactor: number | null
+  // P119 (ETAPP9 §7.2): gap-chockens överpris och förskottspåslag för köparen i den här kategorin (0 utan chock). Beräknas av
+  // anroparen ur draft (race.ts gapPremium) — buildOrder har inget tillstånd.
+  racePremium?: { pricePct: number; advancePts: number }
 }
 
 function buildOrder(p: NewOrderParams): Order {
-  const referencePrice = computeReferencePrice(p.product, p.quantity, p.heat, p.supplyCostIndex)
+  const baseReferencePrice = computeReferencePrice(p.product, p.quantity, p.heat, p.supplyCostIndex)
+  // P119: en gap-chock lägger ett överpris på referenspriset (budgetarna följer, slumpen oförändrad); utan chock är det bitvis
+  // det gamla.
+  const racePremium = p.racePremium ?? { pricePct: 0, advancePts: 0 }
+  const referencePrice = racePremium.pricePct === 0 ? baseReferencePrice : round(baseReferencePrice * (1 + racePremium.pricePct / 100))
 
   // trueBudget: köparens verkliga tak, ett stycke över/under referencePrice.
   // statedBudget: den siffra köparen UPPGER — "kan vara lögn" (spec 2.4) — alltid
@@ -116,7 +124,12 @@ function buildOrder(p: NewOrderParams): Order {
     reason: p.reason,
     frontId: p.frontId,
     // P98: fryst här, som referencePrice — räknas aldrig om (se advance.ts).
-    advancePct: computeAdvancePct({ faction: p.faction, official: p.official, category: p.product.category, referencePrice }),
+    // P119: förskottspåslaget från en gap-chock läggs ovanpå (på det opåverkade referenspriset, så påslaget är exakt).
+    advancePct: Math.min(
+      100,
+      computeAdvancePct({ faction: p.faction, official: p.official, category: p.product.category, referencePrice: baseReferencePrice }) +
+        racePremium.advancePts,
+    ),
   }
 }
 
@@ -275,6 +288,7 @@ export const orders: ResolveStep = (ctx) => {
         reason: { kind: 'SCRIPTED' },
         frontId: null,
         trueBudgetCapFactor: buyer.trueBudgetCapFactor ?? null,
+        racePremium: gapPremium(draft, scripted.buyerId, product.category), // P119
       })
       draft.market.openOrders.push(order)
       emit({
@@ -447,6 +461,7 @@ function tryIssueOrder(
     reason,
     frontId,
     trueBudgetCapFactor: faction.trueBudgetCapFactor ?? null,
+    racePremium: gapPremium(draft, factionId, product.category), // P119: gap-chockens överpris och förskott
   })
   draft.market.openOrders.push(order)
   return { order, product, quantity }

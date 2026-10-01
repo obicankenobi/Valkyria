@@ -4,7 +4,7 @@ import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCo
 import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
 import { KIT_UNIT_COST_FACTOR, bidDesignRejection, designBidTerm, kitBidTerm } from '../../design.js'
 import { round } from '../../money.js'
-import { counterBidTerm, effectiveRivalReputation } from '../../race.js'
+import { counterBidTerm, effectiveRivalReputation, firstInPlaceBidTerm } from '../../race.js'
 import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
 import { recordIncome } from '../../ledger.js'
@@ -169,7 +169,7 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + counterBidTerm(draft, order),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order),
           ...(design ? { designId: design.id } : {}),
           ...(playerBid.kit ? { kit: true } : {}),
         })
@@ -212,7 +212,7 @@ export const bidding: ResolveStep = (ctx) => {
         weights: order.weights,
         inspectorIntegrity: officialIntegrity,
         relationToPlayer: rival.relations[order.buyerId] ?? 0,
-        reputation: effectiveRivalReputation(rival, product.category, draft.meta.turn), // P117: rivalens nyaste konstruktion
+        reputation: effectiveRivalReputation(rival, product.category, draft.meta.turn, { state: draft, buyerId: order.buyerId }), // P117/P119: rivalens nyaste konstruktion, måttstock och först-på-plats
         blocTerm: faction ? rivalBlocTerm(rival, faction.alignment) * blocMultiplier : 0,
       })
       candidates.push({
