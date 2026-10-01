@@ -382,10 +382,17 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // också identiska med P118:s (alltså sker INGEN först-på-plats-claim i något scriptat parti: botarna har inga konstruktioner);
   // bara claimen avstängd — samma nya hashar som med allt på. balance.frozen.json följer med (nya rader: en anteckning och tio
   // tal). De nya hasharna: passive 1a030467da4f13, aggressive 191569dec71a53, balanced 149707a8a20d95.
+  //
+  // Omfryst IGEN i P120 (ETAPP9_FORSLAG.md §7.3/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter koden).
+  // De scriptade partierna ändras på riktigt, men bara av RYKTESLOTTERIET: vid varje generationsskifte drar `maybeRumour` ctx.rng
+  // (falseGapChancePct) och flyttar därmed hela slumpströmmen; inga LEAK-handlingar förekommer i partierna. Attribution: med den
+  // enda raden i `maybeRumour` avstängd är alla tre hashar bit-identiska med P119:s (1a030467da4f13, 191569dec71a53,
+  // 149707a8a20d95). balance.frozen.json följer med (nya rader: en anteckning och åtta tal). De nya hasharna: passive
+  // 1620f95a2f0ff7, aggressive feede904471ab, balanced b6ee913fa1cb6.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1a030467da4f13' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '191569dec71a53' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '149707a8a20d95' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1620f95a2f0ff7' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'feede904471ab' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'b6ee913fa1cb6' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
