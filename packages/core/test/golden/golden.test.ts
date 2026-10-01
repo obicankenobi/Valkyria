@@ -373,10 +373,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // rader per parti) — ändringen är alltså exakt det prompten beskriver. balance.frozen.json följer med (nya rader: en
   // anteckning, fyra tal och schemat; generationStepTurns borttagen). De nya hasharna: passive 17adc8e53f9211, aggressive
   // 1fb8a6c8527ab9, balanced c5d1cc24ee7f9.
+  //
+  // Omfryst IGEN i P119 (ETAPP9_FORSLAG.md §7.2/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter koden).
+  // De scriptade partierna ändras på riktigt, men bara av GAP-CHOCKEN: när ett block tar ett steg det andra inte matchar (tur 4:
+  // artilleri öst och marin väst, och senare steg) får köparna på den eftersläpande sidan ett överpris och ett förskottspåslag på
+  // sina ordrar i kategorin, och rubriken GAP SHOCK tillkommer. Attribution med tre körningar: gap-chocken och claimFirstInPlace
+  // båda avstängda — bit-identiska med P118:s hashar (17adc8e53f9211, 1fb8a6c8527ab9, c5d1cc24ee7f9); bara gap-chocken avstängd —
+  // också identiska med P118:s (alltså sker INGEN först-på-plats-claim i något scriptat parti: botarna har inga konstruktioner);
+  // bara claimen avstängd — samma nya hashar som med allt på. balance.frozen.json följer med (nya rader: en anteckning och tio
+  // tal). De nya hasharna: passive 1a030467da4f13, aggressive 191569dec71a53, balanced 149707a8a20d95.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '17adc8e53f9211' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1fb8a6c8527ab9' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'c5d1cc24ee7f9' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1a030467da4f13' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '191569dec71a53' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '149707a8a20d95' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
