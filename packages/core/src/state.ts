@@ -4,6 +4,7 @@
 // (data/rivals.json) och bygger ett fullständigt GameState. Startvärdena är de som
 // står i scenariofilen — createInitialState uppfinner inget eget och kör ingen
 // spelregel (ingen ekonomi-, anbuds- eller frontlogik hör hemma här, det är P3–P8).
+import { initialRace } from './race.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import rivalsCatalog from './data/rivals.json' with { type: 'json' }
 import officialsRegister from './data/officials.json' with { type: 'json' }
@@ -512,6 +513,7 @@ export function createInitialState(scenarioId: string, seed: string, startChoice
       restrictedRevenueThisTurn: 0,
     },
     pendingFormationReplacements: [],
+    race: initialRace(),
     doomsday: 0,
     doomsdayPeak: 0,
     wire: [],

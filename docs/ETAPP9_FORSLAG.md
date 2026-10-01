@@ -715,6 +715,14 @@ lämnar golden orörd.
 > partier); attribuerad genom att bortkommentera `processRivalDesigns`. **Fynd:** motmedelsefterfrågan är den starkaste spaken —
 > 1 order flyttade `capacity` till 79 % vinst, 0,25 håller vakterna. Se ANDRINGSLOGG 2026-10-01.
 
+> **P118 BYGGD 2026-10-01.** `GameState.race` (blockens dolda generationer), grundschemat `blocGenerationSchedule` (ett FÖRSLAG —
+> ägaren godkänner listan, §14 punkt 2; byts i `balance.json`), det nya steget `race` direkt före `orders`, kravkorten
+> (`requirementCards`, utan generationsnumret), påskyndning av steg via motmedelskedjan och utfasningen/riktmärket läst ur blockets
+> generation. **Fynd:** `techLevel` som följer blockets generation (spec: "fältets första skrivare") släpper loss scenariots uppdämda
+> efterfrågan och flyttar vakterna kraftigt (`capacity` 70 %, `passive` 96 %), så datan har `blocTechLevelStep` 0 — mekanismen är
+> byggd men av tills ägaren/P130 omkalibrerar. **Golden ändras på riktigt**, attribuerad (avstängt steg → bara `RivalDesign.generation`
+> skiljer). Se ANDRINGSLOGG 2026-10-01.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

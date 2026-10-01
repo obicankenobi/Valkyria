@@ -42,7 +42,6 @@ const B = balance as unknown as {
   designPhaseOutKeep: number
   needCeiling: number
   provenOccasions: number
-  generationStepTurns: number
 }
 
 // En orders värde i motmedelskategorin (counterDemandOrders × orderTriggerThreshold).
@@ -328,44 +327,51 @@ describe('rivalernas konstruktioner (P117, 9F)', () => {
   })
 })
 
-describe('automatisk utfasning (P117, §6.3)', () => {
-  // Det provisoriska tidsschemat (P118 ersätter det): generation = 1 + floor(tur / generationStepTurns); köparna behåller
-  // designPhaseOutKeep generationer. En konstruktion i generation g är utfasad för en köpare när g < G − (keep − 1).
-  const turnWhenPhasedOut = (generation: number): number => (generation + B.designPhaseOutKeep - 1) * B.generationStepTurns
+describe('automatisk utfasning (P117, §6.3; källan är blockens generation sedan P118)', () => {
+  // En konstruktion i generation g är utfasad för en köpare när blockets generation > g + (designPhaseOutKeep − 1).
+  const phaseOut = (state: GameState, bloc: 'west' | 'east', generation: number): void => {
+    state.race.generation[bloc].armour = generation + B.designPhaseOutKeep
+  }
 
   it('en konstruktion är behörig tills generationen fasas ut, sedan inte — utan att spelaren gör något', () => {
     const state = fresh(design({ generation: 1 }))
     const d = state.house.designs[0]!
-    state.meta.turn = turnWhenPhasedOut(1) - 1
+    state.race.generation.west.armour = B.designPhaseOutKeep // ännu kvar
     expect(designPhasedOutForBuyer(state, d, 'rvn')).toBe(false)
     expect(bidDesignRejection(state, { designId: 'design-1', price: 1 }, orderFor())).toBeNull()
-    state.meta.turn = turnWhenPhasedOut(1)
+    phaseOut(state, 'west', 1)
     expect(designPhasedOutForBuyer(state, d, 'rvn')).toBe(true)
     expect(bidDesignRejection(state, { designId: 'design-1', price: 1 }, orderFor())).toBe('design phased out for this buyer')
+    // Det andra blocket (nlf, öst) har inte kommit längre: samma konstruktion är fortfarande behörig där.
+    expect(designPhasedOutForBuyer(state, d, 'nlf')).toBe(false)
   })
 
   it('en konstruktion i en senare generation är kvar när den äldre redan fasats ut', () => {
     const state = fresh(design({ generation: 3 }))
-    state.meta.turn = turnWhenPhasedOut(1)
+    phaseOut(state, 'west', 1)
     expect(designPhasedOutForBuyer(state, state.house.designs[0]!, 'rvn')).toBe(false)
   })
 
-  it('advanceDesignLifecycle märker utfasningen en gång, med en rubrik som namnger konstruktionen', () => {
+  it('advanceDesignLifecycle märker utfasningen en gång per block, med en rubrik som namnger konstruktionen', () => {
     const state = fresh(design({ generation: 1 }))
-    state.meta.turn = turnWhenPhasedOut(1)
+    phaseOut(state, 'west', 1)
     const { ctx, emitted } = makeCtx(state)
     advanceDesignLifecycle(ctx)
-    expect(state.house.designs[0]!.phasedOut).toBeDefined()
+    expect(state.house.designs[0]!.phasedOut).toEqual({ west: state.meta.turn })
     const rows = emitted.filter((e) => e.headline.includes('PHASED OUT'))
     expect(rows).toHaveLength(1)
     expect(rows[0]!.headline).toContain('H&V M64 APC')
+    expect(rows[0]!.headline).toContain('WEST')
     advanceDesignLifecycle(ctx)
     expect(emitted.filter((e) => e.headline.includes('PHASED OUT'))).toHaveLength(1)
+    // När också det andra blocket kommit längre märks det separat.
+    phaseOut(state, 'east', 1)
+    advanceDesignLifecycle(ctx)
+    expect(emitted.filter((e) => e.headline.includes('PHASED OUT') && e.headline.includes('EAST'))).toHaveLength(1)
   })
 
   it('en konstruktion som ännu är behörig märks inte', () => {
     const state = fresh(design({ generation: 1 }))
-    state.meta.turn = 0
     const { ctx, emitted } = makeCtx(state)
     advanceDesignLifecycle(ctx)
     expect(state.house.designs[0]!.phasedOut).toBeUndefined()

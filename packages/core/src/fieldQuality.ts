@@ -6,7 +6,7 @@
 // avgjort; varje ändring emitterar en WireEvent med causeId (hård regel 4).
 import balanceData from './data/balance.json' with { type: 'json' }
 import { designTrueValues, frontEnvironments } from './design.js'
-import { addCounterDemand } from './race.js'
+import { counterReaction } from './race.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { Contract, Design, Front, GameState, House, TechCategory } from './types.js'
 
@@ -159,7 +159,7 @@ export function awardFieldOccasions(
     )
     if (provenId !== null) {
       // P117 (§6.6): en stark (stridsbeprövad) konstruktion skapar efterfrågan på dess motmedel hos motsidan på fronten.
-      addCounterDemand(ctx, [side === 'a' ? front.sideB : front.sideA], design.category, name, provenId)
+      counterReaction(ctx, [side === 'a' ? front.sideB : front.sideA], design.category, name, provenId)
     } else {
       emit({
         severity: 'ticker',

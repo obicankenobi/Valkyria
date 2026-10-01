@@ -3,7 +3,7 @@
 // historiken FÖRE inläsningen finns inte att återskapa, så P97-grafen får tåla en huvudbok
 // som inte börjar på tur 0.
 import { describe, expect, it } from 'vitest'
-import { createInitialState, resolveTurn } from '@seventh-front/core'
+import { createInitialState, resolveTurn, scheduledGeneration } from '@seventh-front/core'
 import type { GameState } from '@seventh-front/core'
 import { migrate } from '../src/persistence'
 
@@ -92,5 +92,30 @@ describe('migrate (P96-uppföljning)', () => {
     fresh.state.house.researchHeadStart.naval = 1.25
     const kept = migrate(fresh)!
     expect(kept.state.house.researchHeadStart.naval).toBe(1.25)
+  })
+
+  it('(P118) ger ett gammalt sparat parti utan race de generationer grundschemat ger vid dess tur, höjer köparnas techLevel i takt med dem, och rör inget som redan finns', () => {
+    const save = oldSave()
+    save.state.meta.turn = 9
+    const before = createInitialState('indochina-slice', 'migrate-seed')
+    delete (save.state as Partial<GameState>).race
+    const migrated = migrate(save)!
+    for (const bloc of ['west', 'east'] as const) {
+      for (const category of ['artillery', 'naval', 'infantry'] as const) {
+        expect(migrated.state.race.generation[bloc][category]).toBe(scheduledGeneration(9, bloc, category))
+      }
+    }
+    expect(migrated.state.race.generation.west.artillery).toBe(2)
+    expect(migrated.state.race.generation.east.infantry).toBe(1) // steget på tur 12 har ännu inte skett
+    // rvn (väst) har sett ett artillerisprång (tur 8) och ett marint (tur 4): techLevel följer.
+    expect(migrated.state.factions['rvn']!.techLevel.artillery).toBe(before.factions['rvn']!.techLevel.artillery + 1)
+    expect(migrated.state.factions['rvn']!.techLevel.naval).toBe(before.factions['rvn']!.techLevel.naval + 1)
+    expect(migrated.state.factions['nlf']!.techLevel.infantry).toBe(before.factions['nlf']!.techLevel.infantry)
+    expect(() => resolveTurn(migrated.state, migrated.draft)).not.toThrow()
+
+    // Ett parti som redan har race rörs inte.
+    const kept = oldSave()
+    kept.state.race.generation.west.armour = 2
+    expect(migrate(kept)!.state.race.generation.west.armour).toBe(2)
   })
 })

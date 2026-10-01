@@ -10,7 +10,8 @@ import { round } from './money.js'
 import { recordExpense } from './ledger.js'
 import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
 import { applyInvestigationChoice, validateInvestigationChoice } from './investigations.js'
-import { BALANCE_DESIGN_STEPS, currentGeneration, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
+import { frontierGeneration } from './race.js'
+import { BALANCE_DESIGN_STEPS, isDesignProject, newDesignProject, validateDesignStart, validateTestingChange } from './design.js'
 import type { ResolveContext } from './resolve/index.js'
 import type {
   ActionValidation,
@@ -267,7 +268,7 @@ export function applyStandingOrders(ctx: ResolveContext): void {
               category: change.category,
               focus: change.focus,
               ambition: change.ambition,
-              targetGeneration: currentGeneration(turn) + BALANCE_DESIGN_STEPS[change.ambition],
+              targetGeneration: frontierGeneration(draft, change.category) + BALANCE_DESIGN_STEPS[change.ambition],
               upgradeOf: change.upgradeOf ?? null,
             },
             turn,

@@ -1,5 +1,6 @@
-// race — P117 (ETAPP9_FORSLAG.md §6.3 och §6.6, beslut 9F). Motmedelskedjor, livscykel och automatisk utfasning. P118–P121 bygger
-// kapplöpningen ovanpå (blockens generationer, kravkort, gap-chocker).
+// race — P117 (ETAPP9_FORSLAG.md §6.3 och §6.6, beslut 9F) och P118 (§7.1, beslut 9H). Motmedelskedjor, livscykel och automatisk
+// utfasning, och blockens kapplöpning: dolda generationer per block och kategori, kravkort och köpare som följer sitt block.
+// P119–P121 bygger gap-chocker, bedömningar och doomsday ovanpå.
 //
 // Livscykeln sker av sig själv (princip 4): en ny konstruktion har ett nyhetsvärde som avtar, rivalernas konstruktioner (9F)
 // kommer enligt schema, och när en generation fasas ut förlorar äldre konstruktioner behörighet i det blocket automatiskt.
@@ -11,10 +12,14 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { getProduct } from './pricing.js'
 import type { ResolveContext } from './resolve/index.js'
-import type { Design, FactionId, GameState, House, Order, RivalHouse, TechCategory } from './types.js'
+import type { Design, FactionId, GameState, House, Order, RaceState, RivalHouse, TechCategory } from './types.js'
 
 interface Balance {
-  generationStepTurns: number
+  blocGenerationSchedule: Record<string, Record<Bloc, number[]>>
+  raceAccelerationTurns: number
+  blocTechLevelStep: number
+  raceAccelerationCap: number
+  requirementCardHorizon: number
   counterCategory: Partial<Record<TechCategory, TechCategory>>
   counterDemandOrders: number
   orderTriggerThreshold: Record<TechCategory, number>
@@ -32,11 +37,6 @@ const BALANCE = balanceData as unknown as Balance
 export type Bloc = 'west' | 'east'
 export const BLOCS: readonly Bloc[] = ['west', 'east']
 
-// Det tidsenliga generationsnumret vid en viss tur — ett PROVISORISKT tidsschema (kliv var generationStepTurns:e tur).
-export function currentGeneration(turn: number): number {
-  return 1 + Math.floor(turn / BALANCE.generationStepTurns)
-}
-
 // Blocket en alignment pekar på (väst +, öst −); 0 = inget block (neutral).
 export function blocOfAlignment(alignment: number): Bloc | null {
   return alignment > 0 ? 'west' : alignment < 0 ? 'east' : null
@@ -47,14 +47,36 @@ export function blocOfFaction(state: Pick<GameState, 'factions'>, factionId: Fac
   return faction ? blocOfAlignment(faction.alignment) : null
 }
 
-// Ett blocks generation i en kategori. Än så länge samma tidsschema för båda blocken och alla kategorier; P118 ersätter
-// funktionens innehåll med blockens egna, dolda generationer — anropare ändras inte.
-export function blocGeneration(state: Pick<GameState, 'meta'>, _bloc: Bloc, _category: TechCategory): number {
-  return currentGeneration(state.meta.turn)
+// ── blockens kapplöpning (P118, §7.1) ────────────────────────────────────────
+
+// Kategorierna som kapplöpningen omfattar: de som grundschemat har rader för (i filens ordning — deterministisk).
+const RACE_CATEGORIES = Object.keys(BALANCE.blocGenerationSchedule) as TechCategory[]
+
+export function initialRace(): RaceState {
+  const generation = (): Record<TechCategory, number> =>
+    Object.fromEntries(RACE_CATEGORIES.map((c) => [c, 1])) as Record<TechCategory, number>
+  return { generation: { west: generation(), east: generation() }, pulled: { west: {}, east: {} } }
+}
+
+// Generationen ett block har vid början av en tur enligt grundschemat (steget sker i den turens resolve, så ett steg på tur S
+// syns från tur S + 1). Används för att härleda `race` ur ett sparat parti från före P118.
+export function scheduledGeneration(turn: number, bloc: Bloc, category: TechCategory): number {
+  const steps = BALANCE.blocGenerationSchedule[category]?.[bloc] ?? []
+  return 1 + steps.filter((s) => s < turn).length
+}
+
+// Ett blocks (dolda) generation i en kategori.
+export function blocGeneration(state: Pick<GameState, 'race'>, bloc: Bloc, category: TechCategory): number {
+  return state.race.generation[bloc][category]
+}
+
+// Det ledande blockets generation i en kategori — "det tidsenliga" som ett nytt designprojekt siktar förbi.
+export function frontierGeneration(state: Pick<GameState, 'race'>, category: TechCategory): number {
+  return Math.max(...BLOCS.map((b) => blocGeneration(state, b, category)))
 }
 
 // En köpares generation: dess blocks. En neutral köpare (inget block) godtar det mildare av de två.
-export function buyerGeneration(state: Pick<GameState, 'meta' | 'factions'>, buyerId: FactionId, category: TechCategory): number {
+export function buyerGeneration(state: Pick<GameState, 'race' | 'factions'>, buyerId: FactionId, category: TechCategory): number {
   const bloc = blocOfFaction(state, buyerId)
   if (bloc) return blocGeneration(state, bloc, category)
   return Math.min(...BLOCS.map((b) => blocGeneration(state, b, category)))
@@ -66,11 +88,11 @@ export function designPhasedOutForGeneration(design: Pick<Design, 'generation'>,
   return design.generation < blocGen - (BALANCE.designPhaseOutKeep - 1)
 }
 
-export function designPhasedOutForBloc(state: Pick<GameState, 'meta'>, design: Pick<Design, 'generation' | 'category'>, bloc: Bloc): boolean {
+export function designPhasedOutForBloc(state: Pick<GameState, 'race'>, design: Pick<Design, 'generation' | 'category'>, bloc: Bloc): boolean {
   return designPhasedOutForGeneration(design, blocGeneration(state, bloc, design.category))
 }
 
-export function designPhasedOutForBuyer(state: Pick<GameState, 'meta' | 'factions'>, design: Pick<Design, 'generation' | 'category'>, buyerId: FactionId): boolean {
+export function designPhasedOutForBuyer(state: Pick<GameState, 'race' | 'factions'>, design: Pick<Design, 'generation' | 'category'>, buyerId: FactionId): boolean {
   return designPhasedOutForGeneration(design, buyerGeneration(state, buyerId, design.category))
 }
 
@@ -115,6 +137,109 @@ export function addCounterDemand(ctx: ResolveContext, factionIds: readonly Facti
   }
 }
 
+// En stark konstruktions rubrik-effekt hos motsidan (§6.6 + §7.1): efterfrågan på motmedlet hos varje angiven faktion, och — om
+// motsidans block har ett steg kvar i motmedelskategorin — det steget påskyndas (kapplöpningen går fortare). Delas av husets
+// stridsbeprövade konstruktioner (fieldQuality.ts) och rivalernas nya (processRivalDesigns).
+export function counterReaction(ctx: ResolveContext, opposing: readonly FactionId[], strongCategory: TechCategory, label: string, causeId: string | null): void {
+  addCounterDemand(ctx, opposing, strongCategory, label, causeId)
+  const counter = counterCategoryOf(strongCategory)
+  if (counter === null) return
+  const blocs = new Set<Bloc>()
+  for (const id of opposing) {
+    const bloc = blocOfFaction(ctx.draft, id)
+    if (bloc) blocs.add(bloc)
+  }
+  for (const bloc of BLOCS) if (blocs.has(bloc)) accelerateBlocStep(ctx, bloc, counter, causeId)
+}
+
+// Flyttar blockets nästa steg i kategorin raceAccelerationTurns tidigare (högst raceAccelerationCap per steg). Falskt — och ingen
+// rubrik — när blocket inte har fler steg eller redan är på taket.
+export function accelerateBlocStep(ctx: ResolveContext, bloc: Bloc, category: TechCategory, causeId: string | null): boolean {
+  const { draft, emit } = ctx
+  const next = BALANCE.blocGenerationSchedule[category]?.[bloc]?.[blocGeneration(draft, bloc, category) - 1]
+  if (next === undefined) return false
+  const before = draft.race.pulled[bloc][category] ?? 0
+  const after = Math.min(BALANCE.raceAccelerationCap, before + BALANCE.raceAccelerationTurns)
+  if (after <= before) return false
+  draft.race.pulled[bloc][category] = after
+  emit({
+    severity: 'report',
+    scope: 'market',
+    headline: `THE ${bloc.toUpperCase()} ACCELERATES ITS ${category.toUpperCase()} PROGRAMME`,
+    causeId,
+    delta: { [`race.pulled.${bloc}.${category}`]: after - before },
+    actorIsPlayer: false,
+    subjectId: null,
+  })
+  return true
+}
+
+// Turen då blockets nästa steg i kategorin sker (grundschemat minus framflyttningen), eller null om inga steg återstår.
+function nextStepTurn(state: Pick<GameState, 'race'>, bloc: Bloc, category: TechCategory): number | null {
+  const scheduled = BALANCE.blocGenerationSchedule[category]?.[bloc]?.[blocGeneration(state, bloc, category) - 1]
+  return scheduled === undefined ? null : scheduled - (state.race.pulled[bloc][category] ?? 0)
+}
+
+// Det nya steget `race` (körs direkt före `orders`): varje block som nått sitt nästa steg i en kategori går upp en generation,
+// med en rubrik (utan generationsnumret — bedömningarna är P120), och köparna i blocket får techLevel + 1 (fältets första
+// skrivare) med en rad kopplad till steget.
+export function advanceRace(ctx: ResolveContext): void {
+  const { draft, emit } = ctx
+  const turn = draft.meta.turn
+  for (const category of RACE_CATEGORIES) {
+    for (const bloc of BLOCS) {
+      const due = nextStepTurn(draft, bloc, category)
+      if (due === null || turn < due) continue
+      draft.race.generation[bloc][category] += 1
+      delete draft.race.pulled[bloc][category]
+      const stepId = emit({
+        severity: 'headline',
+        scope: 'market',
+        headline: `${bloc.toUpperCase()} MINISTRIES RAISE ${category.toUpperCase()} REQUIREMENTS`,
+        causeId: null,
+        delta: { [`race.${bloc}.${category}`]: 1 },
+        actorIsPlayer: false,
+        subjectId: null,
+      })
+      for (const faction of Object.values(draft.factions).sort((a, b) => a.id.localeCompare(b.id))) {
+        if (blocOfAlignment(faction.alignment) !== bloc) continue
+        if (BALANCE.blocTechLevelStep === 0) continue
+        faction.techLevel[category] += BALANCE.blocTechLevelStep
+        emit({
+          severity: 'ticker',
+          scope: 'faction',
+          headline: `${faction.name.toUpperCase()} ${category.toUpperCase()} TECH LEVEL RISES TO ${faction.techLevel[category]}`,
+          causeId: stepId,
+          delta: { [`techLevel.${category}`]: 1 },
+          actorIsPlayer: false,
+          subjectId: faction.id,
+        })
+      }
+    }
+  }
+}
+
+export interface RequirementCard {
+  bloc: Bloc
+  category: TechCategory
+  inTurns: number // 0 = ministerierna höjer kraven i den här turens resolve, 1 = nästa kvartal
+}
+
+// Kravkorten (§7.1): vad ministerierna kommer att kräva härnäst, per block och kategori, requirementCardHorizon turer i förväg —
+// som kommande kraftverk i Power Grid. Visar bara att och när, aldrig generationsnumret (skyddsräcke 5).
+export function requirementCards(state: Pick<GameState, 'meta' | 'race'>): RequirementCard[] {
+  const cards: RequirementCard[] = []
+  for (const category of RACE_CATEGORIES) {
+    for (const bloc of BLOCS) {
+      const due = nextStepTurn(state, bloc, category)
+      if (due === null) continue
+      const inTurns = Math.max(0, due - state.meta.turn)
+      if (inTurns <= BALANCE.requirementCardHorizon) cards.push({ bloc, category, inTurns })
+    }
+  }
+  return cards
+}
+
 // Ett färdigt motmedel (House.counters) ger counterBidBonus hos köpare vars front möter just den faktionen, i kategorin.
 // En term efter computeScore, delad av bidding.ts, bidEstimate och playerWinCurve (skyddsräcke 1 och 3).
 export function counterBidTerm(state: Pick<GameState, 'house' | 'fronts'>, order: Pick<Order, 'buyerId' | 'productId' | 'frontId'>): number {
@@ -147,7 +272,7 @@ export function processRivalDesigns(ctx: ResolveContext): void {
     if (designs.some((d) => d.introducedTurn === turn)) continue
     const category = rival.specialisation
     const bloc = rivalBloc(rival)
-    const generation = bloc ? blocGeneration(draft, bloc, category) : Math.min(...BLOCS.map((b) => blocGeneration(draft, b, category)))
+    const generation = bloc ? blocGeneration(draft, bloc, category) : frontierGeneration(draft, category)
     const name = `${initialsOf(rival.name)} ${designDesignation(draft.meta.year)} ${TYPE_NAME[category]}`
     const sameName = designs.filter((d) => d.name === name || d.name.startsWith(`${name} Mk `)).length
     designs.push({
@@ -170,7 +295,7 @@ export function processRivalDesigns(ctx: ResolveContext): void {
       const opposing = Object.values(draft.factions)
         .filter((f) => blocOfAlignment(f.alignment) === (bloc === 'west' ? 'east' : 'west'))
         .map((f) => f.id)
-      addCounterDemand(ctx, opposing, category, designs[designs.length - 1]!.name.toUpperCase(), eventId)
+      counterReaction(ctx, opposing, category, designs[designs.length - 1]!.name.toUpperCase(), eventId)
     }
   }
 }
@@ -220,12 +345,12 @@ export function rivalDesignDisplay(state: GameState, rivalId: string): RivalDesi
 
 // ── utfasningen märks ────────────────────────────────────────────────────────
 
-// Anropas varje tur från rivals-steget (P118 flyttar den till kapplöpningssteget): märker de konstruktioner som just blivit
+// Anropas varje tur från steget `race` (efter generationsskiftena): märker de konstruktioner som just blivit
 // utfasade för ett block, med en rubrik per konstruktion. Själva behörigheten läses ur generationen — flaggan är bara märket.
 export function advanceDesignLifecycle(ctx: ResolveContext): void {
   const { draft, emit } = ctx
   for (const design of draft.house.designs ?? []) {
-    const fresh = BLOCS.filter((bloc) => !design.phasedOut?.[bloc] && designPhasedOutForBloc(draft, design, bloc))
+    const fresh = BLOCS.filter((bloc) => design.phasedOut?.[bloc] === undefined && designPhasedOutForBloc(draft, design, bloc))
     if (fresh.length === 0) continue
     design.phasedOut = { ...(design.phasedOut ?? {}), ...Object.fromEntries(fresh.map((b) => [b, draft.meta.turn])) }
     emit({

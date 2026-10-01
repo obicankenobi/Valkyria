@@ -35,6 +35,7 @@ import { heat } from './steps/heat.js'
 import { supply } from './steps/supply.js'
 import { doomsday } from './steps/doomsday.js'
 import { rivals } from './steps/rivals.js'
+import { race } from './steps/race.js'
 import { orders } from './steps/orders.js'
 import { bidding } from './steps/bidding.js'
 import { economy } from './steps/economy.js'
@@ -72,6 +73,8 @@ const PIPELINE: ResolveStep[] = [
   supply, // supplyCostIndex — ETAPP1_5_TEKNISK_SPEC.md avsnitt 3, insatt mellan heat och doomsday
   doomsday, // avkylning, trösklar, krisevent
   rivals, // rivalhusens drag
+  // P118 (ETAPP9 §7.1): nytt steg, placerat direkt före orders (se steps/race.ts för skälet).
+  race, // blockens generationer, köparnas techLevel, rivalernas konstruktioner, utfasning
   orders, // nya utlysningar genereras, referencePrice fryses
   bidding, // avgör anbud som löper ut denna tur
   economy, // husets fasta kostnader, ränta, creditLimit, kassaflöde

@@ -72,22 +72,29 @@ export { advanceAmount, advanceFactors, computeAdvancePct, deliveryPayment } fro
 
 // P109 (ETAPP9 §5): konstruktionerna — namn-/klasshjälpare som gränssnittet (P126) återanvänder i stället för att upprepa dem.
 export type { PreferenceMix } from './design.js'
-export { DESIGN_AMBITIONS, DESIGN_ENVIRONMENTS, DESIGN_FOCUSES, QUALITY_CLASSES, currentGeneration, designBaseProduct, qualityClassOf } from './design.js'
+export { DESIGN_AMBITIONS, DESIGN_ENVIRONMENTS, DESIGN_FOCUSES, QUALITY_CLASSES, designBaseProduct, qualityClassOf } from './design.js'
 export {
   BLOCS,
   addCounterDemand,
+  accelerateBlocStep,
   advanceDesignLifecycle,
+  advanceRace,
   blocGeneration,
   blocOfAlignment,
   blocOfFaction,
   counterBidTerm,
   counterCategoryOf,
+  counterReaction,
   designPhasedOutForBloc,
   designPhasedOutForBuyer,
   effectiveRivalReputation,
+  frontierGeneration,
   houseCounters,
+  initialRace,
   noveltyFactor,
   processRivalDesigns,
+  requirementCards,
   rivalDesignDisplay,
+  scheduledGeneration,
 } from './race.js'
-export type { Bloc, RivalDesignDisplay } from './race.js'
+export type { Bloc, RequirementCard, RivalDesignDisplay } from './race.js'

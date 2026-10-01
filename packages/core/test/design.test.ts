@@ -8,7 +8,6 @@
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
 import {
-  currentGeneration,
   designBaseProduct,
   designBidTerm,
   designCostPerTurn,
@@ -23,12 +22,12 @@ import { bidding } from '../src/resolve/steps/bidding.js'
 import { validateStandingOrderChange } from '../src/standingOrders.js'
 import { getProduct, computeUnitCostNow } from '../src/pricing.js'
 import { createRng } from '../src/rng.js'
+import { frontierGeneration } from '../src/race.js'
 import { createInitialState } from '../src/state.js'
 import type { Design, DesignAmbition, DesignFocus, GameState, Order, StandingOrderChange, TurnSubmission } from '../src/types.js'
 
 const B = balance as unknown as {
   rndProjectTurns: number
-  generationStepTurns: number
   chiefEngineerProjectThreshold: number
   chiefEngineerTurnsSaved: number
   designFocus: Record<DesignFocus, { performance: number; reliability: number; unitCostFactor: number }>
@@ -116,11 +115,11 @@ describe('startläget och basprodukten (P109)', () => {
     expect(designBaseProduct('naval').restricted).toBe(false)
   })
 
-  it('currentGeneration stiger ett steg var generationStepTurns:e tur (provisoriskt schema, P118 ersätter det)', () => {
-    expect(currentGeneration(0)).toBe(1)
-    expect(currentGeneration(B.generationStepTurns - 1)).toBe(1)
-    expect(currentGeneration(B.generationStepTurns)).toBe(2)
-    expect(currentGeneration(B.generationStepTurns * 2)).toBe(3)
+  it('ett nytt designprojekts mål är det ledande blockets generation i kategorin plus ambitionens steg (P118)', () => {
+    const state = createInitialState('indochina-slice', 'gen-target')
+    expect(frontierGeneration(state, 'artillery')).toBe(1)
+    state.race.generation.east.artillery = 2
+    expect(frontierGeneration(state, 'artillery')).toBe(2)
   })
 })
 
@@ -198,7 +197,7 @@ describe('utfallet: en konstruktion föds (P109, §5.2)', () => {
     expect(design.baseProductId).toBe('105mm_field_gun')
     expect(design.status).toBe('active')
     expect(design.lineage).toBeNull()
-    expect(design.generation).toBe(currentGeneration(0) + B.designAmbition.forward.steps)
+    expect(design.generation).toBe(1 + B.designAmbition.forward.steps)
     expect(design.performance).toBe(B.designFocus.balanced.performance + B.designAmbitionPerformanceGain)
     expect(design.reliability).toBe(B.designFocus.balanced.reliability - B.designAmbitionReliabilityLoss)
     expect(design.trueQuality).toBeGreaterThanOrEqual(0)

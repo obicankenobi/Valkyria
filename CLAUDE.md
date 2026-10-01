@@ -801,6 +801,12 @@ automatisk utfasning av äldre generationer. Generationen är fortfarande det pr
 **Golden ändrad på riktigt** (rivalkonstruktionerna sker i alla tre partier), attribuerad via `processRivalDesigns`.
 **Fynd:** motmedelsefterfrågan är den starkaste spaken — `counterDemandOrders` 1 flyttade `capacity` från 0,7 till 79 % vinst,
 0,25 håller vakterna. **P114–P117 (del C, "Fältet") klara.**
+**P118 BYGGD 2026-10-01:** blockens dolda generationer (`GameState.race`, grundschemat `blocGenerationSchedule` — ett FÖRSLAG som ägaren
+ska godkänna, byts i `balance.json`), nytt pipeline-steg `race` direkt före `orders`, kravkort (`requirementCards`), påskyndning via
+motmedelskedjan, utfasning och riktmärke läst ur blockets generation. **Fynd:** `techLevel` som följer blockets generation släpper
+loss scenariots uppdämda efterfrågan och flyttar vakterna (`capacity` 0,7 → 70 %, `passive` 0 → 96 %), så datan har
+`blocTechLevelStep` 0 — mekanismen är byggd och testad men av tills ägaren/P130 omkalibrerar `boardTarget`/behovsuppbyggnaden.
+Golden ändrad på riktigt (attribuerad).
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

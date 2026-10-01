@@ -7,7 +7,7 @@
 // sig självt. Underrättelse (en station i landet) avslöjar mixen; utan station är den okänd.
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
-import { buyerPreferenceMix, currentGeneration, designBenchmark, designBidTerm } from '../src/design.js'
+import { buyerPreferenceMix, designBenchmark, designBidTerm } from '../src/design.js'
 import { buyerPreferenceDisplay, playerWinCurve } from '../src/queries.js'
 import { bidding } from '../src/resolve/steps/bidding.js'
 import { createRng } from '../src/rng.js'
@@ -18,7 +18,6 @@ const B = balance as unknown as {
   preferenceMixFloor: number
   benchmarkPerGeneration: number
   designBenchmarkBase: number
-  generationStepTurns: number
   designBidWeight: number
 }
 
@@ -130,15 +129,14 @@ describe('köparens preferensmix (P111, §5.4)', () => {
 })
 
 describe('relativ bedömning (P111, §5.4)', () => {
-  it('riktmärket stiger med generationen och konstruktionens försprång krymper av sig självt', () => {
-    expect(designBenchmark(0)).toBe(B.designBenchmarkBase)
-    expect(designBenchmark(B.generationStepTurns)).toBe(B.designBenchmarkBase + B.benchmarkPerGeneration)
-    expect(designBenchmark(B.generationStepTurns * 2)).toBe(B.designBenchmarkBase + 2 * B.benchmarkPerGeneration)
-    expect(currentGeneration(B.generationStepTurns * 2)).toBe(3)
+  it('riktmärket stiger med generationen och konstruktionens försprång krymper av sig självt (P118: köparens blocks generation)', () => {
+    expect(designBenchmark(1)).toBe(B.designBenchmarkBase)
+    expect(designBenchmark(2)).toBe(B.designBenchmarkBase + B.benchmarkPerGeneration)
+    expect(designBenchmark(3)).toBe(B.designBenchmarkBase + 2 * B.benchmarkPerGeneration)
 
     const early = withAgenda('MODERNISE')
     const late = withAgenda('MODERNISE')
-    late.meta.turn = B.generationStepTurns * 3
+    for (const bloc of ['west', 'east'] as const) late.race.generation[bloc].artillery = 4
     const order = orderFor(early)
     expect(designBidTerm(late, ADVANCED, order)).toBeLessThan(designBidTerm(early, ADVANCED, order))
   })

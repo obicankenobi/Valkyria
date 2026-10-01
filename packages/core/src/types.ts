@@ -90,6 +90,8 @@ export interface GameState {
   // destroyed, steps/orders.ts (senare i SAMMA turs pipeline) tömmer den och
   // utlyser namngivna ersättningsordrar. Specen ger inget eget fältnamn för den
   // här kön — bara Order.reason:s form (avsnitt 5.4:s egen jsonc-block).
+  // P118 (ETAPP9 §7.1): blockens dolda generationer och framflyttningen av nästa steg. Skrivs bara av race.ts.
+  race: RaceState
   pendingFormationReplacements: FormationReplacementRequest[]
   doomsday: Pct
   doomsdayPeak: Pct // för RESTRAINT i epilogen
@@ -878,6 +880,13 @@ export interface RivalHouse {
   // P117 (ETAPP9 §6.3, beslut 9F): rivalens konstruktioner, enligt schema (balance.rivalDesignSchedule). Enkla — ingen
   // egen forskningsmodell. Saknas i ett sparat parti från före P117 och läses då som inga.
   designs?: RivalDesign[]
+}
+
+// P118: blockens kapplöpning. generation = dold generation per block och kategori (start 1); pulled = hur många turer
+// en händelse flyttat blockets NÄSTA steg i kategorin tidigare (nollställs när steget sker).
+export interface RaceState {
+  generation: Record<'west' | 'east', Record<TechCategory, number>>
+  pulled: Record<'west' | 'east', Partial<Record<TechCategory, number>>>
 }
 
 // P117: en rivals konstruktion. Kvalitetsbonusen på rivalens rykte i kategorin avtar med nyhetsvärdet.

@@ -8,7 +8,7 @@ import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
-import { currentGeneration, designPhasedOutForBuyer, noveltyBonus } from './race.js'
+import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus } from './race.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { Rng } from './rng.js'
 import type {
@@ -31,7 +31,6 @@ import type {
 
 interface Balance {
   rndProjectTurns: number
-  generationStepTurns: number
   chiefEngineerProjectThreshold: number
   chiefEngineerTurnsSaved: number
   designFocus: Record<DesignFocus, { performance: number; reliability: number; unitCostFactor: number }>
@@ -100,8 +99,6 @@ export function designBaseProduct(category: TechCategory): Product {
   return product
 }
 
-// Den tidsenliga generationen (P109) bor sedan P117 i race.ts (som P118 gör om till blockens generationer); återexporteras här.
-export { currentGeneration }
 
 function chiefEngineerSaves(house: Pick<House, 'staff'>): number {
   return house.staff.chiefEngineer > BALANCE.chiefEngineerProjectThreshold ? BALANCE.chiefEngineerTurnsSaved : 0
@@ -297,11 +294,12 @@ export function buyerPreferenceMix(state: MixInput, order: MixOrder, category: T
   return { performance: mix.performance / total, reliability: mix.reliability / total, cost: mix.cost / total }
 }
 
-// Riktmärket en konstruktion bedöms mot: den generationens nivå, som stiger med generationen (P109:s provisoriska
-// tidsschema tills P118). Det är "det bästa köparen redan erbjudits" — när rivalerna hinner ikapp krymper försprånget av
-// sig självt, utan extra regler. Kostnadsdelen är fast (basproduktens faktor 1 värderas lika med riktmärket).
-export function designBenchmark(turn: number): number {
-  return BALANCE.designBenchmarkBase + BALANCE.benchmarkPerGeneration * (currentGeneration(turn) - 1)
+// Riktmärket en konstruktion bedöms mot: nivån för en viss generation, som stiger med generationen. P118: generationen är
+// KÖPARENS blocks (hos ett block som kommit längre krävs mer). Det är "det bästa köparen redan erbjudits" — när rivalerna hinner
+// ikapp krymper försprånget av sig självt, utan extra regler. Kostnadsdelen är fast (basproduktens faktor 1 värderas lika med
+// riktmärket).
+export function designBenchmark(generation: number): number {
+  return BALANCE.designBenchmarkBase + BALANCE.benchmarkPerGeneration * (generation - 1)
 }
 
 const COST_BENCHMARK = 50
@@ -310,12 +308,12 @@ const COST_BENCHMARK = 50
 // spelarens poäng EFTER computeScore. Värderingen är mix-viktad över sann prestanda, sann tillförlitlighet och en kostnadspoäng
 // (50 + (1 − styckkostnadsfaktor) × 100); riktmärket viktas med samma mix. Samma funktion används av bidding.ts,
 // bidEstimate och playerWinCurve.
-export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fronts'>, design: Design, order: MixOrder): number {
+export function designBidTerm(state: Pick<GameState, 'meta' | 'officials' | 'fronts' | 'race' | 'factions'>, design: Design, order: MixOrder): number {
   const mix = buyerPreferenceMix(state, order, design.category)
   const values = designTrueValues(design)
   const costScore = Math.max(0, Math.min(100, COST_BENCHMARK + (1 - design.unitCostFactor) * 100))
   const value = mix.performance * values.performance + mix.reliability * values.reliability + mix.cost * costScore
-  const benchmark = designBenchmark(state.meta.turn)
+  const benchmark = designBenchmark(buyerGeneration(state, order.buyerId, design.category))
   const benchmarkValue = (mix.performance + mix.reliability) * benchmark + mix.cost * COST_BENCHMARK
   const relative = Math.max(-1, Math.min(1, (value - benchmarkValue) / 50))
   // P114: stridsbeprövad syns hos alla köpare som en bonus (utanför ±designBidWeight — den är ett ryktesbevis, inte en värdering).
@@ -474,7 +472,7 @@ export function kitBidRejection(
 
 // Hela prövningen av ett bud som bär en konstruktion och/eller en sats (bidding.ts). null = godtaget.
 export function bidDesignRejection(
-  state: Pick<GameState, 'house' | 'market' | 'meta' | 'factions'>,
+  state: Pick<GameState, 'house' | 'market' | 'meta' | 'factions' | 'race'>,
   bid: { designId?: string; kit?: boolean; price: number },
   order: Pick<Order, 'buyerId' | 'productId' | 'referencePrice'>,
 ): string | null {

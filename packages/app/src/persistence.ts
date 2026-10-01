@@ -12,6 +12,7 @@
 // P12:s klart när-villkor ("ett parti kan stängas och återupptas MITT I en tur
 // utan förlust") kräver det uttryckligen; att bara spara efter resolveTurn hade
 // tappat ett halvifyllt anbud vid en omladdning.
+import { BLOCS, blocOfAlignment, initialRace, scheduledGeneration } from '@seventh-front/core'
 import type { Contract, GameState, Order, TurnSubmission } from '@seventh-front/core'
 import type { TutorialState } from './tutorial.js'
 
@@ -124,6 +125,25 @@ export function migrate(saved: SavedGame): SavedGame | null {
             investigations: houseP107.investigations ?? [], // P113
           },
         }
+      }
+      // P118: blockens generationer (GameState.race) tillkom. Ett sparat parti från före P118 får de generationer
+      // grundschemat ger vid dess tur, och köparnas techLevel höjs i takt med dem (fältets första skrivare, race.ts).
+      if (!(state as Partial<GameState>).race) {
+        const race = initialRace()
+        const factions = { ...state.factions }
+        for (const bloc of BLOCS) {
+          for (const category of Object.keys(race.generation[bloc]) as (keyof typeof race.generation.west)[]) {
+            const generation = scheduledGeneration(state.meta.turn, bloc, category)
+            race.generation[bloc][category] = generation
+            if (generation <= 1) continue
+            for (const [id, faction] of Object.entries(state.factions)) {
+              if (blocOfAlignment(faction.alignment) !== bloc) continue
+              const current = factions[id] ?? faction
+              factions[id] = { ...current, techLevel: { ...current.techLevel, [category]: current.techLevel[category] + generation - 1 } }
+            }
+          }
+        }
+        state = { ...state, race, factions }
       }
       return state === saved.state ? saved : { ...saved, state }
     }

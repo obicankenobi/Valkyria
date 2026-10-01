@@ -7,7 +7,8 @@
 // konstruktion drar aldrig härifrån. Varje ändring emitterar en WireEvent med causeId (hård regel 4).
 import balanceData from './data/balance.json' with { type: 'json' }
 import { buyerIsLosing } from './fieldQuality.js'
-import { currentGeneration, frontEnvironments, newDesignProject, revealFlaw } from './design.js'
+import { frontierGeneration } from './race.js'
+import { frontEnvironments, newDesignProject, revealFlaw } from './design.js'
 import { recordExpense } from './ledger.js'
 import { officialId } from './officials.js'
 import type { ResolveContext } from './resolve/index.js'
@@ -155,7 +156,7 @@ export function applyInvestigationChoice(ctx: ResolveContext, change: { investig
           category: design.category,
           focus: design.focus,
           ambition: 'timely',
-          targetGeneration: Math.max(design.generation, currentGeneration(draft.meta.turn)),
+          targetGeneration: Math.max(design.generation, frontierGeneration(draft, design.category)),
           upgradeOf: design.id,
           redesignOf: design.id,
         },
