@@ -32,6 +32,49 @@ const REFERENCE_PORT = 4187
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
 
+// P126 (ETAPP9 §9): ritbordet och typbladen. Ett riktigt parti har inga konstruktioner förrän ett designprojekt gått klart
+// och ingen fångad materiel förrän ett genombrott — samma IndexedDB-injektion som "crisis". Tre konstruktioner (ej provad med
+// dold miljöbrist, beprövad, under utredning), ett pågående projekt, en öppen utredning, ett fångat system och goda relationer.
+async function injectDesigns(page) {
+  await enterOperationsAndPlay(page, 0)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const house = saved.state.house
+    const base = { category: 'artillery', baseProductId: '105mm_field_gun', generation: 1, focus: 'balanced', ambition: 'timely', unitCostFactor: 1.1, uncertainty: 1, flawRevealed: false, testedIn: [], fieldRecord: { occasions: 0, proven: false }, lineage: null, introducedTurn: 1, status: 'active' }
+    house.designs = [
+      { ...base, id: 'design-1', name: 'H&V M64 Field Gun', performance: 62, reliability: 71, trueQuality: 66, latentFlaw: { environment: 'monsoon', severity: 2 } },
+      { ...base, id: 'design-2', name: 'H&V M65 Field Gun', performance: 74, reliability: 58, trueQuality: 72, latentFlaw: null, testedIn: ['jungle'], fieldRecord: { occasions: 3, proven: true }, uncertainty: 0 },
+      { ...base, id: 'design-3', name: 'H&V M66 Heavy Gun', performance: 55, reliability: 80, trueQuality: 48, latentFlaw: { environment: 'mine', severity: 1 }, flawRevealed: true },
+    ]
+    house.investigations = [{ id: 'inv-1', designId: 'design-3', environment: 'mine', severity: 1, frontId: 'front-1', buyerId: 'rvn', openedTurn: 1, deadlineTurn: 5, status: 'open', causeEventId: null }]
+    house.rnd.push({ id: 'rnd-design-armour-1', category: 'armour', turnsRemaining: 2, turnsTotal: 4, costFactor: 1, design: { focus: 'advanced', ambition: 'forward', targetGeneration: 2, upgradeOf: null } })
+    house.capturedMateriel = [{ systemId: 'nlf-artillery', name: 'Type 63 rocket launcher', category: 'artillery', fromFactionId: 'nlf', units: 3 }]
+    house.standingOrders.research = { artillery: { pace: 'normal', sinceTurn: 1 } }
+    house.treasury = 20000000
+    for (const o of Object.values(saved.state.officials)) o.relationToPlayer = 80
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+  await page.getByTestId('tab-company').click()
+}
+
 // P97: ett nytt parti spelat `quarters` kvartal med reducerad rörelse (uppspelningen
 // omedelbar, PM:et undantaget — se QuarterReplay.tsx). Samma New Game-väg som övriga skärmar.
 async function enterOperationsAndPlay(page, quarters) {
@@ -579,6 +622,28 @@ const APP_SCREENS = [
       await page.getByTestId('quarterband-toggle').click()
       await page.getByTestId('quarterband-item-standing-supply-steel').click()
       await page.getByTestId('standing-back-supply-steel').waitFor()
+    },
+  },
+  {
+    // P126: ritbordet — en blåkopia vänd (Segmented för fokus, ambition, startpunkt, tempo), ritning i blyerts, fångad materiel.
+    name: 'drawing-board',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('standing-flip-drawing-artillery').click()
+      await page.getByTestId('standing-back-drawing-artillery').waitFor()
+      await page.getByTestId('drawing-board').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P126: typbladen — tre blad med instrument och stämplar, det under utredning med sina order öppna.
+    name: 'type-sheet',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('type-orders-toggle-design-3').click()
+      await page.getByTestId('type-orders-design-3').waitFor()
+      await page.getByTestId('type-sheets').scrollIntoViewIfNeeded()
     },
   },
   {

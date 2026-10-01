@@ -44,7 +44,7 @@ const SUPPLY_VOLUME_MAX = 200_000
 const SUPPLY_VOLUME_STEP = 10_000
 const SUPPLY_VOLUME_DEFAULT = 40_000
 
-function describeChange(change: StandingOrderChange): string {
+export function describeChange(change: StandingOrderChange): string {
   switch (change.kind) {
     case 'LINE':
       return `${change.category ? change.category.toUpperCase() : 'ANY PRODUCT'} · ${change.shift.toUpperCase()}`
@@ -73,7 +73,8 @@ function describeChange(change: StandingOrderChange): string {
   }
 }
 
-function BoardCard({
+export function BoardCard({
+  className,
   id,
   title,
   alarm,
@@ -85,6 +86,7 @@ function BoardCard({
   onUndo,
   registerRef,
 }: {
+  className?: string
   id: string
   title: string
   alarm: string | null
@@ -97,6 +99,7 @@ function BoardCard({
   registerRef: (id: string, el: HTMLDivElement | null) => void
 }) {
   const classes = ['standing-card']
+  if (className) classes.push(className)
   if (alarm) classes.push('has-alarm')
   if (open) classes.push('is-open')
   return (

@@ -764,6 +764,11 @@ lämnar golden orörd.
 > `integrityBidTerm`, `cleanHouse`). Mutan i vanliga bud, `BRIBE`, `FAVOUR` och `BROKER` ger spår (beslut 9N). **Golden ändras på riktigt**
 > (attribuerad). **Fynd:** FAVOUR-spåren (botarna kallar in 8–10 per parti) flyttade `balanced-pwc` och `human` när spårtalen var för
 > höga — talen sänktes tills vakterna höll. Se ANDRINGSLOGG 2026-10-02.
+>
+> **P126 BYGGD 2026-10-02.** Ritbordet (en blåkopia per kategori med en ritning som växer i blyerts; inriktning, ambition, startpunkt och
+> forskningsspår som stående order) och typbladet (visarinstrument, klass med osäkerhet `B ±1`, stämplar UNTESTED / PROVEN IN THE FIELD / UNDER
+> REVIEW / RECALLED, provning, fältprov och utredningskortets tre svar) i THE COMPANY. `FIELD_TRIAL` och `REVERSE_ENGINEER` fick katalogpost,
+> Handboksuppslag och ikoner. Golden orörd. Se ANDRINGSLOGG 2026-10-02.
 
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.

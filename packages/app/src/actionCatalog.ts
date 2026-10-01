@@ -57,4 +57,7 @@ export const ACTION_CATALOG: readonly ActionCatalogEntry[] = [
   // Råvarupanel i THE COMPANY (§7.1:s egen rad) — P85, CompanyActions.tsx.
   { verb: 'BUY_FORWARD', label: 'Reserve a commodity', objectGroup: 'Raw materials panel', target: 'company' },
   { verb: 'RELEASE', label: 'Release a commodity reserve', objectGroup: 'Raw materials panel', target: 'company' },
+  // Ritbordet (P126, DrawingBoard.tsx/TypeSheet.tsx i THE COMPANY) — etapp 9:s två första byggda verb.
+  { verb: 'FIELD_TRIAL', label: 'Field-trial a design with a buyer', objectGroup: 'Drawing board', target: 'company' },
+  { verb: 'REVERSE_ENGINEER', label: 'Reverse-engineer captured materiel', objectGroup: 'Drawing board', target: 'company' },
 ] as const

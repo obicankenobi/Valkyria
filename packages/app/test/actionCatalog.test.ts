@@ -21,7 +21,7 @@ describe('ACTION_CATALOG', () => {
     }
   })
 
-  it('täcker exakt de 22 verb som faktiskt har en byggd form i appen (P86: CONTACTS ger STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER/FUND_CAMPAIGN/FAVOUR/ASSASSINATE en riktig form — §7.1:s klart-när, "alla 22 verb nåbara")', () => {
+  it('täcker exakt de 24 verb (22 + etapp 9:s FIELD_TRIAL/REVERSE_ENGINEER, P126) som faktiskt har en byggd form i appen (P86: CONTACTS ger STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER/FUND_CAMPAIGN/FAVOUR/ASSASSINATE en riktig form — §7.1:s klart-när, "alla 22 verb nåbara")', () => {
     const expected = [
       'EXPAND',
       'WITHDRAW',
@@ -45,6 +45,8 @@ describe('ACTION_CATALOG', () => {
       'REPRIORITISE_RND',
       'BUY_FORWARD',
       'RELEASE',
+      'FIELD_TRIAL',
+      'REVERSE_ENGINEER',
     ]
     expect(ACTION_CATALOG.map((e) => e.verb).sort()).toEqual([...expected].sort())
   })

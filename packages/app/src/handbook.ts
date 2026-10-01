@@ -14,7 +14,7 @@
 // Klart när (ordagrant): "ett test underkänner om ett verb eller ett
 // HUD-tal saknar uppslag." Löst med två små uppslagstabeller nedan
 // (VERB_TOPIC/HUD_NUMBER_TOPIC) som handbook.test.ts korsreferenserar mot
-// actionCatalog.ts:s 22 verb och en handhållen HUD_NUMBERS-lista.
+// actionCatalog.ts:s verb (22 + etapp 9:s FIELD_TRIAL och REVERSE_ENGINEER) och en handhållen HUD_NUMBERS-lista.
 //
 // SCOPE-BESLUT, dokumenterade tolkningar snarare än gissningar:
 // - Turen/datumet (HUD:ens "1965 · Q1") har inget eget uppslag — det är
@@ -25,7 +25,7 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts'
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -125,6 +125,17 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'A mauled formation (a cracked token on the map) has taken heavy losses and generates its own demand for replacement materiel — a named order tied to that specific formation.',
     ],
   },
+  {
+    id: 'design',
+    title: 'The Drawing Board',
+    summary: 'Your own designs: pick a focus and an ambition, wait for the drawing, then test it. A design\'s true quality is hidden — the type sheet shows only a class with a margin, such as "B ±1".',
+    body: [
+      'On the drawing board (THE COMPANY) you start one design project per category. The focus decides the house style — robust and cheap, balanced, or advanced. The ambition decides how far past the current generation you reach: a step further gives better numbers but takes longer, costs more per quarter and carries a bigger risk of a hidden fault. Starting a project is a standing order — it costs no action.',
+      'A finished design gets a type sheet: performance, reliability and unit cost are shown, but its true quality is hidden behind a class with a margin ("B ±1"). Testing in your own shop (a standing order, it costs money and time) narrows the margin. Some faults belong to one environment — jungle, monsoon, mines or hard wear — and only show when you test in the right one, or when the design reaches a front that has it.',
+      'A stamp on the sheet shows where the design stands: UNTESTED, PROVEN IN THE FIELD (it has fought and held), UNDER REVIEW (an inquiry is open after a field report) or RECALLED (withdrawn for a redesign). An inquiry has three answers: fix the fault in the field, deny it (cheap now, but it can come out later), or redesign.',
+      'FIELD_TRIAL lets a buyer test your design at your cost: the margin narrows, a fault may surface, the buyer favours it in their next procurement — and the result becomes known to every rival. REVERSE_ENGINEER studies captured enemy materiel and gives a head start on research in that category.',
+    ],
+  },
 ] as const
 
 export function findHandbookEntry(id: HandbookTopicId): HandbookEntry | null {
@@ -157,6 +168,8 @@ export const VERB_TOPIC: Readonly<Record<string, HandbookTopicId>> = {
   REPRIORITISE_RND: 'production',
   BUY_FORWARD: 'production',
   RELEASE: 'production',
+  FIELD_TRIAL: 'design',
+  REVERSE_ENGINEER: 'design',
 }
 
 export function verbTopic(verb: string): HandbookTopicId | null {

@@ -836,6 +836,10 @@ som öppnar arkiven (`openArchives`), juridisk rådgivning (stående order `LEGA
 `BRIBE`, `FAVOUR`, `BROKER` och mutan i vanliga bud ger spår (9N). **Golden ändrad på riktigt** (attribuerad: med de fyra P125-delarna avstängda bit-identisk med P124). **Fynd:**
 FAVOUR-spåren (botarna kallar in 8–10 per parti) flyttade `balanced-pwc` (99 → 83 %) och `human` när spårtalen var för höga — talen sänktes tills vakterna höll (human 77,5, balanced 37,
 aggressive 19, capacity 2, passive 0, balanced-pwc 99 %). Ingen bot svarar på kort eller skaffar rådgivare (P129); kortet saknar UI (P128).
+**P126 BYGGD 2026-10-02:** ritbordet och typbladet i THE COMPANY (`DrawingBoard.tsx`, `TypeSheet.tsx`, `designSheet.ts`): en blåkopia per kategori med en ritning som växer i blyerts,
+inriktning/ambition/startpunkt/forskningsspår som stående order med förhandsvisning (`designStartPreview`, `researchTrackPreview` i core), typblad med visarinstrument, klass `B ±1` och stämplar,
+provning, fältprov och utredningskortets tre svar. `FIELD_TRIAL`/`REVERSE_ENGINEER` fick katalogpost (24 verb), Handboksuppslag `design` och ikoner. Golden orörd. Ingen handledning/daterat
+PM för ritbordet än (P127); pappersspårets kort och upphandlingsmappen saknar UI (P128).
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

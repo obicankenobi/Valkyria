@@ -5005,3 +5005,198 @@ summary:focus-visible,
 .wear-4 { -webkit-mask-image: url(/art/wear/ink-wear-4.svg); mask-image: url(/art/wear/ink-wear-4.svg); }
 .wear-5 { -webkit-mask-image: url(/art/wear/ink-wear-5.svg); mask-image: url(/art/wear/ink-wear-5.svg); }
 .wear-6 { -webkit-mask-image: url(/art/wear/ink-wear-6.svg); mask-image: url(/art/wear/ink-wear-6.svg); }
+
+/* ─── P126 (ETAPP9 §9): ritbordet och typbladet ───────────────────────────────
+   Ritbordet är ett lutande bord: blåkopiorna ligger på en ljusblå ritfilm med ett rutnät, bordsytan lutar något
+   (perspektiv på bakgrundslagret, aldrig på korten — träffytorna och texten förblir raka, regel 11/18). Ritningen
+   växer fram i blyerts: streck för streck via stroke-dashoffset (ett tillståndsbyte, ingen omgivningsanimation).
+   Typbladet är skrivmaskinspapper (--font-mono) med en stämpel; stämplarna delar slitagemasken med övriga. */
+.drawing-board {
+  position: relative;
+  padding: 12px;
+  isolation: isolate;
+}
+.drawing-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(45, 90, 140, 0.1) 1px, transparent 1px) 0 0 / 18px 18px,
+    linear-gradient(90deg, rgba(45, 90, 140, 0.1) 1px, transparent 1px) 0 0 / 18px 18px,
+    var(--panel-sunken);
+  border: 1px solid var(--line-strong);
+  transform: perspective(1400px) rotateX(1.5deg);
+  transform-origin: 50% 100%;
+}
+.drawing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+.drawing-card .standing-front {
+  display: grid;
+  gap: 8px;
+}
+.drawing-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 110px;
+  background: rgba(45, 90, 140, 0.07);
+  border: 1px dashed var(--line-strong);
+}
+.drawing-faint path {
+  stroke: var(--blue);
+  stroke-opacity: 0.28;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 2 2;
+}
+.drawing-pencil path {
+  stroke: var(--ink-dim);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke-dashoffset 220ms ease-out;
+}
+.drawing-section {
+  margin: 14px 0 6px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--amber-ink);
+}
+.drawing-captured {
+  margin-top: 16px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line-strong);
+}
+.drawing-captured-row {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+.type-sheet {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 14px 14px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  box-shadow: 1px 3px 4px rgba(36, 31, 24, 0.3);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  min-width: 0;
+}
+.type-sheet-head {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.type-sheet-kicker {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+.type-sheet-name {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.type-stamp {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 2px solid var(--ink-faint);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  transform: rotate(-3deg);
+}
+.type-stamp.is-red { border-color: var(--red); color: var(--red); }
+.type-stamp.is-amber { border-color: var(--amber-ink); color: var(--amber-ink); }
+.type-stamp.is-green { border-color: var(--green); color: var(--green); }
+.type-stamp.wear-1, .type-stamp.wear-2, .type-stamp.wear-3, .type-stamp.wear-4, .type-stamp.wear-5, .type-stamp.wear-6 {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mask-mode: luminance;
+  -webkit-mask-source-type: luminance;
+}
+.type-dials {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.type-dial {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.type-dial-svg {
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+}
+.type-dial-arc { stroke: var(--line-strong); }
+.type-dial-tick { stroke: var(--ink-dim); stroke-width: 1.2; }
+.type-dial-needle { stroke: var(--red); stroke-width: 2; stroke-linecap: round; }
+.type-dial-hub { fill: var(--ink); }
+.type-dial-value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+}
+.type-dial-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+.type-fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.type-fields dt {
+  color: var(--ink-faint);
+}
+.type-fields dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.type-orders {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line-strong);
+}
+.type-order-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.type-inquiry-choices {
+  display: grid;
+  gap: 8px;
+}
+.type-fields dd.is-red { color: var(--red); }

@@ -34,10 +34,12 @@ export {
   researchOutlook,
   estimateLineCompletionTurn,
   designDisplay,
+  designStartPreview,
+  researchTrackPreview,
   buyerPreferenceDisplay,
   raceAssessment,
 } from './queries.js'
-export type { DesignDisplay, PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook, RaceAssessment } from './queries.js'
+export type { DesignStartPreview, ResearchTrackPreview, DesignDisplay, PlayerWinCurvePoint, BoardReviewOutlook, BoardMemo, BoardMemoItem, OrderTerms, CreditGrade, DriverLevel, ProjectedQuarter, CategoryResearchOutlook, RaceAssessment } from './queries.js'
 // getProduct/allProducts: paketets ENDA väg till produktkatalogen (avsnitt 6) för
 // extern kod — packages/harness (P9) behöver getProduct för att avgöra om en order
 // gäller en restricted-produkt (Order har bara productId, inte en kopia av

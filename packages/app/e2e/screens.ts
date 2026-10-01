@@ -389,6 +389,80 @@ export async function enterStandingAlarm(page: Page): Promise<void> {
   await page.getByTestId('standing-back-supply-steel').waitFor()
 }
 
+// P126 (ETAPP9_FORSLAG.md §9): ritbordet och typbladen. Ett riktigt parti har inga konstruktioner förrän ett designprojekt
+// gått klart (flera kvartal), och ingen fångad materiel förrän ett genombrott — så samma IndexedDB-injektion som
+// enterCrisis: tre konstruktioner (ej provad med dold miljöbrist, beprövad, under utredning), ett pågående projekt, en
+// öppen utredning och ett fångat system, och en relation hos köparna som tillåter fältprov.
+async function injectDesigns(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise<{ state: { house: Record<string, unknown>; officials: Record<string, unknown> } }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const house = saved.state.house
+    const base = {
+      category: 'artillery',
+      baseProductId: '105mm_field_gun',
+      generation: 1,
+      focus: 'balanced',
+      ambition: 'timely',
+      unitCostFactor: 1.1,
+      uncertainty: 1,
+      flawRevealed: false,
+      testedIn: [],
+      fieldRecord: { occasions: 0, proven: false },
+      lineage: null,
+      introducedTurn: 1,
+      status: 'active',
+    }
+    house.designs = [
+      { ...base, id: 'design-1', name: 'H&V M64 Field Gun', performance: 62, reliability: 71, trueQuality: 66, latentFlaw: { environment: 'monsoon', severity: 2 } },
+      { ...base, id: 'design-2', name: 'H&V M65 Field Gun', performance: 74, reliability: 58, trueQuality: 72, latentFlaw: null, testedIn: ['jungle'], fieldRecord: { occasions: 3, proven: true }, uncertainty: 0 },
+      { ...base, id: 'design-3', name: 'H&V M66 Heavy Gun', performance: 55, reliability: 80, trueQuality: 48, latentFlaw: { environment: 'mine', severity: 1 }, flawRevealed: true },
+    ]
+    house.investigations = [
+      { id: 'inv-1', designId: 'design-3', environment: 'mine', severity: 1, frontId: 'front-1', buyerId: 'rvn', openedTurn: 1, deadlineTurn: 5, status: 'open', causeEventId: null },
+    ]
+    ;(house.rnd as unknown[]).push({ id: 'rnd-design-armour-1', category: 'armour', turnsRemaining: 2, turnsTotal: 4, costFactor: 1, design: { focus: 'advanced', ambition: 'forward', targetGeneration: 2, upgradeOf: null } })
+    house.capturedMateriel = [{ systemId: 'nlf-artillery', name: 'Type 63 rocket launcher', category: 'artillery', fromFactionId: 'nlf', units: 3 }]
+    ;(house.standingOrders as Record<string, unknown>).research = { artillery: { pace: 'normal', sinceTurn: 1 } }
+    house.treasury = 20_000_000
+    for (const o of Object.values(saved.state.officials) as { relationToPlayer: number }[]) o.relationToPlayer = 80
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+  await page.getByTestId('tab-company').click()
+}
+
+// Ritbordet: en blåkopia vänd, så att Segmented-raderna (fokus, ambition, startpunkt, tempo) syns i sin tätaste form.
+export async function enterDrawingBoard(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('standing-flip-drawing-artillery').click()
+  await page.getByTestId('standing-back-drawing-artillery').waitFor()
+}
+
+// Typbladet: tre blad med instrument och stämplar, det under utredning med sina order öppna (utredningskortet, provning, fältprov).
+export async function enterTypeSheet(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('type-orders-toggle-design-3').click()
+  await page.getByTestId('type-orders-design-3').waitFor()
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -413,4 +487,6 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'policy-warning', path: '/', setup: enterPolicyWarning },
   { name: 'standing-orders', path: '/', setup: enterStandingOrders },
   { name: 'standing-alarm', path: '/', setup: enterStandingAlarm },
+  { name: 'drawing-board', path: '/', setup: enterDrawingBoard },
+  { name: 'type-sheet', path: '/', setup: enterTypeSheet },
 ]

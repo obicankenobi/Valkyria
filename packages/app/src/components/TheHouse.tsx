@@ -30,8 +30,10 @@ import {
 } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
+import { DrawingBoard } from './DrawingBoard.js'
 import { LedgerChart } from './LedgerChart.js'
 import { StandingOrdersBoard } from './StandingOrdersBoard.js'
+import { TypeSheets } from './TypeSheet.js'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
 
 function contractMargin(contract: Contract, commodities: Record<Commodity, number>): { marginPct: number | null; unitCostNow: number } {
@@ -299,6 +301,10 @@ export function TheHouse({
         onRemove={onRemoveStandingOrder}
         focusCard={focusCard}
       />
+
+      {/* P126 (ETAPP9 §9): ritbordet (en blåkopia per kategori) och typbladen för husets färdiga konstruktioner. */}
+      <DrawingBoard state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} onAddAction={onAddAction} />
+      <TypeSheets state={state} draft={draft} onAddAction={onAddAction} onSet={onSetStandingOrder} />
 
       <Panel title="R&D and staff">
         {researchOutlook(state).map((r) => (

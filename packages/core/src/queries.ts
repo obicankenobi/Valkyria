@@ -11,9 +11,13 @@ import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import { integrityBidTerm } from './traces.js'
 import type { Bloc } from './race.js'
-import { BLOCS, blocOfFaction, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, noveltyFactor } from './race.js'
+import { BLOCS, blocOfFaction, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, frontierGeneration, isFollowerTarget, noveltyFactor } from './race.js'
+import { projectCostPerTurn, projectOverheadPerTurn, researchDuration } from './research.js'
 import {
+  BALANCE_DESIGN_STEPS,
   QUALITY_CLASSES,
+  newDesignProject,
+  validateDesignStart,
   buyerPreferenceMix,
   KIT_UNIT_COST_FACTOR,
   bidDesignRejection,
@@ -35,7 +39,9 @@ import type {
   BidEstimate,
   BoardTarget,
   Design,
+  DesignAmbition,
   DesignFlaw,
+  DesignFocus,
   Formation,
   FormationDisplay,
   Front,
@@ -48,6 +54,7 @@ import type {
   Pct,
   ProductionLine,
   QualityClass,
+  ResearchPace,
   RivalId,
   SectorControl,
   TechCategory,
@@ -829,6 +836,51 @@ export interface DesignDisplay {
   // P117: nyhetsvärdet (0–100, avtar) och de block där konstruktionen är utfasad (offentligt — generationsstegen är rubriker).
   novelty: number
   phasedOutFor: Bloc[]
+}
+
+// P126 (ETAPP9 §9): det ritbordet visar innan en ordning köas — längd, kostnad per tur, målgeneration och avvisningsorsaken i
+// klartext. Läser exakt de funktioner standingOrders.ts tillämpar (newDesignProject, validateDesignStart, isFollowerTarget),
+// så förhandsvisningen aldrig kan skilja sig från det som faktiskt läggs i kön.
+export interface DesignStartPreview {
+  turns: number
+  costPerTurn: Money
+  targetGeneration: number
+  follower: boolean // ett efterföljarprojekt mot en redan fältad nivå är billigare och kortare (P119)
+  reason: string | null // null = ordern går att köa
+}
+
+export function designStartPreview(
+  state: GameState,
+  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: string },
+): DesignStartPreview {
+  const target = frontierGeneration(state, change.category) + BALANCE_DESIGN_STEPS[change.ambition]
+  const follower = isFollowerTarget(state, change.category, target)
+  const project = newDesignProject(
+    state.house,
+    { category: change.category, focus: change.focus, ambition: change.ambition, targetGeneration: target, upgradeOf: change.upgradeOf ?? null },
+    state.meta.turn,
+    follower,
+  )
+  return {
+    turns: project.turnsTotal,
+    costPerTurn: round(projectOverheadPerTurn(state.house, { category: change.category, costFactor: project.costFactor })),
+    targetGeneration: target,
+    follower,
+    reason: validateDesignStart(state.house, { ...change, upgradeOf: change.upgradeOf ?? null }),
+  }
+}
+
+// P126: ett forskningsspårs nästa projekt — längd och kostnad per tur för ett givet tempo.
+export interface ResearchTrackPreview {
+  turns: number
+  costPerTurn: Money
+}
+
+export function researchTrackPreview(state: GameState, category: TechCategory, pace: ResearchPace): ResearchTrackPreview {
+  return {
+    turns: researchDuration(state.house, pace),
+    costPerTurn: round(projectOverheadPerTurn(state.house, { category, costFactor: projectCostPerTurn(pace) })),
+  }
 }
 
 export function designDisplay(state: GameState, design: Design): DesignDisplay {
