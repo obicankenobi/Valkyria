@@ -364,10 +364,19 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // annat i P117 (nyhetsvärde, utfasning, motmedelsforskning, counterBidTerm) rör partierna, eftersom ingen bot har konstruktioner.
   // balance.frozen.json följer med (nya rader: en anteckning och tio tal). De nya hasharna: passive 9d17c10fad501, aggressive
   // 3e99092d65ea5, balanced d72eaa2ef55c5.
+  //
+  // Omfryst IGEN i P118 (ETAPP9_FORSLAG.md §7.1/§12, beslut 9C — förhandsauktoriserat "regel"-prompt, egen commit efter koden).
+  // De scriptade partierna ändras på riktigt: GameState.race är nytt tillstånd, rivalkonstruktionernas `generation` får en ny källa
+  // (blockens generation i stället för P109:s tidsschema), och generationsskiftena (rubrik per steg, tur 4/8/12/16) och
+  // påskyndningarna (counterReaction) är nya händelser. Attribution: med `advanceRace` och `accelerateBlocStep` avstängda och
+  // `race` struket ur det hashade tillståndet är wire och tillstånd bit-identiska med P117:s utom RivalDesign.generation (5–6
+  // rader per parti) — ändringen är alltså exakt det prompten beskriver. balance.frozen.json följer med (nya rader: en
+  // anteckning, fyra tal och schemat; generationStepTurns borttagen). De nya hasharna: passive 17adc8e53f9211, aggressive
+  // 1fb8a6c8527ab9, balanced c5d1cc24ee7f9.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '9d17c10fad501' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '3e99092d65ea5' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'd72eaa2ef55c5' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '17adc8e53f9211' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1fb8a6c8527ab9' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'c5d1cc24ee7f9' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
