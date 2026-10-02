@@ -7,6 +7,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
+import { designerCostFactor, designerFlawReductionPct, designerQualityBonus, designerTurnsSaved } from './designer.js'
 import { exclusivityRejection } from './exportRules.js'
 import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
 import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus, yardstickAgainstPlayer } from './race.js'
@@ -174,6 +175,7 @@ export function rollDesign(rng: Rng, house: House, spec: DesignRollSpec): Design
     BALANCE.designFlawBasePct +
       steps * BALANCE.designAmbitionFlawGainPct +
       (spec.skunk ? BALANCE.skunkFlawGainPct : 0) -
+      designerFlawReductionPct(house) -
       (house.staff.chiefEngineer > BALANCE.chiefEngineerProjectThreshold ? BALANCE.designChiefEngineerFlawReductionPct : 0) -
       experience * BALANCE.designExperienceFlawReductionPct,
   )
@@ -181,7 +183,7 @@ export function rollDesign(rng: Rng, house: House, spec: DesignRollSpec): Design
   const breakthrough = roll < BALANCE.designBreakthroughBasePct
   const flawed = !breakthrough && roll < BALANCE.designBreakthroughBasePct + flawPct
   const delta = breakthrough ? BALANCE.designBreakthroughDelta : flawed ? BALANCE.designFlawDelta : 0
-  const trueQuality = clampPct((performance + reliability) / 2 + delta + rng.int(-BALANCE.designSpread, BALANCE.designSpread))
+  const trueQuality = clampPct((performance + reliability) / 2 + delta + rng.int(-BALANCE.designSpread, BALANCE.designSpread) + designerQualityBonus(house, spec.category, spec.focus))
 
   const latentFlaw = flawed ? { environment: rng.pick(DESIGN_ENVIRONMENTS), severity: rng.int(1, 3) } : null
 
@@ -397,13 +399,15 @@ export function newDesignProject(house: House, spec: DesignProjectSpec & { categ
   // P119 (princip 5): ett efterföljarprojekt — mot en nivå som redan fältats — är billigare och kortare.
   const followerTurns = follower ? Math.max(1, baseTurns - BALANCE.followerTurnsSaved) : baseTurns
   // P134 (§8b.3): ett specialprojekt går fortare men kostar mer per tur.
-  const turns = spec.skunk ? Math.max(1, Math.round(followerTurns * BALANCE.skunkTurnsFactor)) : followerTurns
+  const skunkTurns = spec.skunk ? Math.max(1, Math.round(followerTurns * BALANCE.skunkTurnsFactor)) : followerTurns
+  // P134 (§8b.3): en snabb chefskonstruktör kortar ett projekt en tur.
+  const turns = Math.max(1, skunkTurns - designerTurnsSaved(house))
   return {
     id: `rnd-design-${spec.category}-${turn}`,
     category: spec.category,
     turnsRemaining: turns,
     turnsTotal: turns,
-    costFactor: designCostPerTurn(spec.ambition, upgrade) * (follower ? BALANCE.followerCostFactor : 1) * (spec.skunk ? BALANCE.skunkCostFactor : 1),
+    costFactor: designCostPerTurn(spec.ambition, upgrade) * (follower ? BALANCE.followerCostFactor : 1) * (spec.skunk ? BALANCE.skunkCostFactor : 1) * designerCostFactor(house),
     design: {
       focus: spec.focus,
       ambition: spec.ambition,

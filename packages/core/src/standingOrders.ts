@@ -12,6 +12,7 @@ import { COMMODITIES, TECH_CATEGORIES } from './validateAction.js'
 import { applyInvestigationChoice, validateInvestigationChoice } from './investigations.js'
 import { applyProgrammeChange, validateProgrammeChange } from './programme.js'
 import { applyCivilChange, validateCivilChange } from './civil.js'
+import { applyDesignerChange, validateDesignerChange } from './designer.js'
 import { applyLicenceChange, validateLicenceChange } from './licence.js'
 import { applyLegalChange, applyTraceChange, validateLegalChange, validateTraceChange } from './traces.js'
 import { frontierGeneration, isFollowerTarget } from './race.js'
@@ -122,6 +123,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       return validateCivilChange(draft, change)
     case 'LICENCE':
       return validateLicenceChange(draft, change)
+    case 'DESIGNER':
+      return validateDesignerChange(draft, change)
     case 'INVESTIGATION': {
       const reason = validateInvestigationChoice(house, change)
       return reason ? fail(reason) : { ok: true }
@@ -244,6 +247,9 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         break
       case 'LICENCE':
         applyLicenceChange(ctx, change)
+        break
+      case 'DESIGNER':
+        applyDesignerChange(ctx, change)
         break
       case 'TESTING': {
         // P110: provning i egen regi. SET byter miljö och börjar om räkningen (från nästa tur); CANCEL avbryter.

@@ -720,6 +720,7 @@ export interface HumanOptions {
   legal: boolean // juridisk rådgivning när spår finns
   bothSides: boolean // söker kontrakt hos båda blocken
   inquiry: 'settle' | 'deny'
+  designer?: boolean // P134: anställer en fri chefskonstruktör (noggrann, ritar balanserat artilleri)
   licence?: boolean // P135: licensierar en konstruktion till en faktion (helst en embargerad) och tar emot royalty
   skunk?: boolean // P134: ritar i specialprojekt (snabbare och dyrare, större risk för en dold brist)
   civil?: boolean // P133: civila linjer — forskar i pansar och öppnar en civil linje när tekniknivån räcker
@@ -912,6 +913,10 @@ export function makeHuman(opts: HumanOptions): Policy {
     standing.push(...inquiryStandingOrders(state, opts))
     if (opts.civil) standing.push(...civilStandingOrders(state))
     if (opts.licence) standing.push(...licenceStandingOrders(state))
+    if (opts.designer && !state.house.designer && state.house.treasury >= state.house.foundingCapital) {
+      const hire: StandingOrderChange = { kind: 'DESIGNER', op: 'HIRE', designerId: 'ingrid-sollberg' }
+      if (validateStandingOrderChange(state, state, hire).ok && state.meta.turn <= 2) standing.push(hire)
+    }
     if (opts.legal && (state.traces ?? []).some((t) => t.houseId === 'player') && state.house.standingOrders?.legal === undefined) {
       standing.push({ kind: 'LEGAL', op: 'SET' })
     }
@@ -938,6 +943,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-civil': makeHuman({ ...BASE_HUMAN, civil: true }),
   'human-skunk': makeHuman({ ...BASE_HUMAN, skunk: true }),
   'human-licence': makeHuman({ ...BASE_HUMAN, licence: true }),
+  'human-designer': makeHuman({ ...BASE_HUMAN, designer: true }),
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }

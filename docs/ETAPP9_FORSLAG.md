@@ -823,6 +823,10 @@ lämnar golden orörd.
 > **P137 MÄTT 2026-10-02.** Fyra nya härnesskolumner och `human-licence`. Licensen var en gratis lunch (83,5 % mot 67,5 %) tills engångsbeloppet, royaltyn och rivalens kapital justerades
 > (150 000 / 25 000 / 6 M) — nu 68,0 %. `exportBreaches` 0 i alla botspel. Golden-hasharna oförändrade. Se ANDRINGSLOGG 2026-10-02.
 
+> **P134 (resterande del) BYGGD 2026-10-02.** Namngivna chefskonstruktörer (`designer.ts`, `data/designers.json`): sex personer med egenskap och inriktning, `DESIGNER HIRE`/`RELEASE`, värvning
+> över från en rival (dubbelt pris) och en rivals chans att värva över husets (5 % per tur). UI på ritbordet. `human-designer` 59,5 % mot `human` 67,5 %. Golden-hasharna oförändrade.
+> **P134 är därmed helt byggd.**
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

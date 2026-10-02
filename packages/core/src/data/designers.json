@@ -1,0 +1,8 @@
+{
+  "viktor-ahlberg": { "id": "viktor-ahlberg", "name": "Viktor Ahlberg", "trait": "fast", "focus": "advanced", "category": "aviation", "employer": "meridian" },
+  "helene-marchetti": { "id": "helene-marchetti", "name": "Hélène Marchetti", "trait": "careful", "focus": "robust", "category": "armour", "employer": "brandt" },
+  "otto-brenner": { "id": "otto-brenner", "name": "Otto Brenner", "trait": "frugal", "focus": "balanced", "category": "infantry", "employer": "costigan" },
+  "ingrid-sollberg": { "id": "ingrid-sollberg", "name": "Ingrid Sollberg", "trait": "careful", "focus": "balanced", "category": "artillery", "employer": null },
+  "tomas-reiter": { "id": "tomas-reiter", "name": "Tomas Reiter", "trait": "fast", "focus": "robust", "category": "electronics", "employer": null },
+  "marguerite-vance": { "id": "marguerite-vance", "name": "Marguerite Vance", "trait": "frugal", "focus": "advanced", "category": "naval", "employer": null }
+}

@@ -96,6 +96,8 @@ export interface GameState {
   programmes?: Programme[]
   // P124 (ETAPP9 §8.3): pappersspåren — ett per korrupt handling. Utelämnas tills det första. Skrivs bara av traces.ts.
   traces?: PaperTrace[]
+  // P134 (§8b.3): vem som anställer en namngiven chefskonstruktör just nu, när det avviker från datan (designers.json). Utelämnat tills den första anställningen.
+  designerMarket?: Record<string, 'player' | RivalId | null>
   pendingFormationReplacements: FormationReplacementRequest[]
   doomsday: Pct
   doomsdayPeak: Pct // för RESTRAINT i epilogen
@@ -318,6 +320,8 @@ export interface House {
   researchHeadStart: Record<TechCategory, number>
   // P135 (§8b.4): licenser på husets konstruktioner. Utelämnat tills den första — ett sparat parti från före P135 läses som inga.
   licences?: Licence[]
+  // P134 (§8b.3): husets namngivna chefskonstruktör (data/designers.json). Utelämnat = ingen.
+  designer?: { id: string; sinceTurn: number }
   // P108 (§4.5): krasprogrammet låser husets bud i kategorin NÄSTA kvartal — kategori → den tur då budet avvisas.
   // Ett sparat parti från före P108 saknar fältet och läses som inga lås.
   rndBidLock: Partial<Record<TechCategory, number>>
@@ -1209,6 +1213,8 @@ export type StandingOrderChange =
   // P125: juridisk rådgivning — en stående order som sänker chansen att spår kommer fram. Kostar ingen handling.
   | { kind: 'LEGAL'; op: 'SET' | 'CANCEL' }
   | { kind: 'CIVIL'; op: 'SET' | 'CANCEL'; category: CivilCategory }
+  | { kind: 'DESIGNER'; op: 'HIRE'; designerId: string }
+  | { kind: 'DESIGNER'; op: 'RELEASE' }
   | { kind: 'LICENCE'; op: 'GRANT'; designId: DesignId; factionId: FactionId }
   | { kind: 'LICENCE'; op: 'REVOKE'; licenceId: string }
 

@@ -39,6 +39,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'CIVIL':
       // P133: en civil linje per kategori (SET och CANCEL delar nyckel). Anslagstavlans kort byggs i P136.
       return `civil:${change.category}`
+    case 'DESIGNER':
+      // P134: en chefskonstruktör åt gången — HIRE och RELEASE delar nyckel, den senare vinner.
+      return 'designer'
     case 'LICENCE':
       // P135: en licens per konstruktion och licenstagare (GRANT), eller en återkallelse per licens. Kort för licenser byggs i P136.
       return change.op === 'GRANT' ? `licence:${change.designId}:${change.factionId}` : `licence-revoke:${change.licenceId}`

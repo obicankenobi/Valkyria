@@ -165,3 +165,23 @@ describe('del F på ritbordet (P136)', () => {
     expect(card('electronics').textContent).toContain('needs tech level')
   })
 })
+
+describe('chefskonstruktören (P134)', () => {
+  it('listar de sex personerna med arbetsgivare och pris; HIRE köar en DESIGNER HIRE, en rivals person kostar mer (POACH)', () => {
+    const { onSet } = setup()
+    expect(screen.getByTestId('designer-ingrid-sollberg').textContent).toContain('FREE')
+    expect(screen.getByTestId('designer-viktor-ahlberg').textContent).toContain('AT ')
+    expect(screen.getByTestId('designer-hire-viktor-ahlberg').textContent).toContain('POACH')
+    fireEvent.click(screen.getByTestId('designer-hire-ingrid-sollberg'))
+    expect(onSet).toHaveBeenCalledWith({ kind: 'DESIGNER', op: 'HIRE', designerId: 'ingrid-sollberg' })
+  })
+
+  it('en anställd konstruktör visas med egenskap och kan släppas', () => {
+    const state = createInitialState('indochina-slice', 'drawing-designer')
+    state.house.designer = { id: 'tomas-reiter', sinceTurn: 0 }
+    const { onSet } = setup(state)
+    expect(screen.getByTestId('chief-designer-hired').textContent).toContain('Tomas Reiter')
+    fireEvent.click(screen.getByTestId('chief-designer-release'))
+    expect(onSet).toHaveBeenCalledWith({ kind: 'DESIGNER', op: 'RELEASE' })
+  })
+})

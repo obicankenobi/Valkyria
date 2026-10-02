@@ -5491,3 +5491,9 @@ summary:focus-visible,
 .licence-section { display: flex; flex-direction: column; gap: 8px; }
 .licence-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; }
 .licence-row .meter { grid-column: 1 / -1; }
+
+/* P134: chefskonstruktören på ritbordet */
+.chief-designer { display: flex; flex-direction: column; gap: 8px; }
+.chief-designer-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.chief-designer-row .cf-hint, .chief-designer-row .ds-button { grid-column: 1 / -1; }
+.chief-designer-name { font-weight: 600; }

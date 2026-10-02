@@ -60,6 +60,8 @@ export { officialId, findOfficial } from './officials.js'
 export { validateAction } from './validateAction.js'
 // P127: budmappen filtrerar konstruktionerna med samma prövning som bidding.ts.
 export { bidDesignRejection } from './design.js'
+export { DESIGNERS, DESIGNER_TRAIT_TEXT, designerEmployer, hireCostFor, hiredDesigner } from './designer.js'
+export type { DesignerFile, DesignerTrait } from './designer.js'
 export { LICENCE_TERMS, licenceRivalId } from './licence.js'
 export { CIVIL_CATEGORIES, CIVIL_PRODUCT_NAME, civilOptions, civilRevenueFor, civilShare, isCivilCategory } from './civil.js'
 export { exclusivityRejection, isExportControlled, isExportViolation } from './exportRules.js'

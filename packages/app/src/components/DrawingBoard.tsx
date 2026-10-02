@@ -11,6 +11,11 @@ import { useState } from 'react'
 import {
   DESIGN_AMBITIONS,
   CIVIL_PRODUCT_NAME,
+  DESIGNERS,
+  DESIGNER_TRAIT_TEXT,
+  designerEmployer,
+  hireCostFor,
+  hiredDesigner,
   DESIGN_FOCUSES,
   TECH_CATEGORIES,
   civilRevenueFor,
@@ -211,6 +216,46 @@ function CategoryEditor({
   )
 }
 
+// P134 (§8b.3): chefskonstruktören — en namngiven person med en egenskap och en egen inriktning. Stående order (ingen handling).
+function ChiefDesigner({ state, onSet }: { state: GameState; onSet: (change: StandingOrderChange) => void }) {
+  const hired = hiredDesigner(state.house)
+  return (
+    <div className="chief-designer" data-testid="chief-designer">
+      <h4 className="drawing-section">CHIEF DESIGNER</h4>
+      {hired ? (
+        <>
+          <p className="cf-hint" data-testid="chief-designer-hired">
+            {hired.name} · {DESIGNER_TRAIT_TEXT[hired.trait]} · draws {FOCUS_LABEL[hired.focus]} {CATEGORY_NAME[hired.category]}.
+          </p>
+          <Button variant="secondary" onClick={() => onSet({ kind: 'DESIGNER', op: 'RELEASE' })} testId="chief-designer-release">
+            RELEASE
+          </Button>
+        </>
+      ) : (
+        Object.values(DESIGNERS).map((d) => {
+          const hire: StandingOrderChange = { kind: 'DESIGNER', op: 'HIRE', designerId: d.id }
+          const v = validateStandingOrderChange(state, state, hire)
+          const employer = designerEmployer(state, d.id)
+          const rival = employer && employer !== 'player' ? (state.rivals[employer]?.name ?? employer) : null
+          return (
+            <div className="chief-designer-row" key={d.id} data-testid={`designer-${d.id}`}>
+              <span className="chief-designer-name">{d.name}</span>
+              <Tag tone={rival ? 'amber' : 'green'}>{rival ? `AT ${rival.toUpperCase()}` : 'FREE'}</Tag>
+              <p className="cf-hint">
+                {DESIGNER_TRAIT_TEXT[d.trait]} · draws {FOCUS_LABEL[d.focus]} {CATEGORY_NAME[d.category]}
+              </p>
+              <Button variant="secondary" disabled={!v.ok} onClick={() => onSet(hire)} testId={`designer-hire-${d.id}`}>
+                {rival ? 'POACH' : 'HIRE'} · {formatMoney(hireCostFor(state, d.id))}
+              </Button>
+              {!v.ok && <p className="cf-hint is-warning">{v.reason}</p>}
+            </div>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
 export function DrawingBoard({
   state,
   draft,
@@ -289,6 +334,8 @@ export function DrawingBoard({
             )
           })}
         </div>
+
+        <ChiefDesigner state={state} onSet={file} />
 
         {captured.length > 0 && (
           <div className="drawing-captured" data-testid="drawing-captured">
