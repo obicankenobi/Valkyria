@@ -292,6 +292,7 @@ export function applyStandingOrders(ctx: ResolveContext): void {
               ambition: change.ambition,
               targetGeneration,
               upgradeOf: change.upgradeOf ?? null,
+              ...(change.skunk ? { skunk: true } : {}),
             },
             turn,
             isFollowerTarget(draft, change.category, targetGeneration), // P119: efterföljare betalar mindre

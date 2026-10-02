@@ -869,13 +869,13 @@ export interface DesignStartPreview {
 
 export function designStartPreview(
   state: GameState,
-  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: string },
+  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: string; skunk?: boolean },
 ): DesignStartPreview {
   const target = frontierGeneration(state, change.category) + BALANCE_DESIGN_STEPS[change.ambition]
   const follower = isFollowerTarget(state, change.category, target)
   const project = newDesignProject(
     state.house,
-    { category: change.category, focus: change.focus, ambition: change.ambition, targetGeneration: target, upgradeOf: change.upgradeOf ?? null },
+    { category: change.category, focus: change.focus, ambition: change.ambition, targetGeneration: target, upgradeOf: change.upgradeOf ?? null, ...(change.skunk ? { skunk: true } : {}) },
     state.meta.turn,
     follower,
   )

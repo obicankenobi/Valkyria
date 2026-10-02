@@ -278,6 +278,7 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
       'human-dirty',
       'human-noresearch',
       'human-robust',
+      'human-skunk',
       'passive',
     ])
   })

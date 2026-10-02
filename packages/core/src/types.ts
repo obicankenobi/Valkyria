@@ -401,6 +401,8 @@ export interface DesignProjectSpec {
   upgradeOf: DesignId | null
   // P113 (§5.6): "konstruera om" efter en olycksfågel — kortare tid, och konstruktionen blir felfri.
   redesignOf?: DesignId | null
+  // P134 (§8b.3): ett specialprojekt ("skunk works") — snabbare och dyrare, med mindre insyn och därmed större risk för en dold brist.
+  skunk?: boolean
 }
 
 // P110: en miljöbrist — dold tills den avslöjats (egen provning i rätt miljö eller en front med miljön).
@@ -454,6 +456,8 @@ export interface Design {
   // P132 (§8b.1): konstruktionen togs fram med ett forskningsanslag och är bunden till köparens block — kan inte bjudas till det andra blocket
   // eller till neutrala köpare (exportRules.ts). Utelämnat = ingen bindning.
   exclusiveTo?: 'west' | 'east'
+  // P134 (§8b.3): konstruktionen kom ur ett specialprojekt ("skunk works").
+  skunk?: boolean
 }
 
 // P116: ett namngivet fiendesystem (data/enemySystems.json) huset fått överlämnat — id = `${faktion}-${kategori}`.
@@ -1184,7 +1188,7 @@ export type StandingOrderChange =
   // P109 (ETAPP9_FORSLAG.md §5.2): ritbordsuppdraget — starta ett designprojekt (inriktning + ambition) eller
   // avbryt det pågående i kategorin. Kostar ingen handling.
   // P112: upgradeOf = en uppgradering av en egen konstruktion i samma kategori (billigare, snabbare, lägre tak, ärver ryktet).
-  | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId }
+  | { kind: 'DESIGN'; op: 'START'; category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId; skunk?: boolean }
   | { kind: 'DESIGN'; op: 'CANCEL'; category: TechCategory }
   // P122 (ETAPP9 §8.1): att anmäla sig till, lämna in en prototyp i och lämna en utvecklingsupphandling kostar ingen handling.
   | { kind: 'PROGRAMME'; op: 'ENTER'; programmeId: string }

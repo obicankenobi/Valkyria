@@ -808,6 +808,10 @@ lämnar golden orörd.
 > (bara `balance.frozen.json` omfryst). Mätt: `human-civil` 62,0 % mot `human` 67,5 %, civil andel 15,5 % av intäkterna, men pivoten måste göras före tur 3 och 59/200
 > går i konkurs. **Vapenviloraden kan inte prövas** (2 av 200 partier har en vapenvila). Inget gränssnitt för grenen än (P136). Se ANDRINGSLOGG 2026-10-02.
 
+> **P134 BYGGD (reducerad) 2026-10-02.** Bara specialprojekten (\"skunk works\"): `DESIGN START` med `skunk` går på 0,6 av tiden, kostar 1,3 × per tur och ger +12 procentenheter
+> risk för en dold brist (`Design.skunk`). Chefskonstruktörerna och värvningen är **inte** byggda. Golden-hasharna oförändrade, bara `balance.frozen.json` omfryst.
+> `human-skunk` 59,0 % mot `human` 67,5 %. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

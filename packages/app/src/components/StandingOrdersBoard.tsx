@@ -61,7 +61,7 @@ export function describeChange(change: StandingOrderChange): string {
     case 'DESIGN':
       return change.op === 'CANCEL'
         ? `CANCEL ${change.category.toUpperCase()} DESIGN`
-        : `${change.category.toUpperCase()} DESIGN · ${change.focus.toUpperCase()} · ${change.ambition.toUpperCase()}`
+        : `${change.category.toUpperCase()} DESIGN · ${change.focus.toUpperCase()} · ${change.ambition.toUpperCase()}${change.skunk ? ' · SKUNK WORKS' : ''}`
     case 'PROGRAMME':
       return change.op === 'SUBMIT' ? `SUBMIT ${change.designId} TO ${change.programmeId}` : `${change.op} ${change.programmeId}`
     case 'RESEARCH':

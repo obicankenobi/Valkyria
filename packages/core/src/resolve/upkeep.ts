@@ -79,6 +79,7 @@ export function advanceRndQueue(
         ambition: project.design.ambition,
         upgradeOf: project.design.upgradeOf,
         redesignOf: project.design.redesignOf ?? null,
+        ...(project.design.skunk ? { skunk: true } : {}),
         targetGeneration: project.design.targetGeneration,
         turn: designCtx.turn,
         year: designCtx.year,

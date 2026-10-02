@@ -720,6 +720,7 @@ export interface HumanOptions {
   legal: boolean // juridisk rådgivning när spår finns
   bothSides: boolean // söker kontrakt hos båda blocken
   inquiry: 'settle' | 'deny'
+  skunk?: boolean // P134: ritar i specialprojekt (snabbare och dyrare, större risk för en dold brist)
   civil?: boolean // P133: civila linjer — forskar i pansar och öppnar en civil linje när tekniknivån räcker
 }
 
@@ -781,6 +782,7 @@ function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrd
         category,
         focus: opts.focus === 'mix' ? affordableFocus(state, mixFocus(state, category)) : opts.focus,
         ambition: opts.ambition === 'cards' ? cardAmbition(state, category) : opts.ambition,
+        ...(opts.skunk ? { skunk: true } : {}),
       }
       if (validateStandingOrderChange(state, state, change).ok) {
         out.push(change)
@@ -919,6 +921,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-clean': makeHuman({ ...BASE_HUMAN, courting: false, tricks: false, legal: false }),
   'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny' }),
   'human-civil': makeHuman({ ...BASE_HUMAN, civil: true }),
+  'human-skunk': makeHuman({ ...BASE_HUMAN, skunk: true }),
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }

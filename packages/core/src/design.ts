@@ -50,6 +50,9 @@ interface Balance {
   designExperienceCap: number
   qualityClassThresholds: { A: number; B: number; C: number }
   designBidWeight: number
+  skunkTurnsFactor: number
+  skunkCostFactor: number
+  skunkFlawGainPct: number
   designBenchmarkBase: number
   preferenceMixBase: PreferenceMix
   preferenceMixAgendaShift: number
@@ -149,6 +152,8 @@ export interface DesignRollSpec {
   year: number
   // P113: en omkonstruktion efter en olycksfågel — felfri, och ärver bara ett icke-negativt utfall.
   redesignOf?: DesignId | null
+  // P134: ett specialprojekt ger en större risk för en dold brist (skunkFlawGainPct).
+  skunk?: boolean
 }
 
 // Utfallet (§5.2): genombrott, gedigen eller en konstruktion med en dold miljöbrist. Spannet beror på ambition,
@@ -167,7 +172,8 @@ export function rollDesign(rng: Rng, house: House, spec: DesignRollSpec): Design
   const flawPct = Math.max(
     0,
     BALANCE.designFlawBasePct +
-      steps * BALANCE.designAmbitionFlawGainPct -
+      steps * BALANCE.designAmbitionFlawGainPct +
+      (spec.skunk ? BALANCE.skunkFlawGainPct : 0) -
       (house.staff.chiefEngineer > BALANCE.chiefEngineerProjectThreshold ? BALANCE.designChiefEngineerFlawReductionPct : 0) -
       experience * BALANCE.designExperienceFlawReductionPct,
   )
@@ -199,6 +205,7 @@ export function rollDesign(rng: Rng, house: House, spec: DesignRollSpec): Design
     lineage: spec.upgradeOf,
     introducedTurn: spec.turn,
     status: 'active',
+    ...(spec.skunk ? { skunk: true } : {}),
   }
 }
 
@@ -361,7 +368,7 @@ export function isDesignProject(project: Pick<RndProject, 'design'>): boolean {
 
 export function validateDesignStart(
   house: House,
-  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId | null },
+  change: { category: TechCategory; focus: DesignFocus; ambition: DesignAmbition; upgradeOf?: DesignId | null; skunk?: boolean },
 ): string | null {
   if (!(TECH_CATEGORIES as readonly string[]).includes(change.category)) return 'unknown category'
   if (!(DESIGN_FOCUSES as readonly string[]).includes(change.focus)) return 'unknown design focus'
@@ -370,6 +377,7 @@ export function validateDesignStart(
     return 'tech level too low for a design in that category'
   }
   if (house.rnd.some((p) => p.category === change.category && p.design)) return 'a design project is already running in that category'
+  if (change.skunk && change.upgradeOf !== undefined && change.upgradeOf !== null) return 'a special project cannot be an upgrade'
   if (change.upgradeOf !== undefined && change.upgradeOf !== null) {
     const pred = house.designs?.find((d) => d.id === change.upgradeOf)
     if (!pred) return 'unknown design to upgrade'
@@ -387,19 +395,22 @@ export function newDesignProject(house: House, spec: DesignProjectSpec & { categ
     ? Math.max(1, Math.round(designDuration(house, spec.ambition, true) * BALANCE.redesignTurnsFactor))
     : designDuration(house, spec.ambition, upgrade)
   // P119 (princip 5): ett efterföljarprojekt — mot en nivå som redan fältats — är billigare och kortare.
-  const turns = follower ? Math.max(1, baseTurns - BALANCE.followerTurnsSaved) : baseTurns
+  const followerTurns = follower ? Math.max(1, baseTurns - BALANCE.followerTurnsSaved) : baseTurns
+  // P134 (§8b.3): ett specialprojekt går fortare men kostar mer per tur.
+  const turns = spec.skunk ? Math.max(1, Math.round(followerTurns * BALANCE.skunkTurnsFactor)) : followerTurns
   return {
     id: `rnd-design-${spec.category}-${turn}`,
     category: spec.category,
     turnsRemaining: turns,
     turnsTotal: turns,
-    costFactor: designCostPerTurn(spec.ambition, upgrade) * (follower ? BALANCE.followerCostFactor : 1),
+    costFactor: designCostPerTurn(spec.ambition, upgrade) * (follower ? BALANCE.followerCostFactor : 1) * (spec.skunk ? BALANCE.skunkCostFactor : 1),
     design: {
       focus: spec.focus,
       ambition: spec.ambition,
       targetGeneration: spec.targetGeneration,
       upgradeOf: spec.upgradeOf,
       ...(redesign ? { redesignOf: spec.redesignOf } : {}),
+      ...(spec.skunk ? { skunk: true } : {}),
     },
   }
 }
