@@ -855,6 +855,19 @@ Upphandlingsmappen, utvärderingsprotokollet och pappersspårets utredningskort 
 **P137 MÄTT 2026-10-02:** del F i härnessen (`human-licence`, fyra nya kolumner). Licensen var en gratis lunch (83,5 %) tills talen sänktes (nu 68,0 % mot `human` 67,5 %). `exportBreaches` 0 i botspel. Golden-hasharna oförändrade. **P138 (speltest) återstår för ägaren.**
 **P134 (resterande del) BYGGD 2026-10-02:** namngivna chefskonstruktörer (`designer.ts`, `data/designers.json`): `DESIGNER HIRE`/`RELEASE`, värvning över från rivaler (dubbelt pris), en rivals chans att värva över husets (5 %/tur, bara medan huset har en), egenskaperna snabb/noggrann/sparsam, UI på ritbordet. Golden-hasharna oförändrade. **P134 är helt byggd.**
 **P135 (resterande del) BYGGD 2026-10-02:** kundanpassning av ett bud (`Bid.customise`: 1,2 × kostnad, poängbonus, 20 % skandalrisk som halverar ordern; slumptalet dras bara för kundanpassade bud). Golden-hasharna oförändrade. **Hela del F (P132–P137) är byggd; P138 (speltest, ingen kod) återstår för ägaren.**
+Etapp 10, "Världen svarar", `docs/ETAPP10_FORSLAG.md` (P139–P161, **antagen 2026-10-02**, ägarbesluten
+10A–10O loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) är nästa etapp, i två delar. **10A,
+"Slipningen" (P139–P148)** lägger inte till någon mekanik: ett samlat speltest först (P95, P105 och P138 i
+ett), rättad mätning, mekanik som är avstängd eller nedskruvad slås på eller tas bort ("på eller bort"),
+fusket får verklig risk, kapplöpningens takt sänks, THE COMPANY delas i fyra lådor och handledningen byggs
+ut. **10B (P149–P161)** ger historiska händelser (nytt pipeline-steg `history` direkt efter `applyActions`,
+beslut 10E; data i `core/data/history/`; varje händelse verklig, daterad och belagd, bilaga A), rivalerna
+som motspelare (ordförande, hållning, agg, sex drag, motvikt och svårighetsgrad) och spelkänslan
+(kartuppspelning, förstasidor, sigill, syntetiserade ljudeffekter). **10A körs i sin helhet före 10B.**
+**Golden får frysas om av kodsessionen bara i promptar märkta "regel" i specens §14** (beslut 10D, egen
+commit, efter verifiering); i övriga promptar gäller "stanna och fråga". En prompt i 10A som behöver ett
+nytt fält i `GameState` stannar och frågar. Inga verkliga vapenhus och inga påhittade citat i
+händelsetexterna (10I, 10J, DESIGN.md §15). Premisskontrollen i §0 görs om mot koden före P139.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
