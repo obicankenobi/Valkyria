@@ -7,6 +7,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
+import { exclusivityRejection } from './exportRules.js'
 import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
 import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus, yardstickAgainstPlayer } from './race.js'
 import { TECH_CATEGORIES } from './validateAction.js'
@@ -489,6 +490,9 @@ export function bidDesignRejection(
   // P117 (§6.3): en konstruktion vars generation fasats ut för köparens block kan inte längre bjudas.
   const offered = state.house.designs.find((d) => d.id === bid.designId)!
   if (designPhasedOutForBuyer(state, offered, order.buyerId)) return 'design phased out for this buyer'
+  // P132 (§8b.1): en konstruktion bunden av ett forskningsanslag får inte säljas till det andra blocket eller till neutrala.
+  const exclusive = exclusivityRejection(state, offered, order.buyerId)
+  if (exclusive) return exclusive
   if (!bid.kit) return null
   return kitBidRejection(state, state.house.designs.find((d) => d.id === bid.designId)!, order, bid.price)
 }

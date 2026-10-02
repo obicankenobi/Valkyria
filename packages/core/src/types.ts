@@ -448,6 +448,9 @@ export interface Design {
   // P117 (§6.3): turen då utfasningen för ett block märktes (av advanceDesignLifecycle) — bara en markering för rubriken
   // och visningen. Behörigheten läses alltid ur generationen (designPhasedOutForBuyer), aldrig ur den här flaggan.
   phasedOut?: Partial<Record<'west' | 'east', number>>
+  // P132 (§8b.1): konstruktionen togs fram med ett forskningsanslag och är bunden till köparens block — kan inte bjudas till det andra blocket
+  // eller till neutrala köpare (exportRules.ts). Utelämnat = ingen bindning.
+  exclusiveTo?: 'west' | 'east'
 }
 
 // P116: ett namngivet fiendesystem (data/enemySystems.json) huset fått överlämnat — id = `${faktion}-${kategori}`.
@@ -971,7 +974,7 @@ export interface ProgrammeEntrant {
 
 // ── P124/P125: pappersspåret (ETAPP9 §8.3) ───────────────────────────────────
 
-export type TraceKind = 'writeSpec' | 'handbuilt' | 'bribeBoard' | 'falsify' | 'bidBribe' | 'bribe' | 'broker' | 'favour' | 'legal'
+export type TraceKind = 'writeSpec' | 'handbuilt' | 'bribeBoard' | 'falsify' | 'bidBribe' | 'bribe' | 'broker' | 'favour' | 'legal' | 'illegalExport'
 
 // Ett spår per korrupt handling: vem, vilken tjänsteman, vilken sorts handling, hur allvarlig, vilken tur. open = ännu dolt,
 // surfaced = har kommit fram (P125:s utredningskort), closed = avgjort, swept = sopat (juridisk rådgivning).

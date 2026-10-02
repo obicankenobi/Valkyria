@@ -20,6 +20,7 @@ const KIND_TEXT: Record<PaperTrace['kind'], string> = {
   bribeBoard: 'payments to the test board',
   falsify: 'a forged test protocol',
   bidBribe: 'a bribe in a bid',
+  illegalExport: 'an export-controlled sale across the bloc line',
   bribe: 'a payment to an official',
   broker: 'a brokered deal',
   favour: 'a favour called in',

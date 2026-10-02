@@ -60,6 +60,7 @@ export { officialId, findOfficial } from './officials.js'
 export { validateAction } from './validateAction.js'
 // P127: budmappen filtrerar konstruktionerna med samma prövning som bidding.ts.
 export { bidDesignRejection } from './design.js'
+export { exclusivityRejection, isExportControlled, isExportViolation } from './exportRules.js'
 // P125: pappersspåret — gränssnittet (P128) läser sannolikhet, rent rykte och avstängning ur samma funktioner som reglerna.
 export { INTEGRITY_START, cleanHouse, integrityBidTerm, isSuspendedFrom, traceSurfaceChancePct } from './traces.js'
 export { previewAction } from './previewAction.js'

@@ -794,6 +794,15 @@ lämnar golden orörd.
 > tröskeln. **Ej nådda rader (strukturella):** gap-chocker 9,7 per parti (ägarbeslutet om schemat 2026-09-30 står i 17 tester), pappersspår framkomna 12 %,
 > `human-bothsides` doomsday +1, hävda kontrakt, först på plats, olycksfåglar, unga intäkter 18 %. Se ANDRINGSLOGG 2026-10-02.
 
+> **P131 LEVERERAD 2026-10-02 (ersättning).** Speltestet kan inte göras av en kodsession; `docs/SPELTEST_ETAPP9.md` är checklistan för ägaren, med de
+> härnessiffror som redan finns för varje delfråga. Svaret på §14 punkt 3 togs av uppdraget "schemalägg P131–P135": del F byggs i etapp 9 (P132–P135).
+>
+> **P132 BYGGD 2026-10-02.** `exportRules.ts`: exklusivitet (en konstruktion som vinner en upphandling med forskningsanslag binds till köparens block och
+> avvisas av `bidDesignRejection` hos det andra blocket och hos neutrala köpare) och exportlistan (generation ≥ `exportControlGeneration`: ett väst-/östanslutet
+> hus som vinner ett bud över blockgränsen ger doomsday, heat och ett pappersspår `illegalExport`; neutrala hus undantas). **Golden-hasharna oförändrade**
+> (botarna ritar inget), bara `balance.frozen.json` omfryst. `human` 67,5 %. **Gap:** inget gränssnitt (P136), rivalernas konstruktioner binds inte, "sämre
+> betalningsvillkor" för neutrala hus ej byggt. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

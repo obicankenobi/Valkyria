@@ -17,7 +17,7 @@ import {
   programmeRequirements,
   validateProgrammeChange,
 } from '../src/programme.js'
-import { advanceRace } from '../src/race.js'
+import { advanceRace, blocOfFaction } from '../src/race.js'
 import { resolveTurn } from '../src/resolve/index.js'
 import { createRng } from '../src/rng.js'
 import { createInitialState } from '../src/state.js'
@@ -441,6 +441,23 @@ describe('tilldelning och delad order (P122, §8.1)', () => {
     expect(state.factions['rvn']!.militaryBudget).toBe(budget - contract.price)
     expect(state.factions['rvn']!.materielNeed.artillery).toBe(Math.max(0, 100 - p.prize.quantity))
     expect(emitted.some((e) => e.severity === 'headline' && e.headline.includes('AWARDS') && e.headline.includes(state.house.name.toUpperCase()))).toBe(true)
+  })
+
+  it('P132: en vinnande konstruktion i en upphandling MED forskningsanslag binds till köparens block (exklusivitet); utan anslag binds den inte', () => {
+    const withGrant = trialState(tuned(90, 90, 0.7), { grant: { kind: 'costPlus', amount: 400_000 } })
+    const { ctx, emitted } = makeCtx(withGrant)
+    advanceProgrammes(ctx)
+    expect(withGrant.programmes![0]!.result?.winner).toBe('player')
+    const bloc = blocOfFaction(withGrant, 'rvn')
+    expect(bloc).not.toBeNull()
+    expect(withGrant.house.designs[0]!.exclusiveTo).toBe(bloc)
+    expect(emitted.some((e) => e.headline.includes('IS BOUND TO THE') && e.headline.includes('RESEARCH GRANT'))).toBe(true)
+
+    const noGrant = trialState(tuned(90, 90, 0.7), { grant: null })
+    const second = makeCtx(noGrant)
+    advanceProgrammes(second.ctx)
+    expect(noGrant.programmes![0]!.result?.winner).toBe('player')
+    expect(noGrant.house.designs[0]!.exclusiveTo).toBeUndefined()
   })
 
   it('en rival som vinner får ett RivalContract och kapital', () => {

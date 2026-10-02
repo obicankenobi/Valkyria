@@ -87,6 +87,7 @@ const KIND_TEXT: Record<TraceKind, string> = {
   broker: 'A BROKERED DEAL',
   favour: 'A FAVOUR CALLED IN',
   legal: 'LEGAL ADVICE ON THE FILES',
+  illegalExport: 'AN EXPORT-CONTROLLED SALE ACROSS THE BLOC LINE',
 }
 
 const ROLE_TEXT: Record<keyof House['staff'], string> = {

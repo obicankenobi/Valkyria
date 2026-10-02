@@ -9,6 +9,7 @@ import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
 import { integrityBidTerm, isSuspendedFrom, recordTrace } from '../../traces.js'
 import { recordIncome } from '../../ledger.js'
+import { applyExportViolation, isExportViolation } from '../../exportRules.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
 
@@ -326,6 +327,9 @@ export const bidding: ResolveStep = (ctx) => {
         actorIsPlayer: true,
         subjectId: order.buyerId,
       })
+
+      // P132 (§8b.1): en exportreglerad konstruktion såld över blockgränsen ger doomsday, heat och ett pappersspår.
+      if (winningDesign && isExportViolation(draft, winningDesign, order.buyerId)) applyExportViolation(ctx, winningDesign, order.buyerId, contract.id, winId)
 
       // P98: förskottet betalas nu, innan första leveransen — bokförd intäkt (revenueByTurn,
       // så styrelsens progressSnapshot och kreditgränsen ser den) och en huvudboksrad. Resten

@@ -9,6 +9,7 @@
 //
 // P122 mäter deltagarna på sina sanna värden; P123 lägger provet i köparens miljö, prototypfaktorn, mätbruset och protokollet.
 // Slump används inte här (P123 drar mätbruset med ctx.rng). Varje ändring emitterar en WireEvent med causeId (hård regel 4).
+import { bindDesignToGrantBloc } from './exportRules.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { categoryReputation } from './bidTerms.js'
 import { designBaseProduct, designBenchmark, designTrueValues, frontEnvironments, revealFlaw } from './design.js'
@@ -646,6 +647,21 @@ function award(ctx: ResolveContext, programme: Programme, houseId: 'player' | st
       ...(design ? { designId: design.id } : {}),
     }
     draft.market.contracts.push(contract)
+    // P132 (§8b.1): teknik som tagits fram med ett forskningsanslag binds till köparens block (exklusivitet).
+    if (design) {
+      const bound = bindDesignToGrantBloc(draft, design, programme.buyerId, programme.grant !== null)
+      if (bound !== null) {
+        emit({
+          severity: 'report',
+          scope: 'house',
+          headline: `THE ${design.name.toUpperCase()} IS BOUND TO THE ${bound.toUpperCase()} BY ITS RESEARCH GRANT — IT CANNOT BE SOLD ACROSS THE BLOC LINE`,
+          causeId,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: programme.buyerId,
+        })
+      }
+    }
     if (lowballing) programme.lowball = { houseId: 'player', awardedTurn: draft.meta.turn, discount: listPrice - price, contractId: contract.id }
     // Husets spår i den här upphandlingen kopplas till kontraktet (P125: ett upptäckt spår kan häva det).
     for (const trace of draft.traces ?? []) if (trace.programmeId === programme.id && trace.houseId === 'player' && trace.contractId === undefined) trace.contractId = contract.id
