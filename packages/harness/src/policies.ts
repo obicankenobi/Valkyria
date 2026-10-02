@@ -18,6 +18,7 @@ import {
   blocOfFaction,
   buyerPreferenceMix,
   computeUnitCostNow,
+  designBaseProduct,
   frontEnvironments,
   getProduct,
   officialId,
@@ -738,6 +739,13 @@ function mixFocus(state: GameState, category: TechCategory): DesignFocus {
   return ranked[0]![0] === 'performance' ? 'advanced' : 'robust'
 }
 
+// En dyr ritning (advanced) lönar sig bara för ett hus med marginal i kassan — annars väljer en försiktig spelare den billiga, tillförlitliga.
+const HUMAN_ADVANCED_CASH_SHARE = 1.5
+function affordableFocus(state: GameState, focus: DesignFocus): DesignFocus {
+  if (focus === 'advanced' && state.house.treasury < state.house.foundingCapital * HUMAN_ADVANCED_CASH_SHARE) return 'robust'
+  return focus
+}
+
 function cardAmbition(state: GameState, category: TechCategory): DesignAmbition {
   return requirementCards(state).some((c) => c.category === category && c.inTurns <= 1) ? 'forward' : 'timely'
 }
@@ -754,7 +762,14 @@ function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrd
   if (house.treasury >= house.foundingCapital * HUMAN_DESIGN_CASH_SHARE) {
     // En spelare som sköter sin ekonomi ritar i sin specialisering först och går vidare först när kassan klarar det.
     const rich = house.treasury >= house.foundingCapital
-    const ordered = [house.specialisation, ...(rich ? TECH_CATEGORIES.filter((c) => c !== house.specialisation) : [])]
+    // En konstruktion passar bara basprodukten i sin kategori — en spelare ritar där efterfrågan finns (öppna ordrar och tecknade
+    // kontrakt på basprodukten), med specialiseringen som val när efterfrågan är lika.
+    const demand = (c: TechCategory): number => {
+      const base = designBaseProduct(c).id
+      return state.market.openOrders.filter((o) => o.productId === base).length + state.market.contracts.filter((k) => k.productId === base).length
+    }
+    const byDemand = [...TECH_CATEGORIES].sort((a, b) => demand(b) - demand(a) || (a === house.specialisation ? -1 : b === house.specialisation ? 1 : 0))
+    const ordered = rich ? byDemand : byDemand.slice(0, 1)
     for (const category of ordered) {
       const hasCurrent = (house.designs ?? []).some((d) => d.category === category && d.status === 'active' && !staleDesign(state, d.generation, category))
       if (hasCurrent) continue
@@ -762,7 +777,7 @@ function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrd
         kind: 'DESIGN',
         op: 'START',
         category,
-        focus: opts.focus === 'mix' ? mixFocus(state, category) : opts.focus,
+        focus: opts.focus === 'mix' ? affordableFocus(state, mixFocus(state, category)) : opts.focus,
         ambition: opts.ambition === 'cards' ? cardAmbition(state, category) : opts.ambition,
       }
       if (validateStandingOrderChange(state, state, change).ok) {

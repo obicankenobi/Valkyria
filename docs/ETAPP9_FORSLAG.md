@@ -788,6 +788,12 @@ lämnar golden orörd.
 > grundkapitalet; gap-chocker 9,9 per parti (mål 1–3); konstruktioner vinner i praktiken inga bud (unga intäkter, först på plats 0). Se ANDRINGSLOGG 2026-10-02
 > och P130.
 
+> **P130 BYGGD 2026-10-02 (balanspass A–E, data).** `designBidWeight` 6 → 40 och `boardTarget.threshold` 2,31 → 2,45. Mätt (200 partier): `human` 70,5 %,
+> `human-noresearch` 51,5 (+19 pp), `human-robust` 74,0, `human-advanced` 39,5, `human-clean` 40,5, `human-dirty` 55,5; vakterna och `capacity`-referensen håller.
+> **Golden omfryst på ett eget beslut** (P130 är typad "data"; ägaren gav uppdraget att ta egna beslut och återkoppla) i egen commit, attribuerad till
+> tröskeln. **Ej nådda rader (strukturella):** gap-chocker 9,7 per parti (ägarbeslutet om schemat 2026-09-30 står i 17 tester), pappersspår framkomna 12 %,
+> `human-bothsides` doomsday +1, hävda kontrakt, först på plats, olycksfåglar, unga intäkter 18 %. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

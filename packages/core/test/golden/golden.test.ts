@@ -426,10 +426,16 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // `reputation.integrity` struket ur det hashade tillståndet, är alla tre hashar bit-identiska med P124:s (8bd0a4cc97a96, 1ffcde769af96b,
   // 564be11a60fa2). balance.frozen.json följer med (nya rader: en anteckning och 28 tal). De nya hasharna: passive 17d301750e44ea,
   // aggressive 16c3ae1aa99888, balanced 7b4739c6ea139.
+  // Omfryst IGEN i P130 (ETAPP9_FORSLAG.md §10/§12, balanspass A–E). OBS: P130 är typad "data", inte "regel" — omfrysningen är ett eget beslut av
+  // kodsessionen (ägarens uppdrag 2026-10-02: "dyker det upp något jag hade behövt besluta tar du ett eget beslut och återkopplar"), i egen commit.
+  // Attribution: bara `boardTarget.threshold` 2,31 → 2,45 (indochina-slice.json) rör de scriptade partierna (styrelsegranskningen); med
+  // `designBidWeight` 6 i stället för 40 är alla tre hashar bit-identiska med de nya (golden-botarna ritar inga konstruktioner), och med BÅDA
+  // gamla värden är de bit-identiska med P125:s. balance.frozen.json följer med (en ny anteckning och ett ändrat tal).
+  // De nya hasharna: passive 63048b0971ece, aggressive 9b9662250ca4a, balanced 9ebe54ccbc404.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '17d301750e44ea' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '16c3ae1aa99888' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '7b4739c6ea139' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '63048b0971ece' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9b9662250ca4a' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '9ebe54ccbc404' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
