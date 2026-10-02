@@ -11,6 +11,7 @@ import {
   BLOCS,
   BOT_BALANCE,
   COMMODITIES,
+  CUSTOMISE_TERMS,
   TECH_CATEGORIES,
   bidDesignRejection,
   bidEstimate,
@@ -625,17 +626,23 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
     let best: { price: number; confidence: number } | null = null
     let bestValue = 0
     let bestDesign: string | undefined
+    let bestCustomise = false
     for (const designId of options) {
-      const curve = playerWinCurve(state, order, grade, designId)
-      const totalCost = curve[0]!.price // kurvans golv ÄR egen självkostnad (P84)
-      const minMargin = opts.bothSides ? 0 : HUMAN_MIN_MARGIN
-      for (const point of curve) {
-        if (point.confidence < HUMAN_MIN_CONFIDENCE || marginAt(point.price, totalCost) < minMargin) continue
-        const value = (point.price - totalCost) * (point.confidence / 100)
-        if (value > bestValue) {
-          best = point
-          bestValue = value
-          bestDesign = designId
+      for (const custom of opts.customise ? [false, true] : [false]) {
+        const curve = playerWinCurve(state, order, grade, designId, false, custom)
+        const totalCost = curve[0]!.price // kurvans golv ÄR egen självkostnad (P84)
+        const minMargin = opts.bothSides ? 0 : HUMAN_MIN_MARGIN
+        // En kundanpassning kan halvera ordern vid en skandal: det förväntade värdet minskas med den förväntade förlusten.
+        const risk = custom ? 1 - (CUSTOMISE_TERMS.scandalPct / 100) * (1 - CUSTOMISE_TERMS.scandalOrderFactor) : 1
+        for (const point of curve) {
+          if (point.confidence < HUMAN_MIN_CONFIDENCE || marginAt(point.price, totalCost) < minMargin) continue
+          const value = (point.price - totalCost) * (point.confidence / 100) * risk
+          if (value > bestValue) {
+            best = point
+            bestValue = value
+            bestDesign = designId
+            bestCustomise = custom
+          }
         }
       }
     }
@@ -643,7 +650,7 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
     const bloc = blocOfFaction(state, order.buyerId)
     const unserved = opts.bothSides && bloc !== null && !servedBlocs.has(bloc)
     candidates.push({
-      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0, ...(bestDesign ? { designId: bestDesign } : {}) },
+      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0, ...(bestDesign ? { designId: bestDesign } : {}), ...(bestCustomise ? { customise: true } : {}) },
       value: unserved ? bestValue * 1000 : bestValue,
       advancePct: order.advancePct,
       lines: linesNeededFor(order),
@@ -720,6 +727,7 @@ export interface HumanOptions {
   legal: boolean // juridisk rådgivning när spår finns
   bothSides: boolean // söker kontrakt hos båda blocken
   inquiry: 'settle' | 'deny'
+  customise?: boolean // P135: kundanpassar bud när det lönar sig (värdet minskas med skandalrisken)
   designer?: boolean // P134: anställer en fri chefskonstruktör (noggrann, ritar balanserat artilleri)
   licence?: boolean // P135: licensierar en konstruktion till en faktion (helst en embargerad) och tar emot royalty
   skunk?: boolean // P134: ritar i specialprojekt (snabbare och dyrare, större risk för en dold brist)
@@ -944,6 +952,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-skunk': makeHuman({ ...BASE_HUMAN, skunk: true }),
   'human-licence': makeHuman({ ...BASE_HUMAN, licence: true }),
   'human-designer': makeHuman({ ...BASE_HUMAN, designer: true }),
+  'human-custom': makeHuman({ ...BASE_HUMAN, customise: true }),
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }

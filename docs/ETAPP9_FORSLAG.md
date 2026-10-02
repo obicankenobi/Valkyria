@@ -827,6 +827,9 @@ lämnar golden orörd.
 > över från en rival (dubbelt pris) och en rivals chans att värva över husets (5 % per tur). UI på ritbordet. `human-designer` 59,5 % mot `human` 67,5 %. Golden-hasharna oförändrade.
 > **P134 är därmed helt byggd.**
 
+> **P135 (resterande del) BYGGD 2026-10-02.** Kundanpassning av ett bud (`Bid.customise`): 1,2 × styckkostnad, en poängbonus, och 20 % risk för en politisk skandal hos köparen som halverar ordern
+> (slumptalet dras bara för kundanpassade bud). `human-custom` 72,0 % mot `human` 67,5 %. Golden-hasharna oförändrade. **Hela del F (P132–P137) är därmed byggd; P138 (speltest) återstår.**
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

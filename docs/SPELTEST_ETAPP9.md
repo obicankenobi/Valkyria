@@ -41,9 +41,10 @@ eller tills partiet tar slut.
 - `SABOTAGE`/`LEAK` mot en specifik upphandling har ingen egen knapp i mappen (nås bara via landsakten).
 - Prestanda och ljud är inte mätta på en riktig telefon (se `docs/ETAPP7_TEKNISK_SPEC.md` P93/P94).
 - Rivalernas konstruktioner är enkla (beslut 9F); de syns som rubriker, inte som något du kan bedöma på kartan.
-- **Del F är byggd i kärnan men har inget gränssnitt (P136):** exportregler och exklusivitet (P132), civil gren (P133), specialprojekt
-  (P134, reducerad — inga chefskonstruktörer) och licenser med embargo-konkurrent (P135, reducerad — inga kundanpassningar). De kan inte
-  provas på telefon än; härnessen visar bara att de inte rubbar vakterna (se `docs/ANDRINGSLOGG.md` 2026-10-02).
+- **Del F är byggd (P132–P137) med gränssnitt:** exportregler och exklusivitet, civil gren, specialprojekt, namngivna chefskonstruktörer, licenser med
+  embargo-konkurrent och kundanpassning. Känn efter på telefon: typbladets taggar och licenssektion, ritbordets civila linje, specialprojekt och
+  chefskonstruktör, budmappens kundanpassning och exportstämplar. Inga botspel når exportbrottet (`exportBreaches` 0) — det måste provas för hand
+  (rita `forward`/`ahead` till generation 2 och sälj över blockgränsen). Se `docs/ANDRINGSLOGG.md` 2026-10-02.
 
 ## Efter speltestet
 

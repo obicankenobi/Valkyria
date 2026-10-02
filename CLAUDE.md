@@ -854,6 +854,7 @@ Upphandlingsmappen, utvärderingsprotokollet och pappersspårets utredningskort 
 **P136 BYGGD 2026-10-02:** gränssnitt för del F — specialprojekt och civil linje på ritbordet, taggar och licenssektion på typbladet, exportstämplar i budmappen, `SABOTAGE`/`LEAK` mot en rival i upphandlingsmappen, civil andel i epilogen, Handboksuppslaget `state`. Golden orörd. P137 (mätning) är nästa.
 **P137 MÄTT 2026-10-02:** del F i härnessen (`human-licence`, fyra nya kolumner). Licensen var en gratis lunch (83,5 %) tills talen sänktes (nu 68,0 % mot `human` 67,5 %). `exportBreaches` 0 i botspel. Golden-hasharna oförändrade. **P138 (speltest) återstår för ägaren.**
 **P134 (resterande del) BYGGD 2026-10-02:** namngivna chefskonstruktörer (`designer.ts`, `data/designers.json`): `DESIGNER HIRE`/`RELEASE`, värvning över från rivaler (dubbelt pris), en rivals chans att värva över husets (5 %/tur, bara medan huset har en), egenskaperna snabb/noggrann/sparsam, UI på ritbordet. Golden-hasharna oförändrade. **P134 är helt byggd.**
+**P135 (resterande del) BYGGD 2026-10-02:** kundanpassning av ett bud (`Bid.customise`: 1,2 × kostnad, poängbonus, 20 % skandalrisk som halverar ordern; slumptalet dras bara för kundanpassade bud). Golden-hasharna oförändrade. **Hela del F (P132–P137) är byggd; P138 (speltest, ingen kod) återstår för ägaren.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

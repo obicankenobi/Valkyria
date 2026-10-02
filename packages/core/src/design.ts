@@ -52,6 +52,11 @@ interface Balance {
   qualityClassThresholds: { A: number; B: number; C: number }
   designBidWeight: number
   skunkTurnsFactor: number
+  customiseCostFactor: number
+  customiseBidBonus: number
+  customiseScandalPct: number
+  customiseScandalOrderFactor: number
+  customiseScandalRelationLoss: number
   skunkCostFactor: number
   skunkFlawGainPct: number
   designBenchmarkBase: number
@@ -468,6 +473,16 @@ export function kitPriceCap(order: Pick<Order, 'referencePrice'>): number {
 }
 
 export const KIT_UNIT_COST_FACTOR = BALANCE.kitUnitCostFactor
+
+// ── kundanpassning (P135, ETAPP9 §8b.4) ──────────────────────────────────────
+// Poängbonusen en kundanpassning ger, efter computeScore — delad av bidding.ts, bidEstimate och playerWinCurve (en formel, en källa).
+export const customiseBidTerm = (): number => BALANCE.customiseBidBonus
+export const CUSTOMISE_TERMS = {
+  costFactor: BALANCE.customiseCostFactor,
+  scandalPct: BALANCE.customiseScandalPct,
+  scandalOrderFactor: BALANCE.customiseScandalOrderFactor,
+  scandalRelationLoss: BALANCE.customiseScandalRelationLoss,
+}
 export const DESIGN_SPREAD = BALANCE.designSpread // P129: härnessens genombrottsmått läser spridningen ur datan
 
 // Villkoren för en uppgraderingssats: en uppgraderad konstruktion (lineage), köparen har fått föregångaren (eller någon

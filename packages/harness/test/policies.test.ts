@@ -275,6 +275,7 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
       'human-civil',
       'human-classic',
       'human-clean',
+      'human-custom',
       'human-designer',
       'human-dirty',
       'human-licence',

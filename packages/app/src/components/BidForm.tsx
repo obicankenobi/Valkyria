@@ -6,7 +6,7 @@
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useEffect, useMemo, useState } from 'react'
-import { advanceAmount, bidDesignRejection, bidEstimate, designBidStamps, isExportViolation, orderTerms, playerWinCurve } from '@seventh-front/core'
+import { CUSTOMISE_TERMS, advanceAmount, bidDesignRejection, bidEstimate, designBidStamps, isExportViolation, orderTerms, playerWinCurve } from '@seventh-front/core'
 import type { DriverLevel } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
@@ -94,12 +94,13 @@ export function BidForm({
   const chosenDesign = designId ? eligibleDesigns.find((d) => d.id === designId) : undefined
   const [kit, setKit] = useState<boolean>(existingBid?.kit ?? false)
   const useKit = kit && chosenDesign !== undefined && chosenDesign.lineage !== null
+  const [customise, setCustomise] = useState<boolean>(existingBid?.customise ?? false)
 
   // bidEstimate/playerWinCurve drar aldrig ur huvud-Rng:n (hash-seedade, se
   // queries.ts) — säkert att räkna om vid varje grade-byte utan att röra
   // rngCursor.
-  const estimate = useMemo(() => bidEstimate(state, order, grade, designId, useKit), [state, order, grade, designId, useKit])
-  const winCurve = useMemo(() => playerWinCurve(state, order, grade, designId, useKit), [state, order, grade, designId, useKit])
+  const estimate = useMemo(() => bidEstimate(state, order, grade, designId, useKit, customise), [state, order, grade, designId, useKit, customise])
+  const winCurve = useMemo(() => playerWinCurve(state, order, grade, designId, useKit, customise), [state, order, grade, designId, useKit, customise])
   const priceMin = winCurve[0]?.price ?? 0
   const priceMax = winCurve[winCurve.length - 1]?.price ?? priceMin
 
@@ -178,6 +179,15 @@ export function BidForm({
           )}
         </div>
       )}
+
+      <div className="cf-field">
+        <DsToggle label="Customise to the buyer (dearer, but a better mark)" checked={customise} onChange={setCustomise} testId="bid-customise" />
+        {customise && (
+          <p className="cf-hint" data-testid="bid-customise-hint">
+            Costs {Math.round((CUSTOMISE_TERMS.costFactor - 1) * 100)}% more to build. If it wins there is a {CUSTOMISE_TERMS.scandalPct}% risk of a scandal at the buyer that halves the order.
+          </p>
+        )}
+      </div>
 
       <div className="cf-field">
         <DsSlider
@@ -267,6 +277,7 @@ export function BidForm({
               bribe,
               ...(designId ? { designId } : {}),
               ...(useKit ? { kit: true } : {}),
+              ...(customise ? { customise: true } : {}),
             })
           }
           testId="bid-submit"

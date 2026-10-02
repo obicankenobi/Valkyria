@@ -24,6 +24,8 @@ import {
   designBidRejection,
   designBidTerm,
   kitBidTerm,
+  customiseBidTerm,
+  CUSTOMISE_TERMS,
   kitPriceCap,
   qualityClassOf,
 } from './design.js'
@@ -473,7 +475,7 @@ function usableDesign(state: GameState, order: Order, designId: string | undefin
   return { design, kit: kitOk }
 }
 
-export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string, kit = false): BidEstimate {
+export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string, kit = false, customise = false): BidEstimate {
   const product = getProduct(order.productId)
   const { design, kit: useKit } = usableDesign(state, order, designId, kit)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}`, 0)
@@ -528,7 +530,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
     raceState: state,
@@ -557,7 +559,7 @@ export interface PlayerWinCurvePoint {
   confidence: Pct
 }
 
-export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string, kit = false): PlayerWinCurvePoint[] {
+export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string, kit = false, customise = false): PlayerWinCurvePoint[] {
   const product = getProduct(order.productId)
   const { design, kit: useKit } = usableDesign(state, order, designId, kit)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}:playerWinCurve`, 0)
@@ -579,7 +581,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
   const lowestRivalPrice = rivalPrices.length > 0 ? Math.min(...rivalPrices) : order.referencePrice
   const rivalPriceHigh = Math.round(lowestRivalPrice * (1 + pct))
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1) * (customise ? CUSTOMISE_TERMS.costFactor : 1)
   const costFloor = Math.max(1, yourUnitCost * order.quantity)
   // P112: en satsaffärs pris kapas vid kitPriceCapFactor × referenspris (lägre marginal).
   const ceiling = Math.max(costFloor, useKit ? Math.min(rivalPriceHigh, kitPriceCap(order)) : rivalPriceHigh)
@@ -604,7 +606,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
     raceState: state,

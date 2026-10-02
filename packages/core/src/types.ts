@@ -591,6 +591,8 @@ export interface Bid {
   // P112 (§5.5): en uppgraderingssats till köparens befintliga materiel — kräver en uppgraderad konstruktion vars
   // föregångare köparen fått levererad. Lägre marginal (prisgolv och styckkostnad) mot snabbare affär (poängbonus).
   kit?: boolean
+  // P135 (§8b.4): en kundanpassning — dyrare att bygga, en poängbonus, och en risk för en politisk skandal hos köparen som halverar ordern.
+  customise?: boolean
 }
 
 export interface Contract {
@@ -624,6 +626,9 @@ export interface Contract {
   designId?: string
   // P112: kontraktet är en uppgraderingssats (Bid.kit).
   kit?: boolean
+  // P135: kontraktet är kundanpassat; scandalHalved = en politisk skandal hos köparen halverade ordern vid tilldelningen.
+  customised?: boolean
+  scandalHalved?: boolean
 }
 
 // Inte i avsnitt 2 — se ANDRINGSLOGG.md. production.ts (P5) skapar en Shipment när

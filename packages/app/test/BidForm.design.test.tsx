@@ -95,3 +95,34 @@ describe('budmappen: konstruktionsval (P127)', () => {
     expect(JSON.stringify(withDesign)).not.toBe(JSON.stringify(std))
   })
 })
+
+describe('budmappen: kundanpassning och exportstämplar (P135/P136)', () => {
+  it('kundanpassningen är en omkopplare: den höjer prisgolvet (dyrare att bygga), visar risken och skickas med som customise', () => {
+    const { onSubmit } = setup([])
+    const slider = () => screen.getByTestId('bid-price').getAttribute('data-min') ?? screen.getByTestId('bid-price').textContent
+    const before = slider()
+    fireEvent.click(screen.getByTestId('bid-customise'))
+    expect(screen.getByTestId('bid-customise-hint').textContent).toContain('scandal')
+    expect(slider()).not.toBe(before)
+    fireEvent.click(screen.getByTestId('bid-submit'))
+    expect(onSubmit.mock.calls[0]![0].customise).toBe(true)
+    cleanup()
+    const plain = setup([])
+    fireEvent.click(screen.getByTestId('bid-submit'))
+    expect(plain.onSubmit.mock.calls[0]![0].customise).toBeUndefined()
+  })
+
+  it('en bunden eller exportreglerad konstruktion får stämplar; en exportreglerad över blockgränsen visar EXPORT BREACH', () => {
+    setup([design({ generation: 2, exclusiveTo: 'west' })], (s) => {
+      s.house.homeState = 'west'
+    })
+    fireEvent.click(within(screen.getByTestId('bid-design')).getByText('#1'))
+    expect(screen.queryByTestId('stamp-bound')).toBeTruthy()
+    cleanup()
+    setup([design({ generation: 2 })], (s) => {
+      s.house.homeState = 'east' // köparen rvn är i väst i scenariot
+    })
+    fireEvent.click(within(screen.getByTestId('bid-design')).getByText('#1'))
+    expect(screen.queryByTestId('stamp-export-breach')).toBeTruthy()
+  })
+})

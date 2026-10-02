@@ -2,7 +2,7 @@
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
 import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
-import { KIT_UNIT_COST_FACTOR, bidDesignRejection, designBidTerm, kitBidTerm } from '../../design.js'
+import { CUSTOMISE_TERMS, KIT_UNIT_COST_FACTOR, bidDesignRejection, customiseBidTerm, designBidTerm, kitBidTerm } from '../../design.js'
 import { round } from '../../money.js'
 import { counterBidTerm, effectiveRivalReputation, firstInPlaceBidTerm } from '../../race.js'
 import { isBidLocked } from '../../research.js'
@@ -22,6 +22,7 @@ interface Candidate {
   score: number
   designId?: string // P109
   kit?: boolean // P112
+  customise?: boolean // P135
 }
 
 function pickWinner(candidates: readonly Candidate[]): Candidate | null {
@@ -188,9 +189,10 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + (playerBid.customise ? customiseBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order),
           ...(design ? { designId: design.id } : {}),
           ...(playerBid.kit ? { kit: true } : {}),
+          ...(playerBid.customise ? { customise: true } : {}),
         })
       }
     }
@@ -283,14 +285,21 @@ export const bidding: ResolveStep = (ctx) => {
       const winningDesign = winner.designId !== undefined ? draft.house.designs.find((d) => d.id === winner.designId) : undefined
       // P112: en uppgraderingssats sänker styckkostnaden ytterligare (lägre marginal mot snabbare affär).
       const unitCostAtSigning =
-        winningDesign || winner.kit ? round(baseUnitCost * (winningDesign ? winningDesign.unitCostFactor : 1) * (winner.kit ? KIT_UNIT_COST_FACTOR : 1)) : baseUnitCost
+        winningDesign || winner.kit || winner.customise
+          ? round(baseUnitCost * (winningDesign ? winningDesign.unitCostFactor : 1) * (winner.kit ? KIT_UNIT_COST_FACTOR : 1) * (winner.customise ? CUSTOMISE_TERMS.costFactor : 1))
+          : baseUnitCost
+      // P135 (§8b.4): en kundanpassning kan utlösa en politisk skandal hos köparen som halverar ordern. Slumptalet dras bara för ett kundanpassat bud.
+      const scandal = winner.customise === true && rng.chance(CUSTOMISE_TERMS.scandalPct)
+      const contractPrice = scandal ? round(winner.price * CUSTOMISE_TERMS.scandalOrderFactor) : winner.price
+      const contractQuantity = scandal ? Math.max(1, Math.round(order.quantity * CUSTOMISE_TERMS.scandalOrderFactor)) : order.quantity
+      if (scandal && faction) faction.militaryBudget += winner.price - contractPrice
       const contract: Contract = {
         id: `contract-${order.id}`,
         buyerId: order.buyerId,
         productId: order.productId,
-        quantity: order.quantity,
+        quantity: contractQuantity,
         unitsDelivered: 0,
-        price: winner.price,
+        price: contractPrice,
         unitCostAtSigning,
         grade: winner.grade,
         dueTurn: draft.meta.turn + winner.deliveryTurns,
@@ -300,9 +309,11 @@ export const bidding: ResolveStep = (ctx) => {
         frontId: order.frontId,
         // P98 (ETAPP8_FORSLAG.md §4.1): förskottet, fryst på ordern och betalt vid tilldelning.
         advancePct: order.advancePct,
-        advancePaid: advanceAmount(winner.price, order.advancePct),
+        advancePaid: advanceAmount(contractPrice, order.advancePct),
         ...(winningDesign ? { designId: winningDesign.id } : {}),
         ...(winner.kit ? { kit: true } : {}),
+        ...(winner.customise ? { customised: true } : {}),
+        ...(scandal ? { scandalHalved: true } : {}),
       }
       draft.market.contracts.push(contract)
       if (bribeTraceId !== null && winner.bribe > 0) {
@@ -321,12 +332,25 @@ export const bidding: ResolveStep = (ctx) => {
       const winId = emit({
         severity: 'headline',
         scope: 'market',
-        headline: `${draft.house.name.toUpperCase()} WINS CONTRACT: ${product.name.toUpperCase()} × ${order.quantity} TO ${buyerName}`,
+        headline: `${draft.house.name.toUpperCase()} WINS CONTRACT: ${product.name.toUpperCase()} × ${contractQuantity} TO ${buyerName}`,
         causeId: null,
-        delta: { price: winner.price },
+        delta: { price: contractPrice },
         actorIsPlayer: true,
         subjectId: order.buyerId,
       })
+
+      if (scandal) {
+        if (faction) faction.relationToPlayer = Math.max(0, faction.relationToPlayer - CUSTOMISE_TERMS.scandalRelationLoss)
+        emit({
+          severity: 'headline',
+          scope: 'house',
+          headline: `SCANDAL IN ${buyerName}: THE CUSTOMISED ${product.name.toUpperCase()} DEAL IS CALLED A FAVOUR — THE LEGISLATURE HALVES THE ORDER TO ${contractQuantity} UNITS`,
+          causeId: winId,
+          delta: { price: contractPrice - winner.price },
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
+      }
 
       // P132 (§8b.1): en exportreglerad konstruktion såld över blockgränsen ger doomsday, heat och ett pappersspår.
       if (winningDesign && isExportViolation(draft, winningDesign, order.buyerId)) applyExportViolation(ctx, winningDesign, order.buyerId, contract.id, winId)
