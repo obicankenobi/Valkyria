@@ -11,6 +11,7 @@ export const INCOME_LABELS: Required<Record<keyof LedgerEntry['income'], string>
   commodityRelease: 'Commodity release',
   fileSale: 'Sale of the file',
   civil: 'Civil lines',
+  licence: 'Licences and royalties',
 }
 
 export const EXPENSE_LABELS: Record<keyof LedgerEntry['expenses'], string> = {

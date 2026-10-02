@@ -812,6 +812,11 @@ lämnar golden orörd.
 > risk för en dold brist (`Design.skunk`). Chefskonstruktörerna och värvningen är **inte** byggda. Golden-hasharna oförändrade, bara `balance.frozen.json` omfryst.
 > `human-skunk` 59,0 % mot `human` 67,5 %. Se ANDRINGSLOGG 2026-10-02.
 
+> **P135 BYGGD (reducerad) 2026-10-02.** `licence.ts`: stående order `LICENCE GRANT`/`REVOKE` — engångsbelopp och royalty, licenstagarens förmåga växer (dubbelt så fort om
+> faktionen är embargerad) och vid tröskeln blir den en ny rival (`licensee-<faktion>`). Exklusiviteten och exportlistan (P132) gäller licenser. Kundanpassningar och skandalen
+> hos köparen är **inte** byggda. Golden-hasharna oförändrade, bara `balance.frozen.json` omfryst. Se ANDRINGSLOGG 2026-10-02. **Del F:s regelprompter P132–P135 är därmed
+> byggda (P134 reducerad till specialprojekt, P135 utan kundanpassningar); P136 (gränssnitt), P137 (mätning) och P138 (speltest) återstår.**
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

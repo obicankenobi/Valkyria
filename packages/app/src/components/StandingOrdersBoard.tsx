@@ -72,6 +72,8 @@ export function describeChange(change: StandingOrderChange): string {
       return change.op === 'CANCEL' ? 'DISMISS LEGAL COUNSEL' : 'RETAIN LEGAL COUNSEL'
     case 'CIVIL':
       return change.op === 'CANCEL' ? `CLOSE THE CIVIL ${change.category.toUpperCase()} LINE` : `OPEN A CIVIL ${change.category.toUpperCase()} LINE`
+    case 'LICENCE':
+      return change.op === 'REVOKE' ? `REVOKE ${change.licenceId}` : `LICENCE ${change.designId} TO ${change.factionId.toUpperCase()}`
   }
 }
 

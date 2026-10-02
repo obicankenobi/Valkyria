@@ -141,6 +141,7 @@ export interface LedgerEntry {
     broker: Money // leveranser av BROKER-kontrakt (contract-broker-*)
     commodityRelease: Money // MARKET/RELEASE
     fileSale: Money // krisvalet SELL_THE_FILE
+    licence?: Money // P135: licensavgifter och royalty — saknas i ett sparat parti från före P135
     civil?: Money // P133: civila linjer (netto) — saknas i ett sparat parti från före P133
   }
   expenses: {
@@ -315,6 +316,8 @@ export interface House {
   // krigsfront (deliveries.ts) och förbrukat i hela turer av ett pågående projekt (upkeep.ts advanceRndQueue).
   // Ett sparat parti från före P107 saknar fältet och läses som 0.
   researchHeadStart: Record<TechCategory, number>
+  // P135 (§8b.4): licenser på husets konstruktioner. Utelämnat tills den första — ett sparat parti från före P135 läses som inga.
+  licences?: Licence[]
   // P108 (§4.5): krasprogrammet låser husets bud i kategorin NÄSTA kvartal — kategori → den tur då budet avvisas.
   // Ett sparat parti från före P108 saknar fältet och läses som inga lås.
   rndBidLock: Partial<Record<TechCategory, number>>
@@ -1206,6 +1209,8 @@ export type StandingOrderChange =
   // P125: juridisk rådgivning — en stående order som sänker chansen att spår kommer fram. Kostar ingen handling.
   | { kind: 'LEGAL'; op: 'SET' | 'CANCEL' }
   | { kind: 'CIVIL'; op: 'SET' | 'CANCEL'; category: CivilCategory }
+  | { kind: 'LICENCE'; op: 'GRANT'; designId: DesignId; factionId: FactionId }
+  | { kind: 'LICENCE'; op: 'REVOKE'; licenceId: string }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1246,6 +1251,17 @@ export interface DesignTestOrder {
   environment: DesignEnvironment
   sinceTurn: number
   turnsRun: number
+}
+
+// P135 (§8b.4): en licens på en av husets konstruktioner till en faktion. capability 0–100 växer varje tur; vid licenceRivalCapability upphör
+// licensen och licenstagaren blir en ny rival (licensee-<faktion>).
+export interface Licence {
+  id: string
+  designId: DesignId
+  factionId: FactionId
+  sinceTurn: number
+  capability: number
+  status: 'active' | 'ended'
 }
 
 // P133 (§8b.2): kategorierna som har en civil produkt (pansar → traktorer, elektronik → radioapparater, flyg → transporthelikoptrar).
