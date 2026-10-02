@@ -42,7 +42,7 @@ export const ICON_SHAPES = {
 
 const STROKE = 1.8
 
-function shapeToSvg(shape, rand, rough) {
+export function shapeToSvg(shape, rand, rough) {
   const [kind, ...a] = shape
   switch (kind) {
     case 'line':

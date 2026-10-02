@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "shots": "node scripts/shots.mjs",
     "build:audio": "node scripts/build-audio.mjs",
+    "build:sfx": "node scripts/build-sfx.mjs",
     "perf": "node scripts/perf.mjs",
     "build:art": "node scripts/build-art.mjs"
   },

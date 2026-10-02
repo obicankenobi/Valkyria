@@ -28,6 +28,17 @@ kopplar in dem i P93 (eller tidigare, se avsnitt 6).
 > att kriskortet får `crisis.mp3` och att kriskortet inte drunknar i den; att en iPhone i tyst
 > läge är tyst (avsett); att musiken pausar när du byter app och fortsätter när du kommer tillbaka.
 
+> **Status 2026-10-02 (P155, beslut 10N):** de 18 saknade effekterna och de två miljöljuden är
+> **syntetiserade** av `npm run build:sfx --workspace=packages/app` (recept i
+> `packages/app/scripts/art/sfx.mjs`, ffmpegs egna sinus-, brus- och uttrycksgeneratorer; ingen
+> källfil och ingen licens att redovisa). De ligger i `packages/app/public/sounds/` under de namn
+> `sound.ts` frågar efter, så krokarna låter nu av sig. **Ingen har lyssnat på dem** — det som
+> kontrollerats är längd, nivå, tystnad, likspänning och determinism (`test/artFactory.test.ts`)
+> samt kurvformer och spektrogram. **Genomlyssning på telefonhögtalare återstår för ägaren;** en
+> effekt som inte håller måttet lämnas tyst genom att filen tas bort ur `public/sounds/` (motorn
+> tiger om en fil saknas). Hämtade CC0-effekter i `audio-src/sfx/` skriver över de syntetiserade
+> vid nästa `npm run build:audio`.
+
 ---
 
 ## 0. Läget i koden

@@ -29,6 +29,10 @@ a lacquered steel HUD with gauges. (Etapp 7 rule 8, `docs/ETAPP7_TEKNISK_SPEC.md
    @seventh-front/app`). Deterministic, seeded, no Math.random. Owns:
    - `public/art/icons/<VERB>.svg` — from `scripts/art/icons.mjs` (`ICON_SHAPES`)
    - `public/art/wear/ink-wear-<n>.svg` — stamp wear masks from `scripts/art/wear.mjs`
+   - `public/art/seals/<house>.svg`, `public/art/portraits/<id>.svg` (profile silhouettes, same ids as the
+     portrait files in `docs/GRAFISKA_TILLGANGAR_ETAPP7.md`) and `public/art/blueprints/<category>.svg` (P155)
+   - `makeFrontPage()` in `scripts/art/frontpage.mjs` — a printed front page from an event's text (inline SVG, not a file)
+   - `npm run build:sfx` — synthesised sound effects, recipes in `scripts/art/sfx.mjs` (needs ffmpeg; `FFMPEG=` to point at it)
    - `docs/ui/art/index.html` — the contact sheet
    Never hand-edit generated files; change the generator and rebuild.
 2. **Hand-written SVG in components** for anything data-driven (map, gauges, charts).
