@@ -46,7 +46,7 @@ function twoBlocBuyers(state: GameState): { west: string; east: string } {
   return { west, east }
 }
 
-function orderTo(state: GameState, buyerId: string): Order {
+function orderTo(_state: GameState, buyerId: string): Order {
   return {
     id: 'order-test-0',
     buyerId,
