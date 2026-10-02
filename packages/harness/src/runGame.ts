@@ -31,7 +31,7 @@
 // exakt så många rivalbud bidding.ts försöker pröva den turen. En rival som
 // saknas ur draft.rivals (finns inte i etapp 1,5) skulle göra denna nämnare en
 // aning för hög; ingen sådan borttagning existerar ännu.
-import { createInitialState, deriveSectorControl, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
+import { createInitialState, DESIGN_SPREAD, deriveSectorControl, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
 import type { GameState, TurnResult } from '@seventh-front/core'
 import type { Policy } from './policies.js'
 
@@ -75,6 +75,26 @@ export interface GameMetrics {
   buyoutReview: number // vilken granskning (1-baserat) BUYOUT inträffar vid, reviewTurns.length+1 = slutavräkningen; 0 om partiet inte slutar så
   submittedItems: number // bud + handlingar + stående orderändringar som policyn skickade in
   rejectedItems: number // av dem, de som resolveTurn avvisade
+  // P129 (ETAPP9_FORSLAG.md §10) — kolumnerna för del A–E. Alla lästa ur slutläget eller ur wire-rubriker (samma teknik som
+  // STANDING_ORDER_ALARMS), ingen ny räknare i core.
+  designs: number // husets konstruktioner
+  designBreakthroughs: number // konstruktioner vars dolda kvalitet ligger över det vanliga spannet kring den nominella (undre gräns — se kommentaren)
+  casualties: number // "FIELD REPORT"-rubriker: olycksfåglar i fält
+  battleProven: number // konstruktioner med fältrykte "stridsbeprövad"
+  gapShocks: number // "GAP SHOCK"-rubriker (bägge blocken)
+  firstInPlace: number // gånger HUSET var först på plats
+  falseGapsCreated: number // LEAK mot en bedömning som policyn skickade in
+  youngDesignRevenuePct: number // andel av konstruktionskontraktens intäkt som kom från konstruktioner yngre än fyra kvartal när kontraktet tecknades
+  programmes: number // upphandlingar som utlysts under partiet
+  programmesEntered: number // av dem, de husets anmälde sig till
+  programmesWon: number // vunna (helt eller delat som förstaplats)
+  programmesSplit: number // delade (huset fick 30 %-andelen)
+  programmesLost: number // anmälda men förlorade
+  traces: number // pappersspår som husets handlingar gav
+  tracesSurfaced: number // av dem, de som kommit fram
+  voidedByScandal: number // kontrakt hävda av en skandal ("CANCELS AFTER THE SCANDAL")
+  suspensions: number // avstängningar från en köpares upphandlingar
+  contractsWonViaProgramme: number // tilldelningar där huset var vinnare
 }
 
 // Rubrikmönstren för de tre larmen — grep:ade ordagrant ur emit()-anropen i standingOrders.ts,
@@ -86,6 +106,7 @@ const STANDING_ORDER_ALARMS = [
 ]
 
 const MAX_TURNS = 21
+const YOUNG_DESIGN_TURNS = 4 // §10: "konstruktioner yngre än fyra kvartal" — en tur är ett kvartal
 
 export function runGame(scenarioId: string, seed: string, policyName: string, policy: Policy): GameMetrics {
   let state: GameState = createInitialState(scenarioId, seed)
@@ -108,6 +129,17 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let standingOrderAlarms = 0
   let submittedItems = 0
   let rejectedItems = 0
+  // P129 — wire-räknare.
+  let casualties = 0
+  let gapShocks = 0
+  let firstInPlace = 0
+  let falseGapsCreated = 0
+  let suspensions = 0
+  let voidedByScandal = 0
+  const programmeIds = new Set<string>()
+  // Kontrakt med en konstruktion: konstruktionens ålder (i turer) vid tecknandet, exakt — Contract har inget signeringsfält.
+  const designContractAge = new Map<string, number>()
+  const enteredIds = new Set<string>()
 
   for (let t = 0; t < MAX_TURNS; t++) {
     const decidingThisTurn = state.market.openOrders.filter((o) => o.expiresTurn <= state.meta.turn)
@@ -118,7 +150,16 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     const result: TurnResult = resolveTurn(state, submission)
     submittedItems += submission.bids.length + submission.actions.length + submission.standingOrders.length
     rejectedItems += result.rejected.length
+    for (const action of submission.actions) {
+      const target = (action as { targetId?: string }).targetId
+      if (action.type === 'INTEL' && typeof target === 'string' && target.startsWith('assessment:')) falseGapsCreated++
+    }
     state = result.state
+    for (const c of state.market.contracts) {
+      if (!c.designId || designContractAge.has(c.id)) continue
+      const d = (state.house.designs ?? []).find((x) => x.id === c.designId)
+      if (d) designContractAge.set(c.id, state.meta.turn - d.introducedTurn)
+    }
     turnsPlayed++
 
     // P75 — jämför prevState (före denna resolveTurn) mot state (efter).
@@ -159,6 +200,11 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     if (t < 6) minTreasury = Math.min(minTreasury, state.house.treasury)
     for (const event of result.wire) {
       if (event.headline.startsWith('CEASEFIRE ON THE')) ceasefires++
+      if (event.headline.startsWith('FIELD REPORT:')) casualties++
+      if (event.headline.startsWith('GAP SHOCK:')) gapShocks++
+      if (event.actorIsPlayer && event.headline.includes(' IS FIRST IN PLACE ')) firstInPlace++
+      if (event.actorIsPlayer && event.headline.includes('IS SUSPENDED FROM TENDERING')) suspensions++
+      if (event.actorIsPlayer && event.headline.includes('CANCELS AFTER THE SCANDAL')) voidedByScandal++
       if (STANDING_ORDER_ALARMS.some((pattern) => event.headline.includes(pattern))) standingOrderAlarms++
       if (event.headline.includes('WINS CONTRACT')) {
         if (event.actorIsPlayer) playerWins++
@@ -193,6 +239,30 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
         ? reviewTurns.indexOf(state.status.turn) + 1
         : reviewTurns.length + 1
       : 0
+
+  // P129 — slutlägesmått. Upphandlingar: alla som någon gång syns i state.programmes (ett avslutat blir kvar med result).
+  const designs = state.house.designs ?? []
+  const programmes = state.programmes ?? []
+  for (const p of programmes) {
+    programmeIds.add(p.id)
+    if (p.entrants.some((e) => e.houseId === 'player')) enteredIds.add(p.id)
+  }
+  const wonProgrammes = programmes.filter((p) => p.result?.winner === 'player')
+  const splitProgrammes = programmes.filter((p) => p.result?.split?.second === 'player')
+  const lostProgrammes = programmes.filter(
+    (p) => enteredIds.has(p.id) && p.result && p.result.winner !== 'player' && p.result.split?.second !== 'player',
+  )
+  const traces = (state.traces ?? []).filter((tr) => tr.houseId === 'player')
+  const designById = new Map(designs.map((d) => [d.id, d]))
+  let designRevenue = 0
+  let youngRevenue = 0
+  for (const c of state.market.contracts) {
+    if (!c.designId) continue
+    const d = designById.get(c.designId)
+    const share = c.quantity > 0 ? (c.price * c.unitsDelivered) / c.quantity : 0
+    designRevenue += share
+    if (d && (designContractAge.get(c.id) ?? Number.POSITIVE_INFINITY) < YOUNG_DESIGN_TURNS) youngRevenue += share
+  }
 
   const totalRevenue = state.house.revenueByTurn.reduce((sum, r) => sum + r, 0)
   const totalCost = state.market.contracts.reduce((sum, c) => sum + c.unitCostAtSigning * c.unitsDelivered, 0)
@@ -245,5 +315,23 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     buyoutReview,
     submittedItems,
     rejectedItems,
+    designs: designs.length,
+    designBreakthroughs: designs.filter((d) => d.trueQuality - (d.performance + d.reliability) / 2 > DESIGN_SPREAD).length,
+    casualties,
+    battleProven: designs.filter((d) => d.fieldRecord.proven).length,
+    gapShocks,
+    firstInPlace,
+    falseGapsCreated,
+    youngDesignRevenuePct: designRevenue > 0 ? (youngRevenue / designRevenue) * 100 : 0,
+    programmes: programmeIds.size,
+    programmesEntered: enteredIds.size,
+    programmesWon: wonProgrammes.length,
+    programmesSplit: splitProgrammes.length,
+    programmesLost: lostProgrammes.length,
+    traces: traces.length,
+    tracesSurfaced: traces.filter((tr) => tr.status !== 'open').length,
+    voidedByScandal,
+    suspensions,
+    contractsWonViaProgramme: wonProgrammes.length,
   }
 }

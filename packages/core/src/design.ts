@@ -452,6 +452,7 @@ export function kitPriceCap(order: Pick<Order, 'referencePrice'>): number {
 }
 
 export const KIT_UNIT_COST_FACTOR = BALANCE.kitUnitCostFactor
+export const DESIGN_SPREAD = BALANCE.designSpread // P129: härnessens genombrottsmått läser spridningen ur datan
 
 // Villkoren för en uppgraderingssats: en uppgraderad konstruktion (lineage), köparen har fått föregångaren (eller någon
 // tidigare i släktlinjen) levererad (ett fullgjort kontrakt bärande dess designId), och priset ligger under taket

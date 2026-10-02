@@ -199,3 +199,39 @@ describe('human — mätt uppförande (P103:s klart-när, mindre stickprov än C
     expect(rejected / submitted).toBeLessThanOrEqual(0.05)
   }, 60_000)
 })
+
+// P129 (ETAPP9_FORSLAG.md §10): spelstilsvarianterna och de nya mätkolumnerna.
+describe('human — P129:s varianter', () => {
+  it('är registrerade och human-classic är den gamla boten utan konstruktioner', () => {
+    for (const name of ['human-classic', 'human-robust', 'human-advanced', 'human-noresearch', 'human-bothsides', 'human-clean', 'human-dirty']) {
+      expect(POLICIES[name], name).toBeTypeOf('function')
+    }
+    const state = stateWithOrders()
+    const classic = POLICIES['human-classic']!(state)
+    expect(classic.standingOrders.some((o) => o.kind === 'DESIGN')).toBe(false)
+  })
+
+  it('human-clean skickar aldrig ett PROCUREMENT-knep; human-dirty kan göra det', () => {
+    let clean = 0
+    for (const seed of ['p129-a', 'p129-b', 'p129-c']) {
+      const m = runGame('indochina-slice', seed, 'human-clean', POLICIES['human-clean']!)
+      clean += m.traces
+    }
+    // Rent hus: inga egna spår från knep (mutor i vanliga bud kan ge spår — den bot som aldrig fuskar bjuder inte med muta heller).
+    expect(clean).toBe(0)
+  })
+
+  it('en körning ger alla nya kolumner som ändliga, icke-negativa tal', () => {
+    const m = runGame('indochina-slice', 'p129-metrics', 'human', human)
+    for (const key of [
+      'designs', 'designBreakthroughs', 'casualties', 'battleProven', 'gapShocks', 'firstInPlace', 'falseGapsCreated',
+      'youngDesignRevenuePct', 'programmes', 'programmesEntered', 'programmesWon', 'programmesSplit', 'programmesLost',
+      'traces', 'tracesSurfaced', 'voidedByScandal', 'suspensions', 'contractsWonViaProgramme',
+    ] as const) {
+      expect(Number.isFinite(m[key]), key).toBe(true)
+      expect(m[key], key).toBeGreaterThanOrEqual(0)
+    }
+    expect(m.programmesEntered).toBeLessThanOrEqual(m.programmes)
+    expect(m.tracesSurfaced).toBeLessThanOrEqual(m.traces)
+  })
+})

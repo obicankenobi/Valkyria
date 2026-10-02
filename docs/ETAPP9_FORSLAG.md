@@ -781,6 +781,13 @@ lämnar golden orörd.
 > redbarhet, avstängningar, juridisk rådgivning) i THE COMPANY. Verbet `PROCUREMENT` fick katalogpost, ikon och Handboksuppslag. Golden orörd.
 > **Gap:** `SABOTAGE`/`LEAK` mot en specifik upphandling saknar egen knapp. Se ANDRINGSLOGG 2026-10-02.
 
+> **P129 BYGGD 2026-10-02.** Härnessen för del A–E: `human` ombyggd till `makeHuman(opts)` med sju spelstilsvarianter (`human-classic`, `-robust`,
+> `-advanced`, `-noresearch`, `-bothsides`, `-clean`, `-dirty`) och arton nya mätkolumner. Ingen `core`-ändring (tre exporter). Golden orörd. **Mätt (200
+> partier):** vinst `human` 78,5 %, `-classic` 77,0, `-robust` 79,5, `-advanced` 74,5, `-noresearch` 71,5, `-bothsides` 80,5, `-clean` 37,0, `-dirty` 80,5;
+> vakterna håller. **Fynd:** tre ritningar dränerade kassan (`human` 33,5 %, 72/200 INSOLVENCY) — boten ritar nu bara i specialiseringen tills kassan är över
+> grundkapitalet; gap-chocker 9,9 per parti (mål 1–3); konstruktioner vinner i praktiken inga bud (unga intäkter, först på plats 0). Se ANDRINGSLOGG 2026-10-02
+> och P130.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

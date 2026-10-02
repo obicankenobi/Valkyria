@@ -35,6 +35,25 @@ function row(overrides: Partial<GameMetrics> = {}): GameMetrics {
     buyoutReview: 0,
     submittedItems: 30,
     rejectedItems: 1,
+    // P129 (ETAPP9_FORSLAG.md §10): del A–E.
+    designs: 3,
+    designBreakthroughs: 1,
+    casualties: 2,
+    battleProven: 1,
+    gapShocks: 2,
+    firstInPlace: 1,
+    falseGapsCreated: 0,
+    youngDesignRevenuePct: 35.5,
+    programmes: 2,
+    programmesEntered: 1,
+    programmesWon: 1,
+    programmesSplit: 0,
+    programmesLost: 0,
+    traces: 1,
+    tracesSurfaced: 1,
+    voidedByScandal: 0,
+    suspensions: 0,
+    contractsWonViaProgramme: 1,
     ...overrides,
   }
 }
@@ -45,7 +64,7 @@ describe('csv (packages/harness)', () => {
     const lines = csv.trim().split('\n')
 
     expect(lines[0]).toBe(
-      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems',
+      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems,designs,designBreakthroughs,casualties,battleProven,gapShocks,firstInPlace,falseGapsCreated,youngDesignRevenuePct,programmes,programmesEntered,programmesWon,programmesSplit,programmesLost,traces,tracesSurfaced,voidedByScandal,suspensions,contractsWonViaProgramme',
     )
     expect(lines.length).toBe(3) // header + 2 partier
     expect(lines[1]).toContain('passive,seed-1,INSOLVENCY,9,-123,0,3,50,45,8,12.5,20,1,15,0,2,0,4,37.5,6,1,0')
@@ -55,7 +74,7 @@ describe('csv (packages/harness)', () => {
   it('en tom lista ger bara headerraden', () => {
     const csv = toCsv([])
     expect(csv.trim().split('\n')).toEqual([
-      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems',
+      'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems,designs,designBreakthroughs,casualties,battleProven,gapShocks,firstInPlace,falseGapsCreated,youngDesignRevenuePct,programmes,programmesEntered,programmesWon,programmesSplit,programmesLost,traces,tracesSurfaced,voidedByScandal,suspensions,contractsWonViaProgramme',
     ])
   })
 

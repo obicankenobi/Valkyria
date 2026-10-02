@@ -80,7 +80,7 @@ export { advanceAmount, advanceFactors, computeAdvancePct, deliveryPayment } fro
 
 // P109 (ETAPP9 §5): konstruktionerna — namn-/klasshjälpare som gränssnittet (P126) återanvänder i stället för att upprepa dem.
 export type { PreferenceMix } from './design.js'
-export { DESIGN_AMBITIONS, DESIGN_ENVIRONMENTS, DESIGN_FOCUSES, QUALITY_CLASSES, designBaseProduct, qualityClassOf } from './design.js'
+export { DESIGN_AMBITIONS, DESIGN_SPREAD, DESIGN_ENVIRONMENTS, DESIGN_FOCUSES, QUALITY_CLASSES, buyerPreferenceMix, designBaseProduct, frontEnvironments, qualityClassOf } from './design.js'
 export {
   BLOCS,
   addCounterDemand,

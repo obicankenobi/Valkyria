@@ -1,13 +1,14 @@
 import { readFileSync, rmSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { main, parseArgs } from '../src/cli.js'
+import { POLICIES } from '../src/policies.js'
 
 describe('parseArgs (packages/harness)', () => {
   it('ger rimliga standardvärden utan några argument', () => {
     const args = parseArgs([])
     expect(args.scenario).toBe('indochina-slice')
     expect(args.runs).toBe(100)
-    expect(args.policyNames.sort()).toEqual(['aggressive', 'balanced', 'balanced-pwc', 'capacity', 'capacity-pwc', 'human', 'passive'])
+    expect(args.policyNames.sort()).toEqual(Object.keys(POLICIES).sort())
     expect(args.outPath).toBe('harness-results.csv')
   })
 
@@ -45,7 +46,7 @@ describe('main (packages/harness) — end till slut', () => {
       const lines = content.trim().split('\n')
 
       expect(lines[0]).toBe(
-        'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems',
+        'policy,seed,ending,finalTurn,treasury,doomsdayPeak,contracts,marketSharePct,rivalWinPct,disqualifiedRivalBidPct,grossMarginPct,heatOver40SharePct,rivalContractsWon,rivalAttributionShare,voidedContracts,retoolingTurns,stationsBurned,sectorsChangedSide,frontMovementTotal,formationsChangedStatus,factionsChangedAlignment,officialsReplaced,advanceSharePct,minTreasuryTurns1to6,ceasefires,standingOrderAlarms,buyoutReview,submittedItems,rejectedItems,designs,designBreakthroughs,casualties,battleProven,gapShocks,firstInPlace,falseGapsCreated,youngDesignRevenuePct,programmes,programmesEntered,programmesWon,programmesSplit,programmesLost,traces,tracesSurfaced,voidedByScandal,suspensions,contractsWonViaProgramme',
       )
       expect(lines.length).toBe(1 + 2 * 2) // header + (2 policies × 2 runs)
     } finally {

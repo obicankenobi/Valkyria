@@ -262,8 +262,23 @@ describe('capacity (referensboten, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
 })
 
 describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
-  it('innehåller alla sju botarna (P103: human och de två -pwc-varianterna tillkom)', () => {
-    expect(Object.keys(POLICIES).sort()).toEqual(['aggressive', 'balanced', 'balanced-pwc', 'capacity', 'capacity-pwc', 'human', 'passive'])
+  it('innehåller alla botarna (P103: human och de två -pwc-varianterna; P129: sju human-varianter för del A–E)', () => {
+    expect(Object.keys(POLICIES).sort()).toEqual([
+      'aggressive',
+      'balanced',
+      'balanced-pwc',
+      'capacity',
+      'capacity-pwc',
+      'human',
+      'human-advanced',
+      'human-bothsides',
+      'human-classic',
+      'human-clean',
+      'human-dirty',
+      'human-noresearch',
+      'human-robust',
+      'passive',
+    ])
   })
 })
 
