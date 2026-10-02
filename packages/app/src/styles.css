@@ -5414,3 +5414,74 @@ summary:focus-visible,
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* P128 (ETAPP9 §8.1–8.3, §9): upphandlingsmappen, kravbladet, tidslinjen, protokollet och utredningskortet. */
+.programme-list, .paper-trail { display: grid; gap: 14px; }
+.programme-folder {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-top: 6px solid var(--amber);
+  box-shadow: 1px 3px 4px rgba(36, 31, 24, 0.3);
+  min-width: 0;
+}
+.programme-head { display: grid; gap: 4px; justify-items: start; }
+.programme-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+}
+.programme-timeline li { display: inline-flex; align-items: center; gap: 5px; }
+.programme-timeline i { width: 9px; height: 9px; border: 2px solid var(--ink-faint); border-radius: 50%; }
+.programme-timeline li.is-done i { background: var(--ink-faint); }
+.programme-timeline li.is-now { color: var(--amber-ink); font-weight: 700; }
+.programme-timeline li.is-now i { background: var(--amber); border-color: var(--amber-ink); }
+.programme-sheet { font-family: var(--font-mono); }
+.programme-reqs { width: 100%; font-size: 13px; border-collapse: collapse; }
+.programme-reqs td { padding: 2px 6px 2px 0; }
+.programme-must, .programme-should {
+  padding: 0 5px;
+  border: 2px solid var(--ink-faint);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+.programme-must { border-color: var(--red); color: var(--red); }
+.programme-entrants { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; }
+.programme-entrants li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.programme-intel { display: inline-flex; gap: 3px; }
+.programme-intel i { width: 8px; height: 8px; border: 1.5px solid var(--ink-faint); border-radius: 50%; }
+.programme-intel i.is-lit { background: var(--ink-dim); border-color: var(--ink-dim); }
+.programme-orders, .programme-tricks, .programme-trick { display: grid; gap: 8px; }
+.programme-trick { padding: 8px 10px; background: var(--panel-sunken); border: 1px solid var(--line); }
+.programme-trick-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.programme-trick-title { font-family: var(--font-display); font-size: 13px; }
+.programme-protocol { font-family: var(--font-mono); padding: 10px; background: var(--panel-raised); border: 1px dashed var(--line-strong); }
+.protocol-entry { margin-bottom: 10px; }
+.protocol-name { font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.protocol-dq { color: var(--red); font-size: 12px; font-weight: 700; }
+.protocol-rows { width: 100%; font-size: 13px; border-collapse: collapse; }
+.protocol-rows td { padding: 1px 6px 1px 0; }
+.protocol-rows tr.is-struck td { color: var(--red); text-decoration: line-through; text-decoration-thickness: 2px; }
+.protocol-rows tr.is-miss td { color: var(--amber-ink); }
+.inquiry-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--panel);
+  border: 2px solid var(--red);
+  box-shadow: 1px 3px 4px rgba(36, 31, 24, 0.3);
+}
+.inquiry-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.inquiry-text { margin: 0; font-family: var(--font-mono); font-size: 14px; }
+.inquiry-choice { display: grid; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--line-strong); }
+.inquiry-legal { display: grid; gap: 4px; }

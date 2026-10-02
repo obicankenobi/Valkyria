@@ -775,6 +775,12 @@ lämnar golden orörd.
 > beslutskortens prickar (utan tal) och fyra daterade PM som införs ett i taget (ritbordet, kravkorten, kapplöpningstavlan, upphandlingen).
 > Golden orörd. Se ANDRINGSLOGG 2026-10-02.
 
+> **P128 BYGGD 2026-10-02.** Upphandlingsmappen (en manillamapp per upphandling med faser, kravblad, deltagare, anmälan, prototyp, motköp,
+> anmälan av en rival och de sex knepen med LEGAL / GREY ZONE / PAPER TRAIL-etiketter och beslutsprickar), utvärderingsprotokollet (bara för
+> deltagarna, en rad per kravrad) och utredningskortet för pappersspår (förneka / offra / förlikas, fristen, standardsvaret, ryktet för
+> redbarhet, avstängningar, juridisk rådgivning) i THE COMPANY. Verbet `PROCUREMENT` fick katalogpost, ikon och Handboksuppslag. Golden orörd.
+> **Gap:** `SABOTAGE`/`LEAK` mot en specifik upphandling saknar egen knapp. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

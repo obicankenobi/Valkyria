@@ -25,7 +25,7 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design'
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -136,6 +136,17 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'FIELD_TRIAL lets a buyer test your design at your cost: the margin narrows, a fault may surface, the buyer favours it in their next procurement — and the result becomes known to every rival. REVERSE_ENGINEER studies captured enemy materiel and gives a head start on research in that category.',
     ],
   },
+  {
+    id: 'programmes',
+    title: 'Development Procurements & the Paper Trail',
+    summary: 'A ministry puts out a call for tenders; houses draw to one requirement sheet, prototypes are tested side by side, and the best protocol wins the series. Every dirty move leaves a file.',
+    body: [
+      'A procurement runs through five phases: call for tenders (the requirements are a draft and can be influenced), requirements locked, development, a comparative trial in the buyer\'s own conditions, and the award. Entering, submitting a prototype and withdrawing cost no action. Your home state decides which ministries you may enter.',
+      'The trial produces an evaluation protocol — one line per requirement with the measured value. A failed MUST disqualifies; a failed SHOULD only costs marks. If the runner-up is close the ministry may split the series.',
+      'PROCUREMENT moves cost one action each: a counter-purchase (legal), writing the requirements, a hand-built test article, bribing the test board, falsifying the protocol, and a low-ball bid (a grey zone). Rivals cheat too — with intelligence in the buyer\'s country you can report one, and if you are right it is disqualified; if you are wrong your relation falls.',
+      'Every corrupt act — these, a bribe in a bid, BRIBE, BROKER and FAVOUR — leaves a file. Each quarter an open file may come to light, likelier the longer it lies, the more compromised the official and the better the buyer\'s counter-intelligence. An inquiry then gives three bad answers: deny it, sacrifice a director, or settle. The consequences grow with the gravity: your probity falls, a contract can be voided, you can be suspended from the buyer, the official can fall — and the board deducts at the next review. Legal counsel lowers the odds, and leaves a small file of its own. A coup opens the archives of the old regime.',
+    ],
+  },
 ] as const
 
 export function findHandbookEntry(id: HandbookTopicId): HandbookEntry | null {
@@ -170,6 +181,7 @@ export const VERB_TOPIC: Readonly<Record<string, HandbookTopicId>> = {
   RELEASE: 'production',
   FIELD_TRIAL: 'design',
   REVERSE_ENGINEER: 'design',
+  PROCUREMENT: 'programmes',
 }
 
 export function verbTopic(verb: string): HandbookTopicId | null {

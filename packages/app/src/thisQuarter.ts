@@ -13,7 +13,7 @@ import type { FactionId, GameState } from '@seventh-front/core'
 import { DISPLAY_THRESHOLDS, getProduct } from '@seventh-front/core'
 import { standingOrderAlarms } from './standingOrderBoard.js'
 
-export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing'
+export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing' | 'inquiry'
 
 export type ThisQuarterTarget =
   | { view: 'contracts' }
@@ -112,6 +112,18 @@ export function deriveThisQuarter(state: GameState): ThisQuarterItem[] {
       icon: '⚠',
       label: `Standing order ${alarm.cardId.replace(/^supply-/, '')}: ${alarm.text.toLowerCase()}`,
       target: { view: 'company', focus: alarm.cardId },
+    })
+  }
+
+  // P128 (ETAPP9 §8.3): ett utredningskort som väntar på svar.
+  for (const trace of state.traces ?? []) {
+    if (trace.houseId !== 'player' || trace.status !== 'surfaced' || trace.choice !== undefined) continue
+    items.push({
+      id: `inquiry-${trace.id}`,
+      kind: 'inquiry',
+      icon: '⚖',
+      label: 'An inquiry into your paper trail awaits an answer',
+      target: { view: 'company', focus: 'paper-trail' },
     })
   }
 

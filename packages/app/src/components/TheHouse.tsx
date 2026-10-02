@@ -32,6 +32,7 @@ import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange,
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { DrawingBoard } from './DrawingBoard.js'
 import { LedgerChart } from './LedgerChart.js'
+import { PaperTrail } from './PaperTrail.js'
 import { StandingOrdersBoard } from './StandingOrdersBoard.js'
 import { TypeSheets } from './TypeSheet.js'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
@@ -233,6 +234,9 @@ export function TheHouse({
           </p>
         </Panel>
       </div>
+
+      {/* P128 (ETAPP9 §8.3): pappersspåret — utredningskort, rent rykte, juridisk rådgivning. */}
+      <PaperTrail state={state} draft={draft} onSet={onSetStandingOrder} />
 
       <LedgerChart state={state} />
 

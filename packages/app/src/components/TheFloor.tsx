@@ -4,10 +4,11 @@
 // Inga dolda fält (trueBudget, weights, integrity)." Order.trueBudget/
 // inspectorIntegrity/weights visas ALDRIG (avsnitt 4.3) — BidForm.tsx äger
 // själva reglaget, den här filen äger bara mappen den öppnas ur.
+import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
 import { useState } from 'react'
 import { getProduct, orderTerms } from '@seventh-front/core'
-import type { Bid, GameState, Order, TurnSubmission } from '@seventh-front/core'
+import type { Bid, GameState, Order, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
 import { Panel, Tag, formatMoney } from './ui.js'
@@ -95,11 +96,16 @@ export function TheFloor({
   draft,
   onSubmitBid,
   onRemoveBid,
+  onAddAction = () => {},
+  onSetStandingOrder = () => {},
 }: {
   state: GameState
   draft: TurnSubmission
   onSubmitBid: (bid: Bid) => void
   onRemoveBid: (orderId: string) => void
+  // P128: upphandlingsmappen köar stående order (anmälan, prototyp) och handlingar (knepen). Valfria så att äldre renderingar fungerar.
+  onAddAction?: (action: PlayerAction) => void
+  onSetStandingOrder?: (change: StandingOrderChange) => void
 }) {
   const activeContracts = state.market.contracts.filter((c) => c.status === 'active' || c.status === 'late')
   const inTransit = state.market.shipments.reduce((sum, s) => sum + s.units, 0)
@@ -110,6 +116,9 @@ export function TheFloor({
 
       {/* P127 (ETAPP9 §7.1/§9): kapplöpningstavlan och kravkorten. */}
       <RaceBoard state={state} />
+
+      {/* P128 (ETAPP9 §8.1/§8.2/§9): upphandlingsmappen, knepen och utvärderingsprotokollet. */}
+      <ProgrammeFolders state={state} draft={draft} onSet={onSetStandingOrder} onAddAction={onAddAction} />
 
       <Panel
         title="Open Orders"

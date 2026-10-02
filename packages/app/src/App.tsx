@@ -696,7 +696,7 @@ export function App() {
             }}
           />
         )}
-        {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} />}
+        {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} onAddAction={addAction} onSetStandingOrder={setStandingOrder} />}
         {view === 'company' && (
           <TheHouse
             state={state}

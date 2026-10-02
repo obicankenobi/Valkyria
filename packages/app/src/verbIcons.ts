@@ -27,6 +27,7 @@ const VERBS = [
   'REPRIORITISE_RND',
   'FIELD_TRIAL', // P126
   'REVERSE_ENGINEER', // P126
+  'PROCUREMENT', // P128
 ] as const
 
 export const VERB_ICON: Record<string, string> = Object.fromEntries(VERBS.map((verb) => [verb, `/art/icons/${verb}.svg`]))

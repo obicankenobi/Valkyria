@@ -429,6 +429,39 @@ async function injectDesigns(page: Page): Promise<void> {
       { ...base, id: 'design-2', name: 'H&V M65 Field Gun', performance: 74, reliability: 58, trueQuality: 72, latentFlaw: null, testedIn: ['jungle'], fieldRecord: { occasions: 3, proven: true }, uncertainty: 0 },
       { ...base, id: 'design-3', name: 'H&V M66 Heavy Gun', performance: 55, reliability: 80, trueQuality: 48, latentFlaw: { environment: 'mine', severity: 1 }, flawRevealed: true },
     ]
+    // P128: två upphandlingar (en i utveckling med spelaren anmäld, en tilldelad med protokoll) och ett framkommet pappersspår.
+    ;(saved.state as unknown as { programmes: unknown[]; traces: unknown[] }).programmes = [
+      {
+        id: 'programme-1', buyerId: 'rvn', category: 'artillery', baseProductId: '105mm_field_gun', trigger: 'requirementCard',
+        requirements: [
+          { kind: 'performance', threshold: 62, mandatory: true, weight: 0.4 },
+          { kind: 'reliability', threshold: 55, mandatory: false, weight: 0.3 },
+          { kind: 'unitCost', threshold: 1.2, mandatory: false, weight: 0.3 },
+        ],
+        testEnvironment: 'jungle', grant: { kind: 'costPlus', amount: 400000 }, prize: { quantity: 20, deliveryTurns: 4, unitPrice: 300000, advancePct: 10 },
+        phase: 'development', phaseSinceTurn: 0, announcedTurn: 0, entrants: [{ houseId: 'brandt', enteredTurn: 0 }, { houseId: 'player', enteredTurn: 0 }], traces: [],
+      },
+      {
+        id: 'programme-2', buyerId: 'laos', category: 'armour', baseProductId: 'm3_apc', trigger: 'gapShock',
+        requirements: [
+          { kind: 'performance', threshold: 60, mandatory: true, weight: 0.5 },
+          { kind: 'reliability', threshold: 60, mandatory: true, weight: 0.5 },
+        ],
+        testEnvironment: 'monsoon', grant: null, prize: { quantity: 10, deliveryTurns: 3, unitPrice: 500000, advancePct: 10 }, phase: 'awarded', phaseSinceTurn: 0, announcedTurn: 0,
+        entrants: [{ houseId: 'costigan', enteredTurn: 0 }, { houseId: 'player', enteredTurn: 0, designId: 'design-1' }], traces: [],
+        result: {
+          winner: 'costigan', turn: 0,
+          scores: [
+            { houseId: 'costigan', score: 74, disqualified: null, rows: [{ kind: 'performance', measured: 68, threshold: 60, mandatory: true, pass: true }, { kind: 'reliability', measured: 63, threshold: 60, mandatory: true, pass: true }] },
+            { houseId: 'player', score: 0, disqualified: 'FAILED A MANDATORY REQUIREMENT', rows: [{ kind: 'performance', measured: 70, threshold: 60, mandatory: true, pass: true }, { kind: 'reliability', measured: 52, threshold: 60, mandatory: true, pass: false }] },
+          ],
+        },
+      },
+    ]
+    ;(saved.state as unknown as { traces: unknown[] }).traces = [
+      { id: 'trace-1', houseId: 'player', officialId: 'official-rvn-procurement', buyerId: 'rvn', kind: 'bribeBoard', severity: 2, turn: 0, status: 'surfaced', surfacedTurn: 0, deadlineTurn: 3 },
+      { id: 'trace-2', houseId: 'player', officialId: 'official-rvn-procurement', buyerId: 'rvn', kind: 'favour', severity: 1, turn: 0, status: 'open' },
+    ]
     house.investigations = [
       { id: 'inv-1', designId: 'design-3', environment: 'mine', severity: 1, frontId: 'front-1', buyerId: 'rvn', openedTurn: 1, deadlineTurn: 5, status: 'open', causeEventId: null },
     ]
@@ -500,6 +533,21 @@ export async function enterMemo(page: Page): Promise<void> {
   await page.getByTestId('memo-sheet').waitFor()
 }
 
+// P128: upphandlingsmappen med knepen och protokollet, och utredningskortet.
+export async function enterProgramme(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('tab-contracts').click()
+  await page.getByTestId('programme-tricks-toggle-programme-1').click()
+  await page.getByTestId('programme-tricks-programme-1').waitFor()
+}
+
+export async function enterInquiry(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('tab-company').click()
+  await page.getByTestId('inquiry-trace-1').waitFor()
+  await page.getByTestId('inquiry-trace-1').scrollIntoViewIfNeeded()
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -529,4 +577,6 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'race-board', path: '/', setup: enterRaceBoard },
   { name: 'bid-design', path: '/', setup: enterBidDesign },
   { name: 'memo', path: '/', setup: enterMemo },
+  { name: 'programme', path: '/', setup: enterProgramme },
+  { name: 'inquiry', path: '/', setup: enterInquiry },
 ]

@@ -844,6 +844,7 @@ PM för ritbordet än (P127); pappersspårets kort och upphandlingsmappen saknar
 (`requirementCards`), budmappens `Segmented`-val bland husets konstruktioner med stämplarna BATTLE-PROVEN / FIELD-TRIALLED HERE / REQUIRED LEVEL (ny ren fråga `designBidStamps`, kravnivån bara med
 underrättelse), beslutskortens prickar (`DecisionDots`, utan tal) och fyra daterade PM (`memos.ts`, `MemoSheet.tsx`, rader med ✉ i kvartalsbandet, lästa sparas i `settings:memosRead`). Golden orörd.
 Upphandlingsmappen, utvärderingsprotokollet och pappersspårets utredningskort saknar fortfarande UI (P128). **P124–P127 är därmed klara (kördes som en sats på ägarens begäran); P128 är nästa.**
+**P128 BYGGD 2026-10-02:** upphandlingsmappen (`ProgrammeFolder.tsx`: faser, kravblad, deltagare, anmälan, prototyp, motköp, anmälan av en rival, de sex knepen med etiketter och beslutsprickar), utvärderingsprotokollet (bara för deltagarna) och utredningskortet för pappersspår (`PaperTrail.tsx` överst i THE COMPANY: förneka / offra / förlikas, redbarhetsrykte, avstängningar, juridisk rådgivning). `PROCUREMENT` fick katalogpost/ikon/Handboksuppslag (25 verb). Golden orörd. Gap: `SABOTAGE`/`LEAK` mot en specifik upphandling saknar knapp i mappen. **Gränssnittsdelen (P126–P128) är därmed klar; P129 (härnessen) är nästa.**
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

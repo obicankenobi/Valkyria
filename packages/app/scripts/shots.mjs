@@ -73,6 +73,39 @@ async function injectDesigns(page) {
     saved.state.race.generation.west.artillery = 2
     saved.state.race.generation.east.armour = 2
     saved.state.race.gap = { artillery: { leader: 'west', sinceTurn: 1 } }
+    // P128: två upphandlingar (en i utveckling med spelaren anmäld, en tilldelad med protokoll) och ett framkommet pappersspår.
+    saved.state.programmes = [
+      {
+        id: 'programme-1', buyerId: 'rvn', category: 'artillery', baseProductId: '105mm_field_gun', trigger: 'requirementCard',
+        requirements: [
+          { kind: 'performance', threshold: 62, mandatory: true, weight: 0.4 },
+          { kind: 'reliability', threshold: 55, mandatory: false, weight: 0.3 },
+          { kind: 'unitCost', threshold: 1.2, mandatory: false, weight: 0.3 },
+        ],
+        testEnvironment: 'jungle', grant: { kind: 'costPlus', amount: 400000 }, prize: { quantity: 20, deliveryTurns: 4, unitPrice: 300000, advancePct: 10 },
+        phase: 'development', phaseSinceTurn: 0, announcedTurn: 0, entrants: [{ houseId: 'brandt', enteredTurn: 0 }, { houseId: 'player', enteredTurn: 0 }], traces: [],
+      },
+      {
+        id: 'programme-2', buyerId: 'laos', category: 'armour', baseProductId: 'm3_apc', trigger: 'gapShock',
+        requirements: [
+          { kind: 'performance', threshold: 60, mandatory: true, weight: 0.5 },
+          { kind: 'reliability', threshold: 60, mandatory: true, weight: 0.5 },
+        ],
+        testEnvironment: 'monsoon', grant: null, prize: { quantity: 10, deliveryTurns: 3, unitPrice: 500000, advancePct: 10 }, phase: 'awarded', phaseSinceTurn: 0, announcedTurn: 0,
+        entrants: [{ houseId: 'costigan', enteredTurn: 0 }, { houseId: 'player', enteredTurn: 0, designId: 'design-1' }], traces: [],
+        result: {
+          winner: 'costigan', turn: 0,
+          scores: [
+            { houseId: 'costigan', score: 74, disqualified: null, rows: [{ kind: 'performance', measured: 68, threshold: 60, mandatory: true, pass: true }, { kind: 'reliability', measured: 63, threshold: 60, mandatory: true, pass: true }] },
+            { houseId: 'player', score: 0, disqualified: 'FAILED A MANDATORY REQUIREMENT', rows: [{ kind: 'performance', measured: 70, threshold: 60, mandatory: true, pass: true }, { kind: 'reliability', measured: 52, threshold: 60, mandatory: true, pass: false }] },
+          ],
+        },
+      },
+    ]
+    saved.state.traces = [
+      { id: 'trace-1', houseId: 'player', officialId: 'official-rvn-procurement', buyerId: 'rvn', kind: 'bribeBoard', severity: 2, turn: 0, status: 'surfaced', surfacedTurn: 0, deadlineTurn: 3 },
+      { id: 'trace-2', houseId: 'player', officialId: 'official-rvn-procurement', buyerId: 'rvn', kind: 'favour', severity: 1, turn: 0, status: 'open' },
+    ]
     for (const o of Object.values(saved.state.officials)) o.relationToPlayer = 80
     await new Promise((resolve, reject) => {
       const putReq = store.put(saved, 'save:default')
@@ -689,6 +722,26 @@ const APP_SCREENS = [
       await page.getByTestId('quarterband-toggle').click()
       await page.getByTestId('quarterband-memo-drawing-board').click()
       await page.getByTestId('memo-sheet').waitFor()
+    },
+  },
+  {
+    // P128: upphandlingsmappen — kravblad, tidslinje, konkurrenter, knepen som registerkort och ett protokoll med ett underkänt ska-krav.
+    name: 'programme',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('tab-contracts').click()
+      await page.getByTestId('programme-tricks-toggle-programme-1').click()
+      await page.getByTestId('programme-tricks-programme-1').waitFor()
+    },
+  },
+  {
+    // P128: utredningskortet — tre dåliga vägar med prickar, rent rykte och juridisk rådgivning.
+    name: 'inquiry',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('inquiry-trace-1').waitFor()
     },
   },
   {

@@ -25,7 +25,7 @@ describe('handbook — täckning (P91b klart-när)', () => {
   it('täcker samtliga åtta mekaniker specen namnger plus etapp 9:s ritbord (P126)', () => {
     const ids = HANDBOOK.map((entry) => entry.id).sort()
     expect(ids).toEqual(
-      ['procurement', 'production', 'board', 'doomsday', 'heat', 'intelligence', 'politics', 'fronts', 'design'].sort(),
+      ['procurement', 'production', 'board', 'doomsday', 'heat', 'intelligence', 'politics', 'fronts', 'design', 'programmes'].sort(),
     )
   })
 

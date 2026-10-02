@@ -15,7 +15,7 @@
 // §7.1:s tabell delar upp bud (inget verb, kostar ingen plats — §7.2) från
 // resten — den här katalogen listar bara handlingar som FAKTISKT kostar en
 // handlingsplats, ordagrant vad P81-12 ber om.
-export type ActionCatalogView = 'operations' | 'company' | 'contacts'
+export type ActionCatalogView = 'operations' | 'company' | 'contacts' | 'contracts'
 
 export interface ActionCatalogEntry {
   verb: string
@@ -60,4 +60,6 @@ export const ACTION_CATALOG: readonly ActionCatalogEntry[] = [
   // Ritbordet (P126, DrawingBoard.tsx/TypeSheet.tsx i THE COMPANY) — etapp 9:s två första byggda verb.
   { verb: 'FIELD_TRIAL', label: 'Field-trial a design with a buyer', objectGroup: 'Drawing board', target: 'company' },
   { verb: 'REVERSE_ENGINEER', label: 'Reverse-engineer captured materiel', objectGroup: 'Drawing board', target: 'company' },
+  // Upphandlingsmappen (P128, ProgrammeFolder.tsx på CONTRACTS) — de sex knepen är ops av ETT verb, PROCUREMENT.
+  { verb: 'PROCUREMENT', label: 'Work a development procurement', objectGroup: 'Procurement folder', target: 'contracts' },
 ] as const
