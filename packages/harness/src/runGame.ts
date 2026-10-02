@@ -98,6 +98,11 @@ export interface GameMetrics {
   // P133 (§8b.2, §10): civil intäkt (huvudbokens income.civil) och dess andel av alla bokförda intäkter
   civilRevenue: number
   civilSharePct: number
+  // P137 (del F): exportbrott (rubriker), licenser huset gav, licenstagare som blev rivaler, konstruktioner ur specialprojekt
+  exportBreaches: number
+  licencesGranted: number
+  licenseeRivals: number
+  skunkDesigns: number
 }
 
 // Rubrikmönstren för de tre larmen — grep:ade ordagrant ur emit()-anropen i standingOrders.ts,
@@ -138,6 +143,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let firstInPlace = 0
   let falseGapsCreated = 0
   let suspensions = 0
+  let exportBreaches = 0
   let voidedByScandal = 0
   const programmeIds = new Set<string>()
   // Kontrakt med en konstruktion: konstruktionens ålder (i turer) vid tecknandet, exakt — Contract har inget signeringsfält.
@@ -207,6 +213,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       if (event.headline.startsWith('GAP SHOCK:')) gapShocks++
       if (event.actorIsPlayer && event.headline.includes(' IS FIRST IN PLACE ')) firstInPlace++
       if (event.actorIsPlayer && event.headline.includes('IS SUSPENDED FROM TENDERING')) suspensions++
+      if (event.actorIsPlayer && event.headline.startsWith('EXPORT CONTROL BREACHED')) exportBreaches++
       if (event.actorIsPlayer && event.headline.includes('CANCELS AFTER THE SCANDAL')) voidedByScandal++
       if (STANDING_ORDER_ALARMS.some((pattern) => event.headline.includes(pattern))) standingOrderAlarms++
       if (event.headline.includes('WINS CONTRACT')) {
@@ -337,6 +344,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     suspensions,
     contractsWonViaProgramme: wonProgrammes.length,
     civilRevenue: (state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0),
+    exportBreaches,
+    licencesGranted: (state.house.licences ?? []).length,
+    licenseeRivals: Object.keys(state.rivals).filter((id) => id.startsWith('licensee-')).length,
+    skunkDesigns: designs.filter((d) => d.skunk).length,
     civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }
 }

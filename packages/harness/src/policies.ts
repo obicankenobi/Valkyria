@@ -720,6 +720,7 @@ export interface HumanOptions {
   legal: boolean // juridisk rådgivning när spår finns
   bothSides: boolean // söker kontrakt hos båda blocken
   inquiry: 'settle' | 'deny'
+  licence?: boolean // P135: licensierar en konstruktion till en faktion (helst en embargerad) och tar emot royalty
   skunk?: boolean // P134: ritar i specialprojekt (snabbare och dyrare, större risk för en dold brist)
   civil?: boolean // P133: civila linjer — forskar i pansar och öppnar en civil linje när tekniknivån räcker
 }
@@ -880,6 +881,19 @@ function civilStandingOrders(state: GameState): StandingOrderChange[] {
   return out
 }
 
+// P135: en gång per parti licensieras husets första konstruktion — till en embargerad faktion om det finns en, annars den första giltiga.
+function licenceStandingOrders(state: GameState): StandingOrderChange[] {
+  if ((state.house.licences ?? []).length > 0) return []
+  const design = (state.house.designs ?? []).find((d) => d.status === 'active')
+  if (!design) return []
+  const factions = Object.values(state.factions).sort((a, b) => Number(b.embargoed) - Number(a.embargoed))
+  for (const faction of factions) {
+    const change: StandingOrderChange = { kind: 'LICENCE', op: 'GRANT', designId: design.id, factionId: faction.id }
+    if (validateStandingOrderChange(state, state, change).ok) return [change]
+  }
+  return []
+}
+
 export function makeHuman(opts: HumanOptions): Policy {
   return (state) => {
     const actions: PlayerAction[] = []
@@ -897,6 +911,7 @@ export function makeHuman(opts: HumanOptions): Policy {
     if (opts.programmes) standing.push(...programmeStandingOrders(state))
     standing.push(...inquiryStandingOrders(state, opts))
     if (opts.civil) standing.push(...civilStandingOrders(state))
+    if (opts.licence) standing.push(...licenceStandingOrders(state))
     if (opts.legal && (state.traces ?? []).some((t) => t.houseId === 'player') && state.house.standingOrders?.legal === undefined) {
       standing.push({ kind: 'LEGAL', op: 'SET' })
     }
@@ -922,6 +937,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny' }),
   'human-civil': makeHuman({ ...BASE_HUMAN, civil: true }),
   'human-skunk': makeHuman({ ...BASE_HUMAN, skunk: true }),
+  'human-licence': makeHuman({ ...BASE_HUMAN, licence: true }),
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }

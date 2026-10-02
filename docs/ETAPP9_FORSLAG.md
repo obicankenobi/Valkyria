@@ -820,6 +820,9 @@ lämnar golden orörd.
 > **P136 BYGGD 2026-10-02.** Gränssnitt för del F: specialprojektsomkopplare och civil linje på ritbordet, taggar och licenssektion på typbladet, EXPORT BREACH/BOUND-stämplar i budmappen,
 > `SABOTAGE`/`LEAK` mot en rival i upphandlingsmappen, civil andel i epilogen och Handboksuppslaget `state`. Golden orörd. Se ANDRINGSLOGG 2026-10-02.
 
+> **P137 MÄTT 2026-10-02.** Fyra nya härnesskolumner och `human-licence`. Licensen var en gratis lunch (83,5 % mot 67,5 %) tills engångsbeloppet, royaltyn och rivalens kapital justerades
+> (150 000 / 25 000 / 6 M) — nu 68,0 %. `exportBreaches` 0 i alla botspel. Golden-hasharna oförändrade. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).
