@@ -25,7 +25,7 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes'
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -145,6 +145,16 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'The trial produces an evaluation protocol — one line per requirement with the measured value. A failed MUST disqualifies; a failed SHOULD only costs marks. If the runner-up is close the ministry may split the series.',
       'PROCUREMENT moves cost one action each: a counter-purchase (legal), writing the requirements, a hand-built test article, bribing the test board, falsifying the protocol, and a low-ball bid (a grey zone). Rivals cheat too — with intelligence in the buyer\'s country you can report one, and if you are right it is disqualified; if you are wrong your relation falls.',
       'Every corrupt act — these, a bribe in a bid, BRIBE, BROKER and FAVOUR — leaves a file. Each quarter an open file may come to light, likelier the longer it lies, the more compromised the official and the better the buyer\'s counter-intelligence. An inquiry then gives three bad answers: deny it, sacrifice a director, or settle. The consequences grow with the gravity: your probity falls, a contract can be voided, you can be suspended from the buyer, the official can fall — and the board deducts at the next review. Legal counsel lowers the odds, and leaves a small file of its own. A coup opens the archives of the old regime.',
+    ],
+  },
+  {
+    id: 'state',
+    title: 'The House and the State: Exports, Civil Lines, Licences',
+    summary: 'Research done on a state grant belongs to its bloc, advanced designs are on the export list, peacetime trade does not depend on the war, and a licence teaches your customer to build it itself.',
+    body: [
+      'A design that won a procurement with a research grant is bound to the buyer\'s bloc: it cannot be offered to the other bloc or to non-aligned buyers. A design of generation 2 or higher is on the export list — if a house of one bloc sells it across the line, it breaches the list: doomsday rises, heat builds in the buyer\'s theatre and a paper trail is left. A neutral house is exempt.',
+      'A civil line (tractors from armour, radio sets from electronics, transport helicopters from aviation) needs tech level 5 in the category. It pays a small, steady sum every quarter whatever the war does — it keeps paying through a ceasefire — and feeds a head start back into research. A special project on the drawing board (skunk works) is faster and dearer, but with less oversight the risk of a hidden flaw is higher.',
+      'A licence gives a lump sum and a royalty every quarter, but the licensee learns the design. An embargoed state learns twice as fast, and when it has learnt enough it stops paying and builds on its own — a new rival on your markets. Revoke a licence in time if you do not want one.',
     ],
   },
 ] as const

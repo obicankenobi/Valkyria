@@ -7,10 +7,11 @@
 // (skyddsräcke 5). Order valideras med validateStandingOrderChange / validateAction — samma funktioner som
 // applyActions kör — så en spärrad knapp visar orsaken i klartext.
 import { useState } from 'react'
-import { DESIGN_ENVIRONMENTS, designDisplay, officialId, validateAction, validateStandingOrderChange } from '@seventh-front/core'
+import { DESIGN_ENVIRONMENTS, designDisplay, isExportControlled, officialId, validateAction, validateStandingOrderChange } from '@seventh-front/core'
 import type { Design, DesignEnvironment, GameState, InvestigationChoice, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { Button, Segmented } from './designSystem.js'
 import { DecisionDots } from './DecisionDots.js'
+import { LicenceSection } from './LicenceSection.js'
 import type { DecisionGauge } from './DecisionDots.js'
 import { Panel, Tag } from './ui.js'
 import { wearClass } from '../stampWear.js'
@@ -184,6 +185,7 @@ export function TypeSheet({
   onSet: (change: StandingOrderChange) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [licenceOpen, setLicenceOpen] = useState(false)
   const view = designDisplay(state, design)
   const stamp = designStamp(view, state.house.investigations)
   return (
@@ -219,11 +221,22 @@ export function TypeSheet({
           {view.flaw ? `${ENVIRONMENT_LABEL[view.flaw.environment]} (severity ${view.flaw.severity})` : 'none known'}
         </dd>
       </dl>
+      {(design.exclusiveTo || design.skunk || isExportControlled(design)) && (
+        <div className="type-tags" data-testid={`type-tags-${design.id}`}>
+          {design.exclusiveTo && <Tag tone="amber">BOUND TO THE {design.exclusiveTo.toUpperCase()}</Tag>}
+          {isExportControlled(design) && <Tag tone="red">EXPORT-CONTROLLED</Tag>}
+          {design.skunk && <Tag>SPECIAL PROJECT</Tag>}
+        </div>
+      )}
       {view.phasedOutFor.length > 0 && <Tag tone="amber">PHASED OUT FOR {view.phasedOutFor.map((b) => b.toUpperCase()).join(' & ')}</Tag>}
       <Button variant="secondary" onClick={() => setOpen((o) => !o)} testId={`type-orders-toggle-${design.id}`}>
         {open ? 'CLOSE ORDERS' : 'ORDERS'}
       </Button>
       {open && <SheetOrders state={state} draft={draft} design={design} onAddAction={onAddAction} onSet={onSet} />}
+      <Button variant="secondary" onClick={() => setLicenceOpen((o) => !o)} testId={`type-licence-toggle-${design.id}`}>
+        {licenceOpen ? 'CLOSE LICENCES' : 'LICENCES'}
+      </Button>
+      {licenceOpen && <LicenceSection state={state} design={design} onSet={onSet} />}
     </article>
   )
 }

@@ -27,6 +27,9 @@ const BALANCE = balanceData as unknown as {
   licenceRivalMarketShare: number
 }
 
+// Vad en licens ger — för visning (förhandsvisningen läser samma tal som ordern tillämpar).
+export const LICENCE_TERMS = { lumpSum: BALANCE.licenceLumpSum, royaltyPerTurn: BALANCE.licenceRoyaltyPerTurn, embargoGrowthFactor: BALANCE.licenceEmbargoGrowthFactor }
+
 export const licenceRivalId = (factionId: FactionId): string => `licensee-${factionId}`
 
 export function validateLicenceChange(draft: Readonly<GameState>, change: Extract<StandingOrderChange, { kind: 'LICENCE' }>): ActionValidation {

@@ -130,3 +130,38 @@ describe('ritbordet (P126, §9)', () => {
     expect(screen.queryByTestId('drawing-captured')).toBeNull()
   })
 })
+
+describe('del F på ritbordet (P136)', () => {
+  it('specialprojektet slås på med en omkopplare och köar DESIGN START med skunk; förhandsvisningen blir kortare och dyrare', () => {
+    const state = createInitialState('indochina-slice', 'drawing-skunk')
+    const category = state.house.specialisation
+    const { onSet } = setup(state)
+    flip(category)
+    const before = screen.getByTestId(`drawing-preview-${category}`).textContent
+    fireEvent.click(screen.getByTestId(`drawing-skunk-${category}`))
+    expect(screen.getByTestId(`drawing-preview-${category}`).textContent).not.toBe(before)
+    fireEvent.click(screen.getByTestId(`drawing-start-${category}`))
+    expect(onSet).toHaveBeenCalledWith({ kind: 'DESIGN', op: 'START', category, focus: 'balanced', ambition: 'timely', skunk: true })
+  })
+
+  it('en civil linje visas bara i kategorier med en civil produkt, är spärrad under tekniknivån och köar CIVIL SET när nivån räcker', () => {
+    const state = createInitialState('indochina-slice', 'drawing-civil')
+    state.house.techLevel.armour = 5
+    const { onSet } = setup(state)
+    flip('armour')
+    expect(screen.getByTestId('drawing-civil-hint-armour').textContent).toContain('FARM TRACTORS')
+    fireEvent.click(screen.getByTestId('drawing-civil-armour'))
+    expect(onSet).toHaveBeenCalledWith({ kind: 'CIVIL', op: 'SET', category: 'armour' })
+    flip('infantry')
+    expect(screen.queryByTestId('drawing-civil-infantry')).toBeNull()
+  })
+
+  it('spärrad civil linje visar orsaken', () => {
+    const state = createInitialState('indochina-slice', 'drawing-civil-low')
+    state.house.techLevel.electronics = 4
+    setup(state)
+    flip('electronics')
+    expect((screen.getByTestId('drawing-civil-electronics') as HTMLButtonElement).disabled).toBe(true)
+    expect(card('electronics').textContent).toContain('needs tech level')
+  })
+})

@@ -72,6 +72,12 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
                 <span>RESTRAINT</span>
                 <span>Doomsday peaked at {verdict.restraint.toFixed(0)}%</span>
               </div>
+              {verdict.civilSharePct > 0 && (
+                <div className="cf-preview-row" data-testid="epilogue-civil">
+                  <span>PEACETIME TRADE</span>
+                  <span>{verdict.civilSharePct.toFixed(0)}% of the house&apos;s income came from civil lines</span>
+                </div>
+              )}
             </div>
           </div>
 

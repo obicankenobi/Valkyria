@@ -462,6 +462,14 @@ async function injectDesigns(page: Page): Promise<void> {
       { id: 'trace-1', houseId: 'player', officialId: 'official-rvn-procurement', buyerId: 'rvn', kind: 'bribeBoard', severity: 2, turn: 0, status: 'surfaced', surfacedTurn: 0, deadlineTurn: 3 },
       { id: 'trace-2', houseId: 'player', officialId: 'official-rvn-procurement', buyerId: 'rvn', kind: 'favour', severity: 1, turn: 0, status: 'open' },
     ]
+    ;(house.designs as { id: string; exclusiveTo?: string; skunk?: boolean; generation?: number }[]).forEach((d) => {
+      if (d.id === 'design-2') {
+        d.exclusiveTo = 'west'
+        d.skunk = true
+        d.generation = 2
+      }
+    })
+    house.licences = [{ id: 'licence-1', designId: 'design-2', factionId: 'rvn', sinceTurn: 1, capability: 45, status: 'active' }]
     house.investigations = [
       { id: 'inv-1', designId: 'design-3', environment: 'mine', severity: 1, frontId: 'front-1', buyerId: 'rvn', openedTurn: 1, deadlineTurn: 5, status: 'open', causeEventId: null },
     ]
@@ -506,6 +514,13 @@ export async function enterTypeSheet(page: Page): Promise<void> {
   await injectDesigns(page)
   await page.getByTestId('type-orders-toggle-design-3').click()
   await page.getByTestId('type-orders-design-3').waitFor()
+}
+
+// P136: typbladet med taggar (bunden, exportreglerad, specialprojekt) och licenssektionen öppen.
+export async function enterLicence(page: Page): Promise<void> {
+  await injectDesigns(page)
+  await page.getByTestId('type-licence-toggle-design-2').click()
+  await page.getByTestId('licence-section-design-2').waitFor()
 }
 
 // P127: kapplöpningstavlan (CONTRACTS) med kravkort, gap-ledare och bedömningsstämplar.
@@ -574,6 +589,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'standing-alarm', path: '/', setup: enterStandingAlarm },
   { name: 'drawing-board', path: '/', setup: enterDrawingBoard },
   { name: 'type-sheet', path: '/', setup: enterTypeSheet },
+  { name: 'licence', path: '/', setup: enterLicence },
   { name: 'race-board', path: '/', setup: enterRaceBoard },
   { name: 'bid-design', path: '/', setup: enterBidDesign },
   { name: 'memo', path: '/', setup: enterMemo },

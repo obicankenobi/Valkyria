@@ -96,6 +96,24 @@ describe('upphandlingsmappen (P128)', () => {
     expect(screen.getByTestId('trick-WRITE_SPEC-programme-1').textContent).toContain('requirements are locked')
   })
 
+  it('SABOTAGE och LEAK mot en deltagande rival köar en INTEL-handling med upphandlingen som mål (P136) — och är spärrade utan station i landet', () => {
+    const entrants = [{ houseId: 'brandt', enteredTurn: 3 }, { houseId: 'player', enteredTurn: 3 }]
+    const { onAdd, state } = setup([programme({ phase: 'development', entrants })], (s) => {
+      s.house.stations = [{ id: 'station-rvn', city: 'Saigon', nation: 'rvn', depth: 3, exposure: 10, coverage: ['procurement'], status: 'active' }]
+    })
+    fireEvent.click(screen.getByTestId('intel-go-SABOTAGE-programme-1'))
+    expect(onAdd).toHaveBeenCalledWith({ type: 'INTEL', op: 'SABOTAGE', stationId: 'station-rvn', targetId: 'programme:programme-1:brandt' })
+    fireEvent.click(screen.getByTestId('intel-go-LEAK-programme-1'))
+    expect(onAdd).toHaveBeenCalledWith({ type: 'INTEL', op: 'LEAK', stationId: 'station-rvn', targetId: 'programme:programme-1:brandt' })
+    expect(state.house.stations).toHaveLength(1)
+    cleanup()
+    setup([programme({ phase: 'development', entrants })], (s) => {
+      s.house.stations = []
+    })
+    expect((screen.getByTestId('intel-go-SABOTAGE-programme-1') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByTestId('intel-SABOTAGE-programme-1').textContent).toContain('needs an active station')
+  })
+
   it('utvärderingsprotokollet visar en rad per krav och stryker ett underkänt ska-krav; en diskvalificering syns', () => {
     const rows = (pass: boolean) => [
       { kind: 'performance' as const, measured: pass ? 70 : 50, threshold: 60, mandatory: true, pass },

@@ -219,6 +219,22 @@ function ProgrammeCard({
                   </Button>
                   <DecisionDots gauges={['relations', 'rivals']} />
                   {result(reportV) && <p className="cf-hint is-warning">{result(reportV)}</p>}
+                  <span className="cf-field-label">COVERT MOVES AGAINST THIS RIVAL (1 ACTION EACH)</span>
+                  {(['SABOTAGE', 'LEAK'] as const).map((op) => {
+                    const station = house.stations.find((st) => st.nation === programme.buyerId && st.status === 'active')
+                    const action: PlayerAction | null = station && rivalId ? { type: 'INTEL', op, stationId: station.id, targetId: `programme:${programme.id}:${rivalId}` } : null
+                    const v = action ? validateAction(state, state, action) : ({ ok: false, reason: 'needs an active station in this country' } as const)
+                    return (
+                      <div className="programme-trick" key={op} data-testid={`intel-${op}-${programme.id}`}>
+                        <p className="cf-hint">{op === 'SABOTAGE' ? 'Sabotage the rival prototype: a worse mark at the trial.' : 'Leak damaging files: a small penalty for the rival at the trial.'}</p>
+                        <Button variant="secondary" disabled={!v.ok} onClick={() => action && onAddAction(action)} testId={`intel-go-${op}-${programme.id}`}>
+                          {op}
+                        </Button>
+                        <DecisionDots gauges={['rivals', 'cash']} />
+                        {!v.ok && <p className="cf-hint is-warning">{v.reason}</p>}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 

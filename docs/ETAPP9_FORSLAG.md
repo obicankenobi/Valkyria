@@ -817,6 +817,9 @@ lämnar golden orörd.
 > hos köparen är **inte** byggda. Golden-hasharna oförändrade, bara `balance.frozen.json` omfryst. Se ANDRINGSLOGG 2026-10-02. **Del F:s regelprompter P132–P135 är därmed
 > byggda (P134 reducerad till specialprojekt, P135 utan kundanpassningar); P136 (gränssnitt), P137 (mätning) och P138 (speltest) återstår.**
 
+> **P136 BYGGD 2026-10-02.** Gränssnitt för del F: specialprojektsomkopplare och civil linje på ritbordet, taggar och licenssektion på typbladet, EXPORT BREACH/BOUND-stämplar i budmappen,
+> `SABOTAGE`/`LEAK` mot en rival i upphandlingsmappen, civil andel i epilogen och Handboksuppslaget `state`. Golden orörd. Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

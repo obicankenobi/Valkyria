@@ -154,3 +154,34 @@ describe('typbladet (P126, §9)', () => {
     expect((screen.getByTestId('type-inquiry-inv-1-DENY') as HTMLButtonElement).disabled).toBe(true)
   })
 })
+
+describe('del F på typbladet (P136)', () => {
+  it('visar bindning, exportlista och specialprojekt som taggar — och inget för en vanlig konstruktion', () => {
+    setup([makeDesign({ id: 'design-1' })])
+    expect(screen.queryByTestId('type-tags-design-1')).toBeNull()
+    cleanup()
+    setup([makeDesign({ id: 'design-1', exclusiveTo: 'west', generation: 2, skunk: true })])
+    const tags = screen.getByTestId('type-tags-design-1').textContent ?? ''
+    expect(tags).toContain('BOUND TO THE WEST')
+    expect(tags).toContain('EXPORT-CONTROLLED')
+    expect(tags).toContain('SPECIAL PROJECT')
+  })
+
+  it('licenssektionen köar en GRANT med vald licenstagare, visar avvisningsorsaken för en bunden konstruktion och kan återkalla', () => {
+    const { state, onSet } = setup([makeDesign({ id: 'design-1' })])
+    fireEvent.click(screen.getByTestId('type-licence-toggle-design-1'))
+    const factionId = Object.keys(state.factions)[1]!
+    fireEvent.click(within(screen.getByTestId('licence-faction-design-1')).getByText(factionId.toUpperCase()))
+    fireEvent.click(screen.getByTestId('licence-grant-design-1'))
+    expect(onSet).toHaveBeenCalledWith({ kind: 'LICENCE', op: 'GRANT', designId: 'design-1', factionId })
+    cleanup()
+
+    const bound = setup([makeDesign({ id: 'design-1', exclusiveTo: 'west' })], (s) => {
+      s.house.licences = [{ id: 'licence-1', designId: 'design-1', factionId: Object.keys(s.factions)[0]!, sinceTurn: 1, capability: 40, status: 'active' }]
+    })
+    fireEvent.click(screen.getByTestId('type-licence-toggle-design-1'))
+    expect(screen.getByTestId('licence-licence-1')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('licence-revoke-licence-1'))
+    expect(bound.onSet).toHaveBeenCalledWith({ kind: 'LICENCE', op: 'REVOKE', licenceId: 'licence-1' })
+  })
+})

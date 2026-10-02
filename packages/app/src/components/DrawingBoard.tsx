@@ -10,8 +10,11 @@
 import { useState } from 'react'
 import {
   DESIGN_AMBITIONS,
+  CIVIL_PRODUCT_NAME,
   DESIGN_FOCUSES,
   TECH_CATEGORIES,
+  civilRevenueFor,
+  isCivilCategory,
   designStartPreview,
   frontierGeneration,
   previewAction,
@@ -20,7 +23,7 @@ import {
   validateStandingOrderChange,
 } from '@seventh-front/core'
 import type { DesignAmbition, DesignFocus, GameState, PlayerAction, ResearchPace, StandingOrderChange, TechCategory, TurnSubmission } from '@seventh-front/core'
-import { Button, Segmented } from './designSystem.js'
+import { Button, DsToggle, Segmented } from './designSystem.js'
 import { BoardCard, describeChange } from './StandingOrdersBoard.js'
 import { Panel, Tag, formatMoney } from './ui.js'
 import { AMBITION_HINT, AMBITION_LABEL, CATEGORY_NAME, FOCUS_HINT, FOCUS_LABEL, projectProgress } from '../designSheet.js'
@@ -80,12 +83,17 @@ function CategoryEditor({
   const [focus, setFocus] = useState<DesignFocus>('balanced')
   const [ambition, setAmbition] = useState<DesignAmbition>('timely')
   const [upgrade, setUpgrade] = useState<string>('new')
+  const [skunk, setSkunk] = useState(false)
   const [pace, setPace] = useState<ResearchPace | 'off'>(track?.pace ?? 'off')
 
   const upgradeOf = upgrade === 'new' ? undefined : upgrade
-  const start: StandingOrderChange = { kind: 'DESIGN', op: 'START', category, focus, ambition, ...(upgradeOf ? { upgradeOf } : {}) }
+  const useSkunk = skunk && !upgradeOf
+  const start: StandingOrderChange = { kind: 'DESIGN', op: 'START', category, focus, ambition, ...(upgradeOf ? { upgradeOf } : {}), ...(useSkunk ? { skunk: true } : {}) }
   const startValidation = validateStandingOrderChange(state, state, start)
-  const preview = designStartPreview(state, { category, focus, ambition, ...(upgradeOf ? { upgradeOf } : {}) })
+  const preview = designStartPreview(state, { category, focus, ambition, ...(upgradeOf ? { upgradeOf } : {}), ...(useSkunk ? { skunk: true } : {}) })
+  const civilLine = isCivilCategory(category) ? house.standingOrders?.civil?.[category] : undefined
+  const civilChange: StandingOrderChange | null = isCivilCategory(category) ? { kind: 'CIVIL', op: civilLine ? 'CANCEL' : 'SET', category } : null
+  const civilValidation = civilChange ? validateStandingOrderChange(state, state, civilChange) : null
 
   const trackChange: StandingOrderChange | null =
     pace === 'off' ? (track ? { kind: 'RESEARCH', op: 'CANCEL', category } : null) : { kind: 'RESEARCH', op: 'SET', category, pace }
@@ -142,6 +150,14 @@ function CategoryEditor({
               {upgrade !== 'new' && <p className="cf-hint">Upgrades {designs.find((d) => d.id === upgrade)?.name} — cheaper and quicker, with a lower ceiling, and it inherits the reputation.</p>}
             </div>
           )}
+          {!upgradeOf && (
+            <DsToggle
+              label="Special project (skunk works): faster and dearer, less oversight — a higher risk of a hidden flaw"
+              checked={skunk}
+              onChange={setSkunk}
+              testId={`drawing-skunk-${category}`}
+            />
+          )}
           <p className="cf-hint" data-testid={`drawing-preview-${category}`}>
             {preview.turns} quarters · {formatMoney(preview.costPerTurn)} a quarter · aims at generation {preview.targetGeneration}
             {preview.follower ? ' (a follower — cheaper)' : ''}.
@@ -150,6 +166,19 @@ function CategoryEditor({
             START DRAWING
           </Button>
           {reason(startValidation) && <p className="cf-hint is-warning">{reason(startValidation)}</p>}
+        </>
+      )}
+
+      {civilChange && isCivilCategory(category) && (
+        <>
+          <h4 className="drawing-section">CIVIL LINE</h4>
+          <p className="cf-hint" data-testid={`drawing-civil-hint-${category}`}>
+            {CIVIL_PRODUCT_NAME[category]}: small, steady orders that do not depend on the war — {formatMoney(civilRevenueFor(house, category))} a quarter at tech level {house.techLevel[category]}, and a head start back into research.
+          </p>
+          <Button variant="secondary" disabled={!civilValidation?.ok} onClick={() => onFile(civilChange)} testId={`drawing-civil-${category}`}>
+            {civilLine ? 'CLOSE THE CIVIL LINE' : 'OPEN A CIVIL LINE'}
+          </Button>
+          {civilValidation && reason(civilValidation) && <p className="cf-hint is-warning">{reason(civilValidation)}</p>}
         </>
       )}
 
@@ -217,7 +246,7 @@ export function DrawingBoard({
             const designCount = (house.designs ?? []).filter((d) => d.category === category && d.status === 'active').length
             const progress = running ? projectProgress(running) : 0
             const pending = queued
-              .filter((c) => (c.kind === 'DESIGN' && c.category === category) || (c.kind === 'RESEARCH' && c.category === category))
+              .filter((c) => (c.kind === 'DESIGN' || c.kind === 'RESEARCH' || c.kind === 'CIVIL') && c.category === category)
               .map((c) => ({ key: standingOrderKey(c), text: describeChange(c), undoId: `${category}-${c.kind.toLowerCase()}` }))
             return (
               <BoardCard

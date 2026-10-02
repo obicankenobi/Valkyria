@@ -6,7 +6,7 @@
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useEffect, useMemo, useState } from 'react'
-import { advanceAmount, bidDesignRejection, bidEstimate, designBidStamps, orderTerms, playerWinCurve } from '@seventh-front/core'
+import { advanceAmount, bidDesignRejection, bidEstimate, designBidStamps, isExportViolation, orderTerms, playerWinCurve } from '@seventh-front/core'
 import type { DriverLevel } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
@@ -154,6 +154,12 @@ export function BidForm({
               </p>
               <div className="bid-design-stamps" data-testid="bid-design-stamps">
                 {stamps?.battleProven && <span className="bid-design-stamp is-green" data-testid="stamp-battle-proven">BATTLE-PROVEN</span>}
+                {isExportViolation(state, chosenDesign, order.buyerId) && (
+                  <span className="bid-design-stamp is-red" data-testid="stamp-export-breach">EXPORT BREACH</span>
+                )}
+                {chosenDesign.exclusiveTo && (
+                  <span className="bid-design-stamp" data-testid="stamp-bound">BOUND TO THE {chosenDesign.exclusiveTo.toUpperCase()}</span>
+                )}
                 {stamps?.fieldTrialled && <span className="bid-design-stamp is-green" data-testid="stamp-field-trialled">FIELD-TRIALLED HERE</span>}
                 <span
                   className={`bid-design-stamp ${stamps?.requiredLevel === false ? 'is-red' : stamps?.requiredLevel ? 'is-green' : ''}`}

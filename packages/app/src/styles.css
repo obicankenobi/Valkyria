@@ -5485,3 +5485,9 @@ summary:focus-visible,
 .inquiry-text { margin: 0; font-family: var(--font-mono); font-size: 14px; }
 .inquiry-choice { display: grid; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--line-strong); }
 .inquiry-legal { display: grid; gap: 4px; }
+
+/* P136: typbladets taggar och licenssektionen */
+.type-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.licence-section { display: flex; flex-direction: column; gap: 8px; }
+.licence-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; }
+.licence-row .meter { grid-column: 1 / -1; }

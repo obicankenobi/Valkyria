@@ -57,6 +57,8 @@ async function injectDesigns(page) {
       { ...base, id: 'design-2', name: 'H&V M65 Field Gun', performance: 74, reliability: 58, trueQuality: 72, latentFlaw: null, testedIn: ['jungle'], fieldRecord: { occasions: 3, proven: true }, uncertainty: 0 },
       { ...base, id: 'design-3', name: 'H&V M66 Heavy Gun', performance: 55, reliability: 80, trueQuality: 48, latentFlaw: { environment: 'mine', severity: 1 }, flawRevealed: true },
     ]
+    for (const d of house.designs) if (d.id === 'design-2') Object.assign(d, { exclusiveTo: 'west', skunk: true, generation: 2 })
+    house.licences = [{ id: 'licence-1', designId: 'design-2', factionId: 'rvn', sinceTurn: 1, capability: 45, status: 'active' }]
     house.investigations = [{ id: 'inv-1', designId: 'design-3', environment: 'mine', severity: 1, frontId: 'front-1', buyerId: 'rvn', openedTurn: 1, deadlineTurn: 5, status: 'open', causeEventId: null }]
     house.rnd.push({ id: 'rnd-design-armour-1', category: 'armour', turnsRemaining: 2, turnsTotal: 4, costFactor: 1, design: { focus: 'advanced', ambition: 'forward', targetGeneration: 2, upgradeOf: null } })
     house.capturedMateriel = [{ systemId: 'nlf-artillery', name: 'Type 63 rocket launcher', category: 'artillery', fromFactionId: 'nlf', units: 3 }]
@@ -691,6 +693,17 @@ const APP_SCREENS = [
     },
   },
   {
+    // P136: typbladet med taggar (bunden, exportreglerad, specialprojekt) och licenssektionen öppen.
+    name: 'licence',
+    path: '/',
+    async afterGoto(page) {
+      await injectDesigns(page)
+      await page.getByTestId('type-licence-toggle-design-2').click()
+      await page.getByTestId('licence-section-design-2').waitFor()
+      await page.getByTestId('licence-section-design-2').scrollIntoViewIfNeeded()
+    },
+  },
+  {
     // P127: kapplöpningstavlan — väst/öst, bedömd generation med säkerhetsstämpel, gap-ledare och kravkort.
     name: 'race-board',
     path: '/',
@@ -742,6 +755,7 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await injectDesigns(page)
       await page.getByTestId('inquiry-trace-1').waitFor()
+      await page.getByTestId('inquiry-trace-1').scrollIntoViewIfNeeded()
     },
   },
   {
