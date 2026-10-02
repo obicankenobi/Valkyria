@@ -54,7 +54,7 @@ function currentEntry(draft: GameState): LedgerEntry {
 
 export function recordIncome(draft: GameState, row: LedgerIncomeRow, amount: Money): void {
   const entry = currentEntry(draft)
-  entry.income[row] += round(amount)
+  entry.income[row] = (entry.income[row] ?? 0) + round(amount)
 }
 
 export function recordExpense(draft: GameState, row: LedgerExpenseRow, amount: Money): void {

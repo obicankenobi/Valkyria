@@ -95,6 +95,9 @@ export interface GameMetrics {
   voidedByScandal: number // kontrakt hävda av en skandal ("CANCELS AFTER THE SCANDAL")
   suspensions: number // avstängningar från en köpares upphandlingar
   contractsWonViaProgramme: number // tilldelningar där huset var vinnare
+  // P133 (§8b.2, §10): civil intäkt (huvudbokens income.civil) och dess andel av alla bokförda intäkter
+  civilRevenue: number
+  civilSharePct: number
 }
 
 // Rubrikmönstren för de tre larmen — grep:ade ordagrant ur emit()-anropen i standingOrders.ts,
@@ -333,5 +336,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     voidedByScandal,
     suspensions,
     contractsWonViaProgramme: wonProgrammes.length,
+    civilRevenue: (state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0),
+    civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }
 }

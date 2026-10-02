@@ -36,6 +36,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'LEGAL':
       // P125: juridisk rådgivning är ett enda läge (SET och CANCEL delar nyckel).
       return 'legal'
+    case 'CIVIL':
+      // P133: en civil linje per kategori (SET och CANCEL delar nyckel). Anslagstavlans kort byggs i P136.
+      return `civil:${change.category}`
   }
 }
 

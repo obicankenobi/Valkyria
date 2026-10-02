@@ -803,6 +803,11 @@ lämnar golden orörd.
 > (botarna ritar inget), bara `balance.frozen.json` omfryst. `human` 67,5 %. **Gap:** inget gränssnitt (P136), rivalernas konstruktioner binds inte, "sämre
 > betalningsvillkor" för neutrala hus ej byggt. Se ANDRINGSLOGG 2026-10-02.
 
+> **P133 BYGGD 2026-10-02.** `civil.ts`: stående order `CIVIL` per kategori (pansar/elektronik/flyg, techLevel ≥ 5) som betalar netto varje tur oberoende av kriget och
+> matar forskningen; `income.civil` (valfritt fält), `scenarioVerdict().civilSharePct`, `human-civil` och två nya mätkolumner. **Golden-hasharna oförändrade**
+> (bara `balance.frozen.json` omfryst). Mätt: `human-civil` 62,0 % mot `human` 67,5 %, civil andel 15,5 % av intäkterna, men pivoten måste göras före tur 3 och 59/200
+> går i konkurs. **Vapenviloraden kan inte prövas** (2 av 200 partier har en vapenvila). Inget gränssnitt för grenen än (P136). Se ANDRINGSLOGG 2026-10-02.
+
 **Kapningsordning** om etappen behöver bli mindre:
 1. Bryt ut del F (P132–P138) till en egen etapp.
 2. Stryk P116 (fångad materiel).

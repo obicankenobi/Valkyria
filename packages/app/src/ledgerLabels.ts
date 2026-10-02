@@ -4,12 +4,13 @@
 // komponent.
 import type { LedgerEntry } from '@seventh-front/core'
 
-export const INCOME_LABELS: Record<keyof LedgerEntry['income'], string> = {
+export const INCOME_LABELS: Required<Record<keyof LedgerEntry['income'], string>> = {
   contracts: 'Contract deliveries',
   advances: 'Advances',
   broker: 'Brokered deliveries',
   commodityRelease: 'Commodity release',
   fileSale: 'Sale of the file',
+  civil: 'Civil lines',
 }
 
 export const EXPENSE_LABELS: Record<keyof LedgerEntry['expenses'], string> = {

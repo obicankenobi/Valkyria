@@ -35,8 +35,8 @@ function formatAxis(value: number): string {
   return `${sign}£${Math.round(abs / 1000)}k`
 }
 
-function sum(record: Record<string, number>): number {
-  return Object.values(record).reduce((total, value) => total + value, 0)
+function sum(record: Record<string, number | undefined>): number {
+  return Object.values(record).reduce<number>((total, value) => total + (value ?? 0), 0)
 }
 
 function VoucherGroup<K extends string>({
@@ -47,10 +47,10 @@ function VoucherGroup<K extends string>({
 }: {
   title: string
   labels: Record<K, string>
-  values: Record<K, number>
+  values: Partial<Record<K, number>> // en rad kan saknas i ett sparat parti från före P133 (income.civil)
   sign: '+' | '−'
 }) {
-  const rows = (Object.keys(labels) as K[]).filter((key) => values[key] > 0)
+  const rows = (Object.keys(labels) as K[]).filter((key) => (values[key] ?? 0) > 0)
   return (
     <div className="voucher-group">
       <h4 className="voucher-group-title">{title}</h4>
@@ -63,7 +63,7 @@ function VoucherGroup<K extends string>({
               <dt>{labels[key]}</dt>
               <dd>
                 {sign}
-                {formatMoney(values[key])}
+                {formatMoney(values[key] ?? 0)}
               </dd>
             </div>
           ))}

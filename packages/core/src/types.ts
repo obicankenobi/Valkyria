@@ -141,6 +141,7 @@ export interface LedgerEntry {
     broker: Money // leveranser av BROKER-kontrakt (contract-broker-*)
     commodityRelease: Money // MARKET/RELEASE
     fileSale: Money // krisvalet SELL_THE_FILE
+    civil?: Money // P133: civila linjer (netto) — saknas i ett sparat parti från före P133
   }
   expenses: {
     fixedCosts: Money
@@ -205,6 +206,8 @@ export interface ScenarioVerdict {
   nuclearEpilogue: NuclearEpilogue | null // bara satt när ending.code === 'NUCLEAR_EXCHANGE'
   // P125 (§8.4): ett rent hus — hög integritet och inget avslöjat spår i partiet (en fjärde, tyst epilogaxel).
   cleanHouse: boolean
+  // P133 (§8b.2): andelen av husets bokförda intäkter som var civila (härledd ur huvudboken) — det en vapenvila inte tar ifrån huset.
+  civilSharePct: number
 }
 
 // DESIGN.md §6.3, ordagrant: "vad ditt hus levererade under de sista tolv
@@ -1198,6 +1201,7 @@ export type StandingOrderChange =
   | { kind: 'TRACE'; op: 'RESPOND'; traceId: string; choice: TraceChoice; role?: keyof House['staff'] }
   // P125: juridisk rådgivning — en stående order som sänker chansen att spår kommer fram. Kostar ingen handling.
   | { kind: 'LEGAL'; op: 'SET' | 'CANCEL' }
+  | { kind: 'CIVIL'; op: 'SET' | 'CANCEL'; category: CivilCategory }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1240,6 +1244,9 @@ export interface DesignTestOrder {
   turnsRun: number
 }
 
+// P133 (§8b.2): kategorierna som har en civil produkt (pansar → traktorer, elektronik → radioapparater, flyg → transporthelikoptrar).
+export type CivilCategory = 'armour' | 'electronics' | 'aviation'
+
 export interface StandingOrders {
   lines: Record<string, LineStandingOrder>
   supply: SupplyAgreement[]
@@ -1250,6 +1257,8 @@ export interface StandingOrders {
   testing?: Record<DesignId, DesignTestOrder>
   // P125: juridisk rådgivning i kraft från och med sinceTurn.
   legal?: { sinceTurn: number }
+  // P133: civila linjer per kategori (sinceTurn = första turen de betalar). Saknas i ett sparat parti från före P133 — läses som inga.
+  civil?: Partial<Record<CivilCategory, { sinceTurn: number }>>
 }
 
 export interface TurnSubmission {

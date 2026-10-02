@@ -17,6 +17,7 @@ import {
   blocGeneration,
   blocOfFaction,
   buyerPreferenceMix,
+  civilOptions,
   computeUnitCostNow,
   designBaseProduct,
   frontEnvironments,
@@ -719,6 +720,7 @@ export interface HumanOptions {
   legal: boolean // juridisk rådgivning när spår finns
   bothSides: boolean // söker kontrakt hos båda blocken
   inquiry: 'settle' | 'deny'
+  civil?: boolean // P133: civila linjer — forskar i pansar och öppnar en civil linje när tekniknivån räcker
 }
 
 const CLASSIC_HUMAN: HumanOptions = {
@@ -859,6 +861,23 @@ function trickActions(state: GameState): PlayerAction[] {
   return out
 }
 
+const HUMAN_CIVIL_PIVOT_BY_TURN = 2
+
+// P133: ett hus som vill överleva en vapenvila forskar i en civil kategori (pansar) ur överskottet och öppnar en civil linje så snart
+// tekniknivån räcker. Linjerna kostar ingenting att öppna — de betalar netto varje tur.
+function civilStandingOrders(state: GameState): StandingOrderChange[] {
+  const out: StandingOrderChange[] = civilOptions(state.house).map((category) => ({ kind: 'CIVIL' as const, op: 'SET' as const, category }))
+  const house = state.house
+  const queued = house.rnd.filter((p) => p.category === 'armour').length
+  const hasTrack = house.standingOrders?.research?.armour !== undefined
+  // Pivoten görs tidigt, medan kassan finns: ett forskningsprojekt är sex turers kostnad och går inte att finansiera ur ett överskott här.
+  if (house.techLevel.armour + queued < 6 && !hasTrack && queued === 0 && state.meta.turn <= HUMAN_CIVIL_PIVOT_BY_TURN) {
+    out.push({ kind: 'RESEARCH', op: 'SET', category: 'armour', pace: 'normal' })
+  }
+  if (hasTrack && house.techLevel.armour + queued >= 6) out.push({ kind: 'RESEARCH', op: 'CANCEL', category: 'armour' })
+  return out
+}
+
 export function makeHuman(opts: HumanOptions): Policy {
   return (state) => {
     const actions: PlayerAction[] = []
@@ -875,6 +894,7 @@ export function makeHuman(opts: HumanOptions): Policy {
     if (opts.designs) standing.push(...designStandingOrders(state, opts))
     if (opts.programmes) standing.push(...programmeStandingOrders(state))
     standing.push(...inquiryStandingOrders(state, opts))
+    if (opts.civil) standing.push(...civilStandingOrders(state))
     if (opts.legal && (state.traces ?? []).some((t) => t.houseId === 'player') && state.house.standingOrders?.legal === undefined) {
       standing.push({ kind: 'LEGAL', op: 'SET' })
     }
@@ -898,6 +918,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-bothsides': makeHuman({ ...BASE_HUMAN, bothSides: true }),
   'human-clean': makeHuman({ ...BASE_HUMAN, courting: false, tricks: false, legal: false }),
   'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny' }),
+  'human-civil': makeHuman({ ...BASE_HUMAN, civil: true }),
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }

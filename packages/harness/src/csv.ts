@@ -49,6 +49,8 @@ const COLUMNS = [
   'voidedByScandal',
   'suspensions',
   'contractsWonViaProgramme',
+  'civilRevenue',
+  'civilSharePct',
 ] as const satisfies readonly (keyof GameMetrics)[]
 
 function csvField(value: string | number): string {
