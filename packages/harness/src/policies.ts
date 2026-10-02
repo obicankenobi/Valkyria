@@ -617,31 +617,39 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
   for (const order of state.market.openOrders) {
     const grade = chooseGrade(state, order)
     // P129: standardbudet, och ett bud per konstruktion som går att bjuda på — den med störst förväntad vinst vinner.
-    const options: (string | undefined)[] = [undefined]
+    const options: { designId: string | undefined; kit: boolean }[] = [{ designId: undefined, kit: false }]
     if (opts.designs) {
       for (const d of state.house.designs ?? []) {
-        if (bidDesignRejection(state, { designId: d.id, price: 0 }, order) === null) options.push(d.id)
+        if (bidDesignRejection(state, { designId: d.id, price: 0 }, order) !== null) continue
+        options.push({ designId: d.id, kit: false })
+        // P140: en uppgraderingssats, när köparen redan har föregångarens materiel.
+        if (opts.kits && d.lineage !== null && bidDesignRejection(state, { designId: d.id, kit: true, price: 0 }, order) === null) {
+          options.push({ designId: d.id, kit: true })
+        }
       }
     }
     let best: { price: number; confidence: number } | null = null
     let bestValue = 0
     let bestDesign: string | undefined
     let bestCustomise = false
-    for (const designId of options) {
+    let bestKit = false
+    for (const { designId, kit } of options) {
       for (const custom of opts.customise ? [false, true] : [false]) {
-        const curve = playerWinCurve(state, order, grade, designId, false, custom)
+        const curve = playerWinCurve(state, order, grade, designId, kit, custom)
         const totalCost = curve[0]!.price // kurvans golv ÄR egen självkostnad (P84)
         const minMargin = opts.bothSides ? 0 : HUMAN_MIN_MARGIN
         // En kundanpassning kan halvera ordern vid en skandal: det förväntade värdet minskas med den förväntade förlusten.
         const risk = custom ? 1 - (CUSTOMISE_TERMS.scandalPct / 100) * (1 - CUSTOMISE_TERMS.scandalOrderFactor) : 1
         for (const point of curve) {
           if (point.confidence < HUMAN_MIN_CONFIDENCE || marginAt(point.price, totalCost) < minMargin) continue
+          if (kit && bidDesignRejection(state, { designId, kit: true, price: point.price }, order) !== null) continue // över satsens pristak
           const value = (point.price - totalCost) * (point.confidence / 100) * risk
           if (value > bestValue) {
             best = point
             bestValue = value
             bestDesign = designId
             bestCustomise = custom
+            bestKit = kit
           }
         }
       }
@@ -650,7 +658,7 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
     const bloc = blocOfFaction(state, order.buyerId)
     const unserved = opts.bothSides && bloc !== null && !servedBlocs.has(bloc)
     candidates.push({
-      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0, ...(bestDesign ? { designId: bestDesign } : {}), ...(bestCustomise ? { customise: true } : {}) },
+      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0, ...(bestDesign ? { designId: bestDesign } : {}), ...(bestCustomise ? { customise: true } : {}), ...(bestKit ? { kit: true } : {}) },
       value: unserved ? bestValue * 1000 : bestValue,
       advancePct: order.advancePct,
       lines: linesNeededFor(order),
@@ -732,12 +740,23 @@ export interface HumanOptions {
   licence?: boolean // P135: licensierar en konstruktion till en faktion (helst en embargerad) och tar emot royalty
   skunk?: boolean // P134: ritar i specialprojekt (snabbare och dyrare, större risk för en dold brist)
   civil?: boolean // P133: civila linjer — forskar i pansar och öppnar en civil linje när tekniknivån räcker
+  // P140 (ETAPP10 §5 punkt 3): de verb som byggts men aldrig använts av en bot (premiss 0.13).
+  fieldTrial?: boolean // FIELD_TRIAL: lånar ut en sats av en egen konstruktion till en köpare med relation över golvet
+  upgrade?: boolean // DESIGN START med upgradeOf när huset redan har en aktiv konstruktion i kategorin
+  kits?: boolean // bud med uppgraderingssats (Bid.kit) när köparen redan har föregångarens materiel
+  reverseEngineer?: boolean // REVERSE_ENGINEER av erövrade system huset fått överlämnade
+  lowball?: boolean // PROCUREMENT LOWBALL bland knepen
+  sabotageProgramme?: boolean // SABOTAGE mot en deltagande rival i en upphandling (targetId 'programme:<id>:<rival>')
+  reportRival?: boolean // anmäler (PROGRAMME REPORT) en rival i en upphandling där huset deltar och har underrättelse
 }
 
 const CLASSIC_HUMAN: HumanOptions = {
   designs: false, research: true, programmes: false, focus: 'mix', ambition: 'cards', tricks: false, courting: true, legal: false, bothSides: false, inquiry: 'deny',
 }
-const BASE_HUMAN: HumanOptions = { ...CLASSIC_HUMAN, designs: true, programmes: true, inquiry: 'settle' }
+// `human` = P129:s spelare + P140:s fältprov och uppgraderingar. `PLAIN_HUMAN` är den oförändrade P129–P137-spelaren (variant `human-plain`),
+// kvar som referens så att före/efter-jämförelsen går att köra om.
+const PLAIN_HUMAN: HumanOptions = { ...CLASSIC_HUMAN, designs: true, programmes: true, inquiry: 'settle' }
+const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true }
 
 const HUMAN_DESIGN_CASH_SHARE = 0.6 // en ny konstruktion startas bara när kassan är minst så här stor andel av grundkapitalet
 const HUMAN_SETTLE_RESERVE_SHARE = 0.25 // en förlikning betalas bara om kassan efteråt är över så här stor andel av grundkapitalet
@@ -754,6 +773,7 @@ function mixFocus(state: GameState, category: TechCategory): DesignFocus {
 
 // En dyr ritning (advanced) lönar sig bara för ett hus med marginal i kassan — annars väljer en försiktig spelare den billiga, tillförlitliga.
 const HUMAN_ADVANCED_CASH_SHARE = 1.5
+const HUMAN_UPGRADE_CASH_SHARE = 0.3 // P140: en uppgradering kostar 0,6 × en ny konstruktion per tur
 function affordableFocus(state: GameState, focus: DesignFocus): DesignFocus {
   if (focus === 'advanced' && state.house.treasury < state.house.foundingCapital * HUMAN_ADVANCED_CASH_SHARE) return 'robust'
   return focus
@@ -772,7 +792,31 @@ function staleDesign(state: GameState, generation: number, category: TechCategor
 function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrderChange[] {
   const out: StandingOrderChange[] = []
   const house = state.house
-  if (house.treasury >= house.foundingCapital * HUMAN_DESIGN_CASH_SHARE) {
+  // P140: en uppgradering är billigare och snabbare än en ny konstruktion (upgradeCostFactor/upgradeTurnsFactor 0,6), så den prövas redan över
+  // HUMAN_UPGRADE_CASH_SHARE — och det är en inaktuell konstruktion (kapplöpningen har gått förbi den) som uppgraderas, inte en aktuell.
+  let upgradeStarted = false
+  if (opts.upgrade && house.treasury >= house.foundingCapital * HUMAN_UPGRADE_CASH_SHARE) {
+    const stale = (house.designs ?? [])
+      .filter((d) => d.status === 'active' && staleDesign(state, d.generation, d.category))
+      .sort((a, b) => b.performance + b.reliability - (a.performance + a.reliability))
+    for (const predecessor of stale) {
+      if ((house.designs ?? []).some((d) => d.lineage === predecessor.id && d.status === 'active')) continue // redan uppgraderad
+      const upgrade: StandingOrderChange = {
+        kind: 'DESIGN',
+        op: 'START',
+        category: predecessor.category,
+        focus: opts.focus === 'mix' ? affordableFocus(state, mixFocus(state, predecessor.category)) : opts.focus,
+        ambition: opts.ambition === 'cards' ? cardAmbition(state, predecessor.category) : opts.ambition,
+        upgradeOf: predecessor.id,
+      }
+      if (validateStandingOrderChange(state, state, upgrade).ok) {
+        out.push(upgrade)
+        upgradeStarted = true
+        break
+      }
+    }
+  }
+  if (!upgradeStarted && house.treasury >= house.foundingCapital * HUMAN_DESIGN_CASH_SHARE) {
     // En spelare som sköter sin ekonomi ritar i sin specialisering först och går vidare först när kassan klarar det.
     const rich = house.treasury >= house.foundingCapital
     // En konstruktion passar bara basprodukten i sin kategori — en spelare ritar där efterfrågan finns (öppna ordrar och tecknade
@@ -794,6 +838,19 @@ function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrd
         ambition: opts.ambition === 'cards' ? cardAmbition(state, category) : opts.ambition,
         ...(opts.skunk ? { skunk: true } : {}),
       }
+      // P140: en uppgradering (billigare, snabbare, ärver ryktet) av husets bästa aktiva konstruktion i kategorin, om en sådan går att starta.
+      if (opts.upgrade) {
+        const predecessor = (house.designs ?? [])
+          .filter((d) => d.status === 'active' && d.category === category)
+          .sort((a, b) => b.performance + b.reliability - (a.performance + a.reliability))[0]
+        if (predecessor) {
+          const upgrade: StandingOrderChange = { ...change, upgradeOf: predecessor.id }
+          if (validateStandingOrderChange(state, state, upgrade).ok) {
+            out.push(upgrade)
+            break
+          }
+        }
+      }
       if (validateStandingOrderChange(state, state, change).ok) {
         out.push(change)
         break
@@ -810,7 +867,7 @@ function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrd
 }
 
 // Anmälan och prototyper i utvecklingsupphandlingar (ingen handling).
-function programmeStandingOrders(state: GameState): StandingOrderChange[] {
+function programmeStandingOrders(state: GameState, opts: HumanOptions): StandingOrderChange[] {
   const out: StandingOrderChange[] = []
   for (const programme of state.programmes ?? []) {
     if (programme.phase === 'awarded' || programme.phase === 'cancelled') continue
@@ -828,6 +885,16 @@ function programmeStandingOrders(state: GameState): StandingOrderChange[] {
       const best = [...fitting].sort((a, b) => b.performance + b.reliability - (a.performance + a.reliability))[0]!
       const submit: StandingOrderChange = { kind: 'PROGRAMME', op: 'SUBMIT', programmeId: programme.id, designId: best.id }
       if (validateStandingOrderChange(state, state, submit).ok) out.push(submit)
+    }
+    // P140: anmälan av en rival — den första ännu oanmälda deltagaren, om huset har underrättelse i köparens land (validateStandingOrderChange avgör).
+    if (opts.reportRival) {
+      for (const rival of programme.entrants.filter((e) => e.houseId !== 'player' && !e.reported)) {
+        const report: StandingOrderChange = { kind: 'PROGRAMME', op: 'REPORT', programmeId: programme.id, rivalId: rival.houseId as string }
+        if (validateStandingOrderChange(state, state, report).ok) {
+          out.push(report)
+          break
+        }
+      }
     }
   }
   return out
@@ -853,24 +920,76 @@ function inquiryStandingOrders(state: GameState, opts: HumanOptions): StandingOr
 }
 
 // Knepen (human-dirty): bara ur ett överskott, högst två per tur, bara de som validateAction släpper igenom.
-function trickActions(state: GameState): PlayerAction[] {
+// P140: LOWBALL kostar ingenting och en uppgörelse betalas ur reserven, så den prövas redan över HUMAN_SETTLE_RESERVE_SHARE av grundkapitalet
+// (en bot som bara handlar ur ett överskott över grundkapitalet når den aldrig — kassan ligger under det hela partiet). De fem äldre knepen
+// är oförändrade och kräver fortfarande överskottet.
+function trickActions(state: GameState, opts: HumanOptions): PlayerAction[] {
   const out: PlayerAction[] = []
-  if (state.house.treasury < state.house.foundingCapital * HUMAN_TRICK_SURPLUS) return out
+  const surplus = state.house.treasury >= state.house.foundingCapital * HUMAN_TRICK_SURPLUS
+  const reserve = state.house.treasury >= state.house.foundingCapital * HUMAN_SETTLE_RESERVE_SHARE
+  if (!surplus && !(opts.lowball && reserve)) return out
   for (const programme of state.programmes ?? []) {
     if (!programme.entrants.some((e) => e.houseId === 'player')) continue
-    const candidates: PlayerAction[] = [
-      { type: 'PROCUREMENT', op: 'COUNTERPURCHASE', programmeId: programme.id },
-      { type: 'PROCUREMENT', op: 'WRITE_SPEC', programmeId: programme.id, requirementKind: 'performance' },
-      { type: 'PROCUREMENT', op: 'HANDBUILT', programmeId: programme.id },
-      { type: 'PROCUREMENT', op: 'BRIBE_BOARD', programmeId: programme.id },
-      { type: 'PROCUREMENT', op: 'FALSIFY', programmeId: programme.id },
-    ]
+    const candidates: PlayerAction[] = surplus
+      ? [
+          { type: 'PROCUREMENT', op: 'COUNTERPURCHASE', programmeId: programme.id },
+          { type: 'PROCUREMENT', op: 'WRITE_SPEC', programmeId: programme.id, requirementKind: 'performance' },
+          { type: 'PROCUREMENT', op: 'HANDBUILT', programmeId: programme.id },
+          { type: 'PROCUREMENT', op: 'BRIBE_BOARD', programmeId: programme.id },
+          { type: 'PROCUREMENT', op: 'FALSIFY', programmeId: programme.id },
+        ]
+      : []
+    if (opts.lowball) candidates.push({ type: 'PROCUREMENT', op: 'LOWBALL', programmeId: programme.id })
     for (const action of candidates) {
       if (out.length >= 2) return out
       if (validateAction(state, state, action).ok) out.push(action)
     }
   }
   return out
+}
+
+// P140: SABOTAGE mot en deltagande rival i en upphandling huset själv deltar i. Kostar intelCovertOpCost och går därför förbi
+// spendOnlyFromSurplus (som kräver ett överskott över grundkapitalet) — i stället krävs att kassan efter kostnaden ligger över reserven.
+function programmeSabotageActions(state: GameState): PlayerAction[] {
+  const station = state.house.stations.find((st) => st.status === 'active')
+  if (!station) return []
+  if (state.house.treasury - BOT_BALANCE.intelCovertOpCost < state.house.foundingCapital * HUMAN_SETTLE_RESERVE_SHARE) return []
+  for (const programme of state.programmes ?? []) {
+    if (!programme.entrants.some((e) => e.houseId === 'player')) continue
+    for (const rival of programme.entrants.filter((e) => e.houseId !== 'player' && !e.sabotaged)) {
+      const action: PlayerAction = { type: 'INTEL', op: 'SABOTAGE', stationId: station.id, targetId: `programme:${programme.id}:${rival.houseId}` }
+      if (validateAction(state, state, action).ok) return [action]
+    }
+  }
+  return []
+}
+
+// P140: ett fältprov per tur, om kassan ligger över reserven (en sats kostar självkostnad, en bråkdel av en orders värde). Köparen väljs bland dem som har en
+// öppen order på konstruktionens basprodukt (där provet lönar sig i nästa upphandling), därefter högst relation.
+function fieldTrialActions(state: GameState): PlayerAction[] {
+  if (state.house.treasury < state.house.foundingCapital * HUMAN_SETTLE_RESERVE_SHARE) return [] // satsen är en bråkdel av en orders värde; validateAction prövar att kassan räcker
+  for (const design of state.house.designs ?? []) {
+    if (design.status !== 'active') continue
+    const wanting = new Set(state.market.openOrders.filter((o) => o.productId === design.baseProductId).map((o) => o.buyerId))
+    const officials = Object.values(state.officials)
+      .filter((o) => o.status === 'active')
+      .sort((a, b) => Number(wanting.has(b.factionId)) - Number(wanting.has(a.factionId)) || b.relationToPlayer - a.relationToPlayer)
+    for (const official of officials) {
+      const action: PlayerAction = { type: 'POLITICAL', op: 'FIELD_TRIAL', officialId: official.id, designId: design.id }
+      if (validateAction(state, state, action).ok) return [action]
+    }
+  }
+  return []
+}
+
+// P140: ett erövrat system studeras när kassan klarar det (validateAction prövar kostnaden).
+function reverseEngineerActions(state: GameState): PlayerAction[] {
+  if (state.house.treasury < state.house.foundingCapital * HUMAN_DESIGN_CASH_SHARE) return []
+  for (const materiel of state.house.capturedMateriel ?? []) {
+    const action: PlayerAction = { type: 'INTERNAL', op: 'REVERSE_ENGINEER', payload: { systemId: materiel.systemId } }
+    if (validateAction(state, state, action).ok) return [action]
+  }
+  return []
 }
 
 const HUMAN_CIVIL_PIVOT_BY_TURN = 2
@@ -911,13 +1030,16 @@ export function makeHuman(opts: HumanOptions): Policy {
     if (state.house.treasury < state.house.foundingCapital * HUMAN_LOAN_CASH_SHARE) {
       takeLoan(Math.min(state.house.creditLimit, state.house.foundingCapital * HUMAN_LOAN_SHARE), actions)
     }
-    if (opts.tricks) actions.push(...trickActions(state))
+    if (opts.tricks) actions.push(...trickActions(state, opts))
+    // P140: sist i listan — fyller bara handlingspoäng som annars skulle stå tomma, så att spelarens övriga prioriteringar är oförändrade.
+    if (opts.reverseEngineer) actions.push(...reverseEngineerActions(state))
+    if (opts.fieldTrial) actions.push(...fieldTrialActions(state))
 
-    const affordable = spendOnlyFromSurplus(state, actions).slice(0, state.house.actionPoints)
+    const affordable = [...spendOnlyFromSurplus(state, actions), ...(opts.sabotageProgramme ? programmeSabotageActions(state) : [])].slice(0, state.house.actionPoints)
     const standing: StandingOrderChange[] = [...humanStandingOrders(state)]
     if (opts.research) standing.push(...researchStandingOrders(state, true))
     if (opts.designs) standing.push(...designStandingOrders(state, opts))
-    if (opts.programmes) standing.push(...programmeStandingOrders(state))
+    if (opts.programmes) standing.push(...programmeStandingOrders(state, opts))
     standing.push(...inquiryStandingOrders(state, opts))
     if (opts.civil) standing.push(...civilStandingOrders(state))
     if (opts.licence) standing.push(...licenceStandingOrders(state))
@@ -946,8 +1068,10 @@ export const POLICIES: Record<string, Policy> = {
   'human-advanced': makeHuman({ ...BASE_HUMAN, focus: 'advanced', ambition: 'forward' }),
   'human-noresearch': makeHuman({ ...BASE_HUMAN, research: false, designs: false, programmes: false }),
   'human-bothsides': makeHuman({ ...BASE_HUMAN, bothSides: true }),
-  'human-clean': makeHuman({ ...BASE_HUMAN, courting: false, tricks: false, legal: false }),
-  'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny' }),
+  'human-clean': makeHuman({ ...BASE_HUMAN, courting: false, tricks: false, legal: false, reportRival: true }),
+  'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny', lowball: true, sabotageProgramme: true }),
+  'human-engineer': makeHuman({ ...BASE_HUMAN, reverseEngineer: true, kits: true }),
+  'human-plain': makeHuman(PLAIN_HUMAN),
   'human-civil': makeHuman({ ...BASE_HUMAN, civil: true }),
   'human-skunk': makeHuman({ ...BASE_HUMAN, skunk: true }),
   'human-licence': makeHuman({ ...BASE_HUMAN, licence: true }),

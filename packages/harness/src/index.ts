@@ -4,4 +4,4 @@
 // Byggs i P9. Se policies.ts, runGame.ts, csv.ts, cli.ts.
 import { main } from './cli.js'
 
-main(process.argv.slice(2))
+await main(process.argv.slice(2))

@@ -18,7 +18,8 @@ import { writeFileSync } from 'node:fs'
 import { POLICIES } from './policies.js'
 import { runGame } from './runGame.js'
 import { toCsv } from './csv.js'
-import { formatSummary } from './summary.js'
+import { formatSummary, formatFieldQuartiles } from './summary.js'
+import { runSensitivity, sensitivityChild } from './sensitivityRun.js'
 import type { GameMetrics } from './runGame.js'
 
 interface Args {
@@ -74,7 +75,10 @@ export function parseArgs(argv: readonly string[]): Args {
   return { scenario, runs, policyNames, outPath }
 }
 
-export function main(argv: readonly string[]): void {
+export function main(argv: readonly string[]): void | Promise<void> {
+  // P140: känslighetsverktyget (ETAPP10 §5 punkt 4) — orkestrator och barnprocess.
+  if (argv.includes('--sens-child')) return sensitivityChild(argv)
+  if (argv.includes('--sensitivity')) return runSensitivity(argv)
   const args = parseArgs(argv)
   const rows: GameMetrics[] = []
 
@@ -93,4 +97,7 @@ export function main(argv: readonly string[]): void {
   )
   // RAPPORT3 §4: slutfördelningen redovisas ALLTID, oavsett vad mätningen i övrigt gäller.
   console.log(formatSummary(rows))
+  // P140: fältrykteskvartilen för de varianter som ritar (ETAPP9 §10, den fetstilta raden som aldrig mättes).
+  const quartiles = formatFieldQuartiles(rows)
+  if (quartiles) console.log(quartiles)
 }

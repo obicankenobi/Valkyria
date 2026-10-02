@@ -62,6 +62,6 @@ describe('spelbarhet (RAPPORT3 §4)', () => {
         expect(summary!.winPct, `${name} ligger inte längre över taket ${MAX_WIN_PCT} % — stryk den ur KNOWN_ABOVE_CEILING: ${detail}`).toBeGreaterThan(MAX_WIN_PCT)
       }
     },
-    60_000,
+    180_000, // P140: 21 botar × 30 partier; 60 s räckte inte när sviten kör parallellt
   )
 })

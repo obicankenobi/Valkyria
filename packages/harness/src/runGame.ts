@@ -103,6 +103,23 @@ export interface GameMetrics {
   licencesGranted: number
   licenseeRivals: number
   skunkDesigns: number
+  // P140 (ETAPP10_FORSLAG.md §5): fältrykte och de verb botarna nu använder. Alla lästa ur slutläget (state.house, state.programmes,
+  // state.market) — ingen ny räknare i core.
+  fieldOccasions: number // summan av fälttillfällen över husets konstruktioner (underlaget för fältrykteskvartilen, summary.ts)
+  fieldTrials: number // FIELD_TRIAL: (konstruktion, köpare)-par som provats
+  upgradedDesigns: number // uppgraderingar (Design.lineage satt)
+  kitContracts: number // kontrakt som tecknats som uppgraderingssats (Bid.kit)
+  studiedSystems: number // REVERSE_ENGINEER: studerade erövrade system
+  lowballs: number // upphandlingar där huset spelat LOWBALL
+  programmeSabotages: number // upphandlingar där huset sabotagerat eller läckt mot en deltagande rival
+  rivalReports: number // anmälda rivaler i upphandlingar där huset deltog
+}
+
+// P140 (ETAPP10 §5 punkt 1, premiss 0.14): bara rubriken från traces.ts ("<HUS> IS SUSPENDED FROM TENDERING TO <KÖPARE> UNTIL TURN <n>")
+// är en avstängning. Ett avvisat bud har nästan samma ord ("BID ON <order> DISQUALIFIED: <HUS> IS SUSPENDED FROM TENDERING TO <KÖPARE>",
+// bidding.ts) men är en KONSEKVENS av en avstängning som redan räknats — tidigare räknades båda.
+export function isSuspensionHeadline(headline: string): boolean {
+  return !headline.startsWith('BID ON ') && headline.includes(' IS SUSPENDED FROM TENDERING TO ') && /UNTIL TURN \d+$/.test(headline)
 }
 
 // Rubrikmönstren för de tre larmen — grep:ade ordagrant ur emit()-anropen i standingOrders.ts,
@@ -212,7 +229,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       if (event.headline.startsWith('FIELD REPORT:')) casualties++
       if (event.headline.startsWith('GAP SHOCK:')) gapShocks++
       if (event.actorIsPlayer && event.headline.includes(' IS FIRST IN PLACE ')) firstInPlace++
-      if (event.actorIsPlayer && event.headline.includes('IS SUSPENDED FROM TENDERING')) suspensions++
+      if (event.actorIsPlayer && isSuspensionHeadline(event.headline)) suspensions++
       if (event.actorIsPlayer && event.headline.startsWith('EXPORT CONTROL BREACHED')) exportBreaches++
       if (event.actorIsPlayer && event.headline.includes('CANCELS AFTER THE SCANDAL')) voidedByScandal++
       if (STANDING_ORDER_ALARMS.some((pattern) => event.headline.includes(pattern))) standingOrderAlarms++
@@ -348,6 +365,14 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     licencesGranted: (state.house.licences ?? []).length,
     licenseeRivals: Object.keys(state.rivals).filter((id) => id.startsWith('licensee-')).length,
     skunkDesigns: designs.filter((d) => d.skunk).length,
+    fieldOccasions: designs.reduce((sum, d) => sum + d.fieldRecord.occasions, 0),
+    fieldTrials: designs.reduce((sum, d) => sum + Object.keys(d.trials ?? {}).length, 0),
+    upgradedDesigns: designs.filter((d) => d.lineage !== null).length,
+    kitContracts: state.market.contracts.filter((c) => c.kit).length,
+    studiedSystems: Object.keys(state.house.studiedSystems ?? {}).length,
+    lowballs: programmes.filter((p) => p.entrants.some((e) => e.houseId === 'player' && e.lowball)).length,
+    programmeSabotages: programmes.filter((p) => p.entrants.some((e) => e.houseId !== 'player' && (e.sabotaged || e.leaked))).length,
+    rivalReports: programmes.filter((p) => enteredIds.has(p.id)).reduce((sum, p) => sum + p.entrants.filter((e) => e.houseId !== 'player' && e.reported).length, 0),
     civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }
 }
