@@ -162,7 +162,7 @@ export function CountryFile({
             <div className="cf-meter">
               <span className="cf-meter-label">STATION</span>
               <span className="cf-meter-value" data-testid="cf-station">
-                {station ? `${station.city} D${station.depth}` : 'NO COVERAGE'}
+                {station ? `${station.city} D${station.depth}` : dormant ? `${dormant.city} DORMANT` : 'NO COVERAGE'}
               </span>
             </div>
             {station && (
