@@ -25,8 +25,8 @@ const HOME_STATE_OPTIONS: { value: House['homeState']; label: string }[] = [
   { value: 'east', label: 'EAST' },
 ]
 
-// DESIGN.md §3: fem val, ordagrant — techspärrens sjätte kategori (infantry)
-// är inte en specialisering en spelare väljer. Samma korta koder som
+// P162 (ETAPP10 §3b): infantry är den sjätte specialiseringen (DESIGN.md §3 sade fem val; ägaren speltestade 2026-10-06 och saknade den).
+// Samma korta koder som
 // CompanyActions.tsx:s CATEGORY_LABEL (R&D-panelen) — fem ord i en
 // Segmented rad klipps annars av på telefonbredd (regel 18), upptäckt i
 // npm run shots.
@@ -36,6 +36,7 @@ const SPECIALISATION_OPTIONS: { value: TechCategory; label: string }[] = [
   { value: 'aviation', label: 'AVI' },
   { value: 'naval', label: 'NAV' },
   { value: 'electronics', label: 'ELE' },
+  { value: 'infantry', label: 'INF' },
 ]
 
 export function NewGameScreen({

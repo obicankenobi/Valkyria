@@ -544,3 +544,59 @@ describe('TheatreMap (P81a) — teckenförklaringen', () => {
     expect(document.querySelector(`[data-testid="map-legend-row-sector-${side}"].is-focused`)).toBeTruthy()
   })
 })
+
+// P162 (ETAPP10_FORSLAG.md §3b, S2): Ho Chi Minh-leden är en transportled, inte en fylld yta. Den ritas som en streckad linje, har en etikett
+// som syns redan på startzoomen, och vem som håller den står på själva leden.
+describe('TheatreMap (P162) — Ho Chi Minh-leden', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response),
+    )
+  })
+
+  it('ritas som en streckad led utan fyllning, och sidan syns på leden', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-trail-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    const trail = document.querySelector('[data-testid="map-sector-ho-chi-minh-trail"]')!
+    expect(trail.getAttribute('class')).toContain('map-route')
+    expect(trail.getAttribute('class')).not.toContain('map-sector-fill')
+    expect(trail.getAttribute('class')).toMatch(/is-(a|b|contested|empty)/)
+    // Övriga sektorer är fortfarande fyllda ytor.
+    expect(document.querySelector('[data-testid="map-sector-hue"]')!.getAttribute('class')).toContain('map-sector-fill')
+  })
+
+  it('har en synlig etikett på startzoomen som namnger leden och vem som håller den', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-trail-label-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    // Startzoomen är nivå 2 (k = 1); etiketten ritas på alla nivåer, så den syns oavsett var spelaren zoomar.
+    const label = document.querySelector('[data-testid="map-route-label-ho-chi-minh-trail"]')!
+    expect(label).toBeTruthy()
+    expect(label.textContent).toMatch(/HO CHI MINH TRAIL/)
+    expect(label.textContent).toMatch(/FRIENDLY|HOSTILE|CONTESTED|NO FORCES/)
+    expect(label.getAttribute('class')).not.toContain('map-label-hidden')
+  })
+
+  it('ledens etikett följer kontrollen: sida b (NLF) är "HOSTILE", utan förband "NO FORCES"', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-trail-holder-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    const trail = document.querySelector('[data-testid="map-sector-ho-chi-minh-trail"]')!
+    const side = trail.getAttribute('class')!.match(/is-(a|b|contested|empty)/)![1]
+    const word = { a: 'FRIENDLY', b: 'HOSTILE', contested: 'CONTESTED', empty: 'NO FORCES' }[side as 'a' | 'b' | 'contested' | 'empty']
+    expect(document.querySelector('[data-testid="map-route-label-ho-chi-minh-trail"]')!.textContent).toContain(word)
+  })
+
+  it('ett tryck på leden öppnar teckenförklaringens rad "route"', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-trail-tap-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    fireEvent.click(document.querySelector('[data-testid="map-route-tap-ho-chi-minh-trail"]')!)
+    expect(document.querySelector('[data-testid="map-legend-row-route"].is-focused')).toBeTruthy()
+  })
+})

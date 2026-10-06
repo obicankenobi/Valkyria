@@ -142,6 +142,27 @@ function regionPathD(region: SectorRegion, project: (lngLat: [number, number]) =
   return `M${points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join('L')}Z`
 }
 
+// P162: en transportleds linje som en öppen SVG-path, [lat,lng] → projicerat [x,y].
+function routePathD(route: [number, number][], project: (lngLat: [number, number]) => [number, number] | null): string {
+  const points = route.map(([lat, lng]) => project([lng, lat])).filter((p): p is [number, number] => p !== null)
+  if (points.length === 0) return ''
+  return `M${points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join('L')}`
+}
+
+// Vem som håller en led, i ord som står PÅ leden (S2). Sida a är husets egen sida, b motståndarens.
+export function routeHolderLabel(side: 'a' | 'b' | 'contested' | 'empty' | undefined): string {
+  switch (side) {
+    case 'a':
+      return 'FRIENDLY'
+    case 'b':
+      return 'HOSTILE'
+    case 'contested':
+      return 'CONTESTED'
+    default:
+      return 'NO FORCES'
+  }
+}
+
 // P77 (§6.4, ordagrant): "Inre tecken per doktrin." Ritat i kod (ingen
 // bildtillgång), enkla APP-6-inspirerade glyfer — kors för infanteri, oval
 // (öppen/fylld) för mekaniserat/pansar, prick för artilleri, sicksack för
@@ -563,6 +584,26 @@ export function TheatreMap({
           <g className="map-sectors">
             {allRegions.map((region) => {
               const side = sectorControlBySector.get(region.sectorId)
+              // P162 (S2): en transportled ritas som en streckad linje längs `route` — aldrig som en fylld yta. En bredare, osynlig
+              // tryckyta ligger under så att leden går att trycka på (regel 11) utan att linjen själv blir tjock.
+              if (region.route) {
+                const d = routePathD(region.route, project)
+                return (
+                  <g key={region.sectorId}>
+                    <path
+                      d={d}
+                      className={`map-route ${sectorFillClass(side)}`}
+                      data-testid={`map-sector-${region.sectorId}`}
+                    />
+                    <path
+                      d={d}
+                      className="map-route-tap"
+                      onClick={() => openLegend('route')}
+                      data-testid={`map-route-tap-${region.sectorId}`}
+                    />
+                  </g>
+                )
+              }
               return (
                 <path
                   key={region.sectorId}
@@ -819,9 +860,37 @@ export function TheatreMap({
               sektornamn (P76, zoomnivå 2+) och förbandsnamn (P77, zoomnivå
               3+, se FormationToken) delar samma kollisionsdöljning
               (useLabelCollisionHiding). */}
+          {/* P162 (S2): ledens etikett syns redan på startzoomen (nivå 1) och bär namn och hållare. Den ligger före sektoretiketterna i
+              ritordningen, så kollisionsdöljningen prioriterar den. */}
+          <g className="map-route-labels">
+            {allRegions
+              .filter((region) => region.route)
+              .map((region) => {
+                const mid = region.route![Math.floor(region.route!.length / 2)]!
+                const [x, y] = project([mid[1], mid[0]]) ?? [0, 0]
+                const id = `route-${region.sectorId}`
+                return (
+                  <text
+                    key={id}
+                    ref={(el) => {
+                      if (el) labelRefs.current.set(id, el)
+                      else labelRefs.current.delete(id)
+                    }}
+                    x={x - 10}
+                    y={y}
+                    className={hiddenLabels.has(id) ? 'map-sector-label map-route-label map-label-hidden' : 'map-sector-label map-route-label'}
+                    textAnchor="end"
+                    data-testid={`map-route-label-${region.sectorId}`}
+                  >
+                    {`${region.label} · ${routeHolderLabel(sectorControlBySector.get(region.sectorId))}`}
+                  </text>
+                )
+              })}
+          </g>
+
           {zoomLevel >= 2 && (
             <g className="map-sector-labels">
-              {allRegions.map((region) => {
+              {allRegions.filter((region) => !region.route).map((region) => {
                 const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
                 return (
                   <text
@@ -883,7 +952,7 @@ export function TheatreMap({
         type="button"
         className="map-legend-button"
         onClick={() => openLegend(null)}
-        aria-label="Teckenförklaring"
+        aria-label="Map key"
         data-testid="map-legend-button"
       >
         ?

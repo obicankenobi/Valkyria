@@ -96,12 +96,13 @@ export const HANDBOOK: readonly HandbookEntry[] = [
   {
     id: 'intelligence',
     title: 'Intelligence',
-    summary: 'A station in a country gives you insight (otherwise formations and officials show as unknown) and unlocks six verbs: EXPAND, WITHDRAW, LEAK, SABOTAGE, TURN, RECRUIT.',
+    summary: 'A station in a country gives you depth there — insight into its formations and price bands, and unlocks six verbs: EXPAND, WITHDRAW, LEAK, SABOTAGE, TURN, RECRUIT.',
     body: [
-      'A station in a country gives you intelligence depth there — without an active station, a country\'s formations and officials show as unknown (a dashed frame with a question mark on the map). RECRUIT establishes a new station in a country that lacks one; EXPAND deepens an already active one; WITHDRAW pulls it back.',
+      'A station in a country gives you intelligence depth there, from 0 to 5. Formations are unknown at depth 0 — a country with no station, or a station that is still new — and show as a dashed frame with a question mark on the map; from depth 1 they are named and counted. Each level also narrows the price bands on that buyer\'s orders, down to an exact band at depth 5. RECRUIT opens a new station at depth 0 (you can hold five); EXPAND adds one depth level for a fee; WITHDRAW puts a station to sleep — a dormant station gives no insight, and for now there is no way to reopen it.',
+      'Officials are partly visible without any station: you always see an official\'s name, post, standing and relation to you. Their integrity and agenda are shown only when an active station there covers the cabinet. Every station is set up to cover procurement only, so today integrity and agenda stay unknown.',
       'LEAK damages a chosen rival\'s relations with a nation by leaking harmful information. SABOTAGE takes a rival out of contention for deliveries for a time. TURN targets a single official — success raises your relation to that person, failure damages their standing.',
       'All intelligence operations share a success chance that is scaled down by the target\'s counterIntelligence — the better the opponent\'s counter-espionage, the harder it is to succeed, and the greater the risk of being caught.',
-      'A station exposed too much risks being burned (a pulsing ring on the map warns in advance) — a burned station is lost and must be re-established with RECRUIT.',
+      'A station exposed too much risks being burned (a pulsing ring on the map warns in advance) — a burned station is lost, and RECRUIT opens a new one at depth 0.',
     ],
   },
   {

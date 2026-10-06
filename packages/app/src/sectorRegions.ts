@@ -22,6 +22,9 @@ export interface SectorRegion {
   label: string
   anchor: [number, number] // [lat, lng]
   polygon: [number, number][] // [lat, lng][], sluten ring (första/sista punkten behöver inte upprepas)
+  // P162 (ETAPP10 §3b, S2): en transportled ritas som en streckad linje längs `route` ([lat, lng][], norr till söder), inte som en fylld
+  // yta. Polygonen finns kvar som geometri men ritas inte; sektorns kontroll visas på själva leden.
+  route?: [number, number][]
 }
 
 // En enkel oktagon runt ankaret — den "handritade" blobben för de fem
@@ -83,6 +86,13 @@ export const SECTOR_REGIONS: Record<string, SectorRegion[]> = {
       sectorId: 'ho-chi-minh-trail',
       label: 'HO CHI MINH TRAIL',
       anchor: [16, 106.5],
+      route: [
+        [17.1, 106.7],
+        [16.5, 106.4],
+        [15.9, 106.2],
+        [15.3, 105.95],
+        [14.8, 105.8],
+      ],
       polygon: [
         [17, 106.9],
         [16.6, 106.6],

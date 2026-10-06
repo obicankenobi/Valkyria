@@ -77,7 +77,7 @@ pengar på. Spelet säger aldrig nej till en handling, det prissätter den.
 ```
 house_name          spelardefinierat (fiktivt, förslag genereras)
 home_state          neutral/väst/öst-anknuten — påverkar exportlicens och misstanke
-specialisation      artillery | armour | aviation | naval | electronics
+specialisation      artillery | armour | aviation | naval | electronics | infantry
                     (billigare R&D och +10 % anbudsstyrka i kategorin)
 founding_capital    £4 000 000
 ```

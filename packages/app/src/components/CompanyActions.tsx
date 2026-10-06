@@ -27,6 +27,7 @@ import {
   previewAction,
   validateAction,
 } from '@seventh-front/core'
+import { HIRE_GAIN, STAFF_ROLES, hireOutlook } from '../staffRoles.js'
 import type { Commodity, GameState, HirableRole, PlayerAction, TechCategory } from '@seventh-front/core'
 import { Button, Segmented, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
@@ -134,6 +135,27 @@ function BuildLineSection({ state, onFile }: { state: GameState; onFile: (action
   )
 }
 
+// P162 (§3b): en anställning höjer rollen med HIRE_GAIN men gör ingenting förrän värdet PASSERAR tröskeln. Kortet säger tröskeln, nuläget, vad
+// den här anställningen ger och vad som händer när tröskeln är passerad.
+function HireOutlookCard({ role, current }: { role: HirableRole; current: number }) {
+  const info = STAFF_ROLES[role]
+  const o = hireOutlook(role, current)
+  const status = o.activeNow
+    ? 'Active now.'
+    : o.activeAfter
+      ? `This hire takes it past the threshold: the effect starts next quarter.`
+      : `No effect yet — ${o.hiresToActivate} more hire${o.hiresToActivate === 1 ? '' : 's'} needed to pass ${o.threshold}.`
+  return (
+    <div className="cf-hint" data-testid="company-hire-outlook">
+      <p>
+        {info.label}: {o.current}/100 → {o.after} after this hire (+{HIRE_GAIN}). The effect needs more than {o.threshold}.
+      </p>
+      <p className={o.activeNow || o.activeAfter ? '' : 'is-warning'}>{status}</p>
+      <p>Above {o.threshold}: {info.effect}</p>
+    </div>
+  )
+}
+
 function HireSection({ state, onFile }: { state: GameState; onFile: (action: PlayerAction) => void }) {
   const [role, setRole] = useState<HirableRole>(HIRABLE_ROLES[0]!)
   const action: PlayerAction = { type: 'INTERNAL', op: 'HIRE', payload: { role } }
@@ -149,7 +171,7 @@ function HireSection({ state, onFile }: { state: GameState; onFile: (action: Pla
         onChange={setRole}
         testId="company-hire-role"
       />
-      <p className="cf-hint">Currently {state.house.staff[role]}/100.</p>
+      <HireOutlookCard role={role} current={state.house.staff[role]} />
       <Button variant="secondary" disabled={!validation.ok} onClick={() => onFile(action)} testId="company-hire-file">
         Hire — {formatMoney(preview.cost ?? 0)}
       </Button>

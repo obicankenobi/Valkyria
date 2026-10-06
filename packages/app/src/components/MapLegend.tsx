@@ -20,6 +20,12 @@ function LegendIcon({ kind }: { kind: MapLegendIconKind }) {
           <rect x={2} y={2} width={24} height={24} rx={3} className={`map-sector-fill is-${kind.slice(7)}`} />
         </svg>
       )
+    case 'route':
+      return (
+        <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
+          <path d="M4,4C8,10 18,14 24,24" className="map-route is-b" />
+        </svg>
+      )
     case 'fog':
       return (
         <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
@@ -143,8 +149,8 @@ export function MapLegend({ open, focusId, onClose }: { open: boolean; focusId: 
   return (
     <BottomSheet
       open={open}
-      title="Teckenförklaring"
-      subtitle="Vad symbolerna på kartan betyder"
+      title="Map key"
+      subtitle="What the symbols on the map mean"
       onClose={onClose}
       testId="map-legend"
     >

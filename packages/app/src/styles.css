@@ -3891,6 +3891,36 @@ td.is-key {
   fill: var(--line-strong);
 }
 
+/* P162 (S2): en transportled — en streckad linje i hållarens färg, aldrig en yta. Samma sidfärger som sektorfyllningen, så teckenförklaringen
+   och kartan inte kan glida isär. Den osynliga tryckytan ger regel 11:s träffyta utan att linjen blir tjock. */
+.map-route {
+  fill: none;
+  stroke-width: 3;
+  stroke-dasharray: 8 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.map-route.is-a {
+  stroke: var(--west);
+}
+.map-route.is-b {
+  stroke: var(--east);
+}
+.map-route.is-contested {
+  stroke: var(--amber);
+}
+.map-route.is-empty {
+  stroke: var(--line-strong);
+}
+.map-route-tap {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+  stroke-linecap: round;
+  cursor: pointer;
+}
+
 /* P81a: regel 18:s kollisionsdöljning (TheatreMap.tsx:s useLabelCollisionHiding)
    döljer nu genom CSS i stället för att avmontera — elementet stannar i DOM:en
    (geometrin kvar för nästa getBBox()-mätning) men visas aldrig. */
