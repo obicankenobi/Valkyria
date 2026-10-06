@@ -873,9 +873,21 @@ P155 är körda. **Ägaren speltestade 2026-10-06** (sex synpunkter, kontrollera
 ordningen ändrades (beslut 10P–10T): **P162–P164** (begriplighet: svensk text i teckenförklaringen,
 Ho Chi Minh-leden, handlingskortet, info-ikoner, stationskortet, resultatrapporten) → **P165, P166, P158**
 (kartan som arbetsyta) → **P167** (stationens täckning, regel) → **etapp 11** (anläggningarna,
-`docs/ETAPP11_FORSLAG.md`, ett förslag som inte är antaget förrän ägaren säger det) → resten av 10A
+`docs/ETAPP11_FORSLAG.md`, antagen 2026-10-06 — se nästa stycke) → resten av 10A
 (P141 med mätningen omgjord, P142–P144, P146–P148) → 10B. **P145 utgår.** All text i gränssnittet är på
 engelska; P162 lägger ett test som fäller svensk text i `packages/app/src`.
+Etapp 11, "Verken", `docs/ETAPP11_FORSLAG.md` (P168–P184, **antagen 2026-10-06**, ägarbesluten 11A–11N
+loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) körs efter P162–P167. Den gör produktionen till ett
+system som måste skötas: sju slags anläggningar på en hemmatomt med åtta platser (monteringsverk,
+komponentverkstad, laboratorium, ritkontor, provplats, depå, civilt verk), byggen med byggtid, kapacitet som
+knapp resurs, uppsättning och omställning, arbetsstyrka, inkörning, underhåll, underleverantörer och lager,
+och till sist verk i köparland. Startpaketet är ett monteringsverk med två produktionslinjer, ett gratis
+laboratorium i den valda kategorin och ett ritkontor. **Enheten i ett verk heter produktionslinje
+("Production line" i gränssnittet, `line` i koden); ordet "bås" används inte** (11N). Linjerna flyttar in i
+verken och inga fristående linjer finns kvar (11A). Inget nytt pipeline-steg (11H). **Golden får frysas om
+bara i promptar märkta "regel" i specens §11** (11I). Etapp 9:s regler för forskning, konstruktion och
+provning ändras inte, bara deras tak och plats. Ägaren speltestar efter P172 och P179, innan del B byggs.
+Kapningsordning: P177, sedan P175, sedan strejkerna i P173.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
