@@ -437,6 +437,25 @@ const APP_SCREENS = [
     },
   },
   {
+    // P164: "Your actions" på NEWS DESK — tre avgjorda handlingar och en avvisad.
+    name: 'your-actions',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('tab-company').click()
+      for (let i = 0; i < 4; i++) await page.getByTestId('company-build-line').click()
+      await page.getByTestId('end-quarter-button').click()
+      const skip = page.getByTestId('replay-skip')
+      try {
+        await skip.waitFor({ state: 'visible', timeout: 3000 })
+        await skip.click()
+      } catch {
+        // Uppspelningen stängde sig själv.
+      }
+      await page.getByTestId('your-actions-list').waitFor()
+    },
+  },
+  {
     // P81-12: handlingskatalogen, öppnad från en tom handlingsplats (ingen
     // egen referensskiss).
     name: 'action-catalog',

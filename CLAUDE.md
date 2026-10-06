@@ -876,6 +876,15 @@ Ho Chi Minh-leden, handlingskortet, info-ikoner, stationskortet, resultatrapport
 `docs/ETAPP11_FORSLAG.md`, antagen 2026-10-06 — se nästa stycke) → resten av 10A
 (P141 med mätningen omgjord, P142–P144, P146–P148) → 10B. **P145 utgår.** All text i gränssnittet är på
 engelska; P162 lägger ett test som fäller svensk text i `packages/app/src`.
+**P162–P164 BYGGDA 2026-10-06** (gränssnitt, golden och `packages/core` orörda). P162: teckenförklaringen på engelska och
+`uiLanguage.test.ts` som fäller svensk text i `packages/app/src`; Ho Chi Minh-leden en streckad transportled med etikett och
+hållare; `HIRE` visar tröskel och nuvarande värde; `infantry` bland specialiseringarna; handboken om underrättelse bunden till
+koden (`handbookTruth.test.ts`). P163: ett handlingskort för alla 25 verb (`ActionCard`, text i `actionInfo.ts`, tal ur
+`previewAction`), Actions-menyn med förklaringsrad och ett verbval som följer med till rätt mapp (`ArmedVerbStrip`), `info` som
+obligatorisk prop på varje panel (typkontrollen och `panelInfo.test.tsx` fäller en utan), stationskortet (`stationOutlook.ts`).
+P164: panelen "Your actions" på NEWS DESK (`actionReport.ts`, utfallen paras ihop genom ett omkörningsdiff i stället för att
+tolka rubriker). **Fynd:** `WITHDRAW` är i praktiken meningslös (en vilande station räknas mot gränsen på fem, kostar upphåll och
+kan inte öppnas igen); följderna av ett misslyckat LEAK/SABOTAGE/TURN har `causeId: null`. Se `docs/ANDRINGSLOGG.md`.
 Etapp 11, "Verken", `docs/ETAPP11_FORSLAG.md` (P168–P184, **antagen 2026-10-06**, ägarbesluten 11A–11N
 loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) körs efter P162–P167. Den gör produktionen till ett
 system som måste skötas: sju slags anläggningar på en hemmatomt med åtta platser (monteringsverk,

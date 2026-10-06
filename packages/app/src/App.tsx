@@ -104,6 +104,7 @@ export function App() {
     draft,
     lastRejected,
     lastTurnWire,
+    lastTurnReport,
     hydrated,
     setBid,
     removeBid,
@@ -759,7 +760,7 @@ export function App() {
         )}
         {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} />}
         {view === 'news' && (
-          <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} />
+          <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} report={lastTurnReport} />
         )}
       </main>
 

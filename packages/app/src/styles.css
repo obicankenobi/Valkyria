@@ -5723,3 +5723,73 @@ summary:focus-visible,
   font-weight: 700;
   color: var(--ink-dim);
 }
+
+/* ── P164: resultatrapporten "Your actions" ─────────────────────────── */
+.your-actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.your-action {
+  padding: 8px 10px;
+  background: var(--panel);
+  border-left: 3px solid var(--green, #4a6b3a);
+  box-shadow: 0 1px 3px rgba(60, 40, 10, 0.25);
+}
+.your-action.is-failed,
+.your-action.is-rejected {
+  border-left-color: var(--red);
+}
+.your-action-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.your-action-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: var(--ink-dim);
+}
+.your-action-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.your-action-detail {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-dim);
+}
+.your-action-outcome {
+  margin: 4px 0 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.your-action.is-rejected .your-action-outcome {
+  color: var(--red);
+}
+.your-action-chain {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--ink-dim);
+}

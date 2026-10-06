@@ -91,7 +91,8 @@ test('utan reducerad rörelse spelas listan först och PM:et kommer efter, med C
       return
     } catch {
       const skip = page.getByTestId('replay-skip')
-      if (await skip.count()) await skip.click()
+      // Uppspelningen kan stänga sig själv mellan count() och click() — då finns knappen inte längre och ett klick utan tidsgräns hängde i hela testtiden.
+      if (await skip.count()) await skip.click({ timeout: 2000 }).catch(() => {})
     }
   }
   throw new Error('inget PM inom nio kvartal')

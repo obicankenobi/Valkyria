@@ -37,6 +37,8 @@ import type { NewsDepartment, TickerGroup } from '../newsClassification.js'
 import { Tag } from './ui.js'
 import { wearClass } from '../stampWear.js'
 import { DsPanel, DsToggle, Segmented } from './designSystem.js'
+import { YourActions } from './YourActions.js'
+import type { ActionReportInput } from '../actionReport.js'
 
 // P70 (ETAPP6_TEKNISK_SPEC.md §5): "Ny sekvens: WireEvent-listan avslöjas en
 // händelse i taget med kort fördröjning, avstängd vid prefers-reduced-
@@ -346,11 +348,14 @@ export function TheWire({
   state,
   draft,
   onChooseCrisis,
+  report = null,
 }: {
   wire: readonly WireEvent[]
   state: GameState
   draft: TurnSubmission
   onChooseCrisis: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
+  // P164: senaste kvartalets handlingar och vad som hände med dem ("Your actions"). Utelämnad = ingen rapport (t.ex. direkt efter en inläsning).
+  report?: ActionReportInput | null
 }) {
   const [newsView, setNewsView] = useState<NewsView>('front')
   const [department, setDepartment] = useState<NewsDepartment | 'all'>('all')
@@ -413,6 +418,7 @@ export function TheWire({
 
       {newsView === 'front' ? (
         <div data-testid="news-front-page">
+          <YourActions input={report} />
           {sorted.length === 0 ? (
             <p className="empty">Quiet on the line. End the turn to set the world in motion.</p>
           ) : (

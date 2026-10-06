@@ -583,6 +583,22 @@ export async function enterCountryFileNoStation(page: Page): Promise<void> {
   await page.getByTestId('station-card').waitFor()
 }
 
+// P164: "Your actions" på NEWS DESK efter ett kvartal med tre avgjorda handlingar och en avvisad (fyra köade, tre poäng).
+export async function enterYourActions(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('tab-company').click()
+  for (let i = 0; i < 4; i++) await page.getByTestId('company-build-line').click()
+  await page.getByTestId('end-quarter-button').click()
+  const skip = page.getByTestId('replay-skip')
+  try {
+    await skip.waitFor({ state: 'visible', timeout: 3000 })
+    await skip.click()
+  } catch {
+    // Reducerad rörelse eller ett tyst kvartal: uppspelningen stängde sig själv.
+  }
+  await page.getByTestId('your-actions-list').waitFor()
+}
+
 export async function enterActionCatalog(page: Page): Promise<void> {
   await enterOperations(page)
   await page.getByTestId('action-slot-0-empty').click()
@@ -609,6 +625,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'country-file-nostation', path: '/', setup: enterCountryFileNoStation },
   { name: 'armed-verb', path: '/', setup: enterArmedVerb },
   { name: 'action-catalog', path: '/', setup: enterActionCatalog },
+  { name: 'your-actions', path: '/', setup: enterYourActions },
   { name: 'contracts', path: '/', setup: enterContracts },
   { name: 'company', path: '/', setup: enterCompany },
   { name: 'news', path: '/', setup: enterNews },

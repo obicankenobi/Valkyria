@@ -9,6 +9,7 @@ import { SAVE_SLOT, SCENARIO_ID, emptySubmission, newSeed } from './game.js'
 import { loadGame, saveGame } from './persistence.js'
 import { crossedDoomsdayThreshold, playSound } from './sound.js'
 import { standingOrderKey } from './standingOrderBoard.js'
+import type { ActionReportInput } from './actionReport.js'
 
 // P72 (ETAPP6_TEKNISK_SPEC.md §5): "doomsday-tröskelpassage" läst som en av
 // de tre nivåer THE WORLD redan visar spelaren (Meter-märkena i TheWorld.tsx)
@@ -35,6 +36,9 @@ export interface UseGameResult {
   // sig över flera turer och är redan omsorterat på andra ställen). Samma
   // "senaste turens ORÖRDA resultat"-princip som lastRejected redan har.
   lastTurnWire: WireEvent[]
+  // P164 (ETAPP10_FORSLAG.md §3b): allt som behövs för att bygga "Your actions" för senaste kvartalet — tillståndet kvartalet avgjordes från, det som skickades in och
+  // det som kom ut. Null före första kvartalet och efter en omstart eller en inläsning.
+  lastTurnReport: ActionReportInput | null
   hydrated: boolean
   setBid: (bid: Bid) => void
   removeBid: (orderId: string) => void
@@ -59,6 +63,7 @@ export function useGame(): UseGameResult {
   const [draft, setDraft] = useState<TurnSubmission>(emptySubmission)
   const [lastRejected, setLastRejected] = useState<RejectedEntry[]>([])
   const [lastTurnWire, setLastTurnWire] = useState<WireEvent[]>([])
+  const [lastTurnReport, setLastTurnReport] = useState<ActionReportInput | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
   // Läs ett sparat parti vid mount, en gång. Autosparningen nedan får INTE
@@ -160,6 +165,7 @@ export function useGame(): UseGameResult {
     setDraft(emptySubmission())
     setLastRejected(result.rejected)
     setLastTurnWire(result.wire)
+    setLastTurnReport({ before: state, submission: draft, wire: result.wire, rejected: result.rejected })
   }, [state, draft])
 
   // P88 (ETAPP7_TEKNISK_SPEC.md §9/§13): startChoices valfri — App.tsx:s
@@ -172,6 +178,7 @@ export function useGame(): UseGameResult {
     setDraft(emptySubmission())
     setLastRejected([])
     setLastTurnWire([])
+    setLastTurnReport(null)
   }, [])
 
   const loadFromSlot = useCallback(async (slot: string): Promise<boolean> => {
@@ -181,6 +188,7 @@ export function useGame(): UseGameResult {
     setDraft(saved.draft)
     setLastRejected([])
     setLastTurnWire([])
+    setLastTurnReport(null)
     return true
   }, [])
 
@@ -189,6 +197,7 @@ export function useGame(): UseGameResult {
     draft,
     lastRejected,
     lastTurnWire,
+    lastTurnReport,
     hydrated,
     setBid,
     removeBid,
