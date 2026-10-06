@@ -134,6 +134,8 @@ async function startFreshGame(page: Page): Promise<void> {
 async function queueInfluenceFromMap(page: Page): Promise<void> {
   await page.getByTestId('tab-operations').click()
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+  await page.getByTestId('map-info-open-file').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId('cf-verb-INFLUENCE').click()
   await page.getByTestId('cf-influence-spend').getByRole('radio', { name: /MODEST/ }).click()

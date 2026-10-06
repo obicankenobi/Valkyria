@@ -113,6 +113,9 @@ test('kartans huvudstadsmarkör nås med tangentbordet och öppnar landsakten me
   await marker.focus()
   await expect(marker).toBeFocused()
   await page.keyboard.press('Enter')
+  // P165: markören väljer landet och visar dess kort; landsakten öppnas med kortets knapp.
+  await expect(page.getByTestId('map-info-title')).toHaveText('Republic of Vietnam')
+  await page.getByTestId('map-info-open-file').click()
   await expect(page.getByTestId('country-file')).toBeVisible()
 
   // Stäng arket och prova mellanslag på den andra markören.
@@ -121,6 +124,8 @@ test('kartans huvudstadsmarkör nås med tangentbordet och öppnar landsakten me
   const laos = page.getByTestId('map-capital-laos').locator('.map-capital-marker')
   await laos.focus()
   await page.keyboard.press('Space')
+  await expect(page.getByTestId('map-info-title')).toHaveText('Kingdom of Laos')
+  await page.getByTestId('map-info-open-file').click()
   await expect(page.getByTestId('country-file')).toBeVisible()
 })
 

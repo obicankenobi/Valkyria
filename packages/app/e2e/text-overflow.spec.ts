@@ -162,10 +162,9 @@ for (const format of FORMATS) {
   }
 }
 
-// P81a: teckenförklaringen — tryck på symboler utan egna verb (heat-glöd,
-// frontlinje, förbandsbricka, sektorfyllning) öppnar samma förklaring
-// (regel 13, ingen information bara vid hovring).
-test('kartan — legend-knappen och ett tryck på kartan öppnar teckenförklaringen', async ({ page }) => {
+// P81a/P165: teckenförklaringen öppnas BARA från sin egen knapp. Ett tryck på en symbol på kartan (heat-glöd, frontlinje, förband, sektor, land) väljer den och visar
+// ett informationskort i kartans nederkant — kartan ligger kvar ovanför, ingen bottenark täcker den.
+test('kartan — legend-knappen öppnar teckenförklaringen, ett tryck på kartan visar ett kort', async ({ page }) => {
   // reducedMotion: heat-glödens "andas"-animation (map-heat-breathe, en
   // ständigt pågående CSS transform: scale()) gör elementet permanent
   // "instabilt" för Playwrights klickstabilitetskontroll — samma miljöfynd
@@ -184,5 +183,23 @@ test('kartan — legend-knappen och ett tryck på kartan öppnar teckenförklari
   await expect(page.getByTestId('map-legend')).toHaveCount(0)
 
   await page.getByTestId('map-heat-glow-tap-indochina').click()
-  await expect(page.getByTestId('map-legend-row-heat')).toHaveClass(/is-focused/)
+  await expect(page.getByTestId('map-info-card')).toBeVisible()
+  await expect(page.getByTestId('map-info-kicker')).toHaveText('THEATRE')
+  await expect(page.getByTestId('map-legend')).toHaveCount(0)
+  // Kartan syns fortfarande ovanför kortet, och kortet täcker inte den.
+  const map = await page.getByTestId('theatre-map-svg').boundingBox()
+  const cardBox = await page.getByTestId('map-info-card').boundingBox()
+  expect(map!.y + map!.height).toBeLessThanOrEqual(cardBox!.y + 1)
+})
+
+// P165: alla länder är tryckbara. Ett sammanhangsland ger ett kort utan väg in i en landsakt.
+test('kartan — ett tryck på Kambodja visar ett kort utan landsakt', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: FORMATS[0]!.width, height: FORMATS[0]!.height })
+  await page.goto('/')
+  await enterOperations(page)
+  await page.getByTestId('theatre-map-svg').waitFor()
+  await page.getByTestId('map-country-thailand').dispatchEvent('click')
+  await expect(page.getByTestId('map-info-title')).toHaveText('Thailand')
+  await expect(page.getByTestId('map-info-open-file')).toHaveCount(0)
 })

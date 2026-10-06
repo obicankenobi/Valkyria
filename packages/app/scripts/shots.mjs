@@ -266,6 +266,8 @@ const APP_SCREENS = [
       await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await page.getByTestId('map-info-open-file').click()
       await page.getByTestId('country-file').waitFor()
     },
   },
@@ -287,6 +289,8 @@ const APP_SCREENS = [
       await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await page.getByTestId('map-info-open-file').click()
       await page.getByTestId('country-file').waitFor()
       await page.getByTestId('cf-verb-INFLUENCE').click()
       await page.getByTestId('cf-influence-preview').waitFor()
@@ -396,6 +400,8 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await startGame(page)
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await page.getByTestId('map-info-open-file').click()
       await page.getByTestId('country-file').waitFor()
       await page.getByTestId('cf-verb-EXPAND').click()
       await page.getByTestId('action-card-EXPAND').waitFor()
@@ -408,6 +414,8 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await startGame(page)
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await page.getByTestId('map-info-open-file').click()
       await page.getByTestId('country-file').waitFor()
       await page.getByTestId('cf-verb-LEAK').click()
       await page.getByTestId('action-card-LEAK').waitFor()
@@ -420,6 +428,8 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await startGame(page)
       await page.getByTestId('map-capital-laos').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await page.getByTestId('map-info-open-file').click()
       await page.getByTestId('country-file').waitFor()
       await page.getByTestId('station-card').waitFor()
     },
@@ -453,6 +463,36 @@ const APP_SCREENS = [
         // Uppspelningen stängde sig själv.
       }
       await page.getByTestId('your-actions-list').waitFor()
+    },
+  },
+  {
+    // P165: informationskortet för ett land (Sydvietnam) — kartan syns ovanför, landet har en kontur.
+    name: 'map-info-country',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor()
+    },
+  },
+  {
+    // P165: informationskortet för ett okänt förband (inget namn, ingen exakt styrka, och varför).
+    name: 'map-info-formation',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-formation-laos-1st-infantry').dispatchEvent('click')
+      await page.getByTestId('map-info-card').waitFor()
+    },
+  },
+  {
+    // P165: ett sammanhangsland — kortet säger att det inte är en köpare.
+    name: 'map-info-context',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-country-thailand').dispatchEvent('click')
+      await page.getByTestId('map-info-card').waitFor()
     },
   },
   {

@@ -48,6 +48,8 @@ async function startFreshGame(page: Page): Promise<void> {
 // själv erbjuder (§7.1), bara mer robust i ett automatiserat test.
 async function queueRvnVerb(page: Page, verb: 'EXPAND' | 'WITHDRAW' | 'LEAK' | 'SABOTAGE' | 'TURN'): Promise<void> {
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+  await page.getByTestId('map-info-open-file').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId(`cf-verb-${verb}`).click()
   if (verb === 'EXPAND' || verb === 'WITHDRAW') {
@@ -64,6 +66,8 @@ async function queueRvnVerb(page: Page, verb: 'EXPAND' | 'WITHDRAW' | 'LEAK' | '
 
 async function queueLaosRecruit(page: Page): Promise<void> {
   await page.getByTestId('map-capital-laos').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+  await page.getByTestId('map-info-open-file').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId('cf-verb-RECRUIT').click()
   await page.getByTestId('action-card-RECRUIT').waitFor() // P163: kortet först, FILE sedan

@@ -56,6 +56,8 @@ const TARGETS: Target[] = [
     name: 'landsaktens verb',
     open: async (p) => {
       await p.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await p.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await p.getByTestId('map-info-open-file').click()
       await p.getByTestId('country-file').waitFor()
     },
     locator: (p) => p.getByTestId('cf-verb-EXPAND'),
@@ -64,6 +66,8 @@ const TARGETS: Target[] = [
     name: 'bottenarkets stängknapp',
     open: async (p) => {
       await p.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await p.getByTestId('map-info-card').waitFor() // P165: kortet först
+      await p.getByTestId('map-info-open-file').click()
       await p.getByTestId('country-file').waitFor()
     },
     locator: (p) => p.locator('[data-testid="country-file"] .ds-sheet-close'),

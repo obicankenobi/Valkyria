@@ -223,6 +223,8 @@ export async function enterNews(page: Page): Promise<void> {
 export async function enterCountryFile(page: Page): Promise<void> {
   await enterOperations(page)
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+  await page.getByTestId('map-info-open-file').click()
   await page.getByTestId('country-file').waitFor()
 }
 
@@ -580,6 +582,9 @@ export async function enterCountryFileTarget(page: Page): Promise<void> {
 export async function enterCountryFileNoStation(page: Page): Promise<void> {
   await enterOperations(page)
   await page.getByTestId('map-capital-laos').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+  await page.getByTestId('map-info-open-file').click()
+  await page.getByTestId('country-file').waitFor()
   await page.getByTestId('station-card').waitFor()
 }
 
@@ -597,6 +602,25 @@ export async function enterYourActions(page: Page): Promise<void> {
     // Reducerad rörelse eller ett tyst kvartal: uppspelningen stängde sig själv.
   }
   await page.getByTestId('your-actions-list').waitFor()
+}
+
+// P165: informationskortet för tre olika föremål på kartan.
+export async function enterMapInfoCountry(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor()
+}
+
+export async function enterMapInfoFormation(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('map-formation-laos-1st-infantry').dispatchEvent('click')
+  await page.getByTestId('map-info-card').waitFor()
+}
+
+export async function enterMapInfoContext(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('map-country-thailand').dispatchEvent('click')
+  await page.getByTestId('map-info-card').waitFor()
 }
 
 export async function enterActionCatalog(page: Page): Promise<void> {
@@ -625,6 +649,9 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'country-file-nostation', path: '/', setup: enterCountryFileNoStation },
   { name: 'armed-verb', path: '/', setup: enterArmedVerb },
   { name: 'action-catalog', path: '/', setup: enterActionCatalog },
+  { name: 'map-info-country', path: '/', setup: enterMapInfoCountry },
+  { name: 'map-info-formation', path: '/', setup: enterMapInfoFormation },
+  { name: 'map-info-context', path: '/', setup: enterMapInfoContext },
   { name: 'your-actions', path: '/', setup: enterYourActions },
   { name: 'contracts', path: '/', setup: enterContracts },
   { name: 'company', path: '/', setup: enterCompany },

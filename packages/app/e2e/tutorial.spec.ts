@@ -69,6 +69,8 @@ test('handledningen leder alla fem steg och avslutas av sig själv (P91a klart-n
   // ligger tidigare i TUTORIAL_STEPS än "fill-action-slot", så den prompten
   // syns fortfarande här trots att steg 3 redan är klart.
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor() // P165: kortet först
+  await page.getByTestId('map-info-open-file').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId('cf-verb-EXPAND').click()
   await page.getByTestId('cf-file-EXPAND').click() // P163: kortet först, FILE sedan

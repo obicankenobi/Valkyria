@@ -37,21 +37,15 @@ import { SECTOR_REGIONS } from '../sectorRegions.js'
 import type { SectorRegion } from '../sectorRegions.js'
 import { CAPITALS } from '../capitals.js'
 import { playerSupplyLines, rivalSupplyLines, snapshotAttribution } from '../supplyLines.js'
+import { ACTION_CATALOG } from '../actionCatalog.js'
+import { COUNTRY_TO_FACTION, deriveMapInfo } from '../mapInfo.js'
+import type { MapSelection } from '../mapInfo.js'
+import { useArmedVerb } from '../uiContext.js'
 import { MapPlaceholder } from './Shell.js'
 import { MapLegend } from './MapLegend.js'
+import { MapInfoCard } from './MapInfoCard.js'
 
-// §6.5, ordagrant: "Sektorer i länder utan aktiv station." Ett lands
-// "aktiv station"-koppling är samma effectiveDepth(state, buyerId) som
-// formationDisplay/officialDisplay redan grindar mot — men den tar en
-// FactionId, inte ett geografiskt land. Bara de två länder som faktiskt kan
-// ha en station i det här scenariot (indochina-slice.json) mappas; de fyra
-// rena sammanhangsländerna (north-vietnam, kambodja, thailand, kina — §6.1:
-// "sammanhang", aldrig spelbara) saknar en motsvarande FactionId helt och
-// får därför aldrig dimma — inget att grinda MOT, inte en lucka.
-const COUNTRY_TO_FACTION: Record<string, FactionId> = {
-  'south-vietnam': 'rvn',
-  laos: 'laos',
-}
+// §6.5: ett lands koppling till en FactionId (COUNTRY_TO_FACTION) bor i mapInfo.ts, som kartans informationskort delar den med.
 
 // §5:s mockup är stående, kartan fyller höjden — designrymden matchar
 // Indokinas verkliga proportion (region-bboxen i build-geo.mjs, 15° bred,
@@ -215,11 +209,13 @@ function FormationToken({
   x,
   y,
   onExplain,
+  selected = false,
 }: {
   display: FormationDisplay
   x: number
   y: number
   onExplain?: () => void
+  selected?: boolean
 }) {
   const dotCount = display.strengthBand === 'stark' ? 3 : display.strengthBand === 'medel' ? 2 : 1
   const frameClass = [
@@ -235,9 +231,12 @@ function FormationToken({
     <g
       transform={`translate(${x},${y})`}
       data-testid={`map-formation-${display.id}`}
-      className={`map-formation-${display.side}`}
+      className={selected ? `map-formation-${display.side} is-selected` : `map-formation-${display.side}`}
       onClick={onExplain}
     >
+      {/* Ett tryckmål som är större än brickan själv (regel 11), och en ring när brickan är vald (regel 9). */}
+      <circle r={12} className="map-token-tap" />
+      {selected && <circle r={11} className="map-selected-ring" />}
       {display.side === 'a' ? (
         <rect x={-5} y={-5} width={10} height={10} className={frameClass} />
       ) : (
@@ -339,6 +338,23 @@ export function TheatreMap({
   const openLegend = (focusId: string | null) => setLegend({ open: true, focusId })
   const closeLegend = () => setLegend({ open: false, focusId: null })
 
+  // P165 (ETAPP10 §3b, S6): ett tryck på något på kartan VÄLJER det, och det valda föremålet får ett informationskort i kartans nederkant. Teckenförklaringen öppnas bara
+  // från sin egen knapp. `onSelectCountry` är "öppna landsakten" — kortet har en knapp för det, och ett verb valt i Actions-menyn (som ska till ett land) går direkt dit.
+  const [selection, setSelection] = useState<MapSelection | null>(null)
+  const armed = useArmedVerb()
+  const armedGoesToCountry = armed !== null && ACTION_CATALOG.some((e) => e.verb === armed.verb && e.target === 'operations')
+  const mapInfo = useMemo(() => (selection ? deriveMapInfo(state, selection) : null), [state, selection])
+  const isSelected = (candidate: MapSelection): boolean =>
+    selection !== null && selection.kind === candidate.kind && JSON.stringify(selection) === JSON.stringify(candidate)
+  const selectFaction = (factionId: FactionId, fallback: MapSelection) => {
+    if (armedGoesToCountry && onSelectCountry) onSelectCountry(factionId)
+    else setSelection(fallback)
+  }
+  const countryIdOfFaction = (factionId: FactionId): string | undefined =>
+    Object.entries(COUNTRY_TO_FACTION).find(([, id]) => id === factionId)?.[0]
+  const selectCapital = (factionId: FactionId) => selectFaction(factionId, { kind: 'country', countryId: countryIdOfFaction(factionId) ?? factionId })
+  const capitalSelected = (factionId: FactionId): boolean => selection?.kind === 'country' && selection.countryId === countryIdOfFaction(factionId)
+
   // Fångar övergången "geodatan hämtad, <svg ref={svgRef}> finns äntligen i
   // DOM:en" (fetch är async — det FÖRSTA render-varvet visar MapPlaceholder,
   // ingen <svg> alls, se de tidiga returnerna nedan). Utan den i
@@ -381,6 +397,15 @@ export function TheatreMap({
   }, [geoLoaded])
 
   const zoomLevel = zoomLevelFor(transform.k)
+
+  // Regel 9: det valda landet har en tydlig kontur — antingen för att landsakten är öppen eller för att dess kort (eller en station i det) är valt.
+  const contourCountryIds = new Set<string>()
+  if (selectedFactionId) for (const [id, f] of Object.entries(COUNTRY_TO_FACTION)) if (f === selectedFactionId) contourCountryIds.add(id)
+  if (selection?.kind === 'country') contourCountryIds.add(selection.countryId)
+  if (selection?.kind === 'station') {
+    const id = Object.entries(COUNTRY_TO_FACTION).find(([, f]) => f === selection.factionId)?.[0]
+    if (id) contourCountryIds.add(id)
+  }
 
   const sectorControlBySector = useMemo(() => {
     const map = new Map<string, 'a' | 'b' | 'contested' | 'empty'>()
@@ -496,6 +521,7 @@ export function TheatreMap({
 
   return (
     <div className="map-container" data-testid="theatre-map">
+      <div className="map-stage">
       <svg
         ref={svgRef}
         className="map-svg"
@@ -516,14 +542,15 @@ export function TheatreMap({
               oklickbara, exakt som dimlagrets egen filtrering ovan. */}
           <g className="map-countries">
             {geo.countries.features.map((feature) => {
-              const factionId = COUNTRY_TO_FACTION[String(feature.id)]
+              const countryId = String(feature.id)
+              const factionId = COUNTRY_TO_FACTION[countryId]
               return (
                 <path
-                  key={String(feature.id)}
+                  key={countryId}
                   d={path(feature as GeoPermissibleObjects) ?? ''}
-                  className={factionId ? 'map-country is-selectable' : 'map-country'}
+                  className="map-country is-selectable"
                   data-testid={`map-country-${feature.id}`}
-                  onClick={factionId && onSelectCountry ? () => onSelectCountry(factionId) : undefined}
+                  onClick={() => (factionId ? selectFaction(factionId, { kind: 'country', countryId }) : setSelection({ kind: 'country', countryId }))}
                 />
               )
             })}
@@ -533,10 +560,10 @@ export function TheatreMap({
               kontur (regel 9) — samma landpath, ritad en gång till ovanpå
               allt annat land-/gräns-innehåll men UNDER sektorfyllning/
               förbandslager, en ren outline utan egen fyllning. */}
-          {selectedFactionId && (
+          {(selectedFactionId || contourCountryIds.size > 0) && (
             <g className="map-selection">
               {geo.countries.features
-                .filter((feature) => COUNTRY_TO_FACTION[String(feature.id)] === selectedFactionId)
+                .filter((feature) => contourCountryIds.has(String(feature.id)))
                 .map((feature) => (
                   <path
                     key={`sel-${String(feature.id)}`}
@@ -592,13 +619,13 @@ export function TheatreMap({
                   <g key={region.sectorId}>
                     <path
                       d={d}
-                      className={`map-route ${sectorFillClass(side)}`}
+                      className={`map-route ${sectorFillClass(side)}${isSelected({ kind: 'sector', sectorId: region.sectorId }) ? ' is-selected' : ''}`}
                       data-testid={`map-sector-${region.sectorId}`}
                     />
                     <path
                       d={d}
                       className="map-route-tap"
-                      onClick={() => openLegend('route')}
+                      onClick={() => setSelection({ kind: 'sector', sectorId: region.sectorId })}
                       data-testid={`map-route-tap-${region.sectorId}`}
                     />
                   </g>
@@ -608,7 +635,7 @@ export function TheatreMap({
                 <path
                   key={region.sectorId}
                   d={regionPathD(region, project)}
-                  className={`map-sector-fill ${sectorFillClass(side)}`}
+                  className={`map-sector-fill ${sectorFillClass(side)}${isSelected({ kind: 'sector', sectorId: region.sectorId }) ? ' is-selected' : ''}`}
                   data-testid={`map-sector-${region.sectorId}`}
                   // P81a: sektorfyllningen ligger ovanpå landmassan i
                   // ritordning och har ingen pointer-events:none — ett tryck
@@ -616,7 +643,7 @@ export function TheatreMap({
                   // (en tyst dödzon). Öppnar nu samma förklaring som
                   // teckenförklaringens sektor-rader i stället för att
                   // fortsätta vara ett dött tryck.
-                  onClick={() => openLegend(`sector-${side ?? 'empty'}`)}
+                  onClick={() => setSelection({ kind: 'sector', sectorId: region.sectorId })}
                 />
               )
             })}
@@ -664,9 +691,10 @@ export function TheatreMap({
                         cx={currentXY[0]}
                         cy={currentXY[1]}
                         r={4}
-                        className="map-frontline-marker"
+                        className={isSelected({ kind: 'frontline', frontId: front.id }) ? 'map-frontline-marker is-selected' : 'map-frontline-marker'}
                         data-testid={`map-frontline-marker-${front.id}`}
                       />
+                      {isSelected({ kind: 'frontline', frontId: front.id }) && <circle cx={currentXY[0]} cy={currentXY[1]} r={9} className="map-selected-ring" />}
                       {/* P81a: markören själv har pointer-events: none (den
                           animerade shimmer-cirkeln, orörd) — en egen,
                           osynlig tryckyta ovanpå ger regel 11:s 44 px utan
@@ -676,7 +704,7 @@ export function TheatreMap({
                         cy={currentXY[1]}
                         r={14}
                         fill="transparent"
-                        onClick={() => openLegend('frontline')}
+                        onClick={() => setSelection({ kind: 'frontline', frontId: front.id })}
                         data-testid={`map-frontline-tap-${front.id}`}
                       />
                     </>
@@ -706,8 +734,18 @@ export function TheatreMap({
                     y1={from[1]}
                     x2={to[0]}
                     y2={to[1]}
-                    className={`map-supply-line ${kindClass}`}
+                    className={`map-supply-line ${kindClass}${isSelected({ kind: 'supply', lineId: line.id }) ? ' is-selected' : ''}`}
                     data-testid={`map-supply-line-${line.id}`}
+                  />
+                  {/* P165: en bredare, osynlig tryckyta — själva linjen är bara ett par pixlar tjock. */}
+                  <line
+                    x1={from[0]}
+                    y1={from[1]}
+                    x2={to[0]}
+                    y2={to[1]}
+                    className="map-supply-tap"
+                    onClick={() => setSelection({ kind: 'supply', lineId: line.id })}
+                    data-testid={`map-supply-tap-${line.id}`}
                   />
                   {/* P94: flödet är en prick som färdas längs linjen med
                       transform (§12 punkt 5), inte ett animerat streck. */}
@@ -734,9 +772,16 @@ export function TheatreMap({
                 formations.map((display, i) => {
                   const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
                   const [dx, dy] = tokenOffset(i, formations.length)
-                  const focusId = !display.known ? 'formation-unknown' : display.status === 'mauled' ? 'formation-mauled' : 'formation-known'
+                  const sel: MapSelection = { kind: 'formation', formationId: display.id }
                   return (
-                    <FormationToken key={display.id} display={display} x={x + dx} y={y + dy} onExplain={() => openLegend(focusId)} />
+                    <FormationToken
+                      key={display.id}
+                      display={display}
+                      x={x + dx}
+                      y={y + dy}
+                      onExplain={() => setSelection(sel)}
+                      selected={isSelected(sel)}
+                    />
                   )
                 }),
               )}
@@ -758,12 +803,28 @@ export function TheatreMap({
               const maxExposure = stations.reduce((max, s) => Math.max(max, s.exposure), 0)
               return (
                 <g key={capital.factionId} data-testid={`map-capital-${capital.factionId}`}>
+                  {/* P165: stationens tryckyta ritas FÖRE huvudstadsmarkören, så markören alltid ligger överst där de två möts. */}
+                  {stations.length > 0 && (
+                    <g transform={`translate(${x - 8},${y + 8})`} data-testid={`map-capital-station-${capital.factionId}`}>
+                      {maxExposure >= DISPLAY_THRESHOLDS.exposureBurnThreshold && (
+                        <circle r={7} className="map-station-exposure-ring" />
+                      )}
+                      <rect x={-4} y={-4} width={8} height={8} className="map-station-badge" />
+                      {isSelected({ kind: 'station', factionId: capital.factionId }) && <circle r={9} className="map-selected-ring" />}
+                      <circle
+                        r={9}
+                        className="map-station-tap"
+                        onClick={() => setSelection({ kind: 'station', factionId: capital.factionId })}
+                        data-testid={`map-station-tap-${capital.factionId}`}
+                      />
+                    </g>
+                  )}
                   <circle
                     cx={x}
                     cy={y}
                     r={6}
-                    className={capital.factionId === selectedFactionId ? 'map-capital-marker is-selected' : 'map-capital-marker'}
-                    onClick={onSelectCountry ? () => onSelectCountry(capital.factionId) : undefined}
+                    className={capital.factionId === selectedFactionId || capitalSelected(capital.factionId) ? 'map-capital-marker is-selected' : 'map-capital-marker'}
+                    onClick={onSelectCountry ? () => selectCapital(capital.factionId) : undefined}
                     // P94 (tillgänglighet): markören är kartflödets huvudingång
                     // (§7.1) men var varken fokuserbar eller tillgänglig för
                     // tangentbord och skärmläsare — bara ett klickbart <circle>.
@@ -772,11 +833,11 @@ export function TheatreMap({
                           role: 'button',
                           tabIndex: 0,
                           'aria-label': capitalLabel(capital.name, openOrders),
-                          'aria-pressed': capital.factionId === selectedFactionId,
+                          'aria-pressed': capital.factionId === selectedFactionId || capitalSelected(capital.factionId),
                           onKeyDown: (event: KeyboardEvent<SVGCircleElement>) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault()
-                              onSelectCountry(capital.factionId)
+                              selectCapital(capital.factionId)
                             }
                           },
                         }
@@ -788,14 +849,6 @@ export function TheatreMap({
                       <text className="map-capital-badge-text" textAnchor="middle" dominantBaseline="central">
                         {openOrders}
                       </text>
-                    </g>
-                  )}
-                  {stations.length > 0 && (
-                    <g transform={`translate(${x - 8},${y + 8})`} data-testid={`map-capital-station-${capital.factionId}`}>
-                      {maxExposure >= DISPLAY_THRESHOLDS.exposureBurnThreshold && (
-                        <circle r={7} className="map-station-exposure-ring" />
-                      )}
-                      <rect x={-4} y={-4} width={8} height={8} className="map-station-badge" />
                     </g>
                   )}
                   {zoomLevel >= 2 && (
@@ -843,12 +896,13 @@ export function TheatreMap({
                       En egen, mindre tryckyta i stället för att öppna
                       pointer-events på hela glöden — samma mönster som
                       map-frontline-tap ovan. */}
+                  {isSelected({ kind: 'heat', theatreId }) && <circle cx={x} cy={y} r={18} className="map-selected-ring" />}
                   <circle
                     cx={x}
                     cy={y}
                     r={16}
                     fill="transparent"
-                    onClick={() => openLegend('heat')}
+                    onClick={() => setSelection({ kind: 'heat', theatreId })}
                     data-testid={`map-heat-glow-tap-${theatreId}`}
                   />
                 </g>
@@ -957,6 +1011,16 @@ export function TheatreMap({
       >
         ?
       </button>
+      </div>
+
+      {/* P165: informationskortet för det valda föremålet. Kartan krymper för det i stället för att täckas — det valda föremålet ska synas medan kortet läses. */}
+      {mapInfo && (
+        <MapInfoCard
+          info={mapInfo}
+          onClose={() => setSelection(null)}
+          onOpenFile={mapInfo.openFile && onSelectCountry ? () => onSelectCountry(mapInfo.openFile!) : undefined}
+        />
+      )}
 
       <MapLegend open={legend.open} focusId={legend.focusId} onClose={closeLegend} />
     </div>

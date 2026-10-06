@@ -26,7 +26,7 @@ export interface TutorialStep {
 }
 
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
-  { id: 'select-country', prompt: 'Tap a capital on the map to open a country file.' },
+  { id: 'select-country', prompt: 'Tap a capital on the map, then open its country file.' },
   { id: 'place-bid', prompt: 'Open CONTRACTS and place a bid on an open order.' },
   { id: 'fill-action-slot', prompt: 'Tap an empty action slot and queue a card.' },
   { id: 'end-quarter', prompt: 'Press End Quarter to resolve the turn.' },

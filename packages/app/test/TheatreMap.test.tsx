@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { createInitialState, DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import { TheatreMap, capitalLabel, supplyDotStyle } from '../src/components/TheatreMap.js'
+import { ArmedVerbContext } from '../src/uiContext.js'
 
 afterEach(cleanup)
 
@@ -245,27 +246,40 @@ describe('TheatreMap (P77) — heat-glöd', () => {
 })
 
 describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
-  it('att trycka på en mappad landmassa anropar onSelectCountry med rätt FactionId', async () => {
+  // P165: ett tryck på en landmassa visar landets kort; landsakten öppnas med kortets knapp (onSelectCountry = "öppna landsakten").
+  it('att trycka på en mappad landmassa visar landets kort, och kortets knapp öppnar landsakten med rätt FactionId', async () => {
     const state = createInitialState('indochina-slice', 'theatre-map-select-seed')
     const onSelectCountry = vi.fn()
     render(<TheatreMap state={state} onSelectCountry={onSelectCountry} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
 
     fireEvent.click(document.querySelector('[data-testid="map-country-south-vietnam"]')!)
+    expect(onSelectCountry).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Republic of Vietnam')
+    fireEvent.click(document.querySelector('[data-testid="map-info-open-file"]')!)
     expect(onSelectCountry).toHaveBeenCalledWith('rvn')
 
     fireEvent.click(document.querySelector('[data-testid="map-country-laos"]')!)
-    expect(onSelectCountry).toHaveBeenCalledWith('laos')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Kingdom of Laos')
+    fireEvent.click(document.querySelector('[data-testid="map-info-open-file"]')!)
+    expect(onSelectCountry).toHaveBeenLastCalledWith('laos')
   })
 
-  it('ett osammanhangslöst land (t.ex. Thailand) saknar is-selectable-klassen och onClick', async () => {
+  it('ALLA länder är tryckbara: ett sammanhangsland (Thailand) ger ett kort utan knapp till en landsakt', async () => {
     const state = createInitialState('indochina-slice', 'theatre-map-select-seed')
     render(<TheatreMap state={state} onSelectCountry={() => {}} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
 
-    const thailand = document.querySelector('[data-testid="map-country-thailand"]')
-    expect(thailand).toBeTruthy()
-    expect(thailand!.getAttribute('class')).not.toContain('is-selectable')
+    for (const id of ['north-vietnam', 'south-vietnam', 'laos', 'cambodia', 'thailand', 'china']) {
+      const el = document.querySelector(`[data-testid="map-country-${id}"]`)!
+      expect(el.getAttribute('class'), id).toContain('is-selectable')
+      fireEvent.click(el)
+      expect(document.querySelector('[data-testid="map-info-card"]'), id).toBeTruthy()
+    }
+    fireEvent.click(document.querySelector('[data-testid="map-country-thailand"]')!)
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Thailand')
+    expect(document.querySelector('[data-testid="map-info-open-file"]')).toBeNull()
+    expect(document.querySelector('[data-testid="map-legend"]')).toBeNull()
   })
 
   it('huvudstadsmarkörer finns för båda huvudstäderna och kan väljas', async () => {
@@ -277,6 +291,8 @@ describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
     expect(document.querySelector('[data-testid="map-capital-rvn"]')).toBeTruthy()
     expect(document.querySelector('[data-testid="map-capital-laos"]')).toBeTruthy()
     fireEvent.click(document.querySelector('[data-testid="map-capital-rvn"] .map-capital-marker')!)
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Republic of Vietnam')
+    fireEvent.click(document.querySelector('[data-testid="map-info-open-file"]')!)
     expect(onSelectCountry).toHaveBeenCalledWith('rvn')
   })
 
@@ -297,11 +313,13 @@ describe('TheatreMap (P79) — landval och huvudstadsmarkörer', () => {
     expect(laos.getAttribute('aria-pressed')).toBe('false')
 
     fireEvent.keyDown(laos, { key: 'Enter' })
-    expect(onSelectCountry).toHaveBeenLastCalledWith('laos')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Kingdom of Laos')
+    expect(laos.getAttribute('aria-pressed')).toBe('true')
     fireEvent.keyDown(rvn, { key: ' ' })
-    expect(onSelectCountry).toHaveBeenLastCalledWith('rvn')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Republic of Vietnam')
     fireEvent.keyDown(laos, { key: 'a' })
-    expect(onSelectCountry).toHaveBeenCalledTimes(2)
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Republic of Vietnam')
+    expect(onSelectCountry).not.toHaveBeenCalled() // kortet först; landsakten bara med kortets knapp
   })
 
   it('utan onSelectCountry (t.ex. Briefing) är markören inte en falsk knapp', async () => {
@@ -491,57 +509,156 @@ describe('TheatreMap (P81a) — teckenförklaringen', () => {
     expect(document.querySelector('.map-legend-row.is-focused')).toBeNull()
   })
 
-  it('tryck på heat-glöden öppnar teckenförklaringen fokuserad på "heat"', async () => {
-    const state = createInitialState('indochina-slice', 'theatre-map-legend-heat-seed')
+  // P165: ett tryck på något på kartan väljer det och visar ett kort — teckenförklaringen öppnas bara från sin egen knapp.
+  const mapReady = async (seed: string) => {
+    const state = createInitialState('indochina-slice', seed)
     render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    return state
+  }
+  const card = () => document.querySelector('[data-testid="map-info-card"]')
+  const kicker = () => document.querySelector('[data-testid="map-info-kicker"]')?.textContent
+  const noLegend = () => expect(document.querySelector('[data-testid="map-legend"]')).toBeNull()
 
+  it('tryck på heat-glöden visar teaterns kort, inte teckenförklaringen', async () => {
+    const state = await mapReady('theatre-map-card-heat-seed')
     const theatreId = Object.keys(state.theatres)[0]!
     fireEvent.click(document.querySelector(`[data-testid="map-heat-glow-tap-${theatreId}"]`)!)
-    expect(document.querySelector('[data-testid="map-legend-row-heat"].is-focused')).toBeTruthy()
+    expect(kicker()).toBe('THEATRE')
+    expect(document.querySelector('[data-testid="map-info-row-Heat"]')).toBeTruthy()
+    noLegend()
   })
 
-  it('tryck på frontlinjens tryckyta öppnar teckenförklaringen fokuserad på "frontline"', async () => {
-    const state = createInitialState('indochina-slice', 'theatre-map-legend-frontline-seed')
-    render(<TheatreMap state={state} />)
-    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
-
+  it('tryck på frontlinjens tryckyta visar frontens kort, med en kontur på markören', async () => {
+    await mapReady('theatre-map-card-frontline-seed')
     fireEvent.click(document.querySelector('[data-testid="map-frontline-tap-front-1"]')!)
-    expect(document.querySelector('[data-testid="map-legend-row-frontline"].is-focused')).toBeTruthy()
+    expect(kicker()).toBe('FRONT LINE')
+    expect(document.querySelector('[data-testid="map-frontline-marker-front-1"]')!.getAttribute('class')).toContain('is-selected')
+    noLegend()
   })
 
-  it('tryck på ett känt förband öppnar "formation-known", ett okänt öppnar "formation-unknown"', async () => {
-    const state = createInitialState('indochina-slice', 'theatre-map-legend-formation-seed')
-    render(<TheatreMap state={state} />)
-    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
-
+  it('tryck på ett känt förband visar dess namn och styrka, ett okänt säger att det är okänt och varför', async () => {
+    await mapReady('theatre-map-card-formation-seed')
     fireEvent.click(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
-    expect(document.querySelector('[data-testid="map-legend-row-formation-known"].is-focused')).toBeTruthy()
+    expect(kicker()).toBe('FORMATION')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).not.toBe('Unknown formation')
+    expect(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!.getAttribute('class')).toContain('is-selected')
 
-    fireEvent.click(document.querySelector('[data-testid="map-legend"] .ds-sheet-close')!)
     fireEvent.click(document.querySelector('[data-testid="map-formation-laos-1st-infantry"]')!)
-    expect(document.querySelector('[data-testid="map-legend-row-formation-unknown"].is-focused')).toBeTruthy()
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Unknown formation')
+    expect(document.querySelector('[data-testid="map-info-note"]')!.textContent).toMatch(/station/)
+    noLegend()
   })
 
-  it('tryck på ett sargat förband öppnar "formation-mauled"', async () => {
-    const state = createInitialState('indochina-slice', 'theatre-map-legend-mauled-seed')
+  it('tryck på ett sargat förband visar status "mauled" i kortet', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-mauled-seed')
     state.fronts['front-1']!.formations.find((f) => f.id === 'rvn-1st-infantry')!.status = 'mauled'
     render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
 
     fireEvent.click(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
-    expect(document.querySelector('[data-testid="map-legend-row-formation-mauled"].is-focused')).toBeTruthy()
+    expect(document.querySelector('[data-testid="map-info-row-Status"]')!.textContent).toContain('mauled')
   })
 
-  it('tryck på en sektor öppnar rätt sector-<side>-rad, tidigare ett dött tryck (sektorfyllningen ligger ovanpå landmassan utan pointer-events: none)', async () => {
-    const state = createInitialState('indochina-slice', 'theatre-map-legend-sector-seed')
+  it('tryck på en sektor visar sektorns kort — tidigare ett dött tryck, sedan ett tryck på teckenförklaringen', async () => {
+    await mapReady('theatre-map-card-sector-seed')
+    const sectorEl = document.querySelector('[data-testid="map-sector-hue"]')!
+    fireEvent.click(sectorEl)
+    expect(kicker()).toBe('SECTOR')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('HUE')
+    expect(document.querySelector('[data-testid="map-sector-hue"]')!.getAttribute('class')).toContain('is-selected')
+    noLegend()
+  })
+
+  it('tryck på en station visar stationens kort med en väg in i landsakten', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-station-seed')
+    render(<TheatreMap state={state} onSelectCountry={() => {}} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    const station = state.house.stations[0]!
+    fireEvent.click(document.querySelector(`[data-testid="map-station-tap-${station.nation}"]`)!)
+    expect(kicker()).toBe('STATION')
+    expect(document.querySelector('[data-testid="map-info-open-file"]')).toBeTruthy()
+  })
+
+  it('tryck på en försörjningslinje visar linjens kort', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-supply-seed')
+    state.market.contracts.push({
+      id: 'c1', buyerId: 'rvn', productId: 'm1_rifle', quantity: 10, unitsDelivered: 0, price: 1000, unitCostAtSigning: 500, grade: 'B', dueTurn: 5,
+      status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0,
+    })
+    state.market.shipments.push({ id: 's1', contractId: 'c1', units: 5, arrivalTurn: 3 })
     render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
 
-    const sectorEl = document.querySelector('[data-testid="map-sector-hue"]')!
-    const side = sectorEl.getAttribute('class')!.match(/is-(a|b|contested|empty)/)![1]
-    fireEvent.click(sectorEl)
-    expect(document.querySelector(`[data-testid="map-legend-row-sector-${side}"].is-focused`)).toBeTruthy()
+    fireEvent.click(document.querySelector('[data-testid="map-supply-tap-player-front-1"]')!)
+    expect(kicker()).toBe('SUPPLY LINE')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Your supply line')
+  })
+
+  it('ett verb valt i Actions-menyn som ska till ett land går direkt till landsakten, utan kortet emellan', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-armed-seed')
+    const onSelectCountry = vi.fn()
+    render(
+      <ArmedVerbContext.Provider value={{ verb: 'EXPAND', nonce: 1 }}>
+        <TheatreMap state={state} onSelectCountry={onSelectCountry} />
+      </ArmedVerbContext.Provider>,
+    )
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.click(document.querySelector('[data-testid="map-country-south-vietnam"]')!)
+    expect(onSelectCountry).toHaveBeenCalledWith('rvn')
+    expect(card()).toBeNull()
+  })
+
+  it('ett verb som hör hemma i en annan flik (BRIBE) ändrar inte kartans kort-först-beteende', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-armed-other-seed')
+    const onSelectCountry = vi.fn()
+    render(
+      <ArmedVerbContext.Provider value={{ verb: 'BRIBE', nonce: 1 }}>
+        <TheatreMap state={state} onSelectCountry={onSelectCountry} />
+      </ArmedVerbContext.Provider>,
+    )
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.click(document.querySelector('[data-testid="map-country-south-vietnam"]')!)
+    expect(onSelectCountry).not.toHaveBeenCalled()
+    expect(card()).toBeTruthy()
+  })
+
+  it('kortet har en stängknapp, och teckenförklaringen öppnas bara från sin egen knapp', async () => {
+    await mapReady('theatre-map-card-close-seed')
+    fireEvent.click(document.querySelector('[data-testid="map-country-cambodia"]')!)
+    expect(card()).toBeTruthy()
+    fireEvent.click(document.querySelector('[data-testid="map-info-close"]')!)
+    expect(card()).toBeNull()
+    noLegend()
+    fireEvent.click(document.querySelector('[data-testid="map-legend-button"]')!)
+    expect(document.querySelector('[data-testid="map-legend"]')).toBeTruthy()
+  })
+
+  it('ett förband som förstörs medan kortet är öppet tar bort kortet i stället för att visa ett spöke', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-gone-seed')
+    const { rerender } = render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.click(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
+    expect(card()).toBeTruthy()
+
+    const next = structuredClone(state)
+    next.fronts['front-1']!.formations.find((f) => f.id === 'rvn-1st-infantry')!.status = 'destroyed'
+    rerender(<TheatreMap state={next} />)
+    expect(card()).toBeNull()
+  })
+
+  it('kartan visas fortfarande medan kortet är öppet (ingen överlagring, ingen bottenark)', async () => {
+    await mapReady('theatre-map-card-visible-seed')
+    fireEvent.click(document.querySelector('[data-testid="map-country-laos"]')!)
+    expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="country-file"]')).toBeNull()
+  })
+
+  it('legend-knappen öppnar hela teckenförklaringen, ingen rad fokuserad', async () => {
+    await mapReady('theatre-map-legend-seed2')
+    expect(document.querySelector('[data-testid="map-legend"]')).toBeNull()
+    fireEvent.click(document.querySelector('[data-testid="map-legend-button"]')!)
+    expect(document.querySelector('.map-legend-row.is-focused')).toBeNull()
   })
 })
 
@@ -591,12 +708,14 @@ describe('TheatreMap (P162) — Ho Chi Minh-leden', () => {
     expect(document.querySelector('[data-testid="map-route-label-ho-chi-minh-trail"]')!.textContent).toContain(word)
   })
 
-  it('ett tryck på leden öppnar teckenförklaringens rad "route"', async () => {
+  it('ett tryck på leden visar ledens kort — vem som håller den, och att den är en led', async () => {
     const state = createInitialState('indochina-slice', 'theatre-map-trail-tap-seed')
     render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
 
     fireEvent.click(document.querySelector('[data-testid="map-route-tap-ho-chi-minh-trail"]')!)
-    expect(document.querySelector('[data-testid="map-legend-row-route"].is-focused')).toBeTruthy()
+    expect(document.querySelector('[data-testid="map-info-kicker"]')!.textContent).toBe('ROUTE')
+    expect(document.querySelector('[data-testid="map-info-note"]')!.textContent).toMatch(/route/i)
+    expect(document.querySelector('[data-testid="map-legend"]')).toBeNull()
   })
 })
