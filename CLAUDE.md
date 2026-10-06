@@ -868,6 +868,14 @@ som motspelare (ordförande, hållning, agg, sex drag, motvikt och svårighetsgr
 commit, efter verifiering); i övriga promptar gäller "stanna och fråga". En prompt i 10A som behöver ett
 nytt fält i `GameState` stannar och frågar. Inga verkliga vapenhus och inga påhittade citat i
 händelsetexterna (10I, 10J, DESIGN.md §15). Premisskontrollen i §0 görs om mot koden före P139.
+**Etapp 10, läget 2026-10-06:** premisskontrollen, P139 (kodsessionens halva), P140, mätningen i P141 och
+P155 är körda. **Ägaren speltestade 2026-10-06** (sex synpunkter, kontrollerade mot koden, specens §3b) och
+ordningen ändrades (beslut 10P–10T): **P162–P164** (begriplighet: svensk text i teckenförklaringen,
+Ho Chi Minh-leden, handlingskortet, info-ikoner, stationskortet, resultatrapporten) → **P165, P166, P158**
+(kartan som arbetsyta) → **P167** (stationens täckning, regel) → **etapp 11** (anläggningarna,
+`docs/ETAPP11_FORSLAG.md`, ett förslag som inte är antaget förrän ägaren säger det) → resten av 10A
+(P141 med mätningen omgjord, P142–P144, P146–P148) → 10B. **P145 utgår.** All text i gränssnittet är på
+engelska; P162 lägger ett test som fäller svensk text i `packages/app/src`.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 

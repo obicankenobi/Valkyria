@@ -5,7 +5,8 @@
 > **Status:** antagen av ägaren 2026-10-02. Ägaren bad om att besluten 10A–10O fattas enligt
 > rekommendationerna och att de större punkterna prövas en gång till före antagandet. Prövningen ändrade
 > tre av dem (10E, 10K, 10N) och lade till en mätning först i P141; se §3. Allt är loggat i
-> `ANDRINGSLOGG.md`. Filen behåller namnet. Etappen har två delar, på ägarens begäran:
+> `ANDRINGSLOGG.md`. Filen behåller namnet. **Ordningen ändrades 2026-10-06 efter ägarens speltest; se §3b
+> och körordningen i §14.** Etappen har två delar, på ägarens begäran:
 > **10A, "Slipningen"** förbättrar det som redan finns och lägger inte till någon ny mekanik.
 > **10B, "Världen svarar"** gör rivalerna till motspelare, låter verkliga historiska händelser gripa in i
 > partiet och höjer spelkänslan. Underlaget är en genomgång av P106–P137 (två granskningar mot kod och
@@ -16,7 +17,7 @@
 
 ## Innehåll
 
-0. Premisskontroll · 1. Frågorna · 2. Designprinciper · 3. Ägarbeslut ·
+0. Premisskontroll · 1. Frågorna · 2. Designprinciper · 3. Ägarbeslut · 3b. Speltestet 2026-10-06 ·
 **Del 10A:** 4. Speltest och kvittering · 5. Mätningen · 6. Mekanik som är av eller nedskruvad ·
 7. Fusket, kapplöpningen och konstruktionerna · 8. Gränssnittet i 10A ·
 **Del 10B:** 9. Historiska händelser · 10. Rivalerna som motspelare · 11. Spelkänslan ·
@@ -127,6 +128,80 @@ till mot koden före antagandet:
 | **10M** | Rivalernas ansikten | **En fiktiv ordförande per rivalhus, med namn, ett siluettporträtt och ett sigill ur tillgångsfabriken.** Ägarens genererade porträtt ersätter siluetten om de kommer. |
 | **10N** | Ljudeffekter | **Syntetiseras i repot** (`build:sfx`, ffmpeg) så att krokarna inte längre är tysta. Ägaren lyssnar i speltestet; en effekt som inte håller måttet tas bort och kroken lämnas tyst. CC0-inspelningar ersätter dem fil för fil om ägaren skaffar sådana. |
 | **10O** | Antal händelser per kvartal | **Högst ett beslut och en förstasida per kvartal, och högst tre telexrader.** |
+
+---
+
+## 3b. Speltestet 2026-10-06 och ändrad ordning
+
+Ägaren spelade den aktuella versionen 2026-10-06 och lämnade sex synpunkter. Var och en är kontrollerad
+mot koden samma dag. De räknas som ägarens halva av P139.
+
+| # | Synpunkt | Vad koden visar |
+|---|---|---|
+| S1 | Delar av texten är på svenska | Bara kartans teckenförklaring: 45 strängar i `app/mapLegend.ts`, 2 i `MapLegend.tsx`, 1 i `TheatreMap.tsx`. Inget test kontrollerar språket. |
+| S2 | En röd pil på kartan betyder ingenting | Det är sektorn `ho-chi-minh-trail`, en fylld polygon i `sectorRegions.ts:79-97`. Den är kartans enda stora färgyta, etiketten döljs, och ett tryck öppnar bara teckenförklaringen. P81a förklarade den i text i stället för att rita om den. |
+| S3 | Knappar och vyer saknar förklaring och synlig effekt | Actions-menyn visar ikon och namn; ett tryck byter flik utan förval (`App.tsx:731`). De sex underrättelseverben visar bara kostnad, fast `previewAction` räknar ut chansen. `InfoTooltip` finns bara i HUD:en. `VERB_TOPIC` i handboken anropas inte av någon komponent. 16 av 22 handlingsutfall i `applyActions.ts` är `ticker` och syns inte i uppspelningen. |
+| S4 | Produktionen känns meningslös | Fyra identiska linjer; `BUILD_LINE` ger en kopia direkt. Mätt över 30 partier: linjeutnyttjande 36 % (`human`), 27 % (`balanced`), 49 % (`aggressive`); ingen bot bygger en linje. |
+| S5 | Oklart vad stationer gör | Ingen skärm säger vad en station är. Två grindar är döda: täckningen `'cabinet'` går aldrig att skaffa, så tjänstemäns integritet och agenda är alltid okända (`queries.ts:451`); en station som dragits tillbaka kan aldrig öppnas igen. Handbokens påstående om tjänstemän stämmer inte. |
+| S6 | Kartan är en stillbild | Bara RVN och Laos är tryckbara. Sektorer, förband och frontlinje öppnar teckenförklaringen. Kontrakt, materielbehov, rivaler, embargo, upphandlingar och frontens status visas inte. `MovementArrow` är oanvänd. |
+
+Funnet vid kontrollen: en anställning (`HIRE`, +15 från 45) ger ingen effekt förrän rollen passerar 70 och
+säger det inte; `infantry` saknas bland specialiseringarna i `NewGameScreen.tsx`.
+
+**Beslut (ägaren, 2026-10-06):**
+
+- **10P — Ny ordning.** (1) Begriplighetspaketet, (2) kartan som arbetsyta, (3) anläggningarna som egen
+  etapp 11, (4) resten av 10A, (5) 10B. Beslut 10A ("10A i sin helhet före 10B") gäller fortfarande, men
+  10A pausas efter P140 tills etapp 11 är klar.
+- **10Q — Produktionen blir ett stort system** som inte går att strunta i. Det är för stort för 10A och
+  blir etapp 11 (`docs/ETAPP11_FORSLAG.md`). Skälet till ordningen: P141 och P147 balanserar annars en
+  ekonomi där kapacitet inte spelar någon roll, och P145 delar upp en sida som etapp 11 bygger om.
+- **10R — P158 flyttas fram** till kartpaketet och stryks ur kapningsordningen i §14.
+- **10S — P145 utgår.** THE COMPANY byggs om av etapp 11. Skärmarna för det som saknar en (§8 punkt 2)
+  flyttas till P146.
+- **10T — P141:s mätning görs om** efter etapp 11, innan omläggningen bestäms.
+
+### Begriplighetspaketet (P162–P164)
+
+Inga regeländringar. Golden orörd.
+
+- **P162 — Språk och snabba rättningar.**
+  - Teckenförklaringen översätts. Ett test fäller svensk text i `packages/app/src` (å, ä, ö och en
+    ordlista), med utvecklarsidan undantagen.
+  - Ho Chi Minh-leden ritas som en streckad transportled med synlig etikett, inte som en fylld yta. Vem
+    som håller den visas på leden, inte som färg över halva Laos.
+  - `HIRE` visar rollens tröskel, nuvarande värde och vad som händer när tröskeln passeras.
+  - `infantry` läggs till bland specialiseringarna.
+  - Handbokens uppslag om underrättelse rättas mot koden.
+- **P163 — Handlingskortet.** Ett gemensamt kort för alla verb, läst ur `previewAction`:
+  - en mening om vad verbet gör, kostnad, chans (eller "unknown" utan underrättelse), vad du får och vad
+    du riskerar
+  - en länk till handboksuppslaget (`VERB_TOPIC` får sin första läsare)
+  - Actions-menyn får en rad förklaring per verb, och ett tryck öppnar rätt mapp med verbet förvalt
+  - varje panel får en info-ikon; ett test fäller en panel utan
+  - stationskortet säger vad en station är och listar vad just den ger: prisbandets bredd, köparens
+    villkor, förbandens styrka, upplåsta verb, och vad nästa djupnivå skulle ge
+- **P164 — Resultatrapporten.** Efter varje kvartal: "Your actions", en rad per handling med utfallet
+  och orsakskedjan (`causeId`), även för utfall som är `ticker`. Avvisade handlingar står i samma lista.
+
+### Kartan som arbetsyta (P165–P166, P158)
+
+Gränssnitt. Golden orörd.
+
+- **P165 — Tryck ger besked.** Ett informationskort i kartans nederkant för det valda föremålet, utan
+  att kartan lämnas: land, sektor, förband, frontlinje, station, försörjningslinje. Alla länder blir
+  tryckbara. Teckenförklaringen öppnas bara från sin egen knapp.
+- **P166 — Lager.** Växlingsbara lager med tal, inte bara färg: *Orders* (öppna ordrar, husets kontrakt
+  och materielbehov per köpare), *Supply* (leveranser, egna och rivalers), *Rivals* (marknadsandel och
+  kontrakt per land), *Intelligence* (stationer, djup, vad som är okänt), *Politics* (relationer, opinion,
+  embargo, upphandlingar). Krig eller vapenvila syns på frontlinjen. NLF får en egen markering.
+- **P158 — Kvartalet spelas upp på kartan** (§11 punkt 1), flyttad hit.
+
+### Regelrättningar (P167)
+
+- **P167 (regel, golden får frysas om enligt 10D).** Stationens täckning växer med djupet, så att
+  `'cabinet'`, `'military'` och `'industry'` går att nå. En vilande station kan öppnas igen mot en
+  kostnad. Vakterna körs före och efter.
 
 ---
 
@@ -482,8 +557,19 @@ Spelbarhetstestets golv och tak och capacity-referensen ska hålla efter varje p
 | | P160 | Balanspass 10B | regel |
 | | P161 | Speltest av etapp 10 | ingen kod |
 
-**Kapningsordning** om etappen blir för stor: P158 (kartuppspelningen) först, sedan priskriget och
-sabotaget i P153, sedan telexraderna. De åtta besluten och motvikten kapas inte.
+| **Speltestet 2026-10-06** | P162 | Språk, leden på kartan, anställningströskeln, infanteri, handboksrättning | UI |
+| | P163 | Handlingskortet, Actions-menyn, info-ikoner, stationskortet | UI |
+| | P164 | Resultatrapporten efter varje kvartal | UI |
+| | P165 | Informationskort på kartan; alla länder tryckbara | UI |
+| | P166 | Kartlager med tal | UI |
+| | P167 | Stationens täckning växer med djupet; vilande station kan öppnas igen | regel |
+
+**Körordning (beslut 10P, 2026-10-06).** Klart: premisskontrollen, P139, P140, mätningen i P141, P155.
+Därefter: P162–P164 → P165, P166, P158 → P167 → **etapp 11** → P141 (mätningen om, sedan omläggningen),
+P142–P144, P146–P148 → P149–P154, P156, P157, P159–P161. P145 utgår (10S).
+
+**Kapningsordning** om etappen blir för stor: priskriget och sabotaget i P153 först, sedan telexraderna.
+De åtta besluten, motvikten och kartuppspelningen (P158, beslut 10R) kapas inte.
 
 ---
 
