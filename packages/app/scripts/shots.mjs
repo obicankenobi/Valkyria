@@ -435,6 +435,29 @@ const APP_SCREENS = [
     },
   },
   {
+    // P167: en vilande station — landsakten erbjuder REOPEN i stället för RECRUIT.
+    name: 'country-file-dormant',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor()
+      await page.getByTestId('map-info-open-file').click()
+      await page.getByTestId('country-file').waitFor()
+      await page.getByTestId('cf-verb-WITHDRAW').click()
+      await page.getByTestId('cf-file-WITHDRAW').click()
+      await page.getByTestId('end-quarter-button').click()
+      await page.waitForTimeout(150)
+      await page.getByTestId('tab-operations').click() // End Quarter öppnar NEWS DESK
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('map-info-card').waitFor()
+      await page.getByTestId('map-info-open-file').click()
+      await page.getByTestId('country-file').waitFor()
+      await page.getByTestId('cf-verb-REOPEN').waitFor()
+    },
+  },
+  {
     // P163: ett verb valt i Actions-menyn — remsan och den markerade knappen i CONTACTS.
     name: 'armed-verb',
     path: '/',

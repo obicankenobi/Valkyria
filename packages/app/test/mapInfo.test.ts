@@ -24,6 +24,21 @@ describe('deriveMapInfo — land', () => {
     expect(row(info, 'Open orders')).toBe(String(s.market.openOrders.filter((o) => o.buyerId === 'rvn').length))
   })
 
+  it('en vilande station: landets kort säger det och att REOPEN väcker den (P167)', () => {
+    const s = state()
+    s.house.stations[0]!.status = 'dormant'
+    const info = deriveMapInfo(s, { kind: 'country', countryId: 'south-vietnam' })!
+    expect(row(info, 'Station')).toMatch(/dormant.*REOPEN/i)
+  })
+
+  it('stationens kort visar vad den täcker (P167)', () => {
+    const s = state()
+    s.house.stations[0]!.depth = 3
+    s.house.stations[0]!.coverage = ['procurement', 'military', 'industry']
+    const info = deriveMapInfo(s, { kind: 'station', factionId: 'rvn' })!
+    expect(row(info, 'Covers')).toBe('procurement, military, industry')
+  })
+
   it('NLF har ingen egen landmassa: kortet för RVN säger var NLF:s styrkor finns', () => {
     const info = deriveMapInfo(state(), { kind: 'country', countryId: 'south-vietnam' })!
     expect(info.note).toMatch(/National Liberation Front/)

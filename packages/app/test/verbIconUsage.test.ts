@@ -11,7 +11,7 @@ describe('verbikoner i handlingskort', () => {
   it('CountryFile: varje VerbButton har en <VerbIcon verb=…>, inga icon="…"-literaler', () => {
     const src = read('CountryFile.tsx')
     expect(src.match(/\bicon="[^"]*"/g) ?? []).toEqual([])
-    for (const verb of ['INFLUENCE', 'EXPAND', 'WITHDRAW', 'LEAK', 'SABOTAGE', 'TURN', 'RECRUIT']) {
+    for (const verb of ['INFLUENCE', 'EXPAND', 'WITHDRAW', 'REOPEN', 'LEAK', 'SABOTAGE', 'TURN', 'RECRUIT']) {
       expect(src, verb).toContain(`<VerbIcon verb="${verb}" />`)
     }
   })

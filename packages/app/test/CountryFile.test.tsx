@@ -176,6 +176,25 @@ describe('CountryFile — handlingskortet och stationskortet (P163)', () => {
     expect(onAdd2).toHaveBeenCalledWith({ type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'laos' })
   })
 
+  it('en vilande station (P167): landsakten erbjuder REOPEN, inte RECRUIT, och köar REOPEN med FILE', () => {
+    const state = createInitialState('indochina-slice', 'cf-reopen-seed')
+    state.house.stations[0]!.status = 'dormant'
+    const onAdd = vi.fn()
+    render(<CountryFile {...baseProps} onAddAction={onAdd} state={state} factionId="rvn" />)
+    expect(screen.queryByTestId('cf-verb-RECRUIT')).toBeNull()
+    expect(screen.queryByTestId('cf-verb-EXPAND')).toBeNull()
+    fireEvent.click(screen.getByTestId('cf-verb-REOPEN'))
+    expect(screen.getByTestId('action-card-REOPEN')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('cf-file-REOPEN'))
+    expect(onAdd).toHaveBeenCalledWith({ type: 'INTEL', op: 'REOPEN', stationId: 'station-1' })
+  })
+
+  it('en aktiv station visar inte REOPEN', () => {
+    const state = createInitialState('indochina-slice', 'cf-reopen-active-seed')
+    render(<CountryFile {...baseProps} state={state} factionId="rvn" />)
+    expect(screen.queryByTestId('cf-verb-REOPEN')).toBeNull()
+  })
+
   it('målväljaren för LEAK visar kortet med chans (ur previewAction) ovanför listan', () => {
     const state = createInitialState('indochina-slice', 'cf-card-seed')
     state.house.stations[0]!.depth = 2

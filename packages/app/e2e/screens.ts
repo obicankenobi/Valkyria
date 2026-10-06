@@ -588,6 +588,20 @@ export async function enterCountryFileNoStation(page: Page): Promise<void> {
   await page.getByTestId('station-card').waitFor()
 }
 
+// P167: en vilande station — WITHDRAW köas och avgörs i ett kvartal, sedan öppnas landsakten igen och erbjuder REOPEN.
+export async function enterCountryFileDormant(page: Page): Promise<void> {
+  await enterCountryFile(page)
+  await page.getByTestId('cf-verb-WITHDRAW').click()
+  await page.getByTestId('cf-file-WITHDRAW').click()
+  await endQuarters(page, 1)
+  await page.getByTestId('tab-operations').click() // End Quarter öppnar NEWS DESK
+  await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-card').waitFor()
+  await page.getByTestId('map-info-open-file').click()
+  await page.getByTestId('country-file').waitFor()
+  await page.getByTestId('cf-verb-REOPEN').waitFor()
+}
+
 // P164: "Your actions" på NEWS DESK efter ett kvartal med tre avgjorda handlingar och en avvisad (fyra köade, tre poäng).
 export async function enterYourActions(page: Page): Promise<void> {
   await enterOperations(page)
@@ -660,6 +674,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'country-file-confirm', path: '/', setup: enterCountryFileConfirm },
   { name: 'country-file-target', path: '/', setup: enterCountryFileTarget },
   { name: 'country-file-nostation', path: '/', setup: enterCountryFileNoStation },
+  { name: 'country-file-dormant', path: '/', setup: enterCountryFileDormant },
   { name: 'armed-verb', path: '/', setup: enterArmedVerb },
   { name: 'action-catalog', path: '/', setup: enterActionCatalog },
   { name: 'map-layer-orders', path: '/', setup: enterMapLayerOrders },

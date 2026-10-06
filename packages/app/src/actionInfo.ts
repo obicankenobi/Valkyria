@@ -22,10 +22,16 @@ export const ACTION_INFO: Readonly<Record<string, ActionInfo>> = {
   },
   WITHDRAW: {
     does: 'Puts one of your stations to sleep.',
-    gain: 'Nothing: a dormant station still counts toward your limit of five and still costs upkeep.',
-    risk: 'A dormant station gives no insight, and there is no way to reopen it.',
+    gain: 'Its exposure cools off each turn. It keeps its depth and coverage, and REOPEN wakes it again.',
+    risk: 'A dormant station gives no insight, still counts toward your limit of five and still costs upkeep. Reopening it costs money.',
     certain: 'Always works',
     costNote: 'No cost',
+  },
+  REOPEN: {
+    does: 'Wakes a dormant station.',
+    gain: 'The station is active again, with the depth and coverage it had and whatever exposure it has cooled to.',
+    risk: 'Only the money. A burned station cannot be reopened.',
+    certain: 'Always works',
   },
   RECRUIT: {
     does: 'Opens a new station in a country where you have none.',

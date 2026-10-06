@@ -1,8 +1,8 @@
 // stationOutlook — P163 (ETAPP10_FORSLAG.md §3b, S5): vad en station är, vad just den här stationen ger i landet och vad nästa djupnivå skulle ge. Allt härleds ur
 // kärnans egna frågor (effectiveDepth, formationDisplay, previewAction); det enda som speglas är prisbandets bredd per djup, eftersom kärnan inte exporterar sin tabell
 // (DEPTH_BAND_PCT i queries.ts, och kärnan rörs inte av P163). test/stationOutlook.test.tsx binder spegeln mot bidEstimate.
-import { effectiveDepth, previewAction } from '@seventh-front/core'
-import type { FactionId, GameState } from '@seventh-front/core'
+import { coverageForDepth, effectiveDepth, previewAction } from '@seventh-front/core'
+import type { Coverage, FactionId, GameState } from '@seventh-front/core'
 
 export const WHAT_A_STATION_IS =
   'A station is your intelligence post in a country. Its depth, from 0 to 5, decides how much you can see there.'
@@ -13,12 +13,21 @@ export const STATION_BAND_PCT: readonly number[] = [35, 22, 14, 8, 4, 0]
 // De verb som kräver en av dina stationer i landet. RECRUIT är tvärtom vägen att få en.
 export const STATION_VERBS = ['EXPAND', 'WITHDRAW', 'LEAK', 'SABOTAGE', 'TURN'] as const
 
+// P167: vad varje täckning ger, i en mening. Bunden till kärnan av test/stationOutlook.test.tsx (officialDisplay för 'cabinet', raceAssessment för 'military'/'industry').
+// 'industry' ger i dag exakt samma sak som 'military' — det står här i stället för att låtsas något annat.
+export const COVERAGE_EFFECT: Readonly<Record<Coverage, string>> = {
+  procurement: 'buyer orders and terms in this country',
+  military: 'the arms-race estimate for this country\'s bloc uses the station\'s full depth',
+  industry: 'the same arms-race estimate as military (no extra effect on top of it)',
+  cabinet: 'officials\' integrity and agenda are shown',
+}
+
 export interface DepthStep {
   depth: number // effektivt djup efter steget
   bandPct: number
   gains: string[]
-  cost: number | null // vad steget kostar (EXPAND eller RECRUIT), ur previewAction
-  how: 'EXPAND' | 'RECRUIT'
+  cost: number | null // vad steget kostar (EXPAND, RECRUIT eller REOPEN), ur previewAction
+  how: 'EXPAND' | 'RECRUIT' | 'REOPEN'
 }
 
 export interface StationOutlook {
@@ -31,7 +40,17 @@ export interface StationOutlook {
   formationCount: number
   formationsKnown: boolean
   verbs: readonly string[] // verb som den här stationen låser upp (tom utan station)
+  coverage: readonly Coverage[] // den aktiva stationens täckning (tom utan aktiv station)
+  dormant: { city: string; depth: number } | null // en vilande station i landet — kan öppnas igen med REOPEN
   next: DepthStep | null // null på högsta djup, eller när stationen är vilande eller bränd
+}
+
+// Täckningar som ett djupsteg i stationen själv låser upp (kärnans coverageForDepth, inte en egen tabell).
+function coverageGains(fromStationDepth: number, toStationDepth: number): string[] {
+  const had = coverageForDepth(fromStationDepth)
+  return coverageForDepth(toStationDepth)
+    .filter((c) => !had.includes(c))
+    .map((c) => `${c} coverage: ${COVERAGE_EFFECT[c]}`)
 }
 
 function gainsFor(from: number, to: number): string[] {
@@ -52,11 +71,29 @@ export function stationOutlook(state: GameState, factionId: FactionId): StationO
     .flatMap((f) => f.formations)
     .filter((f) => f.factionId === factionId)
 
+  const dormantStation = station ? undefined : state.house.stations.find((s) => s.nation === factionId && s.status === 'dormant')
+
   let next: DepthStep | null = null
-  if (effective < 5) {
+  if (dormantStation) {
+    // Vilande: nästa steg är att öppna den igen (inte RECRUIT, som skulle ge en andra station i samma land).
+    const cost = previewAction(state, { type: 'INTEL', op: 'REOPEN', stationId: dormantStation.id }).cost
+    next = {
+      depth: dormantStation.depth,
+      bandPct: STATION_BAND_PCT[Math.min(5, dormantStation.depth)]!,
+      gains: [`the station wakes at depth ${dormantStation.depth} with its coverage intact`],
+      cost,
+      how: 'REOPEN',
+    }
+  } else if (effective < 5) {
     if (station) {
       const cost = previewAction(state, { type: 'INTEL', op: 'EXPAND', stationId: station.id }).cost
-      next = { depth: effective + 1, bandPct: STATION_BAND_PCT[effective + 1]!, gains: gainsFor(effective, effective + 1), cost, how: 'EXPAND' }
+      next = {
+        depth: effective + 1,
+        bandPct: STATION_BAND_PCT[effective + 1]!,
+        gains: [...gainsFor(effective, effective + 1), ...(station.depth < 5 ? coverageGains(station.depth, station.depth + 1) : [])],
+        cost,
+        how: 'EXPAND',
+      }
     } else {
       // Utan station är RECRUIT första steget: en station på djup 0 ger dig själv inget mer än du ser nu (salesmanBonus räknas redan i `effective`).
       const cost = previewAction(state, { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: factionId }).cost
@@ -74,6 +111,8 @@ export function stationOutlook(state: GameState, factionId: FactionId): StationO
     formationCount: formations.length,
     formationsKnown: effective > 0,
     verbs: station ? STATION_VERBS : [],
+    coverage: station ? station.coverage : [],
+    dormant: dormantStation ? { city: dormantStation.city, depth: dormantStation.depth } : null,
     next,
   }
 }

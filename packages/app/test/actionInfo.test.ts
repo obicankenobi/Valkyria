@@ -48,6 +48,7 @@ function sampleActions(state: GameState): Record<string, PlayerAction> {
   return {
     EXPAND: { type: 'INTEL', op: 'EXPAND', stationId: station.id },
     WITHDRAW: { type: 'INTEL', op: 'WITHDRAW', stationId: station.id },
+    REOPEN: { type: 'INTEL', op: 'REOPEN', stationId: station.id },
     RECRUIT: { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'laos' },
     LEAK: { type: 'INTEL', op: 'LEAK', stationId: station.id, targetId: rival.id },
     SABOTAGE: { type: 'INTEL', op: 'SABOTAGE', stationId: station.id, targetId: rival.id },
@@ -120,6 +121,29 @@ describe('actionInfo — påståenden om stationer stämmer med koden', () => {
     const fiveBurned = structuredClone(fiveDormant)
     for (const s of fiveBurned.house.stations) s.status = 'burned'
     expect(quarter(fiveDormant)).toBeGreaterThan(quarter(fiveBurned))
-    expect(actionInfo('WITHDRAW')!.gain).toMatch(/still counts toward your limit of five and still costs upkeep/)
+    expect(actionInfo('WITHDRAW')!.risk).toMatch(/still counts toward your limit of five and still costs upkeep/)
+  })
+
+  it('WITHDRAW/REOPEN (P167): exponeringen kyls, djup och täckning består, och REOPEN gör stationen aktiv igen', () => {
+    const state = createInitialState('indochina-slice', 'info-reopen')
+    const station = state.house.stations[0]!
+    station.depth = 3
+    station.exposure = 40
+    const withdrawn = resolveTurn(state, { standingOrders: [], bids: [], actions: [{ type: 'INTEL', op: 'WITHDRAW', stationId: station.id }] }).state
+    const dormant = withdrawn.house.stations.find((s) => s.id === station.id)!
+    expect(dormant.status).toBe('dormant')
+    const cooled = resolveTurn(withdrawn, { standingOrders: [], bids: [], actions: [] }).state.house.stations.find((s) => s.id === station.id)!
+    expect(cooled.exposure).toBeLessThan(dormant.exposure) // "Its exposure cools off each turn"
+    const reopen: PlayerAction = { type: 'INTEL', op: 'REOPEN', stationId: station.id }
+    expect(validateAction(withdrawn, withdrawn, reopen).ok).toBe(true)
+    const reopened = resolveTurn(withdrawn, { standingOrders: [], bids: [], actions: [reopen] }).state.house.stations.find((s) => s.id === station.id)!
+    expect(reopened.status).toBe('active')
+    expect(reopened.depth).toBe(3) // "keeps its depth"
+    expect(reopened.coverage).toEqual(dormant.coverage) // "and coverage"
+    expect(validateAction(state, state, reopen).ok).toBe(false) // en aktiv station behöver det inte
+    expect(actionInfo('REOPEN')!.risk).toMatch(/burned station cannot be reopened/)
+    const burned = structuredClone(withdrawn)
+    burned.house.stations.find((s) => s.id === station.id)!.status = 'burned'
+    expect(validateAction(burned, burned, reopen).ok).toBe(false)
   })
 })

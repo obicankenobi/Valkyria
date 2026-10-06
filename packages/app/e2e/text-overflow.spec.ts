@@ -40,6 +40,10 @@ for (const format of FORMATS) {
           // eller identiskt med sina barn) — bara block-liknande boxar har en egen
           // ruta att klippas av, vilket är precis vad regel 18 pratar om.
           if (style.display === 'inline' || style.display === 'none') continue
+          // SVG-text har ingen CSS-ruta: scrollWidth/clientWidth är avrundade och orelaterade till vad som ritas (ett enda siffertecken
+          // gav scrollWidth 4 > clientWidth 2 trots att inget klipptes). Samma fynd som P77:s frågetecken. SVG-texter prövas i stället
+          // mot sin omgivande form här nedan och mot varandra i kartans egen kollisionsloop.
+          if (node instanceof SVGElement) continue
           // Bara element med EGEN direkt textnod (inte bara andra elements
           // wrapper) — annars flaggas containern för sina barns skull också.
           const hasDirectText = Array.from(node.childNodes).some(
@@ -50,6 +54,16 @@ for (const format of FORMATS) {
             const label = (node.textContent ?? '').trim().slice(0, 50)
             const cls = node.className ? `.${String(node.className).split(' ').join('.')}` : ''
             found.push(`${node.tagName.toLowerCase()}${cls}: "${label}" (scrollWidth ${node.scrollWidth} > clientWidth ${node.clientWidth})`)
+          }
+        }
+        // Ordermärkets siffra ska rymmas i sin cirkel (SVG: jämför avgränsningsrutan med cirkelns diameter, inte scrollWidth).
+        for (const text of document.querySelectorAll('.map-capital-badge-text')) {
+          const circle = text.parentElement?.querySelector('circle')
+          if (!circle) continue
+          const box = (text as SVGGraphicsElement).getBBox()
+          const diameter = Number(circle.getAttribute('r')) * 2
+          if (box.width > diameter + 0.5 || box.height > diameter + 0.5) {
+            found.push(`text.map-capital-badge-text: "${(text.textContent ?? '').trim()}" (bredd ${box.width.toFixed(1)} × höjd ${box.height.toFixed(1)} > cirkeln ${diameter})`)
           }
         }
         return found

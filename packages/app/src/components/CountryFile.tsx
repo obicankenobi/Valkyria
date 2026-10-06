@@ -37,18 +37,20 @@ import { formatMoney } from './ui.js'
 import { VerbIcon } from './VerbIcon.js'
 import { useArmedVerb } from '../uiContext.js'
 
-type DirectVerb = 'EXPAND' | 'WITHDRAW' | 'RECRUIT'
+type DirectVerb = 'EXPAND' | 'WITHDRAW' | 'RECRUIT' | 'REOPEN'
 // P163: EXPAND/WITHDRAW/RECRUIT köades förut direkt vid ett tryck. De går nu via ett kort som säger vad verbet gör, kostar och riskerar, och köas först med FILE.
 type SubView = { kind: 'overview' } | { kind: 'confirm'; verb: DirectVerb } | { kind: 'target'; op: 'LEAK' | 'SABOTAGE' | 'TURN' } | { kind: 'influence' }
 
 // Verbet spelaren valde i Actions-menyn avgör vilken del av landsakten som öppnas först — men bara om verbet går att använda mot just det här landet.
-function initialView(armed: string | undefined, hasStation: boolean): SubView {
+function initialView(armed: string | undefined, hasStation: boolean, hasDormant: boolean): SubView {
   switch (armed) {
     case 'EXPAND':
     case 'WITHDRAW':
       return hasStation ? { kind: 'confirm', verb: armed } : { kind: 'overview' }
     case 'RECRUIT':
-      return hasStation ? { kind: 'overview' } : { kind: 'confirm', verb: 'RECRUIT' }
+      return hasStation || hasDormant ? { kind: 'overview' } : { kind: 'confirm', verb: 'RECRUIT' }
+    case 'REOPEN':
+      return hasDormant ? { kind: 'confirm', verb: 'REOPEN' } : { kind: 'overview' }
     case 'LEAK':
     case 'SABOTAGE':
     case 'TURN':
@@ -75,8 +77,10 @@ function costLabel(cost: number | null): string {
 }
 
 // Verbet spelaren valde i menyn passar inte det här landet: säg varför, så att ett tomt arkivblad inte ser ut som ett fel.
-function armedMismatch(verb: string | undefined, hasStation: boolean): string | null {
+function armedMismatch(verb: string | undefined, hasStation: boolean, hasDormant: boolean): string | null {
   if (!verb) return null
+  if (verb === 'REOPEN' && !hasDormant) return 'REOPEN needs a dormant station of yours in the country. You have none here.'
+  if (verb === 'RECRUIT' && hasDormant) return 'You have a dormant station here. REOPEN wakes it; RECRUIT opens a station in a country that has none.'
   if (['EXPAND', 'WITHDRAW', 'LEAK', 'SABOTAGE', 'TURN'].includes(verb) && !hasStation) {
     return `${verb} needs one of your stations in the country. You have none here — RECRUIT opens one.`
   }
@@ -101,8 +105,10 @@ export function CountryFile({
 }) {
   const faction = state.factions[factionId]
   const station = state.house.stations.find((s) => s.nation === factionId && s.status === 'active')
+  // P167: en vilande station (WITHDRAW) kan väckas igen — då är REOPEN vägen, inte RECRUIT (som skulle öppna en andra station i samma land).
+  const dormant = station ? undefined : state.house.stations.find((s) => s.nation === factionId && s.status === 'dormant')
   const armed = useArmedVerb()
-  const [view, setView] = useState<SubView>(() => initialView(armed?.verb, station !== undefined))
+  const [view, setView] = useState<SubView>(() => initialView(armed?.verb, station !== undefined, dormant !== undefined))
   // Ett nytt delläge (kort, målväljare, formulär) börjar överst — annars ärver det rullningen från knappen som öppnade det.
   useEffect(() => {
     document.querySelector('[data-testid="country-file"] .ds-sheet-body')?.scrollTo?.(0, 0)
@@ -169,9 +175,9 @@ export function CountryFile({
             )}
           </div>
 
-          {armedMismatch(armed?.verb, station !== undefined) && (
+          {armedMismatch(armed?.verb, station !== undefined, dormant !== undefined) && (
             <p className="cf-hint is-warning" data-testid="cf-armed-mismatch">
-              {armedMismatch(armed?.verb, station !== undefined)}
+              {armedMismatch(armed?.verb, station !== undefined, dormant !== undefined)}
             </p>
           )}
 
@@ -179,6 +185,8 @@ export function CountryFile({
 
           {station ? (
             <CovertSection state={state} station={station} setView={setView} />
+          ) : dormant ? (
+            <DormantSection state={state} station={dormant} setView={setView} />
           ) : (
             <RecruitSection state={state} factionId={factionId} setView={setView} />
           )}
@@ -212,7 +220,7 @@ export function CountryFile({
         <ConfirmVerb
           state={state}
           verb={view.verb}
-          station={station}
+          station={view.verb === 'REOPEN' ? dormant : station}
           factionId={factionId}
           onBack={() => setView({ kind: 'overview' })}
           onFile={queue}
@@ -339,6 +347,38 @@ function CovertSection({
           onClick={() => setView({ kind: 'target', op: 'TURN' })}
           testId="cf-verb-TURN"
           verb="TURN"
+        />
+      </div>
+    </>
+  )
+}
+
+// P167: en vilande station — den enda handlingen är att öppna den igen (REOPEN). Djup och täckning finns kvar.
+function DormantSection({
+  state,
+  station,
+  setView,
+}: {
+  state: GameState
+  station: NonNullable<GameState['house']['stations'][number]>
+  setView: (v: SubView) => void
+}) {
+  const reopen: PlayerAction = { type: 'INTEL', op: 'REOPEN', stationId: station.id }
+  return (
+    <>
+      <div className="cf-section-head">
+        <span>DORMANT — {station.city} STATION</span>
+        <span className="cf-section-rule" />
+      </div>
+      <div className="cf-grid">
+        <VerbButton
+          icon={<VerbIcon verb="REOPEN" />}
+          label="REOPEN"
+          cost={costLabel(previewAction(state, reopen).cost)}
+          onClick={() => setView({ kind: 'confirm', verb: 'REOPEN' })}
+          disabled={!validateAction(state, state, reopen).ok}
+          testId="cf-verb-REOPEN"
+          verb="REOPEN"
         />
       </div>
     </>

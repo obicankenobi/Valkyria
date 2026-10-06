@@ -5,6 +5,7 @@
 const VERBS = [
   'EXPAND',
   'WITHDRAW',
+  'REOPEN', // P167
   'LEAK',
   'SABOTAGE',
   'TURN',

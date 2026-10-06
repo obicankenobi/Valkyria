@@ -885,6 +885,12 @@ obligatorisk prop på varje panel (typkontrollen och `panelInfo.test.tsx` fälle
 P164: panelen "Your actions" på NEWS DESK (`actionReport.ts`, utfallen paras ihop genom ett omkörningsdiff i stället för att
 tolka rubriker). **Fynd:** `WITHDRAW` är i praktiken meningslös (en vilande station räknas mot gränsen på fem, kostar upphåll och
 kan inte öppnas igen); följderna av ett misslyckat LEAK/SABOTAGE/TURN har `causeId: null`. Se `docs/ANDRINGSLOGG.md`.
+**P165–P167 BYGGDA 2026-10-06/07.** P165: ett tryck på kartan väljer föremålet och ger ett informationskort (`mapInfo.ts`,
+`MapInfoCard.tsx`); alla sex länder tryckbara. P166: fem kartlager med tal (`mapLayers.ts`), WAR/CEASEFIRE/QUIET vid
+frontlinjen och en egen NLF-markering. **P158 (kvartalsuppspelning på kartan) är ännu inte körd.** P167 (regel): stationens
+täckning växer med djupet (`stationCoverage.ts`, militär 2/industri 3/kabinett 4, provisoriska) och en vilande station kan
+öppnas igen med nya verbet `REOPEN`; golden-hasharna oförändrade, bara `balance.frozen.json` omfryst. **Fynd:** `industry`-
+täckning har ingen egen effekt (samma som `military`). Se `docs/ANDRINGSLOGG.md`.
 Etapp 11, "Verken", `docs/ETAPP11_FORSLAG.md` (P168–P184, **antagen 2026-10-06**, ägarbesluten 11A–11N
 loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) körs efter P162–P167. Den gör produktionen till ett
 system som måste skötas: sju slags anläggningar på en hemmatomt med åtta platser (monteringsverk,

@@ -21,10 +21,11 @@ describe('ACTION_CATALOG', () => {
     }
   })
 
-  it('täcker exakt de 25 verb (22 + etapp 9:s FIELD_TRIAL/REVERSE_ENGINEER, P126) som faktiskt har en byggd form i appen (P86: CONTACTS ger STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER/FUND_CAMPAIGN/FAVOUR/ASSASSINATE en riktig form — §7.1:s klart-när, "alla 22 verb nåbara")', () => {
+  it('täcker exakt de 26 verb (22 + etapp 9:s FIELD_TRIAL/REVERSE_ENGINEER, P126 + REOPEN, P167) som faktiskt har en byggd form i appen (P86: CONTACTS ger STAGE_INCIDENT/BACK_CHANNEL/FUND_COUP/BROKER/FUND_CAMPAIGN/FAVOUR/ASSASSINATE en riktig form — §7.1:s klart-när, "alla 22 verb nåbara")', () => {
     const expected = [
       'EXPAND',
       'WITHDRAW',
+      'REOPEN',
       'LEAK',
       'SABOTAGE',
       'TURN',

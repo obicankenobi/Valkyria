@@ -133,7 +133,14 @@ function factionCard(state: GameState, factionId: FactionId, label: string, kick
       { label: 'Alignment', value: alignmentLabel(faction) },
       { label: 'Relation to you', value: `${Math.round(faction.relationToPlayer)} / 100` },
       { label: 'Fighting', value: fighting },
-      { label: 'Station', value: station ? `${station.city}, depth ${station.depth}` : 'None — you have no station here' },
+      {
+        label: 'Station',
+        value: station
+          ? `${station.city}, depth ${station.depth}`
+          : outlook.dormant
+            ? `${outlook.dormant.city}, dormant (depth ${outlook.dormant.depth}) — REOPEN wakes it`
+            : 'None — you have no station here',
+      },
       { label: 'Open orders', value: String(state.market.openOrders.filter((o) => o.buyerId === factionId).length) },
       { label: 'Contracts', value: `${yours} yours, ${rivals} rivals${faction.embargoed ? ' · embargoed' : ''}` },
       {
@@ -239,6 +246,7 @@ function stationInfo(state: GameState, factionId: FactionId): MapInfo | null {
       { label: 'Country', value: factionName(state, factionId) },
       { label: 'Depth', value: `${station.depth} of 5${outlook.salesmanBonus ? ' (+1 from your chief salesman)' : ''}` },
       { label: 'Exposure', value: `${Math.round(station.exposure)}% (a station is burned above ${DISPLAY_THRESHOLDS.exposureBurnThreshold}%)` },
+      { label: 'Covers', value: outlook.coverage.join(', ') },
       { label: 'Price bands', value: outlook.bandPct === 0 ? 'Exact' : `±${outlook.bandPct}% around the lowest rival bid` },
       { label: 'Buyer terms', value: outlook.buyerTermsVisible ? 'Credit and drivers shown on orders' : 'Hidden' },
     ],

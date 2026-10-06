@@ -46,14 +46,14 @@ async function startFreshGame(page: Page): Promise<void> {
 // testet självt: "map-country-cambodia intercepts pointer events"). Den lilla,
 // isolerade huvudstadscirkeln har ingen sådan risk — samma tapp-mål kartan
 // själv erbjuder (§7.1), bara mer robust i ett automatiserat test.
-async function queueRvnVerb(page: Page, verb: 'EXPAND' | 'WITHDRAW' | 'LEAK' | 'SABOTAGE' | 'TURN'): Promise<void> {
+async function queueRvnVerb(page: Page, verb: 'EXPAND' | 'WITHDRAW' | 'REOPEN' | 'LEAK' | 'SABOTAGE' | 'TURN'): Promise<void> {
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
   await page.getByTestId('map-info-card').waitFor() // P165: kortet först
   await page.getByTestId('map-info-open-file').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId(`cf-verb-${verb}`).click()
-  if (verb === 'EXPAND' || verb === 'WITHDRAW') {
-    // P163: EXPAND/WITHDRAW går via handlingskortet och köas med FILE.
+  if (verb === 'EXPAND' || verb === 'WITHDRAW' || verb === 'REOPEN') {
+    // P163: EXPAND/WITHDRAW (P167: och REOPEN) går via handlingskortet och köas med FILE.
     await page.getByTestId(`action-card-${verb}`).waitFor()
     await page.getByTestId(`cf-file-${verb}`).click()
   }
@@ -106,6 +106,13 @@ test('alla sex underrättelseverb går att köa från kartan och avgörs korrekt
   await queueRvnVerb(page, 'WITHDRAW')
   await expect(page.getByTestId('action-slot-2')).toContainText('WITHDRAW')
 
+  await page.getByTestId('end-quarter-button').click()
+  await page.getByTestId('tab-operations').click()
+  await expect(page.getByTestId('rejected-banner')).toHaveCount(0)
+
+  // Kvartal 3 (P167): den vilande Saigon-stationen öppnas igen — förut fanns ingen väg tillbaka.
+  await queueRvnVerb(page, 'REOPEN')
+  await expect(page.getByTestId('action-slot-0')).toContainText('REOPEN')
   await page.getByTestId('end-quarter-button').click()
   await page.getByTestId('tab-operations').click()
   await expect(page.getByTestId('rejected-banner')).toHaveCount(0)

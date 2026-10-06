@@ -1,29 +1,54 @@
 // handbookTruth.test.ts — P162 (ETAPP10_FORSLAG.md §3b, S5): handbokens uppslag om underrättelse ska stämma med koden. Påståendena binds till det
 // koden faktiskt gör, så att ett uppslag som blir fel — eller en kodändring som gör det fel — fäller ett test i stället för att glida.
-// När P167 låter stationens täckning växa med djupet ska det här testet fällas, och uppslaget skrivas om i samma commit.
+// P167 lät stationens täckning växa med djupet (och en vilande station öppnas igen); testet och uppslaget skrevs om i samma commit.
 import { describe, expect, it } from 'vitest'
-import { createInitialState, formationDisplay, officialDisplay, resolveTurn, validateAction } from '@seventh-front/core'
+import { coverageForDepth, createInitialState, formationDisplay, grownCoverage, officialDisplay, resolveTurn, validateAction } from '@seventh-front/core'
 import { HANDBOOK } from '../src/handbook.js'
 
 const intelligence = HANDBOOK.find((t) => t.id === 'intelligence')!
 const text = [intelligence.summary, ...intelligence.body].join(' ')
 
 describe('handboken om underrättelse stämmer med koden', () => {
-  it('varje station täcker bara upphandling, även vid högsta djup — så integritet och agenda är okända (uppslaget säger det)', () => {
+  it('täckningen växer med djupet: militär 2, industri 3, kabinett 4 — och integritet/agenda visas först med kabinett (uppslaget säger det)', () => {
     const state = createInitialState('indochina-slice', 'handbook-truth-seed')
-    for (const station of state.house.stations) station.depth = 5
-    for (const official of Object.values(state.officials)) {
+    const station = state.house.stations[0]!
+    const nation = station.nation
+    const official = Object.values(state.officials).find((o) => o.factionId === nation)!
+    for (const [depth, cabinet] of [[1, false], [2, false], [3, false], [4, true], [5, true]] as const) {
+      station.depth = depth
+      station.coverage = grownCoverage({ coverage: ['procurement'], depth }).coverage
       const shown = officialDisplay(state, official)
-      expect(shown.integrity).toBeNull()
-      expect(shown.agenda).toBeNull()
+      expect(shown.integrity === null, `djup ${depth}`).toBe(!cabinet)
+      expect(shown.agenda === null, `djup ${depth}`).toBe(!cabinet)
       expect(shown.name).toBeTruthy() // namn, post, ställning och relation visas alltid
     }
+    expect(coverageForDepth(2)).toContain('military')
+    expect(coverageForDepth(1)).not.toContain('military')
+    expect(coverageForDepth(3)).toContain('industry')
+    expect(coverageForDepth(2)).not.toContain('industry')
+    expect(coverageForDepth(4)).toContain('cabinet')
+    expect(coverageForDepth(3)).not.toContain('cabinet')
+    expect(text).toMatch(/military coverage at depth 2, industry at depth 3 and cabinet at depth 4/)
     expect(text).toMatch(/name, post, standing and relation/)
-    expect(text).toMatch(/integrity and agenda stay unknown/)
+    expect(text).toMatch(/cabinet coverage is what shows integrity and agenda/)
     expect(text).not.toMatch(/formations and officials show as unknown/)
   })
 
-  it('en tillbakadragen (dormant) station blir aldrig aktiv igen, vad spelaren än köar — och uppslaget säger det', () => {
+  it('en EXPAND i spelet ger den täckning uppslaget lovar (riktig väg genom resolveTurn)', () => {
+    let state = createInitialState('indochina-slice', 'handbook-truth-expand-seed')
+    const id = state.house.stations[0]!.id
+    expect(state.house.stations[0]!.depth).toBe(1)
+    for (const depth of [2, 3, 4]) {
+      state = resolveTurn(state, { standingOrders: [], bids: [], actions: [{ type: 'INTEL', op: 'EXPAND', stationId: id }] }).state
+      const station = state.house.stations.find((s) => s.id === id)!
+      expect(station.depth).toBe(depth)
+      expect(station.coverage).toEqual(coverageForDepth(depth))
+    }
+    const station = state.house.stations.find((s) => s.id === id)!
+    expect(officialDisplay(state, Object.values(state.officials).find((o) => o.factionId === station.nation)!).integrity).not.toBeNull()
+  })
+
+  it('en tillbakadragen (dormant) station går att öppna igen med REOPEN, men inte med EXPAND eller WITHDRAW — och uppslaget säger det', () => {
     let state = createInitialState('indochina-slice', 'handbook-truth-dormant-seed')
     const id = state.house.stations[0]!.id
     state.house.stations[0]!.status = 'dormant'
@@ -31,8 +56,11 @@ describe('handboken om underrättelse stämmer med koden', () => {
       state = resolveTurn(state, { standingOrders: [], bids: [], actions: [{ type: 'INTEL', op, stationId: id }] }).state
       expect(state.house.stations.find((s) => s.id === id)!.status).toBe('dormant')
     }
+    state = resolveTurn(state, { standingOrders: [], bids: [], actions: [{ type: 'INTEL', op: 'REOPEN', stationId: id }] }).state
+    expect(state.house.stations.find((s) => s.id === id)!.status).toBe('active')
     expect(text).toMatch(/dormant station gives no insight/)
-    expect(text).toMatch(/no way to reopen/)
+    expect(text).toMatch(/REOPEN wakes it again for a fee/)
+    expect(text).not.toMatch(/no way to reopen/)
   })
 
   it('formationer är okända på djup 0 (ingen station eller en ny) och kända från djup 1', () => {
@@ -61,6 +89,7 @@ describe('handboken om underrättelse stämmer med koden', () => {
     }
     expect(intelligence.summary).toMatch(/five verbs: EXPAND, WITHDRAW, LEAK, SABOTAGE and TURN/)
     expect(intelligence.summary).toMatch(/RECRUIT is how you open a station/)
+    expect(intelligence.summary).toMatch(/REOPEN wakes a dormant one/)
   })
 
   it('RECRUIT öppnar en ny station på djup 0, och högst fem får finnas', () => {

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // stationOutlook.test.tsx — P163 (ETAPP10_FORSLAG.md §3b, S5): stationskortets påståenden binds till kärnan.
 import { describe, expect, it } from 'vitest'
-import { bidEstimate, createInitialState, effectiveDepth, formationDisplay, resolveTurn, validateAction } from '@seventh-front/core'
+import { bidEstimate, coverageForDepth, createInitialState, effectiveDepth, formationDisplay, officialDisplay, raceAssessment, resolveTurn, validateAction } from '@seventh-front/core'
 import type { GameState, Order } from '@seventh-front/core'
-import { STATION_BAND_PCT, STATION_VERBS, stationOutlook } from '../src/stationOutlook.js'
+import { COVERAGE_EFFECT, STATION_BAND_PCT, STATION_VERBS, stationOutlook } from '../src/stationOutlook.js'
 
 function stateWithOrder(): { state: GameState; order: Order } {
   let state = createInitialState('indochina-slice', 'station-outlook-seed')
@@ -103,5 +103,78 @@ describe('stationOutlook — vad stationen ger', () => {
     expect(stationOutlook(state, station.nation).next!.gains.join(' ')).toMatch(/formations show their exact strength/)
     station.depth = 3
     expect(stationOutlook(state, station.nation).next!.gains.join(' ')).toMatch(/lowest bid is named/)
+  })
+})
+
+
+describe('stationOutlook — täckning och vilande stationer (P167)', () => {
+  it('nästa EXPAND nämner den täckning som djupsteget faktiskt låser upp (kärnans coverageForDepth), och inga andra', () => {
+    const state = createInitialState('indochina-slice', 'station-outlook-coverage-next')
+    const station = state.house.stations[0]!
+    state.house.staff.chiefSalesman = 0
+    for (const depth of [0, 1, 2, 3, 4] as const) {
+      station.depth = depth
+      station.coverage = coverageForDepth(depth)
+      const gains = stationOutlook(state, station.nation).next!.gains.join(' | ')
+      for (const c of ['military', 'industry', 'cabinet'] as const) {
+        const unlocked = coverageForDepth(depth + 1).includes(c) && !coverageForDepth(depth).includes(c)
+        expect(gains.includes(`${c} coverage`), `${c} vid djup ${depth} → ${depth + 1}`).toBe(unlocked)
+      }
+    }
+  })
+
+  it('stationens täckning visas som den är', () => {
+    const state = createInitialState('indochina-slice', 'station-outlook-coverage-now')
+    const station = state.house.stations[0]!
+    station.depth = 3
+    station.coverage = coverageForDepth(3)
+    expect(stationOutlook(state, station.nation).coverage).toEqual(['procurement', 'military', 'industry'])
+    expect(stationOutlook(state, 'laos').coverage).toEqual([])
+  })
+
+  it("COVERAGE_EFFECT.cabinet: integritet och agenda visas med kabinettäckning, och inte utan", () => {
+    const state = createInitialState('indochina-slice', 'station-outlook-cabinet')
+    const station = state.house.stations[0]!
+    const official = Object.values(state.officials).find((o) => o.factionId === station.nation)!
+    station.coverage = ['procurement', 'military', 'industry']
+    expect(officialDisplay(state, official).integrity).toBeNull()
+    station.coverage = ['procurement', 'military', 'industry', 'cabinet']
+    expect(officialDisplay(state, official).integrity).not.toBeNull()
+    expect(COVERAGE_EFFECT.cabinet).toMatch(/integrity and agenda/)
+  })
+
+  it('COVERAGE_EFFECT.military/industry: bedömningen av blockets generation är skarpare med någon av dem, och lika skarp med båda', () => {
+    const state = createInitialState('indochina-slice', 'station-outlook-race')
+    const station = state.house.stations[0]!
+    state.house.staff.chiefSalesman = 0
+    station.depth = 4 // assessmentWidthByDepth [3,3,2,2,1,0]: med täckning 1, utan (ett steg sämre) 2
+    const width = (bloc: 'west' | 'east') => {
+      const a = raceAssessment(state, bloc, 'armour')
+      return a.high - a.low
+    }
+    const widths = (coverage: typeof station.coverage) => {
+      station.coverage = coverage
+      return [width('west'), width('east')]
+    }
+    const none = widths(['procurement'])
+    const mil = widths(['procurement', 'military'])
+    const ind = widths(['procurement', 'industry'])
+    expect(ind).toEqual(mil) // industry ger samma som military, inget extra
+    expect(mil.every((w, i) => w <= none[i]!)).toBe(true)
+    expect(mil.some((w, i) => w < none[i]!)).toBe(true) // och stationens block får en skarpare bedömning
+    expect(COVERAGE_EFFECT.industry).toMatch(/no extra effect/)
+  })
+
+  it('en vilande station: nästa steg är REOPEN (inte RECRUIT), med REOPEN:s kostnad ur previewAction', () => {
+    const state = createInitialState('indochina-slice', 'station-outlook-dormant')
+    const station = state.house.stations[0]!
+    station.status = 'dormant'
+    station.depth = 3
+    const out = stationOutlook(state, station.nation)
+    expect(out.hasStation).toBe(false)
+    expect(out.dormant).toEqual({ city: station.city, depth: 3 })
+    expect(out.next).toMatchObject({ how: 'REOPEN', depth: 3 })
+    expect(out.next!.cost).toBeGreaterThan(0)
+    expect(validateAction(state, state, { type: 'INTEL', op: 'REOPEN', stationId: station.id }).ok).toBe(true)
   })
 })

@@ -34,6 +34,8 @@ export const ACTION_CATALOG: readonly ActionCatalogEntry[] = [
   { verb: 'LEAK', label: 'Leak against a rival', objectGroup: 'Country with a station', target: 'operations' },
   { verb: 'SABOTAGE', label: 'Sabotage a rival', objectGroup: 'Country with a station', target: 'operations' },
   { verb: 'TURN', label: 'Turn an official', objectGroup: 'Country with a station', target: 'operations' },
+  // Land med en vilande station (P167) — enda vägen tillbaka efter WITHDRAW.
+  { verb: 'REOPEN', label: 'Reopen a dormant station', objectGroup: 'Country with a dormant station', target: 'operations' },
   // Land utan station.
   { verb: 'RECRUIT', label: 'Recruit a new station', objectGroup: 'Country without a station', target: 'operations' },
   // Faktion / huvudstad. INFLUENCE byggd i CountryFile.tsx (P79); STAGE_
@@ -70,7 +72,9 @@ export function armedHint(entry: ActionCatalogEntry): string {
     case 'operations':
       return entry.objectGroup === 'Country without a station'
         ? 'Tap a country on the map where you have no station.'
-        : entry.objectGroup === 'Country with a station'
+        : entry.objectGroup === 'Country with a dormant station'
+          ? 'Tap a country on the map where you have a dormant station.'
+          : entry.objectGroup === 'Country with a station'
           ? 'Tap a country on the map where you have a station.'
           : 'Tap a country on the map.'
     case 'contacts':
