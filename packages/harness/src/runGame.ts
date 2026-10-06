@@ -113,6 +113,12 @@ export interface GameMetrics {
   lowballs: number // upphandlingar där huset spelat LOWBALL
   programmeSabotages: number // upphandlingar där huset sabotagerat eller läckt mot en deltagande rival
   rivalReports: number // anmälda rivaler i upphandlingar där huset deltog
+  // P168 (ETAPP11_FORSLAG.md §9, "Grund") — nollläget före etapp 11: tar kapaciteten slut? Lästa ur state.house.lines/state.market.contracts
+  // efter varje tur, ingen ny räknare i core.
+  lineUtilizationPct: number // medel över spelade turer av andelen linjer med status 'running' (efter turens avgörande)
+  peakLineUtilizationPct: number // den högsta enskilda turens andel
+  linesBuilt: number // linjer huset byggt under partiet (slutantal minus startantal; BUILD_LINE är enda vägen)
+  lateContracts: number // husets kontrakt som någon gång stod som 'late' (distinkta, även om de sedan levererades eller hävdes)
 }
 
 // P140 (ETAPP10 §5 punkt 1, premiss 0.14): bara rubriken från traces.ts ("<HUS> IS SUSPENDED FROM TENDERING TO <KÖPARE> UNTIL TURN <n>")
@@ -163,6 +169,11 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let exportBreaches = 0
   let voidedByScandal = 0
   const programmeIds = new Set<string>()
+  // P168 — linjeutnyttjande per tur och kontrakt som någon gång varit sena.
+  const initialLineCount = state.house.lines.length
+  let utilisationSum = 0
+  let utilisationPeak = 0
+  const lateContractIds = new Set<string>()
   // Kontrakt med en konstruktion: konstruktionens ålder (i turer) vid tecknandet, exakt — Contract har inget signeringsfält.
   const designContractAge = new Map<string, number>()
   const enteredIds = new Set<string>()
@@ -245,6 +256,11 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     // — en löpande summa, inte ett slutläge (en linje är 'retooling' bara i
     // retoolingTurns(1) balanstur innan den går tillbaka till 'idle').
     retoolingLineTurns += state.house.lines.filter((l) => l.status === 'retooling').length
+    const lineCount = state.house.lines.length
+    const utilisation = lineCount > 0 ? (100 * state.house.lines.filter((l) => l.status === 'running').length) / lineCount : 0
+    utilisationSum += utilisation
+    utilisationPeak = Math.max(utilisationPeak, utilisation)
+    for (const c of state.market.contracts) if (c.status === 'late') lateContractIds.add(c.id)
 
     if (state.status.kind === 'ended') break
   }
@@ -373,6 +389,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     lowballs: programmes.filter((p) => p.entrants.some((e) => e.houseId === 'player' && e.lowball)).length,
     programmeSabotages: programmes.filter((p) => p.entrants.some((e) => e.houseId !== 'player' && (e.sabotaged || e.leaked))).length,
     rivalReports: programmes.filter((p) => enteredIds.has(p.id)).reduce((sum, p) => sum + p.entrants.filter((e) => e.houseId !== 'player' && e.reported).length, 0),
+    lineUtilizationPct: turnsPlayed > 0 ? utilisationSum / turnsPlayed : 0,
+    peakLineUtilizationPct: utilisationPeak,
+    linesBuilt: state.house.lines.length - initialLineCount,
+    lateContracts: lateContractIds.size,
     civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }
 }

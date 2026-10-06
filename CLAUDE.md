@@ -891,6 +891,10 @@ frontlinjen och en egen NLF-markering. **P158 (kvartalsuppspelning på kartan) �
 täckning växer med djupet (`stationCoverage.ts`, militär 2/industri 3/kabinett 4, provisoriska) och en vilande station kan
 öppnas igen med nya verbet `REOPEN`; golden-hasharna oförändrade, bara `balance.frozen.json` omfryst. **Fynd:** `industry`-
 täckning har ingen egen effekt (samma som `military`). Se `docs/ANDRINGSLOGG.md`.
+**P168 MÄTT 2026-10-07** (etapp 11 "Grund", ingen regel): premisserna omkontrollerade och bundna av `etapp11Premises.test.ts`;
+härnessen har fyra nya kolumner (utnyttjande, topp, byggda linjer, sena kontrakt). Nolläge: utnyttjande 27–49 % (hela partier),
+0 byggda linjer, sena kontrakt ≈ 0 — se `docs/ETAPP11_FORSLAG.md` §9. **P169 är nästa** (anläggningsmodellen; "regel", golden får
+omfrysas i egen commit).
 Etapp 11, "Verken", `docs/ETAPP11_FORSLAG.md` (P168–P184, **antagen 2026-10-06**, ägarbesluten 11A–11N
 loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) körs efter P162–P167. Den gör produktionen till ett
 system som måste skötas: sju slags anläggningar på en hemmatomt med åtta platser (monteringsverk,

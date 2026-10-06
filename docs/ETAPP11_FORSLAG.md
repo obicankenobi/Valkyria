@@ -39,9 +39,13 @@ Kontrollerat mot koden 2026-10-06.
 | 0.9 | Personalen är tre tal (45 från start) som bara verkar över en tröskel. | `economy.ts:60`, `research.ts:38`, `queries.ts:345` |
 | 0.10 | Specialiseringen ger tekniknivå 7 i sin kategori, 1 % budbonus och halverad forskningskostnad. Den påverkar inte linjerna. | `state.ts:80-88`, `bidTerms.ts:26-27` |
 | 0.11 | Motköpet i en upphandling är ett löfte om lokal tillverkning som bara sänker marginalen. Ingen fabrik byggs. | `programme.ts`, P123 |
-| 0.12 | Fasta kostnader: £18 000 per linje och tur, plus £45 000 i lön per linje utöver de fyra första. | `economy.ts:50, 78-81` |
+| 0.12 | Fasta kostnader: £18 000 per linje och tur, plus £45 000 i lön per linje utöver de fyra första. | `balance.json` `fixedCosts.lineUpkeep` / `payrollPerExtraLine` (tidigare hänvisad till `economy.ts:50, 78-81`) |
 
 Följd: i dag finns inget beslut om produktion som spelaren måste fatta. Etappen ska ändra just det.
+
+**Omkontroll 2026-10-07 (P168), mot koden efter P167:** 0.1–0.5, 0.7–0.10 och 0.12 håller; 0.1, 0.2, 0.7, 0.9 och 0.12 är nu bundna av
+`packages/core/test/etapp11Premises.test.ts`, så att ett glid fäller ett test i stället för att upptäckas senare. 0.12:s hänvisning hade glidit
+(talen ligger i `balance.json`, inte i `economy.ts`) och är rättad ovan. 0.6 mättes om, se §9 "Nolläge". Inget annat antagande föll.
 
 ---
 
@@ -281,6 +285,22 @@ UI-reglerna 1–18 och `art-director` gäller.
   `human-specialist` (en kategori, djupt) och `human-broad` (tre kategorier, grunt).
 - Nya kolumner: utnyttjande per kvartal, byggda anläggningar per slag, sena leveranser, utlagd andel,
   inkörningsnivå, strejker, haverier, lagervärde, förlorade verk utomlands.
+
+**Nolläge (P168, 2026-10-07).** 100 partier per bot mot `indochina-slice`, före all etapp 11-kod. Kolumnerna är nya i P168
+(`lineUtilizationPct`, `peakLineUtilizationPct`, `linesBuilt`, `lateContracts`); utnyttjande = andelen linjer med status `running` efter en turs
+avgörande, medel över spelade turer. "Hela partier" = bara partier som nådde `SCENARIO_COMPLETE` (annars drar korta partier ned medlet).
+
+| Bot | Utnyttjande, medel | … hela partier | Topp, enskild tur | Byggda linjer | Sena kontrakt per parti | Partier med minst ett sent | Vinst |
+|---|---|---|---|---|---|---|---|
+| `human` | 32,6 % | 34,9 % | 93,2 % | 0,0 | 0,00 | 0 % | 56 % |
+| `balanced` | 19,2 % | 36,2 % | 65,2 % | 0,0 | 0,01 | 1 % | 33 % |
+| `aggressive` | 38,0 % | 49,0 % | 92,2 % | 0,0 | 0,05 | 4 % | 5 % |
+| `passive` | 19,9 % | – | 65,8 % | 0,0 | 0,00 | 0 % | 0 % |
+| `capacity` | 14,5 % | 26,8 % | 55,0 % | 0,0 | 0,00 | 0 % | 2 % |
+
+Utnyttjandet över hela partier (27–49 %) ligger i samma band som 2026-10-06-mätningen (27–49 %), så premiss 0.6 står: kapaciteten binder inte, ingen bot
+bygger en linje, och sena leveranser är i praktiken noll (målet efter etappen är 1–4 per parti). Toppen når 93 % en enskild tur — linjerna är sällan
+fulla samtidigt, vilket är den siffra P172 (kapaciteten räknas om) ska flytta. Mätningen ändrar ingen regel; golden är orörd.
 
 **Måltabell:**
 
