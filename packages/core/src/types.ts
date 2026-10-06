@@ -1163,7 +1163,7 @@ export type PlayerAction =
   // P124: att skriva kravet — en kravrad lutas mot husets konstruktion; kräver relation över ett golv, eller en muta (bribe).
   | { type: 'PROCUREMENT'; op: 'WRITE_SPEC'; programmeId: string; requirementKind: RequirementKind; bribe?: boolean }
 
-export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND'
+export type IntelOp = 'RECRUIT' | 'LEAK' | 'SABOTAGE' | 'TURN' | 'WITHDRAW' | 'EXPAND' | 'REOPEN'
 // P56 (avsnitt 3.3): FUND_CAMPAIGN och FAVOUR tillagda. P60 (avsnitt 4.3): INFLUENCE.
 export type PoliticalOp =
   | 'BRIBE'

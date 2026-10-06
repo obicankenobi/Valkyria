@@ -4,6 +4,7 @@
 // (data/rivals.json) och bygger ett fullständigt GameState. Startvärdena är de som
 // står i scenariofilen — createInitialState uppfinner inget eget och kör ingen
 // spelregel (ingen ekonomi-, anbuds- eller frontlogik hör hemma här, det är P3–P8).
+import { grownCoverage } from './stationCoverage.js'
 import { initialRace } from './race.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import rivalsCatalog from './data/rivals.json' with { type: 'json' }
@@ -239,7 +240,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     nation: seed.station.nation,
     depth: seed.station.depth,
     exposure: 0,
-    coverage: seed.station.coverage,
+    coverage: grownCoverage({ coverage: seed.station.coverage, depth: seed.station.depth }).coverage, // P167: täckningen följer djupet även vid start
     status: 'active',
   }
 

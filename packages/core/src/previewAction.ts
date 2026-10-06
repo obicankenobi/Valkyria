@@ -41,6 +41,7 @@ interface Balance {
   buildLineCost: number
   hireCost: number
   intelExpandCost: number
+  intelReopenCost: number
   intelRecruitCost: number
   intelCovertOpCost: number
   stageIncidentSuccessPct: number
@@ -189,6 +190,8 @@ export function previewAction(state: Readonly<GameState>, action: PlayerAction):
           return preview(BALANCE.intelRecruitCost, null)
         case 'WITHDRAW':
           return preview(null, null)
+        case 'REOPEN':
+          return preview(BALANCE.intelReopenCost, null) // P167: lyckas alltid
         case 'LEAK':
         case 'SABOTAGE':
         case 'TURN': {

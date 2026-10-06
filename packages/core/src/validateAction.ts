@@ -204,6 +204,13 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
           if (!station) return fail('unknown station')
           return ok()
         }
+        // P167: en vilande station kan öppnas igen. En aktiv behöver det inte, och en bränd är slut.
+        case 'REOPEN': {
+          const station = house.stations.find((s) => s.id === action.stationId)
+          if (!station) return fail('unknown station')
+          if (station.status !== 'dormant') return fail('station is not dormant')
+          return ok()
+        }
         case 'RECRUIT': {
           const nation = action.targetId
           if (!nation || !draft.factions[nation]) return fail('invalid recruit target')

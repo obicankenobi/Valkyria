@@ -57,6 +57,7 @@ import { applyCrashProgramme, startTrackedResearch } from '../../research.js'
 import { applyReverseEngineer } from '../../capture.js'
 import { applyProcurement, applyProgrammeIntel, parseProgrammeTarget } from '../../programme.js'
 import { recordTrace } from '../../traces.js'
+import { grownCoverage } from '../../stationCoverage.js'
 import { inflateAssessment, parseAssessmentTarget } from '../../race.js'
 import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
@@ -70,6 +71,7 @@ interface Balance {
   rndProjectTurns: number
   intelExpandCost: number
   intelRecruitCost: number
+  intelReopenCost: number
   intelExposureMin: number
   intelExposureMax: number
   commodityIndexWeight: Record<Commodity, number>
@@ -329,12 +331,17 @@ export const applyActions: ResolveStep = (ctx) => {
             100,
             station.exposure + rng.int(BALANCE.intelExposureMin, BALANCE.intelExposureMax) * expandExposureMultiplier,
           )
+          // P167: djupet ger täckning — militär, industri och kabinett från de djup balance.json anger (stationCoverage.ts).
+          const grown = grownCoverage(station)
+          station.coverage = grown.coverage
           emit({
             severity: 'ticker',
             scope: 'house',
-            headline: `STATION ${station.city.toUpperCase()} EXPANDED — DEPTH ${depthBefore} → ${station.depth}`,
+            headline: `STATION ${station.city.toUpperCase()} EXPANDED — DEPTH ${depthBefore} → ${station.depth}${
+              grown.gained.length ? ` — NOW COVERS ${grown.gained.map((c) => c.toUpperCase()).join(', ')}` : ''
+            }`,
             causeId: null,
-            delta: { treasury: -BALANCE.intelExpandCost, depth: station.depth - depthBefore },
+            delta: { treasury: -BALANCE.intelExpandCost, depth: station.depth - depthBefore, ...(grown.gained.length ? { coverage: grown.gained.length } : {}) },
             actorIsPlayer: true,
             subjectId: station.nation,
           })
@@ -365,6 +372,24 @@ export const applyActions: ResolveStep = (ctx) => {
             delta: { treasury: -BALANCE.intelRecruitCost },
             actorIsPlayer: true,
             subjectId: nation,
+          })
+          break
+        }
+
+        // P167: en vilande station öppnas igen mot en kostnad, med djup, täckning och (nedkyld) exponering kvar. Förut fanns ingen väg tillbaka.
+        case 'REOPEN': {
+          const station = house.stations.find((s) => s.id === action.stationId)!
+          house.treasury -= BALANCE.intelReopenCost
+          recordExpense(draft, 'intel', BALANCE.intelReopenCost)
+          station.status = 'active'
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `STATION ${station.city.toUpperCase()} REOPENED — DEPTH ${station.depth} (−£${BALANCE.intelReopenCost.toLocaleString('en-GB')})`,
+            causeId: null,
+            delta: { treasury: -BALANCE.intelReopenCost },
+            actorIsPlayer: true,
+            subjectId: station.nation,
           })
           break
         }

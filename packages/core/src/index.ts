@@ -68,6 +68,8 @@ export { exclusivityRejection, isExportControlled, isExportViolation } from './e
 // P125: pappersspåret — gränssnittet (P128) läser sannolikhet, rent rykte och avstängning ur samma funktioner som reglerna.
 export { INTEGRITY_START, cleanHouse, integrityBidTerm, isSuspendedFrom, traceSurfaceChancePct } from './traces.js'
 export { previewAction } from './previewAction.js'
+export { coverageForDepth, grownCoverage } from './stationCoverage.js'
+export type { Coverage } from './stationCoverage.js'
 // P85: THE COMPANY behöver samma vaktade konstanter INTERNAL/MARKET-formulären
 // redan valideras mot (validateAction.ts), i stället för att TheHouse.tsx
 // (P21) upprepar sin egen lokala kopia av TECH_CATEGORIES/HIRABLE_ROLES.

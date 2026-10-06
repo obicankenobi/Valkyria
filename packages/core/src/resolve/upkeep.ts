@@ -4,6 +4,7 @@
 import balanceData from '../data/balance.json' with { type: 'json' }
 import { enemySystemName } from '../capture.js'
 import { standingStationMode } from '../standingOrders.js'
+import { grownCoverage } from '../stationCoverage.js'
 import type { ResolveContext } from './index.js'
 import { revealFlaw, rollDesign } from '../design.js'
 import { closeRedesignInvestigations } from '../investigations.js'
@@ -248,6 +249,7 @@ function applyStationMode(ctx: ResolveContext, station: Station): void {
 
   const exposureBefore = station.exposure
   const depthBefore = station.depth
+  let gainedCoverage: { coverage: Station['coverage']; gained: Station['coverage'] } | null = null
 
   if (mode === 'active') {
     station.exposure = Math.min(100, exposureBefore + BALANCE.stationActiveExposurePerTurn)
@@ -255,6 +257,8 @@ function applyStationMode(ctx: ResolveContext, station: Station): void {
     if (order.activeTurns >= BALANCE.stationActiveDepthTurns) {
       station.depth = Math.min(5, station.depth + 1) as Station['depth']
       order.activeTurns = 0
+      gainedCoverage = grownCoverage(station)
+      station.coverage = gainedCoverage.coverage // P167: djupet ger täckning
     }
   } else {
     if (exposureBefore <= 0) return
@@ -266,7 +270,7 @@ function applyStationMode(ctx: ResolveContext, station: Station): void {
     scope: 'house',
     headline: `STATION ${station.city.toUpperCase()} (${mode.toUpperCase()}): EXPOSURE ${exposureBefore.toFixed(0)} → ${station.exposure.toFixed(0)}${
       station.depth !== depthBefore ? `, DEPTH ${depthBefore} → ${station.depth}` : ''
-    }`,
+    }${gainedCoverage && gainedCoverage.gained.length ? ` — NOW COVERS ${gainedCoverage.gained.map((c) => c.toUpperCase()).join(', ')}` : ''}`,
     causeId: null,
     delta: { exposure: station.exposure - exposureBefore, ...(station.depth !== depthBefore ? { depth: station.depth - depthBefore } : {}) },
     actorIsPlayer: true,
