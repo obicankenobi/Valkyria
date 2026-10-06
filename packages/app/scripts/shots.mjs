@@ -147,6 +147,21 @@ async function enterOperationsAndPlay(page, quarters) {
 // query-ingång (huvudmenyn ligger redan på '/', OPERATIONS kräver att man
 // klickar sig förbi menyn) tar en `afterGoto`-hook i stället för att uppfinna
 // fler query-parametrar bara för skärmdumpsskriptet.
+// P163: gemensam väg in i ett nytt parti för de nya skärmarna nedan (de äldre skärmarna har samma sekvens utskriven i sin egen afterGoto).
+async function startGame(page) {
+  await page.getByTestId('menu-new-game').click()
+  const confirmYes = page.getByTestId('new-game-confirm-yes')
+  try {
+    await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+    await confirmYes.click()
+  } catch {
+    // Inget sparat parti — "New Game" gick rakt in.
+  }
+  await page.getByTestId('newgame-submit').click()
+  await page.getByTestId('briefing-begin').click()
+  await page.getByTestId('hud').waitFor()
+}
+
 const APP_SCREENS = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -372,6 +387,53 @@ const APP_SCREENS = [
       await page.getByTestId('hud').waitFor()
       await page.getByTestId('quarterband-toggle').click()
       await page.getByTestId('quarterband-body').waitFor()
+    },
+  },
+  {
+    // P163: handlingskortet för EXPAND (kortet först, FILE sedan).
+    name: 'country-file-confirm',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('country-file').waitFor()
+      await page.getByTestId('cf-verb-EXPAND').click()
+      await page.getByTestId('action-card-EXPAND').waitFor()
+    },
+  },
+  {
+    // P163: målväljaren för LEAK med handlingskortet (chans ur previewAction) ovanför listan.
+    name: 'country-file-target',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+      await page.getByTestId('country-file').waitFor()
+      await page.getByTestId('cf-verb-LEAK').click()
+      await page.getByTestId('action-card-LEAK').waitFor()
+    },
+  },
+  {
+    // P163: ett land utan station — stationskortet säger vad en station är och att RECRUIT är vägen.
+    name: 'country-file-nostation',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-capital-laos').locator('.map-capital-marker').click()
+      await page.getByTestId('country-file').waitFor()
+      await page.getByTestId('station-card').waitFor()
+    },
+  },
+  {
+    // P163: ett verb valt i Actions-menyn — remsan och den markerade knappen i CONTACTS.
+    name: 'armed-verb',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('action-slot-0-empty').click()
+      await page.getByTestId('action-catalog-entry-BRIBE').click()
+      await page.getByTestId('armed-verb').waitFor()
+      await page.waitForTimeout(600)
     },
   },
   {

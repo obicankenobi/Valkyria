@@ -2,7 +2,7 @@
 // koden faktiskt gör, så att ett uppslag som blir fel — eller en kodändring som gör det fel — fäller ett test i stället för att glida.
 // När P167 låter stationens täckning växa med djupet ska det här testet fällas, och uppslaget skrivas om i samma commit.
 import { describe, expect, it } from 'vitest'
-import { createInitialState, formationDisplay, officialDisplay, resolveTurn } from '@seventh-front/core'
+import { createInitialState, formationDisplay, officialDisplay, resolveTurn, validateAction } from '@seventh-front/core'
 import { HANDBOOK } from '../src/handbook.js'
 
 const intelligence = HANDBOOK.find((t) => t.id === 'intelligence')!
@@ -44,6 +44,23 @@ describe('handboken om underrättelse stämmer med koden', () => {
     expect(formationDisplay(state, formation).known).toBe(true)
     expect(text).toMatch(/unknown at depth 0/)
     expect(text).toMatch(/from depth 1/)
+  })
+
+  it('en station låser upp fem verb (EXPAND, WITHDRAW, LEAK, SABOTAGE, TURN) — RECRUIT kräver ingen station, den skapar en', () => {
+    const state = createInitialState('indochina-slice', 'handbook-truth-verbs')
+    const station = state.house.stations[0]!
+    const rival = Object.values(state.rivals)[0]!
+    expect(validateAction(state, state, { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'laos' }).ok).toBe(true) // laos: ingen station
+    for (const op of ['EXPAND', 'WITHDRAW'] as const) {
+      expect(validateAction(state, state, { type: 'INTEL', op, stationId: 'nope' }).ok, op).toBe(false)
+      expect(validateAction(state, state, { type: 'INTEL', op, stationId: station.id }).ok, op).toBe(true)
+    }
+    for (const op of ['LEAK', 'SABOTAGE'] as const) {
+      expect(validateAction(state, state, { type: 'INTEL', op, stationId: 'nope', targetId: rival.id }).ok, op).toBe(false)
+      expect(validateAction(state, state, { type: 'INTEL', op, stationId: station.id, targetId: rival.id }).ok, op).toBe(true)
+    }
+    expect(intelligence.summary).toMatch(/five verbs: EXPAND, WITHDRAW, LEAK, SABOTAGE and TURN/)
+    expect(intelligence.summary).toMatch(/RECRUIT is how you open a station/)
   })
 
   it('RECRUIT öppnar en ny station på djup 0, och högst fem får finnas', () => {

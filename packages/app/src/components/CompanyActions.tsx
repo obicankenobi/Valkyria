@@ -19,7 +19,7 @@
 // gräns (creditLimit, debt, treasury, ett innehav) — inte en gissad effekt-
 // skala. Samma disciplin, samma slutsats: BRIBE/STAGE_INCIDENT/BACK_CHANNEL
 // väntar på P86.
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import {
   COMMODITIES,
   HIRABLE_ROLES,
@@ -31,7 +31,9 @@ import { HIRE_GAIN, STAFF_ROLES, hireOutlook } from '../staffRoles.js'
 import type { Commodity, GameState, HirableRole, PlayerAction, TechCategory } from '@seventh-front/core'
 import { Button, Segmented, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
+import { ActionCard } from './ActionCard.js'
 import { Panel, formatMoney } from './ui.js'
+import { useArmedVerb } from '../uiContext.js'
 
 const ROLE_LABEL: Record<HirableRole, string> = {
   chiefEngineer: 'ENGINEER',
@@ -71,7 +73,8 @@ function reasonHint(validation: { ok: true } | { ok: false; reason: string }): s
 }
 
 function LoanRepaySection({ state, onFile }: { state: GameState; onFile: (action: PlayerAction) => void }) {
-  const [mode, setMode] = useState<'loan' | 'repay'>('loan')
+  const armed = useArmedVerb()
+  const [mode, setMode] = useState<'loan' | 'repay'>(armed?.verb === 'REPAY' ? 'repay' : 'loan')
   const [tier, setTier] = useState<Tier['key']>('modest')
 
   const cap = mode === 'loan' ? state.house.creditLimit : Math.min(state.house.debt, state.house.treasury)
@@ -88,7 +91,7 @@ function LoanRepaySection({ state, onFile }: { state: GameState; onFile: (action
   }))
 
   return (
-    <div className="cf-field">
+    <div className="cf-field" data-verb="TAKE_LOAN REPAY">
       <span className="cf-field-label">CREDIT</span>
       <Segmented
         options={[
@@ -99,6 +102,7 @@ function LoanRepaySection({ state, onFile }: { state: GameState; onFile: (action
         onChange={setMode}
         testId="company-credit-mode"
       />
+      <ActionCard state={state} verb={mode === 'loan' ? 'TAKE_LOAN' : 'REPAY'} action={action} />
       <p className="cf-hint">
         {mode === 'loan'
           ? `Credit limit ${formatMoney(state.house.creditLimit)}`
@@ -124,8 +128,9 @@ function BuildLineSection({ state, onFile }: { state: GameState; onFile: (action
   const preview = previewAction(state, action)
 
   return (
-    <div className="cf-field">
+    <div className="cf-field" data-verb="BUILD_LINE">
       <span className="cf-field-label">PRODUCTION</span>
+      <ActionCard state={state} verb="BUILD_LINE" action={action} />
       <p className="cf-hint">{state.house.lines.length} lines owned. A new line accepts any product, on any won contract.</p>
       <Button variant="secondary" disabled={!validation.ok} onClick={() => onFile(action)} testId="company-build-line">
         Build Production Line — {formatMoney(preview.cost ?? 0)}
@@ -163,7 +168,7 @@ function HireSection({ state, onFile }: { state: GameState; onFile: (action: Pla
   const preview = previewAction(state, action)
 
   return (
-    <div className="cf-field">
+    <div className="cf-field" data-verb="HIRE">
       <span className="cf-field-label">STAFF</span>
       <Segmented
         options={HIRABLE_ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
@@ -171,6 +176,7 @@ function HireSection({ state, onFile }: { state: GameState; onFile: (action: Pla
         onChange={setRole}
         testId="company-hire-role"
       />
+      <ActionCard state={state} verb="HIRE" action={action} />
       <HireOutlookCard role={role} current={state.house.staff[role]} />
       <Button variant="secondary" disabled={!validation.ok} onClick={() => onFile(action)} testId="company-hire-file">
         Hire — {formatMoney(preview.cost ?? 0)}
@@ -187,7 +193,7 @@ function RndSection({ state, onFile }: { state: GameState; onFile: (action: Play
   const preview = previewAction(state, action)
 
   return (
-    <div className="cf-field">
+    <div className="cf-field" data-verb="REPRIORITISE_RND">
       <span className="cf-field-label">R&amp;D</span>
       <Segmented
         options={TECH_CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABEL[c] }))}
@@ -195,10 +201,8 @@ function RndSection({ state, onFile }: { state: GameState; onFile: (action: Play
         onChange={setCategory}
         testId="company-rnd-category"
       />
-      <p className="cf-hint">
-        Tech level {state.house.techLevel[category]}. Crash programme: half the time, double the cost, and no bids in this
-        category next quarter. Costs an executive action.
-      </p>
+      <ActionCard state={state} verb="REPRIORITISE_RND" action={action} />
+      <p className="cf-hint">Tech level {state.house.techLevel[category]}. Costs an executive action.</p>
       <Button variant="secondary" disabled={!validation.ok} onClick={() => onFile(action)} testId="company-rnd-file">
         Crash R&amp;D — {formatMoney(preview.cost ?? 0)}
       </Button>
@@ -211,7 +215,8 @@ function RndSection({ state, onFile }: { state: GameState; onFile: (action: Play
 // råvara") — helt ny, ingen tidigare UI kopplade in MARKET-handlingarna alls.
 function CommoditySection({ state, onFile }: { state: GameState; onFile: (action: PlayerAction) => void }) {
   const [commodity, setCommodity] = useState<Commodity>(COMMODITIES[0]!)
-  const [op, setOp] = useState<'BUY_FORWARD' | 'RELEASE'>('BUY_FORWARD')
+  const armed = useArmedVerb()
+  const [op, setOp] = useState<'BUY_FORWARD' | 'RELEASE'>(armed?.verb === 'RELEASE' ? 'RELEASE' : 'BUY_FORWARD')
   const [tier, setTier] = useState<Tier['key']>('modest')
 
   const holding = state.house.commodityHoldings[commodity]
@@ -229,8 +234,8 @@ function CommoditySection({ state, onFile }: { state: GameState; onFile: (action
   }))
 
   return (
-    <Panel title="Raw materials">
-      <div className="cf-field">
+    <Panel info="Raw materials you can reserve at today's price to discount your future material costs, or release back into cash." infoTopic="production" title="Raw materials">
+      <div className="cf-field" data-verb="BUY_FORWARD RELEASE">
         <span className="cf-field-label">COMMODITY</span>
         <Segmented
           options={COMMODITIES.map((c) => ({ value: c, label: COMMODITY_LABEL[c] }))}
@@ -259,6 +264,8 @@ function CommoditySection({ state, onFile }: { state: GameState; onFile: (action
         />
       </div>
 
+      <ActionCard state={state} verb={op} action={action} />
+
       <div className="cf-field">
         <span className="cf-field-label">AMOUNT</span>
         <TierPicker tiers={tiers} value={tier} onChange={setTier} testId="company-commodity-tier" />
@@ -281,18 +288,21 @@ function CommoditySection({ state, onFile }: { state: GameState; onFile: (action
 // "Executive actions"-panelen tillsammans med POLITICAL-sektionen och den
 // köade listan — se filens SCOPE-BESLUT för varför POLITICAL inte är med här).
 export function InternalActionsForm({ state, onAddAction }: { state: GameState; onAddAction: (action: PlayerAction) => void }) {
+  // P163: ett nytt verbval i Actions-menyn monterar om formulären, så att det valda läget (REPAY i stället för TAKE_LOAN) blir förvalt.
+  const armed = useArmedVerb()
   return (
-    <>
+    <Fragment key={armed?.nonce ?? 0}>
       <LoanRepaySection state={state} onFile={onAddAction} />
       <BuildLineSection state={state} onFile={onAddAction} />
       <HireSection state={state} onFile={onAddAction} />
       <RndSection state={state} onFile={onAddAction} />
-    </>
+    </Fragment>
   )
 }
 
 // Råvarupanelen — egen Panel, egen skärmsektion (§7.1: "Råvarupanel i THE
 // COMPANY | BUY_FORWARD, RELEASE | råvara").
 export function RawMaterialsPanel({ state, onAddAction }: { state: GameState; onAddAction: (action: PlayerAction) => void }) {
-  return <CommoditySection state={state} onFile={onAddAction} />
+  const armed = useArmedVerb()
+  return <CommoditySection key={armed?.nonce ?? 0} state={state} onFile={onAddAction} />
 }

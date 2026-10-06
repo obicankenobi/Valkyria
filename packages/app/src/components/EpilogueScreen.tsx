@@ -29,6 +29,7 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
       <div className="setup-panel">
         <DsPanel
           title={`${state.house.name} — Epilogue`}
+          info="How your game ended: the ending, the four axes your house was judged on and the turning points."
           right={
             <span className={`order-stamp is-urgent ${wearClass('epilogue-closed')}`} data-testid="epilogue-stamp">
               CLOSED

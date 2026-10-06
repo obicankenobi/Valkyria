@@ -53,7 +53,7 @@ export function NewGameScreen({
   return (
     <div className="setup-screen" data-testid="new-game-screen">
       <div className="setup-panel">
-        <DsPanel title="Found Your House">
+        <DsPanel info="Choose a name, a home state and a specialisation. Specialisation makes research in that category cheaper and bids there stronger." title="Found Your House">
           <p className="cf-hint">1964. Four production lines, one station, a founding capital of £4,000,000.</p>
 
           <div className="cf-field">

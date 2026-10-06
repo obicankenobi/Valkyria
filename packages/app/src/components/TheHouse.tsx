@@ -79,6 +79,7 @@ function ExecutiveActions({
   return (
     <Panel
       title="Executive actions"
+      info="Actions that cost an action point each quarter: loans, lines, hires and crash research." infoTopic="production"
       right={<Tag tone="amber">{state.house.actionPoints} action points</Tag>}
     >
       <InternalActionsForm state={state} onAddAction={onAddAction} />
@@ -109,7 +110,7 @@ function NextQuarterPanel({ state }: { state: GameState }) {
   const totalFixed = q.fixedCosts.payroll + q.fixedCosts.lineUpkeep + q.fixedCosts.stationUpkeep + q.fixedCosts.rndOverhead
 
   return (
-    <Panel title="Next quarter" right={<Tag tone={q.netChange >= 0 ? 'green' : 'red'}>{formatMoney(q.netChange)} net</Tag>}>
+    <Panel info="What your books will most likely show next quarter, from deliveries already scheduled." infoTopic="board" title="Next quarter" right={<Tag tone={q.netChange >= 0 ? 'green' : 'red'}>{formatMoney(q.netChange)} net</Tag>}>
       <dl className="kv">
         <dt>Expected revenue (scheduled deliveries)</dt>
         <dd>{formatMoney(q.expectedRevenueNextTurn)}</dd>
@@ -168,7 +169,7 @@ export function TheHouse({
       <h2 className="view-title">The Company</h2>
 
       <div className="grid-2">
-        <Panel title="Balance sheet">
+        <Panel info="Your cash, debt and the credit you still have." infoTopic="board" title="Balance sheet">
           <dl className="kv">
             <dt>Treasury</dt>
             <dd>{formatMoney(house.treasury)}</dd>
@@ -208,6 +209,7 @@ export function TheHouse({
 
         <Panel
           title={`Board target: ${target.label}`}
+          info="What the board demands, and when it checks. Two failed reviews in a row end your game." infoTopic="board"
           right={
             target.reviewsFailed > 0 ? (
               <Tag tone="red">{target.reviewsFailed}/2 failed</Tag>
@@ -246,7 +248,7 @@ export function TheHouse({
 
       <RawMaterialsPanel state={state} onAddAction={onAddAction} />
 
-      <Panel title="Margin per active contract">
+      <Panel info="What each contract earns after your unit cost. A low margin means price or material cost is eating the deal." infoTopic="production" title="Margin per active contract">
         {activeContracts.length === 0 ? (
           <p className="empty">No active contracts.</p>
         ) : (
@@ -310,7 +312,7 @@ export function TheHouse({
       <DrawingBoard state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} onAddAction={onAddAction} />
       <TypeSheets state={state} draft={draft} onAddAction={onAddAction} onSet={onSetStandingOrder} />
 
-      <Panel title="R&D and staff">
+      <Panel info="Research projects and the staff roles that speed them up." infoTopic="production" title="R&D and staff">
         {researchOutlook(state).map((r) => (
           <div className="research-row" key={r.category} data-testid="research-row">
             <span className="research-category">{r.category.toUpperCase()}</span>

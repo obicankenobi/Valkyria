@@ -63,3 +63,21 @@ export const ACTION_CATALOG: readonly ActionCatalogEntry[] = [
   // Upphandlingsmappen (P128, ProgrammeFolder.tsx på CONTRACTS) — de sex knepen är ops av ETT verb, PROCUREMENT.
   { verb: 'PROCUREMENT', label: 'Work a development procurement', objectGroup: 'Procurement folder', target: 'contracts' },
 ] as const
+
+// P163: det som står i remsan när ett verb är valt i Actions-menyn men inget mål är valt än — var du går härnäst.
+export function armedHint(entry: ActionCatalogEntry): string {
+  switch (entry.target) {
+    case 'operations':
+      return entry.objectGroup === 'Country without a station'
+        ? 'Tap a country on the map where you have no station.'
+        : entry.objectGroup === 'Country with a station'
+          ? 'Tap a country on the map where you have a station.'
+          : 'Tap a country on the map.'
+    case 'contacts':
+      return entry.objectGroup === 'Official' ? 'Tap the verb on the official you want.' : 'Tap the verb on the country you want.'
+    case 'company':
+      return 'The form for it is marked below.'
+    case 'contracts':
+      return 'The folder for it is marked below.'
+  }
+}

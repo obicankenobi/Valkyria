@@ -12,6 +12,8 @@ import type { GameState, PlayerAction, Programme, ProgrammePhase, RequirementKin
 import { Button, DsToggle, Segmented } from './designSystem.js'
 import { DecisionDots } from './DecisionDots.js'
 import type { DecisionGauge } from './DecisionDots.js'
+import { ActionCard } from './ActionCard.js'
+import { useArmedVerb } from '../uiContext.js'
 import { Panel, Tag } from './ui.js'
 import { CATEGORY_NAME } from '../designSheet.js'
 import { wearClass } from '../stampWear.js'
@@ -87,7 +89,8 @@ function ProgrammeCard({
   const [rivalId, setRivalId] = useState<string>(rivals[0]?.houseId ?? '')
   const [specKind, setSpecKind] = useState<'performance' | 'reliability' | 'unitCost'>('performance')
   const [specBribe, setSpecBribe] = useState(false)
-  const [showTricks, setShowTricks] = useState(false)
+  const armed = useArmedVerb()
+  const [showTricks, setShowTricks] = useState(armed?.verb === 'PROCUREMENT') // P163: ett verbval i Actions-menyn öppnar lådan
   const protocol = programmeProtocol(state, programme)
 
   const result = (v: { ok: true } | { ok: false; reason: string }) => (v.ok ? null : v.reason)
@@ -242,7 +245,8 @@ function ProgrammeCard({
                 {showTricks ? 'CLOSE THE FILE DRAWER' : 'MOVES (1 ACTION EACH)'}
               </Button>
               {showTricks && (
-                <div className="programme-tricks" data-testid={`programme-tricks-${programme.id}`}>
+                <div className="programme-tricks" data-testid={`programme-tricks-${programme.id}`} data-verb="PROCUREMENT">
+                  <ActionCard state={state} verb="PROCUREMENT" action={null} unsetNote="Depends on the move — see each one below" />
                   {TRICKS.map((t) => {
                     const action = trickAction(t.op)
                     const v = validateAction(state, state, action)
@@ -328,9 +332,9 @@ export function ProgrammeFolders({
   const all = (state.programmes ?? []).filter((p) => p.phase !== 'cancelled')
   const shown = [...all].reverse().slice(0, 4)
   return (
-    <Panel title="Development procurements" right={<Tag>{all.length} on file</Tag>}>
+    <Panel info="Buyers announce a development tender when a front needs new materiel. Enter a design, work the process, and the buyer picks a supplier." infoTopic="programmes" title="Development procurements" right={<Tag>{all.length} on file</Tag>}>
       {shown.length === 0 ? (
-        <p className="empty" data-testid="programmes-empty">
+        <p className="empty" data-testid="programmes-empty" data-verb="PROCUREMENT">
           No development procurement is open. A ministry puts one out when its requirements rise, a gap opens or a front loses materiel.
         </p>
       ) : (

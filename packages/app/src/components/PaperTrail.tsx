@@ -119,6 +119,7 @@ export function PaperTrail({
   return (
     <Panel
       title="Paper trail"
+      info="Evidence of bribes, favours and tricks that can come out. Answer an inquiry within three quarters, or it counts as a denial." infoTopic="politics"
       right={cards.length > 0 ? <Tag tone="red">{cards.length} inquiry awaiting an answer</Tag> : <Tag>{open} files on record</Tag>}
     >
       <div className="paper-trail" data-testid="paper-trail">

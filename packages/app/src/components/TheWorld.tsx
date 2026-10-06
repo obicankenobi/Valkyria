@@ -120,6 +120,7 @@ export function TheWorld({ state }: { state: GameState }) {
       <div className="grid-2">
         <Panel
           title="Doomsday"
+          info="How close the world is to nuclear war. Heat, incidents and arms sales push it up; back channels bring it down." infoTopic="doomsday"
           right={<Tag tone={doomsdayTone(state.doomsday)}>{state.doomsday.toFixed(0)} / 100</Tag>}
         >
           <Meter
@@ -139,7 +140,7 @@ export function TheWorld({ state }: { state: GameState }) {
           </p>
         </Panel>
 
-        <Panel title="Theatres">
+        <Panel info="The war zones and how hot each one is." infoTopic="heat" title="Theatres">
           <div style={{ display: 'grid', gap: 14 }}>
             {Object.values(state.theatres).map((theatre) => (
               <Meter
@@ -155,7 +156,7 @@ export function TheWorld({ state }: { state: GameState }) {
         </Panel>
       </div>
 
-      <Panel title="Fronts" flush>
+      <Panel info="The fronts where formations fight, and which side is ahead." infoTopic="fronts" title="Fronts" flush>
         {Object.values(state.fronts).map((front) =>
           // P66/P67 (ETAPP6_TEKNISK_SPEC.md §4.6): SectorBoard ersätter hela
           // det gamla per-front-kortet för varje theatre SECTOR_LAYOUTS
@@ -170,7 +171,7 @@ export function TheWorld({ state }: { state: GameState }) {
         )}
       </Panel>
 
-      <Panel title="Factions" flush>
+      <Panel info="The buying countries and how they stand with you." infoTopic="politics" title="Factions" flush>
         {Object.values(state.factions).map((faction) => {
           const alignPct = ((faction.alignment + 100) / 200) * 100
           return (
@@ -217,7 +218,7 @@ export function TheWorld({ state }: { state: GameState }) {
       {/* P71 (ETAPP6_TEKNISK_SPEC.md §5): samma kort-mönster Factions-panelen
           ovan använder (.faction-card/-head/-name/-meters) — ren konsekvens,
           ingen ny data, inget nytt fält. */}
-      <Panel title="Stations" flush>
+      <Panel info="Your intelligence stations and how deep they see." infoTopic="intelligence" title="Stations" flush>
         {state.house.stations.map((station) => (
           <div className="faction-card" key={station.id}>
             <div className="faction-head">

@@ -39,13 +39,16 @@ describe('CountryFile — COVERT (P79 klart-när: alla sex underrättelseverb k�
     expect(screen.queryByTestId('cf-exposure')).toBeNull()
   })
 
-  it('EXPAND köas direkt (inget mål att välja) och stänger arket', () => {
+  it('EXPAND visar först sitt kort, och köas med FILE (inget mål att välja) som stänger arket', () => {
     const state = createInitialState('indochina-slice', 'cf-seed')
     const onAddAction = vi.fn()
     const onClose = vi.fn()
     render(<CountryFile state={state} factionId="rvn" onAddAction={onAddAction} onClose={onClose} onOpenContacts={() => {}} />)
 
     fireEvent.click(screen.getByTestId('cf-verb-EXPAND'))
+    expect(onAddAction).not.toHaveBeenCalled() // P163: kortet först
+    expect(screen.getByTestId('action-card-EXPAND')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('cf-file-EXPAND'))
 
     expect(onAddAction).toHaveBeenCalledWith({ type: 'INTEL', op: 'EXPAND', stationId: 'station-1' })
     expect(onClose).toHaveBeenCalled()
@@ -148,5 +151,69 @@ describe('CountryFile — INFLUENCE (P79:s enda inkopplade POLITICAL-verb)', () 
 
     expect(screen.getByTestId('cf-verb-EXPAND')).toBeTruthy()
     expect(onAddAction).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('CountryFile — handlingskortet och stationskortet (P163)', () => {
+  const baseProps = { onAddAction: () => {}, onClose: () => {}, onOpenContacts: () => {} }
+
+  it('WITHDRAW och RECRUIT går också via ett kort och köas med FILE', () => {
+    const withdrawState = createInitialState('indochina-slice', 'cf-card-seed')
+    const onAdd = vi.fn()
+    const { unmount } = render(<CountryFile {...baseProps} onAddAction={onAdd} state={withdrawState} factionId="rvn" />)
+    fireEvent.click(screen.getByTestId('cf-verb-WITHDRAW'))
+    expect(screen.getByTestId('action-card-WITHDRAW')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('cf-file-WITHDRAW'))
+    expect(onAdd).toHaveBeenCalledWith({ type: 'INTEL', op: 'WITHDRAW', stationId: 'station-1' })
+    unmount()
+
+    const recruitState = createInitialState('indochina-slice', 'cf-card-seed')
+    const onAdd2 = vi.fn()
+    render(<CountryFile {...baseProps} onAddAction={onAdd2} state={recruitState} factionId="laos" />)
+    fireEvent.click(screen.getByTestId('cf-verb-RECRUIT'))
+    fireEvent.click(screen.getByTestId('cf-file-RECRUIT'))
+    expect(onAdd2).toHaveBeenCalledWith({ type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: 'laos' })
+  })
+
+  it('målväljaren för LEAK visar kortet med chans (ur previewAction) ovanför listan', () => {
+    const state = createInitialState('indochina-slice', 'cf-card-seed')
+    state.house.stations[0]!.depth = 2
+    render(<CountryFile {...baseProps} state={state} factionId="rvn" />)
+    fireEvent.click(screen.getByTestId('cf-verb-LEAK'))
+    expect(screen.getByTestId('action-card-LEAK')).toBeTruthy()
+    expect(screen.getByTestId('action-card-chance').textContent).toMatch(/^\d+%$/)
+  })
+
+  it('INFLUENCE-formuläret visar kortet, och en effekt före → efter', () => {
+    const state = createInitialState('indochina-slice', 'cf-card-seed')
+    render(<CountryFile {...baseProps} state={state} factionId="rvn" />)
+    fireEvent.click(screen.getByTestId('cf-verb-INFLUENCE'))
+    expect(screen.getByTestId('action-card-INFLUENCE')).toBeTruthy()
+    expect(screen.getByTestId('action-card-effect').textContent).toMatch(/PUBLIC SUPPORT \d+ → ~\d+/)
+  })
+
+  it('landsakten visar stationskortet: vad en station är, vad just den ger och nästa nivå', () => {
+    const state = createInitialState('indochina-slice', 'cf-card-seed')
+    state.house.staff.chiefSalesman = 0
+    state.house.stations[0]!.depth = 1
+    render(<CountryFile {...baseProps} state={state} factionId="rvn" />)
+    expect(screen.getByTestId('station-card-what').textContent).toMatch(/intelligence post in a country/)
+    expect(screen.getByTestId('station-card-summary').textContent).toContain('±22%')
+    expect(screen.queryByTestId('station-card-bands')).toBeNull() // detaljerna ligger bakom knappen (regel 7)
+    fireEvent.click(screen.getByTestId('station-card-toggle'))
+    expect(screen.getByTestId('station-card-bands').textContent).toContain('±22%')
+    expect(screen.getByTestId('station-card-verbs').textContent).toContain('EXPAND, WITHDRAW, LEAK, SABOTAGE, TURN')
+    expect(screen.getByTestId('station-card-next').textContent).toMatch(/EXPAND to depth 2.*±22% to ±14%/)
+  })
+
+  it('ett land utan station: kortet säger att inget låses upp och att RECRUIT är vägen', () => {
+    const state = createInitialState('indochina-slice', 'cf-card-seed')
+    state.house.staff.chiefSalesman = 0
+    render(<CountryFile {...baseProps} state={state} factionId="laos" />)
+    fireEvent.click(screen.getByTestId('station-card-toggle'))
+    expect(screen.getByTestId('station-card-verbs').textContent).toMatch(/RECRUIT opens a station here/)
+    expect(screen.getByTestId('station-card-formations').textContent).toMatch(/strength unknown|None here/)
+    expect(screen.getByTestId('station-card-next').textContent).toMatch(/^RECRUIT/)
   })
 })

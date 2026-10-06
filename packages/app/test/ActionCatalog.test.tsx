@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { ActionCatalog } from '../src/components/ActionCatalog.js'
 import { ACTION_CATALOG } from '../src/actionCatalog.js'
+import { ACTION_INFO } from '../src/actionInfo.js'
 
 afterEach(cleanup)
 
@@ -26,6 +27,15 @@ describe('ActionCatalog (P81-12)', () => {
     }
   })
 
+  it('varje rad har en förklaringsrad ur actionInfo (P163)', () => {
+    render(<ActionCatalog open={true} onClose={vi.fn()} onNavigate={vi.fn()} />)
+    for (const entry of ACTION_CATALOG) {
+      const does = document.querySelector(`[data-testid="action-catalog-does-${entry.verb}"]`)
+      expect(does, `förklaring för ${entry.verb} saknas`).toBeTruthy()
+      expect(does!.textContent).toBe(ACTION_INFO[entry.verb]!.does)
+    }
+  })
+
   it('ett tryck på en rad anropar onNavigate med rätt mål och stänger katalogen', () => {
     const onNavigate = vi.fn()
     const onClose = vi.fn()
@@ -34,7 +44,7 @@ describe('ActionCatalog (P81-12)', () => {
     const recruitEntry = ACTION_CATALOG.find((e) => e.verb === 'RECRUIT')!
     fireEvent.click(document.querySelector('[data-testid="action-catalog-entry-RECRUIT"]')!)
 
-    expect(onNavigate).toHaveBeenCalledWith(recruitEntry.target)
+    expect(onNavigate).toHaveBeenCalledWith(recruitEntry)
     expect(onClose).toHaveBeenCalledOnce()
   })
 })

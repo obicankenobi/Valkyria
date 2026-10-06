@@ -25,16 +25,40 @@
 // effekt alls i political.ts — se den filens applyFactionTargetedPolitical/
 // applyFundCoup) utan en godkänd skiss eller ett balanstal att utgå från
 // hade varit att uppfinna en detalj i blindo. 7C bygger resten.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { INFLUENCE_BALANCE, previewAction, validateAction } from '@seventh-front/core'
 import type { FactionId, GameState, Official, PlayerAction, RivalId } from '@seventh-front/core'
 import { BottomSheet, Button, Card, Segmented, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
+import { ActionCard } from './ActionCard.js'
+import { StationCard } from './StationCard.js'
 import { formatMoney } from './ui.js'
 import { VerbIcon } from './VerbIcon.js'
+import { useArmedVerb } from '../uiContext.js'
 
-type SubView = { kind: 'overview' } | { kind: 'target'; op: 'LEAK' | 'SABOTAGE' | 'TURN' } | { kind: 'influence' }
+type DirectVerb = 'EXPAND' | 'WITHDRAW' | 'RECRUIT'
+// P163: EXPAND/WITHDRAW/RECRUIT köades förut direkt vid ett tryck. De går nu via ett kort som säger vad verbet gör, kostar och riskerar, och köas först med FILE.
+type SubView = { kind: 'overview' } | { kind: 'confirm'; verb: DirectVerb } | { kind: 'target'; op: 'LEAK' | 'SABOTAGE' | 'TURN' } | { kind: 'influence' }
+
+// Verbet spelaren valde i Actions-menyn avgör vilken del av landsakten som öppnas först — men bara om verbet går att använda mot just det här landet.
+function initialView(armed: string | undefined, hasStation: boolean): SubView {
+  switch (armed) {
+    case 'EXPAND':
+    case 'WITHDRAW':
+      return hasStation ? { kind: 'confirm', verb: armed } : { kind: 'overview' }
+    case 'RECRUIT':
+      return hasStation ? { kind: 'overview' } : { kind: 'confirm', verb: 'RECRUIT' }
+    case 'LEAK':
+    case 'SABOTAGE':
+    case 'TURN':
+      return hasStation ? { kind: 'target', op: armed } : { kind: 'overview' }
+    case 'INFLUENCE':
+      return { kind: 'influence' }
+    default:
+      return { kind: 'overview' }
+  }
+}
 
 // Referensskissens exakta nivåer (operations-3-configure-action.html,
 // INFLUENCE): £15K/45K/90K vid influencePublicSupportCostPerPoint (3000) är
@@ -48,6 +72,16 @@ const INFLUENCE_TIER_POINTS: Record<Tier['key'], number> = { modest: 5, serious:
 function costLabel(cost: number | null): string {
   if (cost === null) return 'FREE'
   return formatMoney(cost)
+}
+
+// Verbet spelaren valde i menyn passar inte det här landet: säg varför, så att ett tomt arkivblad inte ser ut som ett fel.
+function armedMismatch(verb: string | undefined, hasStation: boolean): string | null {
+  if (!verb) return null
+  if (['EXPAND', 'WITHDRAW', 'LEAK', 'SABOTAGE', 'TURN'].includes(verb) && !hasStation) {
+    return `${verb} needs one of your stations in the country. You have none here — RECRUIT opens one.`
+  }
+  if (verb === 'RECRUIT' && hasStation) return 'You already have a station here. RECRUIT opens a station in a country that has none.'
+  return null
 }
 
 export function CountryFile({
@@ -65,9 +99,14 @@ export function CountryFile({
   onOpenContacts: () => void
   testId?: string
 }) {
-  const [view, setView] = useState<SubView>({ kind: 'overview' })
   const faction = state.factions[factionId]
   const station = state.house.stations.find((s) => s.nation === factionId && s.status === 'active')
+  const armed = useArmedVerb()
+  const [view, setView] = useState<SubView>(() => initialView(armed?.verb, station !== undefined))
+  // Ett nytt delläge (kort, målväljare, formulär) börjar överst — annars ärver det rullningen från knappen som öppnade det.
+  useEffect(() => {
+    document.querySelector('[data-testid="country-file"] .ds-sheet-body')?.scrollTo?.(0, 0)
+  }, [view.kind])
   const front = Object.values(state.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
   const officials = Object.values(state.officials).filter((o) => o.factionId === factionId && o.status === 'active')
   const rivals = Object.values(state.rivals)
@@ -130,10 +169,18 @@ export function CountryFile({
             )}
           </div>
 
+          {armedMismatch(armed?.verb, station !== undefined) && (
+            <p className="cf-hint is-warning" data-testid="cf-armed-mismatch">
+              {armedMismatch(armed?.verb, station !== undefined)}
+            </p>
+          )}
+
+          <StationCard state={state} factionId={factionId} />
+
           {station ? (
-            <CovertSection state={state} station={station} queue={queue} setView={setView} />
+            <CovertSection state={state} station={station} setView={setView} />
           ) : (
-            <RecruitSection state={state} factionId={factionId} queue={queue} />
+            <RecruitSection state={state} factionId={factionId} setView={setView} />
           )}
 
           <button type="button" className="cf-officials" onClick={onOpenContacts} data-testid="cf-officials-link">
@@ -155,13 +202,26 @@ export function CountryFile({
               cost="£15K+"
               onClick={() => setView({ kind: 'influence' })}
               testId="cf-verb-INFLUENCE"
+              verb="INFLUENCE"
             />
           </div>
         </div>
       )}
 
+      {view.kind === 'confirm' && (
+        <ConfirmVerb
+          state={state}
+          verb={view.verb}
+          station={station}
+          factionId={factionId}
+          onBack={() => setView({ kind: 'overview' })}
+          onFile={queue}
+        />
+      )}
+
       {view.kind === 'target' && (
         <TargetPicker
+          state={state}
           op={view.op}
           station={station!}
           officials={officials}
@@ -190,6 +250,7 @@ function VerbButton({
   onClick,
   disabled,
   testId,
+  verb,
 }: {
   icon: ReactNode
   label: string
@@ -197,9 +258,10 @@ function VerbButton({
   onClick: () => void
   disabled?: boolean
   testId?: string
+  verb?: string
 }) {
   return (
-    <button type="button" className="cf-verb" onClick={onClick} disabled={disabled} data-testid={testId}>
+    <button type="button" className="cf-verb" onClick={onClick} disabled={disabled} data-testid={testId} data-verb={verb}>
       <span className="cf-verb-head">
         <span className="cf-verb-icon" aria-hidden="true">
           {icon}
@@ -217,12 +279,10 @@ function VerbButton({
 function CovertSection({
   state,
   station,
-  queue,
   setView,
 }: {
   state: GameState
   station: NonNullable<GameState['house']['stations'][number]>
-  queue: (action: PlayerAction) => void
   setView: (v: SubView) => void
 }) {
   const expand: PlayerAction = { type: 'INTEL', op: 'EXPAND', stationId: station.id }
@@ -242,17 +302,19 @@ function CovertSection({
           icon={<VerbIcon verb="EXPAND" />}
           label="EXPAND"
           cost={costLabel(previewAction(state, expand).cost)}
-          onClick={() => queue(expand)}
+          onClick={() => setView({ kind: 'confirm', verb: 'EXPAND' })}
           disabled={!validateAction(state, state, expand).ok}
           testId="cf-verb-EXPAND"
+          verb="EXPAND"
         />
         <VerbButton
           icon={<VerbIcon verb="WITHDRAW" />}
           label="WITHDRAW"
           cost={costLabel(previewAction(state, withdraw).cost)}
-          onClick={() => queue(withdraw)}
+          onClick={() => setView({ kind: 'confirm', verb: 'WITHDRAW' })}
           disabled={!validateAction(state, state, withdraw).ok}
           testId="cf-verb-WITHDRAW"
+          verb="WITHDRAW"
         />
         <VerbButton
           icon={<VerbIcon verb="LEAK" />}
@@ -260,6 +322,7 @@ function CovertSection({
           cost={costLabel(leakPreview.cost)}
           onClick={() => setView({ kind: 'target', op: 'LEAK' })}
           testId="cf-verb-LEAK"
+          verb="LEAK"
         />
         <VerbButton
           icon={<VerbIcon verb="SABOTAGE" />}
@@ -267,6 +330,7 @@ function CovertSection({
           cost={costLabel(sabotagePreview.cost)}
           onClick={() => setView({ kind: 'target', op: 'SABOTAGE' })}
           testId="cf-verb-SABOTAGE"
+          verb="SABOTAGE"
         />
         <VerbButton
           icon={<VerbIcon verb="TURN" />}
@@ -274,6 +338,7 @@ function CovertSection({
           cost={costLabel(turnPreview.cost)}
           onClick={() => setView({ kind: 'target', op: 'TURN' })}
           testId="cf-verb-TURN"
+          verb="TURN"
         />
       </div>
     </>
@@ -286,11 +351,11 @@ function CovertSection({
 function RecruitSection({
   state,
   factionId,
-  queue,
+  setView,
 }: {
   state: GameState
   factionId: FactionId
-  queue: (action: PlayerAction) => void
+  setView: (v: SubView) => void
 }) {
   const recruit: PlayerAction = { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: factionId }
   return (
@@ -304,16 +369,54 @@ function RecruitSection({
           icon={<VerbIcon verb="RECRUIT" />}
           label="RECRUIT"
           cost={costLabel(previewAction(state, recruit).cost)}
-          onClick={() => queue(recruit)}
+          onClick={() => setView({ kind: 'confirm', verb: 'RECRUIT' })}
           disabled={!validateAction(state, state, recruit).ok}
           testId="cf-verb-RECRUIT"
+          verb="RECRUIT"
         />
       </div>
     </>
   )
 }
 
+// EXPAND / WITHDRAW / RECRUIT: kortet först, FILE sedan. En handling som validateAction avvisar visar sin orsak och kan inte köas.
+function ConfirmVerb({
+  state,
+  verb,
+  station,
+  factionId,
+  onBack,
+  onFile,
+}: {
+  state: GameState
+  verb: DirectVerb
+  station: { id: string } | undefined
+  factionId: FactionId
+  onBack: () => void
+  onFile: (action: PlayerAction) => void
+}) {
+  const action: PlayerAction =
+    verb === 'RECRUIT'
+      ? { type: 'INTEL', op: 'RECRUIT', stationId: '', targetId: factionId }
+      : { type: 'INTEL', op: verb, stationId: station?.id ?? '' }
+  const validation = validateAction(state, state, action)
+  return (
+    <div className="cf-body" data-testid={`cf-confirm-${verb}`}>
+      <button type="button" className="cf-back" onClick={onBack} data-testid="cf-confirm-back">
+        ‹ BACK
+      </button>
+      <h3 className="cf-form-title">{verb}</h3>
+      <ActionCard state={state} verb={verb} action={action} />
+      <Button variant="primary" disabled={!validation.ok} onClick={() => onFile(action)} testId={`cf-file-${verb}`}>
+        FILE
+      </Button>
+      {!validation.ok && <p className="cf-hint is-warning">{validation.reason}</p>}
+    </div>
+  )
+}
+
 function TargetPicker({
+  state,
   op,
   station,
   officials,
@@ -321,6 +424,7 @@ function TargetPicker({
   onBack,
   onPick,
 }: {
+  state: GameState
   op: 'LEAK' | 'SABOTAGE' | 'TURN'
   station: { id: string }
   officials: Official[]
@@ -334,7 +438,12 @@ function TargetPicker({
       <button type="button" className="cf-back" onClick={onBack}>
         ‹ BACK
       </button>
-      <p className="cf-hint">{op === 'TURN' ? 'Choose an official to turn.' : `Choose a rival house active near ${station.id}.`}</p>
+      <ActionCard
+        state={state}
+        verb={op}
+        action={{ type: 'INTEL', op, stationId: station.id, ...(targets[0] ? { targetId: targets[0].id } : {}) }}
+      />
+      <p className="cf-hint">{op === 'TURN' ? 'Choose an official to turn.' : 'Choose a rival house.'}</p>
       <div className="cf-target-list">
         {targets.map((t) => (
           <Card key={t.id} onClick={() => onPick(t.id)} testId={`cf-target-${t.id}`}>
@@ -402,7 +511,7 @@ function InfluenceForm({
         ‹ BACK
       </button>
       <h3 className="cf-form-title">INFLUENCE</h3>
-      <p className="cf-hint">Pay to move the public mood, or relations with another country.</p>
+      <ActionCard state={state} verb="INFLUENCE" action={action} />
 
       <div className="cf-field">
         <span className="cf-field-label">1. EFFECT</span>

@@ -50,9 +50,14 @@ async function queueRvnVerb(page: Page, verb: 'EXPAND' | 'WITHDRAW' | 'LEAK' | '
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId(`cf-verb-${verb}`).click()
+  if (verb === 'EXPAND' || verb === 'WITHDRAW') {
+    // P163: EXPAND/WITHDRAW går via handlingskortet och köas med FILE.
+    await page.getByTestId(`action-card-${verb}`).waitFor()
+    await page.getByTestId(`cf-file-${verb}`).click()
+  }
   if (verb === 'LEAK' || verb === 'SABOTAGE' || verb === 'TURN') {
     await page.getByTestId(`cf-target-picker-${verb}`).waitFor()
-    await page.locator('[data-testid^="cf-target-"]').first().click()
+    await page.locator('[data-testid^="cf-target-"]:not([data-testid^="cf-target-picker"])').first().click()
   }
   await page.getByTestId('country-file').waitFor({ state: 'hidden' })
 }
@@ -61,6 +66,8 @@ async function queueLaosRecruit(page: Page): Promise<void> {
   await page.getByTestId('map-capital-laos').locator('.map-capital-marker').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId('cf-verb-RECRUIT').click()
+  await page.getByTestId('action-card-RECRUIT').waitFor() // P163: kortet först, FILE sedan
+  await page.getByTestId('cf-file-RECRUIT').click()
   await page.getByTestId('country-file').waitFor({ state: 'hidden' })
 }
 

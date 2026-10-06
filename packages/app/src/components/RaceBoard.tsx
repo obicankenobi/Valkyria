@@ -38,7 +38,7 @@ export function RaceBoard({ state }: { state: GameState }) {
   const scaleMax = Math.max(4, ...assessments.map((a) => a.high), ...[...own.values()].map((g) => g ?? 0)) + 1
 
   return (
-    <Panel title="The arms race" right={<Tag>assessed by your intelligence</Tag>}>
+    <Panel info="How far each bloc has come in each category, as your intelligence estimates it. Deeper intelligence gives a narrower estimate." infoTopic="design" title="The arms race" right={<Tag>assessed by your intelligence</Tag>}>
       <div className="race-board" data-testid="race-board">
         <div className="race-columns">
           {BLOCS.map((bloc) => (

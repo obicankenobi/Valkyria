@@ -30,6 +30,7 @@ import {
 import type { DesignAmbition, DesignFocus, GameState, PlayerAction, ResearchPace, StandingOrderChange, TechCategory, TurnSubmission } from '@seventh-front/core'
 import { Button, DsToggle, Segmented } from './designSystem.js'
 import { BoardCard, describeChange } from './StandingOrdersBoard.js'
+import { ActionCard } from './ActionCard.js'
 import { Panel, Tag, formatMoney } from './ui.js'
 import { AMBITION_HINT, AMBITION_LABEL, CATEGORY_NAME, FOCUS_HINT, FOCUS_LABEL, projectProgress } from '../designSheet.js'
 import { standingOrderKey } from '../standingOrderBoard.js'
@@ -280,7 +281,7 @@ export function DrawingBoard({
   }
 
   return (
-    <Panel title="Drawing board" right={<Tag>from next quarter · no action point</Tag>}>
+    <Panel info="Your own designs: set a direction and an ambition, and a standing order starts the work from next quarter. Quality is hidden until you test it." infoTopic="design" title="Drawing board" right={<Tag>from next quarter · no action point</Tag>}>
       <div className="drawing-board" data-testid="drawing-board">
         <div className="drawing-grid">
           {TECH_CATEGORIES.map((category) => {
@@ -345,7 +346,7 @@ export function DrawingBoard({
               const validation = validateAction(state, state, action)
               const preview = previewAction(state, action)
               return (
-                <div className="drawing-captured-row" key={m.systemId}>
+                <div className="drawing-captured-row" key={m.systemId} data-verb="REVERSE_ENGINEER">
                   <span>
                     {m.name} × {m.units} ({CATEGORY_NAME[m.category]})
                   </span>
@@ -353,6 +354,7 @@ export function DrawingBoard({
                     {preview.cost !== null ? formatMoney(preview.cost) : ''}
                     {preview.effect ? ` · ${preview.effect.label.toLowerCase()} ${preview.effect.before.toFixed(1)} → ${preview.effect.after.toFixed(1)}` : ''}
                   </span>
+                  <ActionCard state={state} verb="REVERSE_ENGINEER" action={action} />
                   <Button variant="secondary" disabled={!validation.ok} onClick={() => onAddAction(action)} testId={`drawing-study-${m.systemId}`}>
                     STUDY (1 action)
                   </Button>

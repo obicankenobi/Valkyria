@@ -563,6 +563,40 @@ export async function enterInquiry(page: Page): Promise<void> {
   await page.getByTestId('inquiry-trace-1').scrollIntoViewIfNeeded()
 }
 
+
+// P163: handlingskortet, stationskortet och ett verb valt i Actions-menyn.
+export async function enterCountryFileConfirm(page: Page): Promise<void> {
+  await enterCountryFile(page)
+  await page.getByTestId('cf-verb-EXPAND').click()
+  await page.getByTestId('action-card-EXPAND').waitFor()
+}
+
+export async function enterCountryFileTarget(page: Page): Promise<void> {
+  await enterCountryFile(page)
+  await page.getByTestId('cf-verb-LEAK').click()
+  await page.getByTestId('action-card-LEAK').waitFor()
+}
+
+export async function enterCountryFileNoStation(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('map-capital-laos').locator('.map-capital-marker').click()
+  await page.getByTestId('station-card').waitFor()
+}
+
+export async function enterActionCatalog(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('action-slot-0-empty').click()
+  await page.getByTestId('action-catalog').waitFor()
+}
+
+export async function enterArmedVerb(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('action-slot-0-empty').click()
+  await page.getByTestId('action-catalog-entry-BRIBE').click()
+  await page.getByTestId('armed-verb').waitFor()
+  await page.waitForTimeout(600)
+}
+
 export const SCREENS: { name: string; path: string; setup?: (page: Page) => Promise<void> }[] = [
   { name: 'components', path: '/?screen=components' },
   { name: 'main-menu', path: '/' },
@@ -570,6 +604,11 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'briefing', path: '/', setup: enterBriefing },
   { name: 'operations', path: '/', setup: enterOperations },
   { name: 'country-file', path: '/', setup: enterCountryFile },
+  { name: 'country-file-confirm', path: '/', setup: enterCountryFileConfirm },
+  { name: 'country-file-target', path: '/', setup: enterCountryFileTarget },
+  { name: 'country-file-nostation', path: '/', setup: enterCountryFileNoStation },
+  { name: 'armed-verb', path: '/', setup: enterArmedVerb },
+  { name: 'action-catalog', path: '/', setup: enterActionCatalog },
   { name: 'contracts', path: '/', setup: enterContracts },
   { name: 'company', path: '/', setup: enterCompany },
   { name: 'news', path: '/', setup: enterNews },

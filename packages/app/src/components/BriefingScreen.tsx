@@ -26,6 +26,7 @@ export function BriefingScreen({ state, onBegin, onBack }: { state: GameState; o
       <div className="setup-panel">
         <DsPanel
           title={`${house.name} — Briefing`}
+          info="Your situation before the first quarter: what the board expects, and the map you will play on." infoTopic="board"
           right={
             <span className={`order-stamp is-urgent ${wearClass('briefing-classified')}`} data-testid="briefing-classified">
               CLASSIFIED

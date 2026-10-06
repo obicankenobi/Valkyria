@@ -122,6 +122,7 @@ export function TheFloor({
 
       <Panel
         title="Open Orders"
+        info="Contracts buyers want filled. Open a folder and place a bid; the best score wins, not only the lowest price." infoTopic="procurement"
         flush
         right={<span className="meter-label">{draft.bids.length} bids placed this turn</span>}
       >
@@ -143,7 +144,7 @@ export function TheFloor({
         )}
       </Panel>
 
-      <Panel title="Active Contracts" right={<span className="meter-label">{inTransit} units in transit</span>}>
+      <Panel info="Contracts you have won and are delivering, and what is still in transit." infoTopic="procurement" title="Active Contracts" right={<span className="meter-label">{inTransit} units in transit</span>}>
         {activeContracts.length === 0 ? (
           <p className="empty">No active contracts.</p>
         ) : (

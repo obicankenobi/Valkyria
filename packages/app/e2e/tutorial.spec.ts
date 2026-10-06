@@ -71,6 +71,7 @@ test('handledningen leder alla fem steg och avslutas av sig själv (P91a klart-n
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
   await page.getByTestId('country-file').waitFor()
   await page.getByTestId('cf-verb-EXPAND').click()
+  await page.getByTestId('cf-file-EXPAND').click() // P163: kortet först, FILE sedan
   await page.getByTestId('country-file').waitFor({ state: 'hidden' })
   await expect(page.getByTestId('tutorial-prompt')).toHaveText(/bid/i)
 

@@ -7,7 +7,8 @@
 import { BottomSheet } from './designSystem.js'
 import { VerbIcon } from './VerbIcon.js'
 import { ACTION_CATALOG } from '../actionCatalog.js'
-import type { ActionCatalogEntry, ActionCatalogView } from '../actionCatalog.js'
+import { actionInfo } from '../actionInfo.js'
+import type { ActionCatalogEntry } from '../actionCatalog.js'
 
 function groupByObject(entries: readonly ActionCatalogEntry[]): { objectGroup: string; entries: ActionCatalogEntry[] }[] {
   const order: string[] = []
@@ -31,7 +32,7 @@ export function ActionCatalog({
 }: {
   open: boolean
   onClose: () => void
-  onNavigate: (view: ActionCatalogView) => void
+  onNavigate: (entry: ActionCatalogEntry) => void
 }) {
   const groups = groupByObject(ACTION_CATALOG)
 
@@ -39,7 +40,7 @@ export function ActionCatalog({
     <BottomSheet
       open={open}
       title="Actions"
-      subtitle="Every verb that costs a slot, and where to use it"
+      subtitle="Every verb that costs a slot. Tap one to go where you use it."
       onClose={onClose}
       testId="action-catalog"
     >
@@ -53,7 +54,7 @@ export function ActionCatalog({
                 type="button"
                 className="action-catalog-entry"
                 onClick={() => {
-                  onNavigate(entry.target)
+                  onNavigate(entry)
                   onClose()
                 }}
                 data-testid={`action-catalog-entry-${entry.verb}`}
@@ -61,7 +62,12 @@ export function ActionCatalog({
                 <span className="action-catalog-entry-icon" aria-hidden="true">
                   <VerbIcon verb={entry.verb} />
                 </span>
-                <span className="action-catalog-entry-label">{entry.label}</span>
+                <span className="action-catalog-entry-text">
+                  <span className="action-catalog-entry-label">{entry.label}</span>
+                  <span className="action-catalog-entry-does" data-testid={`action-catalog-does-${entry.verb}`}>
+                    {actionInfo(entry.verb)?.does}
+                  </span>
+                </span>
               </button>
             ))}
           </div>

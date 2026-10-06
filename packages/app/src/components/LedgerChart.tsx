@@ -128,7 +128,7 @@ export function LedgerChart({ state }: { state: GameState }) {
 
   if (!data) {
     return (
-      <DsPanel title="General ledger">
+      <DsPanel info="Your books quarter by quarter: income and expenses as bars, the cash curve, and the board's required line." infoTopic="board" title="General ledger">
         <p className="empty" data-testid="ledger-empty">
           No quarter has been closed yet. The ledger fills in as you end quarters.
         </p>
@@ -175,6 +175,7 @@ export function LedgerChart({ state }: { state: GameState }) {
   return (
     <DsPanel
       title="General ledger"
+      info="Your books quarter by quarter: income and expenses as bars, the cash curve, and the board's required line." infoTopic="board"
       right={
         <Tag tone={data.bookNow && nextMark && data.bookNow.value >= nextMark.value ? 'green' : 'amber'}>
           {outlook.nextReviewTurn !== null ? `Review T${outlook.nextReviewTurn}` : 'No reviews left'}

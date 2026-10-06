@@ -13,6 +13,7 @@ import { Button, Segmented } from './designSystem.js'
 import { DecisionDots } from './DecisionDots.js'
 import { LicenceSection } from './LicenceSection.js'
 import type { DecisionGauge } from './DecisionDots.js'
+import { ActionCard } from './ActionCard.js'
 import { Panel, Tag } from './ui.js'
 import { wearClass } from '../stampWear.js'
 import { AMBITION_LABEL, CATEGORY_NAME, ENVIRONMENT_LABEL, FOCUS_LABEL, designStamp, openInvestigationsFor, qualityLabel } from '../designSheet.js'
@@ -148,7 +149,7 @@ function SheetOrders({
 
       {buyers.length > 0 && design.status === 'active' && (
         <>
-          <h4 className="drawing-section">FIELD TRIAL WITH A BUYER</h4>
+          <h4 className="drawing-section" data-verb="FIELD_TRIAL">FIELD TRIAL WITH A BUYER</h4>
           <div className="cf-field">
             <Segmented
               options={buyers.map((o) => ({ value: o.factionId, label: o.factionId.toUpperCase() }))}
@@ -157,9 +158,7 @@ function SheetOrders({
               testId={`type-trial-buyer-${design.id}`}
             />
           </div>
-          <p className="cf-hint">
-            The class margin narrows, a fault may surface, the buyer favours the design next time — and every rival learns the result.
-          </p>
+          {trialAction && <ActionCard state={state} verb="FIELD_TRIAL" action={trialAction} />}
           <DecisionDots gauges={['cash', 'relations', 'rivals']} testId={`type-trial-dots-${design.id}`} />
           <Button variant="primary" disabled={!trialValidation?.ok} onClick={() => trialAction && onAddAction(trialAction)} testId={`type-trial-${design.id}`}>
             FIELD TRIAL (1 action)
@@ -254,7 +253,7 @@ export function TypeSheets({
 }) {
   const designs = state.house.designs ?? []
   return (
-    <Panel title="Type sheets" right={<Tag>{designs.length} on file</Tag>}>
+    <Panel info="Your finished and running designs: the class estimate, tests and field record, and what you can do with each." infoTopic="design" title="Type sheets" right={<Tag>{designs.length} on file</Tag>}>
       {designs.length === 0 ? (
         <p className="empty">No designs yet. Start a drawing on the drawing board above — it appears here when it is finished.</p>
       ) : (

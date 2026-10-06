@@ -35,6 +35,7 @@ import {
 import type { FactionId, GameState, Official, OfficialId, PlayerAction, Product, RivalHouse } from '@seventh-front/core'
 import { Button, Card, DsSlider, Stepper, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
+import { ActionCard } from './ActionCard.js'
 import { Meter, Panel, Tag, formatMoney } from './ui.js'
 import { VerbIcon } from './VerbIcon.js'
 
@@ -99,6 +100,7 @@ function VerbButton({
   onClick,
   disabled,
   testId,
+  verb,
 }: {
   icon: ReactNode
   label: string
@@ -106,9 +108,10 @@ function VerbButton({
   onClick: () => void
   disabled?: boolean
   testId?: string
+  verb?: string
 }) {
   return (
-    <button type="button" className="cf-verb" onClick={onClick} disabled={disabled} data-testid={testId}>
+    <button type="button" className="cf-verb" onClick={onClick} disabled={disabled} data-testid={testId} data-verb={verb}>
       <span className="cf-verb-head">
         <span className="cf-verb-icon" aria-hidden="true">
           {icon}
@@ -149,7 +152,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
       {[...groupByFaction(state).entries()].map(([factionId, officials]) => {
         const faction = state.factions[factionId]
         return (
-          <Panel title={faction ? faction.name : factionId} key={factionId} flush>
+          <Panel info="The country's officials and what you can do about them and about the country itself." infoTopic="politics" title={faction ? faction.name : factionId} key={factionId} flush>
             {officials.map((official) => {
               const display = officialDisplay(state, official)
               const active = official.status === 'active'
@@ -181,7 +184,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
 
                   <p className="banner-sub">Agenda: {display.agenda ?? 'UNKNOWN'}</p>
                   <p className="cf-hint">
-                    Relation lifts your score on her bids and keeps her off her own agenda (low standing + low relation
+                    Relation lifts your score on this official's orders and keeps them off their own agenda (low standing + low relation
                     triggers a PolicyDecision against you). Low integrity means BRIBE buys more relation per pound.
                   </p>
 
@@ -194,6 +197,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                           cost={`${formatMoney(BRIBE_TIER_POINTS.modest * 5000)}+`}
                           onClick={() => toggleOfficial(official.id, 'BRIBE')}
                           testId={`contacts-verb-BRIBE-${official.id}`}
+                          verb="BRIBE"
                         />
                         <VerbButton
                           icon={<VerbIcon verb="FUND_CAMPAIGN" />}
@@ -201,6 +205,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                           cost={`${formatMoney(FUND_CAMPAIGN_TIER_POINTS.modest * 2000)}+`}
                           onClick={() => toggleOfficial(official.id, 'FUND_CAMPAIGN')}
                           testId={`contacts-verb-FUND_CAMPAIGN-${official.id}`}
+                          verb="FUND_CAMPAIGN"
                         />
                         <VerbButton
                           icon={<VerbIcon verb="FAVOUR" />}
@@ -208,6 +213,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                           cost="MARGIN"
                           onClick={() => toggleOfficial(official.id, 'FAVOUR')}
                           testId={`contacts-verb-FAVOUR-${official.id}`}
+                          verb="FAVOUR"
                         />
                         <VerbButton
                           icon={<VerbIcon verb="ASSASSINATE" />}
@@ -215,15 +221,16 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                           cost={`${formatMoney(ASSASSINATE_TIERS.modest)}+`}
                           onClick={() => toggleOfficial(official.id, 'ASSASSINATE')}
                           testId={`contacts-verb-ASSASSINATE-${official.id}`}
+                          verb="ASSASSINATE"
                         />
                       </div>
 
                       {openForm?.kind === 'official' && openForm.officialId === official.id && openForm.op === 'BRIBE' && (
                         <OfficialPointSpendForm
+                          state={state}
                           official={official}
                           op="BRIBE"
                           title="BRIBE"
-                          hint="Buys relation to you directly. Lower integrity means more relation per pound — and raises her scandal risk."
                           points={BRIBE_TIER_POINTS}
                           costPerPoint={5000}
                           effectLabel="RELATION TO YOU"
@@ -233,10 +240,10 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                       )}
                       {openForm?.kind === 'official' && openForm.officialId === official.id && openForm.op === 'FUND_CAMPAIGN' && (
                         <OfficialPointSpendForm
+                          state={state}
                           official={official}
                           op="FUND_CAMPAIGN"
                           title="FUND CAMPAIGN"
-                          hint="Buys standing — how secure her position is. Doesn't touch relation to you."
                           points={FUND_CAMPAIGN_TIER_POINTS}
                           costPerPoint={2000}
                           effectLabel="STANDING"
@@ -269,6 +276,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     cost={`${formatMoney(STAGE_INCIDENT_TIERS.modest)}+`}
                     onClick={() => toggleFaction(faction.id, 'STAGE_INCIDENT')}
                     testId={`contacts-verb-STAGE_INCIDENT-${faction.id}`}
+                    verb="STAGE_INCIDENT"
                   />
                   <VerbButton
                     icon={<VerbIcon verb="BACK_CHANNEL" />}
@@ -276,6 +284,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     cost={`${formatMoney(BACK_CHANNEL_TIERS.modest)}+`}
                     onClick={() => toggleFaction(faction.id, 'BACK_CHANNEL')}
                     testId={`contacts-verb-BACK_CHANNEL-${faction.id}`}
+                    verb="BACK_CHANNEL"
                   />
                   <VerbButton
                     icon={<VerbIcon verb="FUND_COUP" />}
@@ -284,6 +293,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     onClick={() => toggleFaction(faction.id, 'FUND_COUP')}
                     disabled={faction.coupAttempted === true}
                     testId={`contacts-verb-FUND_COUP-${faction.id}`}
+                    verb="FUND_COUP"
                   />
                   <VerbButton
                     icon={<VerbIcon verb="BROKER" />}
@@ -291,6 +301,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     cost="NO UPFRONT"
                     onClick={() => toggleFaction(faction.id, 'BROKER')}
                     testId={`contacts-verb-BROKER-${faction.id}`}
+                    verb="BROKER"
                   />
                 </div>
 
@@ -300,7 +311,6 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     faction={faction}
                     op="STAGE_INCIDENT"
                     title="STAGE INCIDENT"
-                    hint="Fixed 65% chance to raise heat where this country fights. More money makes the incident bigger — the odds stay the same."
                     tiers={STAGE_INCIDENT_TIERS}
                     onQueue={queue}
                   />
@@ -311,7 +321,6 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     faction={faction}
                     op="BACK_CHANNEL"
                     title="BACK CHANNEL"
-                    hint="Always succeeds — eases doomsday and improves relations with this country's front opponent. More money improves them further, with diminishing returns."
                     tiers={BACK_CHANNEL_TIERS}
                     onQueue={queue}
                   />
@@ -322,7 +331,6 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     faction={faction}
                     op="FUND_COUP"
                     title="FUND COUP"
-                    hint="Big, rare, expensive (DESIGN.md §13). One attempt ever per faction. More money raises the odds, with diminishing returns — never to certainty — and they fall with this country's counter-intelligence."
                     tiers={FUND_COUP_TIERS}
                     onQueue={queue}
                   />
@@ -336,7 +344,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
         )
       })}
 
-      <Panel title="Rival houses" flush>
+      <Panel info="The other arms houses you compete with for the same contracts." infoTopic="procurement" title="Rival houses" flush>
         {Object.values(state.rivals).map((rival) => (
           <RivalDossier key={rival.id} rival={rival} />
         ))}
@@ -349,20 +357,20 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
 // standing) som förhandsvisas skiljer. En ren poängskala (samma mönster som
 // CountryFile.tsx:s INFLUENCE) i stället för ett gissat kronbelopp.
 function OfficialPointSpendForm({
+  state,
   official,
   op,
   title,
-  hint,
   points,
   costPerPoint,
   effectLabel,
   before,
   onQueue,
 }: {
+  state: GameState
   official: Official
   op: 'BRIBE' | 'FUND_CAMPAIGN'
   title: string
-  hint: string
   points: Record<Tier['key'], number>
   costPerPoint: number
   effectLabel: string
@@ -383,7 +391,7 @@ function OfficialPointSpendForm({
   return (
     <div className="cf-body" data-testid={`contacts-form-${op}-${official.id}`}>
       <h3 className="cf-form-title">{title}</h3>
-      <p className="cf-hint">{hint}</p>
+      <ActionCard state={state} verb={op} action={action} />
       <div className="cf-field">
         <span className="cf-field-label">SPEND</span>
         <TierPicker tiers={tiers} value={tier} onChange={setTier} testId={`contacts-${op}-tier-${official.id}`} />
@@ -425,9 +433,7 @@ function FavourForm({ state, official, onQueue }: { state: GameState; official: 
   return (
     <div className="cf-body" data-testid={`contacts-form-FAVOUR-${official.id}`}>
       <h3 className="cf-form-title">FAVOUR</h3>
-      <p className="cf-hint">
-        Costs margin, not cash now: the amount is deducted from what your next deliveries pay, until it is settled.
-      </p>
+      <ActionCard state={state} verb="FAVOUR" action={action} />
       <div className="cf-field">
         <span className="cf-field-label">MARGIN COST</span>
         <TierPicker tiers={tiers} value={tier} onChange={setTier} testId={`contacts-FAVOUR-tier-${official.id}`} />
@@ -467,10 +473,7 @@ function AssassinateForm({ state, official, onQueue }: { state: GameState; offic
   return (
     <div className="cf-body" data-testid={`contacts-form-ASSASSINATE-${official.id}`}>
       <h3 className="cf-form-title">ASSASSINATE</h3>
-      <p className="cf-hint">
-        Always kills the target — she is replaced next turn. Always raises this country's counter-intelligence, and risks
-        doomsday if the country is strongly bloc-aligned. More money softens both, but never removes them.
-      </p>
+      <ActionCard state={state} verb="ASSASSINATE" action={action} />
       <div className="cf-field">
         <span className="cf-field-label">SPEND</span>
         <TierPicker
@@ -495,7 +498,6 @@ function FactionFlatSpendForm({
   faction,
   op,
   title,
-  hint,
   tiers,
   onQueue,
 }: {
@@ -503,7 +505,6 @@ function FactionFlatSpendForm({
   faction: GameState['factions'][string]
   op: 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_COUP'
   title: string
-  hint: string
   tiers: Record<Tier['key'], number>
   onQueue: (action: PlayerAction) => void
 }) {
@@ -514,7 +515,7 @@ function FactionFlatSpendForm({
   return (
     <div className="cf-body" data-testid={`contacts-form-${op}-${faction.id}`}>
       <h3 className="cf-form-title">{title}</h3>
-      <p className="cf-hint">{hint}</p>
+      <ActionCard state={state} verb={op} action={action} />
       <div className="cf-field">
         <span className="cf-field-label">SPEND</span>
         <TierPicker
@@ -561,10 +562,7 @@ function BrokerForm({ state, faction, onQueue }: { state: GameState; faction: Ga
   return (
     <div className="cf-body" data-testid={`contacts-form-BROKER-${faction.id}`}>
       <h3 className="cf-form-title">BROKER</h3>
-      <p className="cf-hint">
-        A direct deal, no bidding — decided by {official ? official.name : 'the procurement official'}&rsquo;s relation to
-        you and integrity, not by price or delivery. Costs her standing and raises scandal risk on both sides.
-      </p>
+      <ActionCard state={state} verb="BROKER" action={action} />
 
       <div className="cf-field">
         <span className="cf-field-label">PRODUCT</span>

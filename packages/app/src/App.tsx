@@ -24,6 +24,11 @@ import { QuarterReplay } from './components/QuarterReplay.js'
 import { PauseOverlay } from './components/PauseOverlay.js'
 import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
+import { ArmedVerbStrip } from './components/ArmedVerbStrip.js'
+import { actionVerb } from './actionInfo.js'
+import { ArmedVerbContext, HandbookContext } from './uiContext.js'
+import type { ArmedVerb } from './uiContext.js'
+import type { ActionCatalogEntry } from './actionCatalog.js'
 import { TutorialOverlay } from './components/TutorialOverlay.js'
 import { Handbook } from './components/Handbook.js'
 import { MemoSheet } from './components/MemoSheet.js'
@@ -118,6 +123,10 @@ export function App() {
   // stänger den implicit (renderas bara när view === 'operations').
   const [selectedFactionId, setSelectedFactionId] = useState<FactionId | null>(null)
   const [catalogOpen, setCatalogOpen] = useState(false)
+  // P163 (ETAPP10_FORSLAG.md §3b): verbet spelaren valde i Actions-menyn. Det följer med till mappen där det utförs (remsa, markering, förvalt läge) tills det är
+  // utfört eller avbrutet.
+  const [armed, setArmed] = useState<ArmedVerb | null>(null)
+  const armedNonce = useRef(0)
   // P101: This Quarter-larm hoppar till ett kort på anslagstavlan (THE COMPANY) med kortet öppet.
   const [focusCard, setFocusCard] = useState<string | null>(null)
   const [muted, setMuted] = useState(false) // P72 (ETAPP6_TEKNISK_SPEC.md §5): den globala mute-togglen
@@ -568,6 +577,28 @@ export function App() {
     return () => document.removeEventListener('keydown', handleShortcut)
   }, [])
 
+  // P163: markerar formuläret eller knappen som utför det valda verbet (data-verb → data-armed) och rullar det i sikte. Körs om när vyn eller landet byts, eftersom
+  // elementen först då finns i DOM:en.
+  useEffect(() => {
+    const marked: Element[] = []
+    let frame = 0
+    if (armed) {
+      frame = requestAnimationFrame(() => {
+        const matches = [...document.querySelectorAll(`[data-verb~="${armed.verb}"]`)]
+        for (const el of matches) {
+          el.setAttribute('data-armed', 'true')
+          marked.push(el)
+        }
+        const first = matches[0] as HTMLElement | undefined
+        if (first && typeof first.scrollIntoView === 'function') first.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      })
+    }
+    return () => {
+      cancelAnimationFrame(frame)
+      for (const el of marked) el.removeAttribute('data-armed')
+    }
+  }, [armed, view, selectedFactionId])
+
   if (!hydrated) {
     return (
       <div className="app">
@@ -627,6 +658,20 @@ export function App() {
 
   const ended = state.status.kind === 'ended'
 
+  // Ett köat verb av samma slag som det valda i menyn avväpnar det — uppgiften är gjord.
+  function addActionDisarming(action: Parameters<typeof addAction>[0]) {
+    addAction(action)
+    if (armed && actionVerb(action) === armed.verb) setArmed(null)
+  }
+
+  function handleArmVerb(entry: ActionCatalogEntry) {
+    armedNonce.current += 1
+    setArmed({ verb: entry.verb, nonce: armedNonce.current })
+    setSelectedFactionId(null)
+    setFocusCard(null)
+    setView(entry.target)
+  }
+
   function handleEndTurn() {
     endTurn()
     setReplaying(true) // §5: End Quarter → Quarter Replay → Front Page (NEWS DESK)
@@ -634,6 +679,8 @@ export function App() {
   }
 
   return (
+    <HandbookContext.Provider value={handleOpenHandbook}>
+    <ArmedVerbContext.Provider value={armed}>
     <div className="ds-shell">
       <HudBar state={state} onOpenMenu={() => setPaused(true)} onOpenHandbook={handleOpenHandbook} />
       <QuarterBand
@@ -673,6 +720,8 @@ export function App() {
             RejectedBanner ovan — se TutorialOverlay.tsx:s egen kommentar. */}
         <TutorialOverlay step={currentTutorialStep(tutorial)} onDismiss={handleDismissTutorial} />
 
+        {armed && <ArmedVerbStrip verb={armed.verb} onClear={() => setArmed(null)} />}
+
         {/* P74/P76 (§13): OPERATIONS är kartan. P74 byggde skalet med en
             platshållare; P76 ersätter den med TheatreMap, den riktiga
             geografiska kartan (TopoJSON, d3-geo, d3-zoom, SECTOR_REGIONS).
@@ -688,7 +737,7 @@ export function App() {
           <CountryFile
             state={state}
             factionId={selectedFactionId}
-            onAddAction={addAction}
+            onAddAction={addActionDisarming}
             onClose={() => setSelectedFactionId(null)}
             onOpenContacts={() => {
               setSelectedFactionId(null)
@@ -696,19 +745,19 @@ export function App() {
             }}
           />
         )}
-        {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} onAddAction={addAction} onSetStandingOrder={setStandingOrder} />}
+        {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} onAddAction={addActionDisarming} onSetStandingOrder={setStandingOrder} />}
         {view === 'company' && (
           <TheHouse
             state={state}
             draft={draft}
-            onAddAction={addAction}
+            onAddAction={addActionDisarming}
             onRemoveAction={removeAction}
             onSetStandingOrder={setStandingOrder}
             onRemoveStandingOrder={removeStandingOrder}
             focusCard={focusCard}
           />
         )}
-        {view === 'contacts' && <ThePolitics state={state} onAddAction={addAction} />}
+        {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} />}
         {view === 'news' && (
           <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} />
         )}
@@ -728,7 +777,7 @@ export function App() {
       <ActionCatalog
         open={catalogOpen}
         onClose={() => setCatalogOpen(false)}
-        onNavigate={(catalogView) => setView(catalogView)}
+        onNavigate={handleArmVerb}
       />
 
       <TabBar
@@ -828,5 +877,7 @@ export function App() {
       />
       <Handbook open={handbookOpen} focusId={handbookFocusId} onClose={() => setHandbookOpen(false)} />
     </div>
+    </ArmedVerbContext.Provider>
+    </HandbookContext.Provider>
   )
 }

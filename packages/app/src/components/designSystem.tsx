@@ -12,6 +12,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { playSound } from '../sound.js'
+import type { HandbookTopicId } from '../handbook.js'
+import { useOpenHandbook } from '../uiContext.js'
 
 // ── Panel — samma ram för alla paneler: rubrikband, hörnmarkeringar, textur ──
 // (regel 6). Byggd separat från ui.tsx:s Panel eftersom den befintliga saknar
@@ -33,10 +35,14 @@ function CornerMarks() {
 export function DsPanel({
   title,
   right,
+  info,
+  infoTopic,
   children,
 }: {
   title: string
   right?: ReactNode
+  info: string // P163: varje panel förklarar sig själv — obligatorisk, test/panelInfo.test.ts fäller en panel utan
+  infoTopic?: HandbookTopicId
   children: ReactNode
 }) {
   return (
@@ -44,10 +50,25 @@ export function DsPanel({
       <CornerMarks />
       <div className="ds-panel-head">
         <h3 className="ds-panel-title">{title}</h3>
+        <PanelInfo info={info} infoTopic={infoTopic} />
+        <span className="ds-panel-head-spacer" />
         {right}
       </div>
       <div className="ds-panel-body">{children}</div>
     </section>
+  )
+}
+
+// Info-ikonen i en panels rubrikband: tryck öppnar en kort förklaring, "More" öppnar handboksuppslaget om panelen har ett.
+export function PanelInfo({ info, infoTopic }: { info: string; infoTopic?: HandbookTopicId }) {
+  const openHandbook = useOpenHandbook()
+  return (
+    <InfoTooltip
+      text={info}
+      placement="below"
+      onReadMore={infoTopic && openHandbook ? () => openHandbook(infoTopic) : undefined}
+      testId="panel-info"
+    />
   )
 }
 
@@ -550,11 +571,21 @@ export function DsToggle({
 // uppslag i stället för bara bubblans korta sammanfattning (§9: "nåbar ...
 // från varje info-ikon"). Bakåtkompatibel — text-only-anropet (ComponentLibrary.tsx,
 // P73) fungerar oförändrat utan den. ──
-export function InfoTooltip({ text, onReadMore, testId }: { text: string; onReadMore?: () => void; testId?: string }) {
+export function InfoTooltip({
+  text,
+  onReadMore,
+  testId,
+  placement = 'above',
+}: {
+  text: string
+  onReadMore?: () => void
+  testId?: string
+  placement?: 'above' | 'below'
+}) {
   const [open, setOpen] = useState(false)
   const id = useId()
   return (
-    <span className="ds-tooltip" data-testid={testId}>
+    <span className={placement === 'below' ? 'ds-tooltip is-below' : 'ds-tooltip'} data-testid={testId}>
       <button
         type="button"
         className="ds-tooltip-trigger"

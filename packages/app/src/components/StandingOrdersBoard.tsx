@@ -182,7 +182,7 @@ export function StandingOrdersBoard({
     queued.filter(match).map((c) => ({ key: standingOrderKey(c), text: describeChange(c), undoId: undoId(c) }))
 
   return (
-    <Panel title="Standing orders" right={<Tag>from next quarter · no action point</Tag>}>
+    <Panel info="Orders that keep running every quarter: production lines, supplier contracts and station mode. They cost no action point." infoTopic="production" title="Standing orders" right={<Tag>from next quarter · no action point</Tag>}>
       <div className="standing-board" data-testid="standing-orders-board">
         <h3 className="standing-group">Lines</h3>
         <div className="standing-grid">

@@ -60,7 +60,7 @@ export function ComponentLibrary() {
       </p>
 
       <Section title="Panel">
-        <DsPanel title="Station file" right={<span className="ds-library-caption">right slot</span>}>
+        <DsPanel info="Example panel from the component library." title="Station file" right={<span className="ds-library-caption">right slot</span>}>
           <p style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: 13 }}>
             Rubrikband, hörnmarkeringar och papperskornstextur — samma ram för alla paneler
             (regel 6).

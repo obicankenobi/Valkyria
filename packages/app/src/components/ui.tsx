@@ -2,6 +2,8 @@
 // Ingen spellogik, bara presentation. Se docs/ANDRINGSLOGG.md för ägarbeslutet
 // om att göra om estetiken (spec avsnitt 8).
 import type { ReactNode } from 'react'
+import type { HandbookTopicId } from '../handbook.js'
+import { PanelInfo } from './designSystem.js'
 
 export type Tone = 'neutral' | 'amber' | 'red' | 'green' | 'blue'
 
@@ -19,17 +21,23 @@ export function Panel({
   title,
   right,
   flush,
+  info,
+  infoTopic,
   children,
 }: {
   title: string
   right?: ReactNode
   flush?: boolean
+  info: string // P163: varje panel förklarar sig själv — obligatorisk, test/panelInfo.test.ts fäller en panel utan
+  infoTopic?: HandbookTopicId
   children: ReactNode
 }) {
   return (
     <section className="panel">
       <div className="panel-head">
         <h3 className="panel-title">{title}</h3>
+        <PanelInfo info={info} infoTopic={infoTopic} />
+        <span className="panel-head-spacer" />
         {right}
       </div>
       <div className={flush ? 'panel-body is-flush' : 'panel-body'}>{children}</div>

@@ -200,7 +200,7 @@ function DepartmentSection({
 
   return (
     <div data-testid={`news-department-${department.id}`}>
-      <DsPanel title={department.label}>
+      <DsPanel info="Events from the last quarters, sorted by who or what they touch." title={department.label}>
         <ul className="wire" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {shown.map((event) => (
             <EventRow key={event.id} event={event} wire={wire} state={state} />
@@ -431,6 +431,7 @@ export function TheWire({
       ) : (
         <DsPanel
           title="Archive"
+          info="Every event on record, filterable by department."
           right={
             <span className="meter-label">
               {sorted.length} events · {headlines} headlines
