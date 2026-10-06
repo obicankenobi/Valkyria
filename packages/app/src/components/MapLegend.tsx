@@ -107,6 +107,26 @@ function LegendIcon({ kind }: { kind: MapLegendIconKind }) {
           </g>
         </svg>
       )
+    case 'landless':
+      return (
+        <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
+          <g transform="translate(14,14)" className="map-landless-marker">
+            <polygon points="0,-9 9,0 0,9 -9,0" className="map-landless-diamond" />
+            <path d="M-3.5,-3.5L3.5,3.5M3.5,-3.5L-3.5,3.5" className="map-token-glyph" />
+          </g>
+        </svg>
+      )
+    case 'layer-tag':
+      return (
+        <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">
+          <text x={3} y={11} className="map-layer-tag">
+            3 open
+          </text>
+          <text x={3} y={22} className="map-layer-tag">
+            need 90
+          </text>
+        </svg>
+      )
     case 'station':
       return (
         <svg width={28} height={28} viewBox="0 0 28 28" aria-hidden="true">

@@ -623,6 +623,19 @@ export async function enterMapInfoContext(page: Page): Promise<void> {
   await page.getByTestId('map-info-card').waitFor()
 }
 
+// P166: ett kartlager påslaget (orders), och intelligence med ett kort öppet.
+export async function enterMapLayerOrders(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('map-layer-orders').click()
+  await page.getByTestId('map-layer-tag-rvn').waitFor()
+}
+
+export async function enterMapLayerIntelligence(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.getByTestId('map-layer-intelligence').click()
+  await page.getByTestId('map-layer-tag-rvn').waitFor()
+}
+
 export async function enterActionCatalog(page: Page): Promise<void> {
   await enterOperations(page)
   await page.getByTestId('action-slot-0-empty').click()
@@ -649,6 +662,8 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'country-file-nostation', path: '/', setup: enterCountryFileNoStation },
   { name: 'armed-verb', path: '/', setup: enterArmedVerb },
   { name: 'action-catalog', path: '/', setup: enterActionCatalog },
+  { name: 'map-layer-orders', path: '/', setup: enterMapLayerOrders },
+  { name: 'map-layer-intelligence', path: '/', setup: enterMapLayerIntelligence },
   { name: 'map-info-country', path: '/', setup: enterMapInfoCountry },
   { name: 'map-info-formation', path: '/', setup: enterMapInfoFormation },
   { name: 'map-info-context', path: '/', setup: enterMapInfoContext },

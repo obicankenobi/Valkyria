@@ -496,6 +496,26 @@ const APP_SCREENS = [
     },
   },
   {
+    // P166: Orders-lagret — antal öppna ordrar, husets kontrakt och materielbehov vid varje köpare, och NLF:s egen markering.
+    name: 'map-layer-orders',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-layer-orders').click()
+      await page.getByTestId('map-layer-tag-rvn').waitFor()
+    },
+  },
+  {
+    // P166: Intelligence-lagret — stationsdjup och prisbandets bredd per land.
+    name: 'map-layer-intelligence',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      await page.getByTestId('map-layer-intelligence').click()
+      await page.getByTestId('map-layer-tag-rvn').waitFor()
+    },
+  },
+  {
     // P81-12: handlingskatalogen, öppnad från en tom handlingsplats (ingen
     // egen referensskiss).
     name: 'action-catalog',

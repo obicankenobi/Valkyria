@@ -24,6 +24,8 @@ export type MapLegendIconKind =
   | 'supply-line-player'
   | 'supply-line-rival'
   | 'station'
+  | 'landless'
+  | 'layer-tag'
 
 export interface MapLegendEntry {
   id: string
@@ -104,7 +106,7 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
     icon: 'frontline',
     title: 'Front line',
     whatItIs: 'A bright dot with up to three fading traces behind it.',
-    whatItMeans: 'The dot is where the front stands now. The traces show where it stood in the last quarters, so you can see which way it is moving.',
+    whatItMeans: 'The dot is where the front stands now. The traces show where it stood in the last quarters, so you can see which way it is moving. The word beside it says WAR or CEASEFIRE; a ceasefire is drawn as a hollow, dashed dot.',
   },
   {
     id: 'heat',
@@ -154,5 +156,19 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
     title: 'Your station',
     whatItIs: 'A small square mark beside a capital, with a pulsing ring if it is heavily exposed.',
     whatItMeans: 'You have an active intelligence station in the country. The ring means exposure is high — the station risks being burned.',
+  },
+  {
+    id: 'landless',
+    icon: 'landless',
+    title: 'Faction without land',
+    whatItIs: 'A red diamond with a cross, labelled with the faction\'s initials, among the forces it fields.',
+    whatItMeans: 'The National Liberation Front has no territory of its own on this map. Tap the diamond for its card.',
+  },
+  {
+    id: 'layer-tag',
+    icon: 'layer-tag',
+    title: 'Layer numbers',
+    whatItIs: 'Small figures beside a capital or a front, shown when you switch on one of the five layer buttons (top left of the map).',
+    whatItMeans: 'Orders: open orders, your contracts and unmet materiel need. Supply: units in transit and rival deliveries. Rivals: contracts held by you and by rivals. Intelligence: station depth and price-band width. Politics: relation, public support, embargo and tenders.',
   },
 ] as const

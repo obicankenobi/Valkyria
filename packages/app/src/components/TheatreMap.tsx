@@ -44,6 +44,9 @@ import { useArmedVerb } from '../uiContext.js'
 import { MapPlaceholder } from './Shell.js'
 import { MapLegend } from './MapLegend.js'
 import { MapInfoCard } from './MapInfoCard.js'
+import { MapLayerBar } from './MapLayerBar.js'
+import { landlessFactions, layerTags } from '../mapLayers.js'
+import type { MapLayerId } from '../mapLayers.js'
 
 // §6.5: ett lands koppling till en FactionId (COUNTRY_TO_FACTION) bor i mapInfo.ts, som kartans informationskort delar den med.
 
@@ -341,8 +344,12 @@ export function TheatreMap({
   // P165 (ETAPP10 §3b, S6): ett tryck på något på kartan VÄLJER det, och det valda föremålet får ett informationskort i kartans nederkant. Teckenförklaringen öppnas bara
   // från sin egen knapp. `onSelectCountry` är "öppna landsakten" — kortet har en knapp för det, och ett verb valt i Actions-menyn (som ska till ett land) går direkt dit.
   const [selection, setSelection] = useState<MapSelection | null>(null)
+  // P166: ett kartlager åt gången, med tal vid varje köpare (eller front). null = inget lager.
+  const [layer, setLayer] = useState<MapLayerId | null>(null)
   const armed = useArmedVerb()
   const armedGoesToCountry = armed !== null && ACTION_CATALOG.some((e) => e.verb === armed.verb && e.target === 'operations')
+  const tags = useMemo(() => (layer ? layerTags(state, layer) : []), [state, layer])
+  const landless = useMemo(() => landlessFactions(state), [state])
   const mapInfo = useMemo(() => (selection ? deriveMapInfo(state, selection) : null), [state, selection])
   const isSelected = (candidate: MapSelection): boolean =>
     selection !== null && selection.kind === candidate.kind && JSON.stringify(selection) === JSON.stringify(candidate)
@@ -506,6 +513,8 @@ export function TheatreMap({
     totalFormationTokens,
     zoomLevel,
     geoLoaded,
+    tags.length,
+    layer,
   ])
 
   if (geo === 'error') {
@@ -691,7 +700,7 @@ export function TheatreMap({
                         cx={currentXY[0]}
                         cy={currentXY[1]}
                         r={4}
-                        className={isSelected({ kind: 'frontline', frontId: front.id }) ? 'map-frontline-marker is-selected' : 'map-frontline-marker'}
+                        className={`map-frontline-marker${front.status === 'war' ? '' : ' is-quiet'}${isSelected({ kind: 'frontline', frontId: front.id }) ? ' is-selected' : ''}`}
                         data-testid={`map-frontline-marker-${front.id}`}
                       />
                       {isSelected({ kind: 'frontline', frontId: front.id }) && <circle cx={currentXY[0]} cy={currentXY[1]} r={9} className="map-selected-ring" />}
@@ -794,6 +803,27 @@ export function TheatreMap({
               köparen ("Order (markör vid köparen) | lägg bud" — §7.1:s
               tabell; badgen ÄR ordermarkören, ett bud läggs fortfarande på
               CONTRACTS, App.tsx byter flik dit vid tryck). */}
+          {/* P166: NLF har ingen egen landmassa — dess markering är en fientlig romb mitt bland dess förband, och ett tryck på den ger NLF:s kort. */}
+          <g className="map-landless">
+            {landless.map((l) => {
+              if (!l.anchor) return null
+              const [x, y] = project([l.anchor[1], l.anchor[0]]) ?? [0, 0]
+              return (
+                <g
+                  key={l.factionId}
+                  transform={`translate(${x},${y + 12})`}
+                  className={selection?.kind === 'faction' && selection.factionId === l.factionId ? 'map-landless-marker is-selected' : 'map-landless-marker'}
+                  onClick={() => setSelection({ kind: 'faction', factionId: l.factionId })}
+                  data-testid={`map-landless-${l.factionId}`}
+                >
+                  <circle r={12} className="map-token-tap" />
+                  <polygon points="0,-7 7,0 0,7 -7,0" className="map-landless-diamond" />
+                  <path d="M-3,-3L3,3M3,-3L-3,3" className="map-token-glyph" />
+                </g>
+              )
+            })}
+          </g>
+
           <g className="map-capitals">
             {CAPITALS.map((capital) => {
               const [x, y] = project([capital.anchor[1], capital.anchor[0]]) ?? [0, 0]
@@ -916,6 +946,62 @@ export function TheatreMap({
               (useLabelCollisionHiding). */}
           {/* P162 (S2): ledens etikett syns redan på startzoomen (nivå 1) och bär namn och hållare. Den ligger före sektoretiketterna i
               ritordningen, så kollisionsdöljningen prioriterar den. */}
+          {/* P166: kartlagrets tal och NLF:s markering ligger FÖRST bland etiketterna, så kollisionsdöljningen prioriterar dem framför sektornamnen. */}
+          <g className="map-layer-tags">
+            {tags.map((tag) => {
+              const [x, y] = project([tag.anchor[1], tag.anchor[0]]) ?? [0, 0]
+              const id = `layer-${tag.id}`
+              const left = tag.side === 'left'
+              const tx = x + (left ? -12 : 12)
+              const top = y - 10 - (tag.lines.length - 1) * 11
+              return (
+                <text
+                  key={id}
+                  ref={(el) => {
+                    if (el) labelRefs.current.set(id, el)
+                    else labelRefs.current.delete(id)
+                  }}
+                  x={tx}
+                  y={top}
+                  textAnchor={left ? 'end' : 'start'}
+                  className={hiddenLabels.has(id) ? 'map-layer-tag map-label-hidden' : 'map-layer-tag'}
+                  onClick={tag.selection ? () => setSelection(tag.selection!) : undefined}
+                  data-testid={`map-layer-tag-${tag.id}`}
+                >
+                  {tag.lines.map((line, i) => (
+                    <tspan key={line} x={tx} dy={i === 0 ? 0 : 11}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )
+            })}
+          </g>
+
+          <g className="map-landless-labels">
+            {landless.map((l) => {
+              if (!l.anchor) return null
+              const [x, y] = project([l.anchor[1], l.anchor[0]]) ?? [0, 0]
+              const id = `landless-${l.factionId}`
+              return (
+                <text
+                  key={id}
+                  ref={(el) => {
+                    if (el) labelRefs.current.set(id, el)
+                    else labelRefs.current.delete(id)
+                  }}
+                  x={x}
+                  y={y + 22}
+                  textAnchor="middle"
+                  className={hiddenLabels.has(id) ? 'map-capital-label map-landless-label map-label-hidden' : 'map-capital-label map-landless-label'}
+                  data-testid={`map-landless-label-${l.factionId}`}
+                >
+                  {l.factionId.toUpperCase()}
+                </text>
+              )
+            })}
+          </g>
+
           <g className="map-route-labels">
             {allRegions
               .filter((region) => region.route)
@@ -996,8 +1082,35 @@ export function TheatreMap({
               )}
             </g>
           )}
+          {/* P166: krig eller vapenvila skrivs vid frontlinjen — sist bland etiketterna, så den viker för allt annat. */}
+          <g className="map-front-status-labels">
+            {Object.values(state.fronts).map((front) => {
+              const regions = SECTOR_REGIONS[front.theatreId]
+              if (!regions || regions.length === 0) return null
+              const [lat, lng] = interpolateFrontGeoPosition(regions, front.position)
+              const xy = project([lng, lat])
+              if (!xy) return null
+              const id = `front-status-${front.id}`
+              return (
+                <text
+                  key={id}
+                  ref={(el) => {
+                    if (el) labelRefs.current.set(id, el)
+                    else labelRefs.current.delete(id)
+                  }}
+                  x={xy[0] + 9}
+                  y={xy[1] + 14}
+                  className={hiddenLabels.has(id) ? `map-front-status-label is-${front.status} map-label-hidden` : `map-front-status-label is-${front.status}`}
+                  data-testid={`map-front-status-${front.id}`}
+                >
+                  {front.status === 'war' ? 'WAR' : front.status === 'ceasefire' ? 'CEASEFIRE' : 'QUIET'}
+                </text>
+              )
+            })}
+          </g>
         </g>
       </svg>
+      <MapLayerBar active={layer} onChange={setLayer} />
 
       {/* P81a (§13, P81-2/P81-3): en ikonknapp, alltid nåbar, öppnar hela
           teckenförklaringen — samma tryck-i-stället-för-hovring-princip

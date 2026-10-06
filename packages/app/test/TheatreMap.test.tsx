@@ -719,3 +719,83 @@ describe('TheatreMap (P162) — Ho Chi Minh-leden', () => {
     expect(document.querySelector('[data-testid="map-legend"]')).toBeNull()
   })
 })
+
+// P166 (ETAPP10_FORSLAG.md §3b): kartlager med tal, krig/vapenvila vid frontlinjen och NLF:s egen markering.
+describe('TheatreMap (P166) — lager, frontstatus och NLF', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response),
+    )
+  })
+
+  const ready = async (state = createInitialState('indochina-slice', 'theatre-map-layers-seed')) => {
+    render(<TheatreMap state={state} onSelectCountry={() => {}} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    return state
+  }
+  const tag = (id: string) => document.querySelector(`[data-testid="map-layer-tag-${id}"]`)
+
+  it('utan ett valt lager ritas inga taggar; fem knappar finns, var och en med en ikon och en etikett', async () => {
+    await ready()
+    expect(document.querySelectorAll('[data-testid^="map-layer-tag-"]')).toHaveLength(0)
+    const buttons = document.querySelectorAll('[data-testid^="map-layer-"]:not([data-testid^="map-layer-tag"]):not([data-testid="map-layer-bar"])')
+    expect(buttons).toHaveLength(5)
+    for (const b of buttons) {
+      expect(b.querySelector('svg')).toBeTruthy()
+      expect(b.getAttribute('aria-label')).toMatch(/layer$/)
+    }
+  })
+
+  it('ett lager åt gången: ett tryck väljer, ett tryck på samma lager stänger, ett annat byter', async () => {
+    await ready()
+    const press = (id: string) => fireEvent.click(document.querySelector(`[data-testid="map-layer-${id}"]`)!)
+    press('orders')
+    expect(document.querySelector('[data-testid="map-layer-orders"]')!.getAttribute('aria-pressed')).toBe('true')
+    expect(tag('rvn')!.textContent).toMatch(/open/)
+    press('intelligence')
+    expect(document.querySelector('[data-testid="map-layer-orders"]')!.getAttribute('aria-pressed')).toBe('false')
+    expect(tag('rvn')!.textContent).toMatch(/depth/)
+    press('intelligence')
+    expect(tag('rvn')).toBeNull()
+  })
+
+  it('taggens siffror är tillståndets: öppna ordrar vid RVN i orders-lagret, och ett tryck på taggen visar landets kort', async () => {
+    const state = await ready()
+    fireEvent.click(document.querySelector('[data-testid="map-layer-orders"]')!)
+    const open = state.market.openOrders.filter((o) => o.buyerId === 'rvn').length
+    expect(tag('rvn')!.textContent).toContain(`${open} open`)
+    fireEvent.click(tag('rvn')!)
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toBe('Republic of Vietnam')
+  })
+
+  it('supply-lagret ritar en tagg per front med enheter under transport och rivalernas levererade', async () => {
+    await ready()
+    fireEvent.click(document.querySelector('[data-testid="map-layer-supply"]')!)
+    expect(tag('front-1')!.textContent).toMatch(/you 0 in transit.*rivals/)
+  })
+
+  it('NLF har en egen markering på kartan, med en etikett, och ett tryck ger NLF:s kort utan en knapp till en landsakt', async () => {
+    await ready()
+    expect(document.querySelector('[data-testid="map-landless-label-nlf"]')!.textContent).toBe('NLF')
+    fireEvent.click(document.querySelector('[data-testid="map-landless-nlf"]')!)
+    expect(document.querySelector('[data-testid="map-info-kicker"]')!.textContent).toBe('FACTION')
+    expect(document.querySelector('[data-testid="map-info-title"]')!.textContent).toMatch(/Liberation/)
+    expect(document.querySelector('[data-testid="map-info-open-file"]')).toBeNull()
+    expect(document.querySelector('[data-testid="map-info-note"]')!.textContent).toMatch(/no land of its own/)
+  })
+
+  it('frontlinjen säger WAR, och en vapenvila säger CEASEFIRE och ritas som en streckad, tom markör', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-status-seed')
+    await ready(state)
+    expect(document.querySelector('[data-testid="map-front-status-front-1"]')!.textContent).toBe('WAR')
+    expect(document.querySelector('[data-testid="map-frontline-marker-front-1"]')!.getAttribute('class')).not.toContain('is-quiet')
+    cleanup()
+
+    const quiet = createInitialState('indochina-slice', 'theatre-map-status-seed-2')
+    quiet.fronts['front-1']!.status = 'ceasefire'
+    await ready(quiet)
+    expect(document.querySelector('[data-testid="map-front-status-front-1"]')!.textContent).toBe('CEASEFIRE')
+    expect(document.querySelector('[data-testid="map-frontline-marker-front-1"]')!.getAttribute('class')).toContain('is-quiet')
+  })
+})

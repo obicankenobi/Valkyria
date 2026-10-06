@@ -117,6 +117,37 @@ async function setZoomLevel(page: Page, level: 1 | 2 | 3): Promise<void> {
 // delar redan samma hiddenLabels-mekanism i TheatreMap.tsx (samma
 // labelRefs-pool som sektoretiketterna), så det här är testtäckning för en
 // mekanism som redan fanns, inte en ny en.
+
+// P166: gemensam kollisionskontroll — används både vid startläget och med varje kartlager påslaget.
+async function findMapCollisions(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    // P81a: en dold etikett (TheatreMap.tsx:s .map-label-hidden,
+    // visibility: hidden) stannar avsiktligt i DOM:en (geometrin krävs
+    // för nästa omätning, se TheatreMap.tsx:s egen kommentar) — den ska
+    // aldrig räknas som en kollision, spelaren ser den aldrig.
+    const elements = [
+      ...document.querySelectorAll(
+        '.map-sector-label, .map-capital-label, .map-formation-label, .map-frontline-marker, .map-frontline-marker-trace, .map-layer-tag, .map-front-status-label, .map-landless-label',
+      ),
+    ].filter((el) => window.getComputedStyle(el).visibility !== 'hidden') as SVGGraphicsElement[]
+    const boxes = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }))
+    const found: string[] = []
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i]!.rect
+        const b = boxes[j]!.rect
+        const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+        if (overlaps) {
+          const describe = (el: SVGGraphicsElement) =>
+            `${el.tagName}.${el.getAttribute('class')}${el.getAttribute('data-testid') ? `[${el.getAttribute('data-testid')}]` : ''}`
+          found.push(`${describe(boxes[i]!.el)} × ${describe(boxes[j]!.el)}`)
+        }
+      }
+    }
+    return found
+  })
+}
+
 for (const format of FORMATS) {
   for (const level of [1, 2, 3] as const) {
     test(`kartan — inga etiketter eller markörer kolliderar, ${format.name}, zoomnivå ${level} (regel 18)`, async ({
@@ -130,32 +161,7 @@ for (const format of FORMATS) {
       await setZoomLevel(page, level)
       await page.waitForTimeout(300)
 
-      const collisions = await page.evaluate(() => {
-        // P81a: en dold etikett (TheatreMap.tsx:s .map-label-hidden,
-        // visibility: hidden) stannar avsiktligt i DOM:en (geometrin krävs
-        // för nästa omätning, se TheatreMap.tsx:s egen kommentar) — den ska
-        // aldrig räknas som en kollision, spelaren ser den aldrig.
-        const elements = [
-          ...document.querySelectorAll(
-            '.map-sector-label, .map-capital-label, .map-formation-label, .map-frontline-marker, .map-frontline-marker-trace',
-          ),
-        ].filter((el) => window.getComputedStyle(el).visibility !== 'hidden') as SVGGraphicsElement[]
-        const boxes = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }))
-        const found: string[] = []
-        for (let i = 0; i < boxes.length; i++) {
-          for (let j = i + 1; j < boxes.length; j++) {
-            const a = boxes[i]!.rect
-            const b = boxes[j]!.rect
-            const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
-            if (overlaps) {
-              const describe = (el: SVGGraphicsElement) =>
-                `${el.tagName}.${el.getAttribute('class')}${el.getAttribute('data-testid') ? `[${el.getAttribute('data-testid')}]` : ''}`
-              found.push(`${describe(boxes[i]!.el)} × ${describe(boxes[j]!.el)}`)
-            }
-          }
-        }
-        return found
-      })
+      const collisions = await findMapCollisions(page)
 
       expect(collisions, `Etikett-/markörkollisioner på kartan:\n${collisions.join('\n')}`).toEqual([])
     })
@@ -203,3 +209,22 @@ test('kartan — ett tryck på Kambodja visar ett kort utan landsakt', async ({ 
   await expect(page.getByTestId('map-info-title')).toHaveText('Thailand')
   await expect(page.getByTestId('map-info-open-file')).toHaveCount(0)
 })
+
+// P166: med varje kartlager påslaget får inga taggar, etiketter eller markörer krocka — i båda formaten, på startzoomen.
+for (const format of FORMATS) {
+  for (const layer of ['orders', 'supply', 'rivals', 'intelligence', 'politics'] as const) {
+    test(`kartan — lagret ${layer} kolliderar inte med etiketterna, ${format.name} (regel 18)`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.setViewportSize({ width: format.width, height: format.height })
+      await page.goto('/')
+      await enterOperations(page)
+      await page.getByTestId('theatre-map-svg').waitFor()
+      await page.waitForTimeout(300)
+      await page.getByTestId(`map-layer-${layer}`).click()
+      await expect(page.getByTestId(`map-layer-${layer}`)).toHaveAttribute('aria-pressed', 'true')
+      await page.waitForTimeout(300)
+      const collisions = await findMapCollisions(page)
+      expect(collisions, `Kollisioner med lagret ${layer}:\n${collisions.join('\n')}`).toEqual([])
+    })
+  }
+}

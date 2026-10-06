@@ -5926,3 +5926,95 @@ summary:focus-visible,
   stroke: var(--amber);
   stroke-width: 3;
 }
+
+/* ── P166: kartlager med tal, NLF:s markering och krig/vapenvila vid frontlinjen ─────────────── */
+.map-layer-bar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.map-layer-button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.map-layer-button.is-on {
+  background: var(--amber-soft);
+  color: var(--ink);
+  border-color: var(--amber);
+  box-shadow: inset 0 0 0 2px var(--amber);
+}
+.map-layer-glyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-layer-short {
+  font-family: var(--font-mono);
+  font-size: 11px; /* regel 14: versaletiketter minst 11 px */
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.map-layer-tag {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  cursor: pointer;
+}
+.map-landless-diamond {
+  fill: var(--red);
+  fill-opacity: 0.85;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.map-landless-marker {
+  cursor: pointer;
+}
+.map-landless-marker .map-token-glyph {
+  stroke: var(--panel);
+}
+.map-landless-marker.is-selected .map-landless-diamond {
+  stroke: var(--amber);
+  stroke-width: 2.5;
+}
+.map-front-status-label {
+  fill: var(--red);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.map-front-status-label.is-ceasefire,
+.map-front-status-label.is-dormant {
+  fill: var(--ink-dim);
+}
+.map-frontline-marker.is-quiet {
+  fill: var(--panel);
+  stroke: var(--ink-dim);
+  stroke-dasharray: 2 2;
+}
