@@ -17,7 +17,7 @@
 
 0. Premisskontroll · 1. Frågan · 2. Designprinciper · 3. Ägarbeslut ·
 4. Del A, anläggningarna · 5. Del B, driften · 6. Del C, kunskapen · 7. Del D, utlandet ·
-8. Gränssnittet · 9. Härness och måltabell · 10. Skyddsräcken · 11. Promptsekvens ·
+8. Gränssnittet · 9. Härness och måltabell · 9b. Kapaciteten blir knapp · 10. Skyddsräcken · 11. Promptsekvens ·
 12. Utanför etappen · Bilaga A, förebilder
 
 ---
@@ -99,6 +99,12 @@ Följd: i dag finns inget beslut om produktion som spelaren måste fatta. Etappe
 | **11L** | Rivalernas kapacitet | **Ett enda tal per rival i den här etappen.** En rival som är fullbelagd bjuder dyrare. Egna verk för rivalerna hör till etapp 10B. |
 | **11M** | Fler produkter | **Inte i den här etappen.** Sju produkter räcker, eftersom husets egna konstruktioner ger variationen. Se §12. |
 | **11N** | Vad enheten i ett verk heter | **Produktionslinje.** "Production line" i gränssnittet, `line` i koden. Ordet "bås" används inte. |
+| **11O** | Vad gör kapaciteten knapp? (2026-10-07, efter P183) | **Huvudleverantörsregeln.** Huset får bara bjuda i en kategori där det har ett monteringsverk, och högst hälften av ett kontrakt får läggas ut. Ändrar 11E: underleverantörerna är en ventil med tak, inte obegränsad kapacitet. Se §9b. |
+| **11P** | Hård eller mjuk spärr utan verk | **Mäts, och den som når måltabellen väljs.** Hård: inga bud utan verk i kategorin. Mjuk: små ordrar får tas, helt utlagda och med sämre marginal. Kodsessionen redovisar båda och väljer efter regeln i §9b. |
+| **11Q** | Finansiering av byggen | **Byggnadslån.** En del av bygget lånas med anläggningen som säkerhet, utanför den vanliga kreditgränsen, och betalas av per kvartal. |
+| **11R** | Orderstorlekar | **Höjs mot linjernas takt,** så att ett kontrakt håller en linje sysselsatt i flera kvartal. |
+| **11S** | Ryktet som kostnad för utläggning | **Nej.** Fällde alla botar i mätningen och syns inte för spelaren. |
+| **11T** | Speltestet P184 | **Flyttas till efter P186.** Före dess kan bara skärmarna bedömas. |
 
 ---
 
@@ -333,6 +339,80 @@ Etappen flyttar hela ekonomin, så en revidering är trolig och ska beslutas, in
 
 ---
 
+## 9b. Kapaciteten blir knapp (P185–P186)
+
+Tillagt 2026-10-07 efter utfallet i P183. Mätningen visade att de fetstilta raderna om att bygga inte
+nås och att inget balanstal ändrar det:
+
+- 77 % av husets enheter byggs av underleverantörer, och linjerna går 14 % av tiden.
+- `human` vinner 53 %, `human-static` 51 %. Den som aldrig bygger förlorar ingenting.
+- Kassan ligger nära noll kvartal 6–9 för varje bot, så `human-builder` går i konkurs i 90 %.
+- En rutnätssökning över 36 kombinationer gav aldrig mer än 10 procentenheter mellan dem.
+
+Orsaken är beslut 11E som det skrevs: underleverantörerna saknar tak och kostar bara ett påslag på
+styckkostnaden, som är en liten del av priset. Huset har därmed obegränsad kapacitet i alla sex kategorier
+från första kvartalet. Det är ett fel i designen, inte i bygget.
+
+### P185 — tre regler, mätta en i taget
+
+**1. Huvudleverantörsregeln (11O).**
+- Ett bud i en kategori kräver ett monteringsverk i den kategorin, i drift eller under byggnad med högst
+  ett kvartal kvar. Ett verk utomlands räknas.
+- Högst hälften av ett kontrakts enheter får läggas ut. Resten byggs på egna linjer.
+- Ett låst bud säger vad som krävs: "Requires an Assembly Works for armour". Texten kommer ur
+  `validateAction`, och samma skäl visas i budmappen, på kartans orderlager och i *This Quarter*.
+- Regeln gäller rivalerna genom deras kapacitetstal (11L): en rival bjuder inte utanför sin specialisering
+  utan kapacitet för det.
+- Upphandlingar (etapp 9) följer samma regel: anmälan kräver ett verk i kategorin eller ett pågående bygge.
+- Den civila grenen, licenser och motköp påverkas inte.
+
+**Hård eller mjuk spärr (11P).** Kodsessionen mäter båda varianterna med samma frön:
+- *Hård:* inga bud utan verk.
+- *Mjuk:* utan verk får huset ta ordrar upp till en liten storlek, helt utlagda, med ett högre påslag.
+
+Välj den variant som når flest fetstilta rader i §9. Vid lika väljs den hårda, eftersom den är lättast
+att förstå. Om den hårda varianten ger `human` färre än två biddbara ordrar per kvartal i snitt under de
+fyra första kvartalen väljs den mjuka.
+
+**2. Byggnadslån (11Q).**
+- Stående order `WORKS BUILD` får ett val: kontant eller lån.
+- Lånet täcker en andel av byggkostnaden, ligger utanför `creditLimit`, löper med ränta och betalas av med
+  lika delar under ett antal kvartal efter att anläggningen tagits i drift.
+- Säkerheten är anläggningen. Vid utebliven betalning tas den, med linjer och arbetsstyrka.
+- Lånet bokförs under `financing` i huvudboken och syns på anläggningskortet.
+- Avveckling eller försäljning löser lånet först.
+
+**3. Ordrar som fyller en linje (11R).**
+- `orderQuantityMin` och `orderQuantityMax` i produktdatan höjs mot `unitsPerLineTurn`, så att ett
+  typiskt kontrakt tar en linje i två till fyra kvartal.
+- Antalet ordrar sänks i motsvarande mån, så att marknadens värde per kvartal är ungefär oförändrat.
+- Förskott, leveranstider och styrelsens kurva kontrolleras mot de större kontrakten.
+
+**Ordning och mätning.** Regel 1 först, sedan 2, sedan 3. Efter varje regel körs härnessen (100 partier
+per bot, alla `human`-varianter) och utfallet mot §9 redovisas. Golden får frysas om en gång per regel,
+i egen commit (11I). Botarna i `worksPolicy.ts` lärs reglerna: de bjuder inte där de saknar verk, bygger
+ett verk i den kategori där flest ordrar går dem förbi, och tar byggnadslån när kassan inte räcker.
+
+**Gränssnitt i samma prompt:** det låsta budet med skäl, lånevalet i byggmenyn, lånet på
+anläggningskortet och i *Books*. `npm run shots` och regel 18.
+
+**Inte i P185:** kassadalen kvartal 6–9 som sådan. Den beror på hur scenariots efterfrågan byggs upp och
+hör till P141 i etapp 10. Byggnadslånet lindrar den för byggen men löser den inte.
+
+### P186 — balanspass
+
+Samma mål som §9, omätta rader inräknade (inkörningens andel av styckkostnadens fall ska mätas nu).
+Startpaketet prövas mot regeln: räcker ett verk med två linjer i en kategori för att överleva de första
+fyra kvartalen? Om inte justeras startkapital, startverkets nivå eller de fasta kostnaderna, i den
+ordningen. Spelbarhetstestets gränser och `capacity`-referensen får revideras bara efter ägarens beslut;
+behövs det, stanna och redovisa vad som krävs.
+
+### P184 efter P186
+
+Speltestet görs när P186 är klart (11T). `docs/SPELTEST_ETAPP11.md` uppdateras då med det nya utfallet.
+
+---
+
 ## 10. Skyddsräcken
 
 1. **En modell.** När del A är byggd finns inga fristående linjer kvar i kod eller data.
@@ -369,7 +449,9 @@ Etappen flyttar hela ekonomin, så en revidering är trolig och ska beslutas, in
 | | P181 | Nytt parti, handledning, handbok; verk på teaterkartan | UI |
 | **Mätning** | P182 | Härnessens botar och kolumner | mätning |
 | | P183 | Balanspass; vakterna revideras om ägaren beslutar det | regel |
-| | P184 | Speltest | ingen kod |
+| **Kapaciteten** | P185 | Huvudleverantörsregeln, byggnadslån och ordrar som fyller en linje (§9b) | regel |
+| | P186 | Balanspass mot §9 efter P185 | regel |
+| | P184 | Speltest, efter P186 (11T) | ingen kod |
 
 **Kapningsordning:** P177 (utlandet) först, sedan P175 (depån), sedan strejkerna i P173. Anläggningarna,
 byggtiden, omställningen, kapaciteten och inkörningen kapas inte.

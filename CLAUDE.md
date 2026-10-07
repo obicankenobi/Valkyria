@@ -922,6 +922,7 @@ verken och inga fristående linjer finns kvar (11A). Inget nytt pipeline-steg (1
 bara i promptar märkta "regel" i specens §11** (11I). Etapp 9:s regler för forskning, konstruktion och
 provning ändras inte, bara deras tak och plats. Ägaren speltestar efter P172 och P179, innan del B byggs.
 Kapningsordning: P177, sedan P175, sedan strejkerna i P173.
+**Etapp 11, ägarbeslut 2026-10-07 (11O–11T, specens §9b): P185 och P186 läggs till, P184 flyttas till efter P186.** P183 visade att kapaciteten inte binder därför att underleverantörerna saknar tak (11E som det skrevs). **P185 (regel):** huvudleverantörsregeln — bud i en kategori kräver ett monteringsverk i den, och högst hälften av ett kontrakt får läggas ut (hård och mjuk spärr mäts, valregeln står i §9b) — sedan byggnadslån med anläggningen som säkerhet, sedan orderstorlekar som håller en linje sysselsatt i två till fyra kvartal. Mäts en regel i taget, golden får frysas om en gång per regel i egen commit. **P186 (regel):** balanspass mot §9. Spelbarhetstestets gränser och `capacity`-referensen ändras bara efter ägarens beslut. Ryktet som kostnad för utläggning byggs inte (11S). Kassadalen kvartal 6–9 hör till P141 i etapp 10, inte hit.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
