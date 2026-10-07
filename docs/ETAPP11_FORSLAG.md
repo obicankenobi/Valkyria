@@ -318,6 +318,16 @@ fulla samtidigt, vilket är den siffra P172 (kapaciteten räknas om) ska flytta.
 | Andel av styckkostnadens fall som kommer av inkörning i en serie på åtta kvartal | 15–30 % | |
 | `human`, `SCENARIO_COMPLETE` | 40–70 % | **ja** |
 
+> **Utfall (P182–P183, 2026-10-07; 100 partier per bot, efter att `buildCost` halverats och `boardTarget.threshold` höjts 2,45 → 2,9).**
+> **Nådda:** `human` `SCENARIO_COMPLETE` 53 % (mål 40–70) och `human-outsource` 48 % (20–50). **Inte nådda:** `human` mot `human-static` +2 pp (≥ 25);
+> utnyttjande 14 % (70–90); `human-builder` konkurs 90 % (10–30); `human-specialist` 12 % och `human-broad` 0 % (≥ 35); byggda anläggningar 0,4 + 0,7
+> utbyggnader (3–6); driftsbeslut 22 % som övre gräns (≥ 60); sena leveranser 0,7 (1–4); tomten full 0 % (30–60); inkörningens andel ej mätt.
+> **Diagnos:** kapaciteten binder inte (77 % av enheterna går via underleverantör; `subcontractUnitsFactor` 0,2–0,6 gav identiska utfall), styckkostnaden är en
+> liten del av priset, och kassan ligger nära noll kvartal 6–9, så ett bygge fäller huset. En rutnätssökning över 36 kombinationer av tal gav aldrig mer än +10 pp
+> för `human`. **Att bygga lönar sig alltså inte med reglerna som de är; det behövs en regel (utläggningstak, större orders mot linjetakten, finansiering av bygget
+> eller ryktet som kostnad), inte ett tal — ägarens beslut efter P184.** Vakterna (spelbarhetstestet och `capacity`-referensen) håller utan revidering. Se
+> `docs/ANDRINGSLOGG.md` (P182, P183) och `docs/SPELTEST_ETAPP11.md`.
+
 Spelbarhetstestets golv och tak och capacity-referensen ska hålla, eller revideras uttryckligen av ägaren.
 Etappen flyttar hela ekonomin, så en revidering är trolig och ska beslutas, inte ske tyst.
 
