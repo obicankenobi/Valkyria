@@ -27,6 +27,7 @@ import {
   officialId,
   playerWinCurve,
   programmeEligible,
+  laboratoryFor,
   suspectedRivals,
   programmeBloc,
   requirementCards,
@@ -1022,7 +1023,13 @@ function civilStandingOrders(state: GameState): StandingOrderChange[] {
   const queued = house.rnd.filter((p) => p.category === 'armour').length
   const hasTrack = house.standingOrders?.research?.armour !== undefined
   // Pivoten görs tidigt, medan kassan finns: ett forskningsprojekt är sex turers kostnad och går inte att finansiera ur ett överskott här.
-  if (house.techLevel.armour + queued < 6 && !hasTrack && queued === 0 && state.meta.turn <= HUMAN_CIVIL_PIVOT_BY_TURN) {
+  // P144: sedan P176 kräver forskning ett laboratorium i kategorin — pivoten börjar med att bygga ett (ett byggande lab räknas som påbörjat).
+  const labBuilding = house.works.some((w) => w.kind === 'laboratory' && w.category === 'armour')
+  if (house.techLevel.armour + queued < 6 && !labBuilding && state.meta.turn <= HUMAN_CIVIL_PIVOT_BY_TURN) {
+    const lab: StandingOrderChange = { kind: 'WORKS', op: 'BUILD', facilityKind: 'laboratory', category: 'armour' }
+    if (validateStandingOrderChange(state, state, lab).ok) out.push(lab)
+  }
+  if (house.techLevel.armour + queued < 6 && !hasTrack && queued === 0 && laboratoryFor(house, 'armour') !== undefined) {
     out.push({ kind: 'RESEARCH', op: 'SET', category: 'armour', pace: 'normal' })
   }
   if (hasTrack && house.techLevel.armour + queued >= 6) out.push({ kind: 'RESEARCH', op: 'CANCEL', category: 'armour' })
