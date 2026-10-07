@@ -165,3 +165,37 @@ describe('deriveQuarterlyNotice (P81-11, ETAPP7_TEKNISK_SPEC.md §13)', () => {
     expect(items.map((i) => i.id).sort()).toEqual(['delivered', 'fulfilled'])
   })
 })
+
+describe('deriveThisQuarter — larmen från verken (P180, ETAPP11 §8 punkt 5)', () => {
+  const company = (focus?: string) => ({ view: 'company', ...(focus ? { focus } : {}) })
+
+  it('startläget ger inga verkslarm', () => {
+    const state: GameState = createInitialState('indochina-slice', 'works-alarm-empty-seed')
+    expect(deriveThisQuarter(state).some((i) => i.kind === 'works')).toBe(false)
+  })
+
+  it('dåligt skick och strejkrisk ger rader som öppnar anläggningens kort på tomtplanen', () => {
+    const state: GameState = createInitialState('indochina-slice', 'works-alarm-condition-seed')
+    const works = state.house.works.find((w) => w.kind === 'assembly')!
+    works.condition = 10
+    works.morale = 38
+    const rows = deriveThisQuarter(state).filter((i) => i.kind === 'works')
+    expect(rows.map((r) => r.label).join(' | ')).toMatch(/poor condition/)
+    expect(rows.map((r) => r.label).join(' | ')).toMatch(/strike line/)
+    for (const r of rows) expect(r.target).toEqual(company(works.id))
+  })
+
+  it('ett sent kontrakt hoppar till produktionstavlan; tomma linjer är en enda rad som hoppar till linjekortet', () => {
+    const state: GameState = createInitialState('indochina-slice', 'works-alarm-late-seed')
+    state.meta.turn = 2
+    state.market.contracts = [
+      { id: 'contract-9', buyerId: 'rvn', productId: '105mm_field_gun', quantity: 9000, unitsDelivered: 0, price: 2_000_000, unitCostAtSigning: 11_500, grade: 'A', dueTurn: 3, status: 'active', lateEventId: null, frontId: null, advancePct: 0, advancePaid: 0 },
+    ]
+    const rows = deriveThisQuarter(state).filter((i) => i.kind === 'works')
+    expect(rows.find((r) => /will not be delivered/.test(r.label))!.target).toEqual(company('production-board'))
+    state.market.contracts = []
+    const empty = deriveThisQuarter(state).filter((i) => i.kind === 'works')
+    expect(empty).toHaveLength(1)
+    expect(empty[0]!.target).toEqual(company('line-1'))
+  })
+})

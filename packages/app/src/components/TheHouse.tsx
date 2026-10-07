@@ -21,28 +21,42 @@
 // borttaget härifrån — den hårdkodade genvägen den här filens kommentar
 // tidigare beskrev är nu den avsedda platsen. "Executive actions"-panelen
 // visar bara INTERNAL-formuläret och dess köade kort.
-import {
-  DISPLAY_THRESHOLDS,
-  computeUnitCostNow,
-  getProduct,
-  projectedQuarter,
-  researchOutlook,
-} from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct, projectedQuarter, researchOutlook } from '@seventh-front/core'
 import { totalFixedCosts } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
+import { useEffect, useState } from 'react'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { DrawingBoard } from './DrawingBoard.js'
 import { LedgerChart } from './LedgerChart.js'
 import { PaperTrail } from './PaperTrail.js'
+import { ProductionBoard } from './ProductionBoard.js'
 import { StandingOrdersBoard } from './StandingOrdersBoard.js'
 import { TypeSheets } from './TypeSheet.js'
+import { WorksPlan } from './WorksPlan.js'
 import { Bar, Meter, Panel, Tag, formatMoney } from './ui.js'
+
+export type CompanyDrawer = 'works' | 'drawing' | 'books' | 'legal'
+
+const DRAWERS: { id: CompanyDrawer; label: string }[] = [
+  { id: 'works', label: 'Works' },
+  { id: 'drawing', label: 'Drawing office' },
+  { id: 'books', label: 'Books' },
+  { id: 'legal', label: 'Legal' },
+]
+
+// This Quarter hoppar hit med ett kort-id: pappersspåret ligger i Legal, resten (linjer, avtal, stationer) i Works.
+function drawerForFocus(focus: string | null): CompanyDrawer {
+  return focus === 'paper-trail' ? 'legal' : 'works'
+}
 
 function contractMargin(contract: Contract, commodities: Record<Commodity, number>): { marginPct: number | null; unitCostNow: number } {
   const unitCostNow = computeUnitCostNow(getProduct(contract.productId), contract.grade, commodities)
   if (contract.price <= 0) return { marginPct: null, unitCostNow }
   const cost = unitCostNow * contract.quantity
-  return { marginPct: ((contract.price - cost) / contract.price) * 100, unitCostNow }
+  return {
+    marginPct: ((contract.price - cost) / contract.price) * 100,
+    unitCostNow,
+  }
 }
 
 function describeAction(action: Extract<PlayerAction, { type: 'INTERNAL' }>): string {
@@ -75,12 +89,20 @@ function ExecutiveActions({
 }) {
   const queued = draft.actions
     .map((action, index) => ({ action, index }))
-    .filter((entry): entry is { action: Extract<PlayerAction, { type: 'INTERNAL' }>; index: number } => entry.action.type === 'INTERNAL')
+    .filter(
+      (
+        entry,
+      ): entry is {
+        action: Extract<PlayerAction, { type: 'INTERNAL' }>
+        index: number
+      } => entry.action.type === 'INTERNAL',
+    )
 
   return (
     <Panel
       title="Executive actions"
-      info="Actions that cost an action point each quarter: loans, lines, hires and crash research." infoTopic="production"
+      info="Actions that cost an action point each quarter: loans, lines, hires and crash research."
+      infoTopic="production"
       right={<Tag tone="amber">{state.house.actionPoints} action points</Tag>}
     >
       <InternalActionsForm state={state} onAddAction={onAddAction} />
@@ -111,7 +133,12 @@ function NextQuarterPanel({ state }: { state: GameState }) {
   const totalFixed = totalFixedCosts(q.fixedCosts)
 
   return (
-    <Panel info="What your books will most likely show next quarter, from deliveries already scheduled." infoTopic="board" title="Next quarter" right={<Tag tone={q.netChange >= 0 ? 'green' : 'red'}>{formatMoney(q.netChange)} net</Tag>}>
+    <Panel
+      info="What your books will most likely show next quarter, from deliveries already scheduled."
+      infoTopic="board"
+      title="Next quarter"
+      right={<Tag tone={q.netChange >= 0 ? 'green' : 'red'}>{formatMoney(q.netChange)} net</Tag>}
+    >
       <dl className="kv">
         <dt>Expected revenue (scheduled deliveries)</dt>
         <dd>{formatMoney(q.expectedRevenueNextTurn)}</dd>
@@ -143,8 +170,7 @@ function NextQuarterPanel({ state }: { state: GameState }) {
         <dd>−{formatMoney(totalFixed)}</dd>
       </dl>
       <p className="cf-hint" style={{ marginTop: 10 }}>
-        Revenue counts only shipments already scheduled to arrive next quarter — deliveries further out in the pipeline
-        (delay up to three quarters) aren't guessed at.
+        Revenue counts only shipments already scheduled to arrive next quarter — deliveries further out in the pipeline (delay up to three quarters) aren't guessed at.
       </p>
     </Panel>
   )
@@ -158,6 +184,7 @@ export function TheHouse({
   onSetStandingOrder = () => {},
   onRemoveStandingOrder = () => {},
   focusCard = null,
+  initialDrawer = null,
 }: {
   state: GameState
   draft: TurnSubmission
@@ -167,7 +194,12 @@ export function TheHouse({
   onSetStandingOrder?: (change: StandingOrderChange) => void
   onRemoveStandingOrder?: (key: string) => void
   focusCard?: string | null
+  initialDrawer?: CompanyDrawer | null
 }) {
+  const [drawer, setDrawer] = useState<CompanyDrawer>(initialDrawer ?? drawerForFocus(focusCard))
+  useEffect(() => {
+    if (focusCard) setDrawer(drawerForFocus(focusCard))
+  }, [focusCard])
   const house = state.house
   const target = house.boardTarget
   const nextReview = target.reviewTurns.find((t) => t > state.meta.turn) ?? null
@@ -179,192 +211,225 @@ export function TheHouse({
     <>
       <h2 className="view-title">The Company</h2>
 
-      <div className="grid-2">
-        <Panel info="Your cash, debt and the credit you still have." infoTopic="board" title="Balance sheet">
-          <dl className="kv">
-            <dt>Treasury</dt>
-            <dd>{formatMoney(house.treasury)}</dd>
-            <dt>Debt</dt>
-            <dd>{formatMoney(house.debt)}</dd>
-            <dt>Credit limit</dt>
-            <dd data-testid="credit-limit">{formatMoney(house.creditLimit)}</dd>
-            <dt>Total revenue</dt>
-            <dd>{formatMoney(totalRevenue)}</dd>
-            <dt>Interest (annual)</dt>
-            <dd>{(house.debtRateAnnual * 100).toFixed(1)}%</dd>
-          </dl>
-
-          <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
-            <Meter
-              label="Quality reputation"
-              value={house.reputation.quality}
-              display={house.reputation.quality.toFixed(0)}
-              tone="blue"
-            />
-            <Meter
-              label="Reliability"
-              value={house.reputation.reliability}
-              display={house.reputation.reliability.toFixed(0)}
-              tone={house.reputation.reliability < 40 ? 'red' : 'blue'}
-            />
-            <Meter
-              label="Supply cost index"
-              value={supplyIndex}
-              max={DISPLAY_THRESHOLDS.supplyIndexMax}
-              display={supplyIndex.toFixed(0)}
-              tone={supplyIndex > 100 ? 'red' : 'blue'}
-              marks={[{ at: 100, label: 'baseline' }]}
-            />
-          </div>
-        </Panel>
-
-        <Panel
-          title={`Board target: ${target.label}`}
-          info="What the board demands, and when it checks. Two failed reviews in a row end your game." infoTopic="board"
-          right={
-            target.reviewsFailed > 0 ? (
-              <Tag tone="red">{target.reviewsFailed}/2 failed</Tag>
-            ) : (
-              <Tag tone="green">No remarks</Tag>
-            )
-          }
-        >
-          <Meter
-            label={`Progress toward target (due T${target.dueTurn})`}
-            value={target.progressSnapshot}
-            max={target.threshold}
-            display={`${target.progressSnapshot.toFixed(2)} / ${target.threshold}`}
-            tone={target.progressSnapshot >= target.threshold ? 'green' : 'amber'}
-            marks={target.reviewTurns.map((reviewTurn) => ({
-              at: (reviewTurn / target.dueTurn) * target.threshold,
-              label: `T${reviewTurn}`,
-            }))}
-          />
-          <p className="banner-sub" style={{ marginTop: 16 }}>
-            {nextReview !== null
-              ? `Next forecast review turn ${nextReview} — the board compares against the linear path, with tolerance.`
-              : 'No more forecast reviews. The target is judged outright at maturity.'}
-          </p>
-        </Panel>
+      <div className="drawer-tabs" role="tablist" aria-label="The Company drawers" data-testid="company-drawers">
+        {DRAWERS.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            role="tab"
+            aria-selected={drawer === d.id}
+            className={drawer === d.id ? 'drawer-tab is-active' : 'drawer-tab'}
+            onClick={() => setDrawer(d.id)}
+            data-testid={`company-drawer-${d.id}`}
+          >
+            {d.label}
+          </button>
+        ))}
       </div>
 
-      {/* P128 (ETAPP9 §8.3): pappersspåret — utredningskort, rent rykte, juridisk rådgivning. */}
-      <PaperTrail state={state} draft={draft} onSet={onSetStandingOrder} />
+      {drawer === 'works' && (
+        <>
+          {/* P179 (ETAPP11 §8): tomtplanen, produktionslinjerna och driften. */}
+          <WorksPlan state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} focusId={focusCard} />
+          <ProductionBoard state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} focus={focusCard === 'production-board'} />
 
-      <LedgerChart state={state} />
+          {/* P101: produktionslinjerna bor nu på anslagstavlan — linjekorten visar SAMMA ProductionLineBand
+              (en linje, en sanning), plus det stående uppdraget. */}
+          <StandingOrdersBoard state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} focusCard={focusCard} />
 
-      <NextQuarterPanel state={state} />
+          <ExecutiveActions state={state} draft={draft} onAddAction={onAddAction} onRemoveAction={onRemoveAction} />
 
-      <ExecutiveActions state={state} draft={draft} onAddAction={onAddAction} onRemoveAction={onRemoveAction} />
+          <RawMaterialsPanel state={state} onAddAction={onAddAction} />
+        </>
+      )}
 
-      <RawMaterialsPanel state={state} onAddAction={onAddAction} />
+      {drawer === 'drawing' && (
+        <>
+          {/* P126 (ETAPP9 §9): ritbordet (en blåkopia per kategori) och typbladen för husets färdiga konstruktioner. */}
+          <DrawingBoard state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} onAddAction={onAddAction} />
+          <TypeSheets state={state} draft={draft} onAddAction={onAddAction} onSet={onSetStandingOrder} />
 
-      <Panel info="What each contract earns after your unit cost. A low margin means price or material cost is eating the deal." infoTopic="production" title="Margin per active contract">
-        {activeContracts.length === 0 ? (
-          <p className="empty">No active contracts.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Contract</th>
-                <th>Product</th>
-                <th>Grade</th>
-                <th>Contract value</th>
-                <th>Delivered</th>
-                <th>Unit cost (signing)</th>
-                <th>Unit cost (now)</th>
-                <th style={{ width: 160 }}>Gross margin</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeContracts.map((contract) => {
-                const { marginPct, unitCostNow } = contractMargin(contract, state.market.commodities)
-                return (
-                  <tr key={contract.id}>
-                    <td className="is-key">{contract.id}</td>
-                    <td>{getProduct(contract.productId).name}</td>
-                    <td>{contract.grade}</td>
-                    <td>{formatMoney(contract.price)}</td>
-                    <td>
-                      {contract.unitsDelivered}/{contract.quantity}
-                    </td>
-                    <td>{formatMoney(contract.unitCostAtSigning)}</td>
-                    <td>{formatMoney(unitCostNow)}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ width: 52, color: marginPct !== null && marginPct < 0 ? 'var(--red)' : undefined }}>
-                          {marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}
-                        </span>
-                        <Bar
-                          ratio={marginPct === null ? 0 : Math.max(0, marginPct) / 100}
-                          tone={marginPct !== null && marginPct >= 20 ? 'green' : 'amber'}
-                        />
-                      </div>
-                    </td>
+          <Panel info="Research projects and the staff roles that speed them up." infoTopic="production" title="R&D and staff">
+            {researchOutlook(state).map((r) => (
+              <div className="research-row" key={r.category} data-testid="research-row">
+                <span className="research-category">{r.category.toUpperCase()}</span>
+                <span className="research-level">Level {r.techLevel}</span>
+                <span className="research-next">
+                  {r.nextUnlock ? `Unlocks ${r.nextUnlock.productName} at level ${r.nextUnlock.techRequired}` : 'Everything in this field is unlocked'}
+                </span>
+              </div>
+            ))}
+
+            {house.rnd.length === 0 ? (
+              <p className="empty" style={{ marginTop: 10 }}>
+                No ongoing research projects.
+              </p>
+            ) : (
+              <table style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Remaining</th>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </Panel>
+                </thead>
+                <tbody>
+                  {house.rnd.map((project) => (
+                    <tr key={project.id}>
+                      <td className="is-key">{project.category}</td>
+                      <td>
+                        {project.turnsRemaining}/{project.turnsTotal} turns
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
 
-      {/* P101: produktionslinjerna bor nu på anslagstavlan — linjekorten visar SAMMA ProductionLineBand
-          (en linje, en sanning), plus det stående uppdraget. */}
-      <StandingOrdersBoard
-        state={state}
-        draft={draft}
-        onSet={onSetStandingOrder}
-        onRemove={onRemoveStandingOrder}
-        focusCard={focusCard}
-      />
+            <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+              <Meter label="Chief Engineer" value={house.staff.chiefEngineer} tone="blue" />
+              <Meter label="Chief Salesman" value={house.staff.chiefSalesman} tone="blue" />
+              <Meter label="Chief of Staff" value={house.staff.chiefOfStaff} tone="blue" />
+            </div>
+          </Panel>
+        </>
+      )}
 
-      {/* P126 (ETAPP9 §9): ritbordet (en blåkopia per kategori) och typbladen för husets färdiga konstruktioner. */}
-      <DrawingBoard state={state} draft={draft} onSet={onSetStandingOrder} onRemove={onRemoveStandingOrder} onAddAction={onAddAction} />
-      <TypeSheets state={state} draft={draft} onAddAction={onAddAction} onSet={onSetStandingOrder} />
+      {drawer === 'books' && (
+        <>
+          <div className="grid-2">
+            <Panel info="Your cash, debt and the credit you still have." infoTopic="board" title="Balance sheet">
+              <dl className="kv">
+                <dt>Treasury</dt>
+                <dd>{formatMoney(house.treasury)}</dd>
+                <dt>Debt</dt>
+                <dd>{formatMoney(house.debt)}</dd>
+                <dt>Credit limit</dt>
+                <dd data-testid="credit-limit">{formatMoney(house.creditLimit)}</dd>
+                <dt>Total revenue</dt>
+                <dd>{formatMoney(totalRevenue)}</dd>
+                <dt>Interest (annual)</dt>
+                <dd>{(house.debtRateAnnual * 100).toFixed(1)}%</dd>
+              </dl>
 
-      <Panel info="Research projects and the staff roles that speed them up." infoTopic="production" title="R&D and staff">
-        {researchOutlook(state).map((r) => (
-          <div className="research-row" key={r.category} data-testid="research-row">
-            <span className="research-category">{r.category.toUpperCase()}</span>
-            <span className="research-level">Level {r.techLevel}</span>
-            <span className="research-next">
-              {r.nextUnlock ? `Unlocks ${r.nextUnlock.productName} at level ${r.nextUnlock.techRequired}` : 'Everything in this field is unlocked'}
-            </span>
+              <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+                <Meter label="Quality reputation" value={house.reputation.quality} display={house.reputation.quality.toFixed(0)} tone="blue" />
+                <Meter
+                  label="Reliability"
+                  value={house.reputation.reliability}
+                  display={house.reputation.reliability.toFixed(0)}
+                  tone={house.reputation.reliability < 40 ? 'red' : 'blue'}
+                />
+                <Meter
+                  label="Supply cost index"
+                  value={supplyIndex}
+                  max={DISPLAY_THRESHOLDS.supplyIndexMax}
+                  display={supplyIndex.toFixed(0)}
+                  tone={supplyIndex > 100 ? 'red' : 'blue'}
+                  marks={[{ at: 100, label: 'baseline' }]}
+                />
+              </div>
+            </Panel>
+
+            <Panel
+              title={`Board target: ${target.label}`}
+              info="What the board demands, and when it checks. Two failed reviews in a row end your game."
+              infoTopic="board"
+              right={target.reviewsFailed > 0 ? <Tag tone="red">{target.reviewsFailed}/2 failed</Tag> : <Tag tone="green">No remarks</Tag>}
+            >
+              <Meter
+                label={`Progress toward target (due T${target.dueTurn})`}
+                value={target.progressSnapshot}
+                max={target.threshold}
+                display={`${target.progressSnapshot.toFixed(2)} / ${target.threshold}`}
+                tone={target.progressSnapshot >= target.threshold ? 'green' : 'amber'}
+                marks={target.reviewTurns.map((reviewTurn) => ({
+                  at: (reviewTurn / target.dueTurn) * target.threshold,
+                  label: `T${reviewTurn}`,
+                }))}
+              />
+              <p className="banner-sub" style={{ marginTop: 16 }}>
+                {nextReview !== null
+                  ? `Next forecast review turn ${nextReview} — the board compares against the linear path, with tolerance.`
+                  : 'No more forecast reviews. The target is judged outright at maturity.'}
+              </p>
+            </Panel>
           </div>
-        ))}
 
-        {house.rnd.length === 0 ? (
-          <p className="empty" style={{ marginTop: 10 }}>
-            No ongoing research projects.
-          </p>
-        ) : (
-          <table style={{ marginTop: 10 }}>
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Remaining</th>
-              </tr>
-            </thead>
-            <tbody>
-              {house.rnd.map((project) => (
-                <tr key={project.id}>
-                  <td className="is-key">{project.category}</td>
-                  <td>
-                    {project.turnsRemaining}/{project.turnsTotal} turns
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+          <LedgerChart state={state} />
 
-        <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
-          <Meter label="Chief Engineer" value={house.staff.chiefEngineer} tone="blue" />
-          <Meter label="Chief Salesman" value={house.staff.chiefSalesman} tone="blue" />
-          <Meter label="Chief of Staff" value={house.staff.chiefOfStaff} tone="blue" />
-        </div>
-      </Panel>
+          <NextQuarterPanel state={state} />
+
+          <Panel
+            info="What each contract earns after your unit cost. A low margin means price or material cost is eating the deal."
+            infoTopic="production"
+            title="Margin per active contract"
+          >
+            {activeContracts.length === 0 ? (
+              <p className="empty">No active contracts.</p>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Contract</th>
+                    <th>Product</th>
+                    <th>Grade</th>
+                    <th>Contract value</th>
+                    <th>Delivered</th>
+                    <th>Unit cost (signing)</th>
+                    <th>Unit cost (now)</th>
+                    <th style={{ width: 160 }}>Gross margin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeContracts.map((contract) => {
+                    const { marginPct, unitCostNow } = contractMargin(contract, state.market.commodities)
+                    return (
+                      <tr key={contract.id}>
+                        <td className="is-key">{contract.id}</td>
+                        <td>{getProduct(contract.productId).name}</td>
+                        <td>{contract.grade}</td>
+                        <td>{formatMoney(contract.price)}</td>
+                        <td>
+                          {contract.unitsDelivered}/{contract.quantity}
+                        </td>
+                        <td>{formatMoney(contract.unitCostAtSigning)}</td>
+                        <td>{formatMoney(unitCostNow)}</td>
+                        <td>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 52,
+                                color: marginPct !== null && marginPct < 0 ? 'var(--red)' : undefined,
+                              }}
+                            >
+                              {marginPct === null ? '—' : `${marginPct.toFixed(1)}%`}
+                            </span>
+                            <Bar ratio={marginPct === null ? 0 : Math.max(0, marginPct) / 100} tone={marginPct !== null && marginPct >= 20 ? 'green' : 'amber'} />
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </Panel>
+        </>
+      )}
+
+      {drawer === 'legal' && (
+        <>
+          <p className="cf-hint drawer-intro">Paper trails, inquiries and the legal counsel you keep on retainer.</p>
+          {/* P128 (ETAPP9 §8.3): pappersspåret — utredningskort, rent rykte, juridisk rådgivning. */}
+          <PaperTrail state={state} draft={draft} onSet={onSetStandingOrder} />
+        </>
+      )}
     </>
   )
 }

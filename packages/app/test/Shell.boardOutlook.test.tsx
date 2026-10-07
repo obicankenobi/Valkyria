@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
 import { HudBar, QuarterBand } from '../src/components/Shell.js'
+import { deriveThisQuarter } from '../src/thisQuarter.js'
 
 const NOOP_NAVIGATE = vi.fn()
 
@@ -59,7 +60,10 @@ describe('QuarterBand (P81c) — förvarning inför en granskning', () => {
     state.house.boardTarget.progressSnapshot = 0
     render(<QuarterBand state={state} onNavigate={NOOP_NAVIGATE} />)
 
-    expect(document.querySelector('[data-testid="quarterband-toggle"] .ds-quarterband-count')!.textContent).toBe('1')
+    // Förvarningen räknas OVANPÅ listans rader. Efter tur 1 utan kontrakt larmar verken också (P180: de lediga linjerna, en enda rad).
+    const listed = deriveThisQuarter(state).length
+    expect(listed).toBe(1)
+    expect(document.querySelector('[data-testid="quarterband-toggle"] .ds-quarterband-count')!.textContent).toBe(String(listed + 1))
 
     fireEvent.click(document.querySelector('[data-testid="quarterband-toggle"]')!)
     expect(document.querySelector('[data-testid="quarterband-board-warning-item"]')).toBeTruthy()

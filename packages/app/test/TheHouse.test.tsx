@@ -83,7 +83,7 @@ describe('TheHouse — Next Quarter-panelen (P85, P81-14/15)', () => {
     const state = createInitialState('indochina-slice', 'thehouse-nextquarter-seed')
     const q = projectedQuarter(state)
 
-    render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} />)
+    render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} initialDrawer="books" />)
 
     const panel = screen.getByText('Next quarter').closest('.panel') ?? document.body
     expect(panel.textContent).toContain(`£${q.expectedRevenueNextTurn.toLocaleString('en-GB')}`)
@@ -108,7 +108,7 @@ describe('TheHouse — R&D-utsikten (P85, P81-17)', () => {
     const state = createInitialState('indochina-slice', 'thehouse-research-seed')
     state.house.techLevel.infantry = 0
 
-    render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} />)
+    render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} initialDrawer="drawing" />)
 
     const rows = screen.getAllByTestId('research-row')
     expect(rows).toHaveLength(6)

@@ -210,7 +210,10 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     // <input type="number"> — LAVISH-nivån är exakt 100 % av creditLimit
     // (TIER_FRACTIONS.lavish === 1), samma belopp testet tidigare fyllde in.
     const treasury = parseMoney(await page.getByTestId('hud-treasury').innerText())
+    // P179: kreditgränsen står i balansräkningen (lådan Books); lånet tas i Works.
+    await page.getByTestId('company-drawer-books').click()
     const creditLimit = parseMoney(await page.getByTestId('credit-limit').innerText())
+    await page.getByTestId('company-drawer-works').click()
     if (treasury < 6000000 && creditLimit > 0) {
       await page.locator('[data-testid="company-credit-tier"]').getByRole('radio', { name: 'LAVISH' }).click()
       await page.getByRole('button', { name: /Take Loan/ }).click()

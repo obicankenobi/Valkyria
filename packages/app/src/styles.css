@@ -6105,3 +6105,437 @@ summary:focus-visible,
     padding-left: 220px;
   }
 }
+
+/* ── P179: THE COMPANY i fyra lådor, tomtplanen (THE WORKS), anläggningskortet och byggmenyn ───────────────────── */
+.drawer-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin: 0 0 12px;
+}
+.drawer-tab {
+  min-height: 44px;
+  padding: 4px 6px;
+  border: 1px solid var(--line-strong);
+  border-bottom: 3px solid var(--line-strong);
+  background: var(--panel-sunken);
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  white-space: normal;
+  cursor: pointer;
+}
+.drawer-tab:active {
+  transform: translateY(1px);
+}
+.drawer-tab.is-active {
+  background: var(--panel);
+  color: var(--ink);
+  border-bottom-color: var(--amber);
+}
+@media (hover: hover) {
+  .drawer-tab:hover:not(.is-active) {
+    background: var(--panel-raised);
+  }
+}
+.drawer-intro {
+  margin: 0 0 10px;
+}
+
+.works-plan {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.works-ground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+.works-slot {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+  overflow: hidden;
+}
+.works-slot:active {
+  transform: scale(0.98);
+}
+.works-slot:focus-visible {
+  outline: 3px solid var(--amber);
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  .works-slot:hover {
+    outline: 2px solid var(--amber);
+    outline-offset: -2px;
+  }
+}
+.works-slot.has-alarm {
+  outline: 2px solid var(--red);
+  outline-offset: -2px;
+}
+.works-sprite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.works-slot.is-free .works-sprite {
+  opacity: 0.8;
+}
+.works-slot.is-queued .works-sprite {
+  opacity: 0.75;
+}
+.works-slot-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1px 2px 2px;
+  background: var(--panel);
+  border-top: 1px solid var(--line-strong);
+  font-family: var(--font-ui);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+.works-slot-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.works-slot-sub {
+  font-size: 11px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.works-slot.is-free .works-slot-label,
+.works-slot.is-queued .works-slot-label {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  background: transparent;
+  border-top: none;
+}
+/* Lampan: form, inte bara färg — en fylld cirkel går, en grå kvadrat står, en romb bygger. Ingen glöd (regel 8). Rött är reserverat för larm (.has-alarm). */
+.works-lamp {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border: 1px solid var(--ink);
+  vertical-align: -1px;
+}
+.works-slot > .works-lamp {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+}
+.works-lamp.is-running {
+  background: var(--green);
+  border-radius: 50%;
+}
+.works-lamp.is-standing {
+  background: var(--ink-faint);
+  border-radius: 0;
+}
+.works-lamp.is-building {
+  background: var(--amber);
+  transform: rotate(45deg) scale(0.8);
+}
+.works-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.works-abroad {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+.works-abroad-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-sunken);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.works-land {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.facility-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.facility-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.facility-strike {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.build-menu,
+.build-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.build-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--amber);
+  background: var(--panel);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.build-menu-row:active {
+  transform: translateY(1px);
+}
+@media (hover: hover) {
+  .build-menu-row:hover {
+    background: var(--panel-raised);
+  }
+}
+.build-menu-sprite {
+  flex: 0 0 auto;
+  width: 57px;
+  height: 48px;
+}
+.build-menu-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.build-menu-name {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+}
+.build-menu-does {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--ink-dim);
+}
+.build-menu-cost {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--amber-ink);
+}
+
+/* ── P180: produktionstavlan (ETAPP11 §8 punkt 3) och "ready by" i budmappen ───────────────────────────────── */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.board.is-focus {
+  outline: 2px solid var(--amber);
+  outline-offset: 4px;
+}
+.board-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+}
+.board-row-label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.board-row-sub {
+  font-weight: 400;
+  color: var(--ink-dim);
+}
+.board-track {
+  position: relative;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  background:
+    repeating-linear-gradient(to right, transparent 0, transparent calc(100% / 6 - 1px), var(--line) calc(100% / 6 - 1px), var(--line) calc(100% / 6));
+  background-color: var(--panel-sunken);
+}
+.board-head .board-track {
+  height: auto;
+  border: none;
+  background: none;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+.board-col {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  text-align: center;
+}
+.board-seg {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  box-sizing: border-box;
+}
+.board-seg.is-contract {
+  background: var(--amber-soft);
+  border-color: var(--amber-ink);
+}
+.board-seg.is-contract.is-late {
+  background: var(--red-soft);
+  border: 2px solid var(--red);
+}
+.board-seg.is-setup {
+  background: repeating-linear-gradient(135deg, var(--line) 0, var(--line) 3px, transparent 3px, transparent 6px);
+  border-style: dashed;
+  border-color: var(--ink-faint);
+}
+.board-seg.is-idle {
+  border: none;
+  background: transparent;
+}
+.board-seg-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.board-contracts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+.board-contract {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--amber);
+  background: var(--panel);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.board-contract.is-late {
+  border-left-color: var(--red);
+}
+.board-contract:active {
+  transform: translateY(1px);
+}
+@media (hover: hover) {
+  .board-contract:hover {
+    background: var(--panel-raised);
+  }
+}
+.board-contract-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.board-contract-id {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+}
+.board-contract-product {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+}
+.board-contract-meta {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.bid-capacity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--amber);
+  background: var(--panel);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+}
+.bid-capacity.is-late {
+  border-left-color: var(--red);
+}
+.bid-capacity-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.bid-capacity-line {
+  margin: 0;
+  line-height: 1.35;
+}
+.bid-capacity-line.is-warning {
+  color: var(--red);
+  font-weight: 700;
+}

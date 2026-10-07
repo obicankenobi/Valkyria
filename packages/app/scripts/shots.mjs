@@ -121,6 +121,45 @@ async function injectDesigns(page) {
   await page.getByTestId('tab-company').click()
 }
 
+// P180 (ETAPP11 §8): produktionstavlan och verkslarmen kräver kontrakt och ett verk i dåligt skick — samma IndexedDB-injektion som injectDesigns.
+async function injectWorksState(page) {
+  await enterOperationsAndPlay(page, 0)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const state = saved.state
+    const base = { buyerId: 'rvn', productId: '105mm_field_gun', unitsDelivered: 0, price: 2_000_000, unitCostAtSigning: 11_500, grade: 'A', status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0 }
+    state.market.contracts = [
+      { ...base, id: 'contract-order-11', quantity: 120, dueTurn: 9 },
+      { ...base, id: 'contract-order-12', quantity: 9000, dueTurn: 3 },
+      { ...base, id: 'contract-order-13', productId: 'm3_apc', quantity: 20, dueTurn: 8, outsource: { sharePct: 50, auto: false, sinceTurn: 0, built: 0 } },
+    ]
+    state.house.standingOrders.plan = { 'line-2': { contractIds: ['contract-order-11'], sinceTurn: 0 } }
+    const works = state.house.works.find((w) => w.kind === 'assembly')
+    works.condition = 18
+    works.morale = 40
+    works.staffing = 25
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+}
+
 // P97: ett nytt parti spelat `quarters` kvartal med reducerad rörelse (uppspelningen
 // omedelbar, PM:et undantaget — se QuarterReplay.tsx). Samma New Game-väg som övriga skärmar.
 async function enterOperationsAndPlay(page, quarters) {
@@ -741,6 +780,7 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await enterOperationsAndPlay(page, 4)
       await page.getByTestId('tab-company').click()
+      await page.getByTestId('company-drawer-books').click()
       await page.getByTestId('ledger-chart').waitFor()
       await page.getByTestId('ledger-chart').scrollIntoViewIfNeeded()
     },
@@ -752,6 +792,7 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await enterOperationsAndPlay(page, 4)
       await page.getByTestId('tab-company').click()
+      await page.getByTestId('company-drawer-books').click()
       await page.getByTestId('ledger-chart').click()
       await page.getByTestId('ledger-vouchers').waitFor()
     },
@@ -866,6 +907,7 @@ const APP_SCREENS = [
     path: '/',
     async afterGoto(page) {
       await injectDesigns(page)
+      await page.getByTestId('company-drawer-drawing').click()
       await page.getByTestId('standing-flip-drawing-artillery').click()
       await page.getByTestId('standing-back-drawing-artillery').waitFor()
       await page.getByTestId('drawing-board').scrollIntoViewIfNeeded()
@@ -877,6 +919,7 @@ const APP_SCREENS = [
     path: '/',
     async afterGoto(page) {
       await injectDesigns(page)
+      await page.getByTestId('company-drawer-drawing').click()
       await page.getByTestId('type-orders-toggle-design-3').click()
       await page.getByTestId('type-orders-design-3').waitFor()
       await page.getByTestId('type-sheets').scrollIntoViewIfNeeded()
@@ -888,6 +931,7 @@ const APP_SCREENS = [
     path: '/',
     async afterGoto(page) {
       await injectDesigns(page)
+      await page.getByTestId('company-drawer-drawing').click()
       await page.getByTestId('type-licence-toggle-design-2').click()
       await page.getByTestId('licence-section-design-2').waitFor()
       await page.getByTestId('licence-section-design-2').scrollIntoViewIfNeeded()
@@ -944,8 +988,85 @@ const APP_SCREENS = [
     path: '/',
     async afterGoto(page) {
       await injectDesigns(page)
+      await page.getByTestId('company-drawer-legal').click()
       await page.getByTestId('inquiry-trace-1').waitFor()
       await page.getByTestId('inquiry-trace-1').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P179: THE WORKS — tomtplanen med startpaketets byggnader, lamporna och de tomma platserna (ingen referensskiss).
+    name: 'works-plan',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('works-plan').waitFor()
+    },
+  },
+  {
+    // P179: anläggningskortet för monteringsverket (samma kortmall som handlingskortet).
+    name: 'works-facility',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('tab-company').click()
+      await page.locator('[data-testid^="works-slot-works-"]').first().click()
+      await page.getByTestId('facility-card').waitFor()
+    },
+  },
+  {
+    // P179: byggmenyn från en tom plats.
+    name: 'works-build',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('tab-company').click()
+      await page.locator('[data-testid^="works-slot-free-"]').first().click()
+      await page.getByTestId('build-menu').waitFor()
+    },
+  },
+  {
+    // P179: ett valt slag i byggmenyn — kategori, takt, kostnad och skälet om det inte går.
+    name: 'works-build-detail',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('tab-company').click()
+      await page.locator('[data-testid^="works-slot-free-"]').first().click()
+      await page.getByTestId('build-option-assembly').click()
+      await page.getByTestId('build-detail').waitFor()
+    },
+  },
+  {
+    // P180: produktionstavlan — ett spår per linje, kvartalen som kolumner, ett sent kontrakt, en omställning och ett utlagt.
+    name: 'works-board',
+    path: '/',
+    async afterGoto(page) {
+      await injectWorksState(page)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('production-board').waitFor()
+      await page.getByTestId('production-board').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P180: kontraktskortet — dra till en linje, lägg ut på en underleverantör.
+    name: 'contract-sheet',
+    path: '/',
+    async afterGoto(page) {
+      await injectWorksState(page)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('board-contract-contract-order-12').click()
+      await page.getByTestId('contract-card').waitFor()
+    },
+  },
+  {
+    // P180: This Quarter med verkslarmen utfälld.
+    name: 'works-alarms',
+    path: '/',
+    async afterGoto(page) {
+      await injectWorksState(page)
+      await page.getByTestId('quarterband-toggle').click()
+      await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
     },
   },
   {

@@ -216,6 +216,88 @@ export async function enterCompany(page: Page): Promise<void> {
   await enterTab(page, 'company')
 }
 
+// P179: tomtplanen (THE WORKS) är Works-lådan, anläggningskortet och byggmenyn är bottenark ovanpå den.
+export async function enterWorksFacility(page: Page): Promise<void> {
+  await enterCompany(page)
+  await page.getByTestId('works-plan').waitFor()
+  await page.locator('[data-testid^="works-slot-works-"]').first().click()
+  await page.getByTestId('facility-card').waitFor()
+}
+
+export async function enterWorksBuild(page: Page): Promise<void> {
+  await enterCompany(page)
+  await page.getByTestId('works-plan').waitFor()
+  await page.locator('[data-testid^="works-slot-free-"]').first().click()
+  await page.getByTestId('build-menu').waitFor()
+}
+
+export async function enterWorksBuildDetail(page: Page): Promise<void> {
+  await enterWorksBuild(page)
+  await page.getByTestId('build-option-assembly').click()
+  await page.getByTestId('build-detail').waitFor()
+}
+
+// P180 (ETAPP11 §8): produktionstavlan och verkslarmen kräver kontrakt (ett sent, ett utlagt, ett planerat) och ett verk i dåligt skick med låg stämning — ett riktigt parti har inget av det
+// vid tur 0, så samma IndexedDB-injektion som injectDesigns.
+export async function injectWorksState(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    type Loose = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- injicerar fält i en sparad state i webbläsaren, utan att kopiera hela typen dit
+    const saved = await new Promise<{ state: Loose }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const state = saved.state
+    const base = { buyerId: 'rvn', productId: '105mm_field_gun', unitsDelivered: 0, price: 2_000_000, unitCostAtSigning: 11_500, grade: 'A', status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0 }
+    state.market.contracts = [
+      { ...base, id: 'contract-order-11', quantity: 120, dueTurn: 9 },
+      { ...base, id: 'contract-order-12', quantity: 9000, dueTurn: 3 },
+      { ...base, id: 'contract-order-13', productId: 'm3_apc', quantity: 20, dueTurn: 8, outsource: { sharePct: 50, auto: false, sinceTurn: 0, built: 0 } },
+    ]
+    state.house.standingOrders.plan = { 'line-2': { contractIds: ['contract-order-11'], sinceTurn: 0 } }
+    const works = state.house.works.find((w: { kind: string }) => w.kind === 'assembly')
+    works.condition = 18
+    works.morale = 40
+    works.staffing = 25
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+  await page.getByTestId('tab-company').click()
+}
+
+export async function enterWorksBoard(page: Page): Promise<void> {
+  await injectWorksState(page)
+  await page.getByTestId('production-board').waitFor()
+  await page.getByTestId('production-board').scrollIntoViewIfNeeded()
+}
+
+export async function enterContractSheet(page: Page): Promise<void> {
+  await injectWorksState(page)
+  await page.getByTestId('board-contract-contract-order-12').click()
+  await page.getByTestId('contract-card').waitFor()
+}
+
+// This Quarter med verkslarmen utfälld.
+export async function enterWorksAlarms(page: Page): Promise<void> {
+  await injectWorksState(page)
+  await page.getByTestId('quarterband-toggle').click()
+  await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
+}
+
 export async function enterNews(page: Page): Promise<void> {
   await enterTab(page, 'news')
 }
@@ -245,6 +327,7 @@ export async function enterCompanyLedger(page: Page): Promise<void> {
   await enterOperations(page)
   await endQuarters(page, 4)
   await page.getByTestId('tab-company').click()
+  await page.getByTestId('company-drawer-books').click()
   await page.getByTestId('ledger-chart').waitFor()
 }
 
@@ -507,6 +590,7 @@ async function injectDesigns(page: Page): Promise<void> {
 // Ritbordet: en blåkopia vänd, så att Segmented-raderna (fokus, ambition, startpunkt, tempo) syns i sin tätaste form.
 export async function enterDrawingBoard(page: Page): Promise<void> {
   await injectDesigns(page)
+  await page.getByTestId('company-drawer-drawing').click()
   await page.getByTestId('standing-flip-drawing-artillery').click()
   await page.getByTestId('standing-back-drawing-artillery').waitFor()
 }
@@ -514,6 +598,7 @@ export async function enterDrawingBoard(page: Page): Promise<void> {
 // Typbladet: tre blad med instrument och stämplar, det under utredning med sina order öppna (utredningskortet, provning, fältprov).
 export async function enterTypeSheet(page: Page): Promise<void> {
   await injectDesigns(page)
+  await page.getByTestId('company-drawer-drawing').click()
   await page.getByTestId('type-orders-toggle-design-3').click()
   await page.getByTestId('type-orders-design-3').waitFor()
 }
@@ -521,6 +606,7 @@ export async function enterTypeSheet(page: Page): Promise<void> {
 // P136: typbladet med taggar (bunden, exportreglerad, specialprojekt) och licenssektionen öppen.
 export async function enterLicence(page: Page): Promise<void> {
   await injectDesigns(page)
+  await page.getByTestId('company-drawer-drawing').click()
   await page.getByTestId('type-licence-toggle-design-2').click()
   await page.getByTestId('licence-section-design-2').waitFor()
 }
@@ -561,6 +647,7 @@ export async function enterProgramme(page: Page): Promise<void> {
 export async function enterInquiry(page: Page): Promise<void> {
   await injectDesigns(page)
   await page.getByTestId('tab-company').click()
+  await page.getByTestId('company-drawer-legal').click()
   await page.getByTestId('inquiry-trace-1').waitFor()
   await page.getByTestId('inquiry-trace-1').scrollIntoViewIfNeeded()
 }
@@ -685,6 +772,12 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'your-actions', path: '/', setup: enterYourActions },
   { name: 'contracts', path: '/', setup: enterContracts },
   { name: 'company', path: '/', setup: enterCompany },
+  { name: 'works-facility', path: '/', setup: enterWorksFacility },
+  { name: 'works-board', path: '/', setup: enterWorksBoard },
+  { name: 'contract-sheet', path: '/', setup: enterContractSheet },
+  { name: 'works-alarms', path: '/', setup: enterWorksAlarms },
+  { name: 'works-build', path: '/', setup: enterWorksBuild },
+  { name: 'works-build-detail', path: '/', setup: enterWorksBuildDetail },
   { name: 'news', path: '/', setup: enterNews },
   { name: 'contacts', path: '/', setup: enterContacts },
   { name: 'crisis', path: '/', setup: enterCrisis },

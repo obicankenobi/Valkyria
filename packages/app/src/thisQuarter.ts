@@ -10,10 +10,10 @@
 // exponering, tjänstemän inför omval eller ersättning, kontrakt som riskerar
 // att bli sena, kreditgränsen nära, pågående kris.
 import type { FactionId, GameState } from '@seventh-front/core'
-import { DISPLAY_THRESHOLDS, getProduct } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, getProduct, worksAlarms } from '@seventh-front/core'
 import { standingOrderAlarms } from './standingOrderBoard.js'
 
-export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing' | 'inquiry'
+export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing' | 'inquiry' | 'works'
 
 export type ThisQuarterTarget =
   | { view: 'contracts' }
@@ -112,6 +112,18 @@ export function deriveThisQuarter(state: GameState): ThisQuarterItem[] {
       icon: '⚠',
       label: `Standing order ${alarm.cardId.replace(/^supply-/, '')}: ${alarm.text.toLowerCase()}`,
       target: { view: 'company', focus: alarm.cardId },
+    })
+  }
+
+  // P180 (ETAPP11 §8 punkt 5): larmen från verken — tom linje, sent kontrakt, underbemannat, dåligt skick, strejkrisk, färdigt bygge. En anläggning öppnar sitt kort på
+  // tomtplanen, en tom linje hoppar till linjekortet och ett sent kontrakt till produktionstavlan.
+  for (const alarm of worksAlarms(state)) {
+    items.push({
+      id: `works-${alarm.id}`,
+      kind: 'works',
+      icon: alarm.kind === 'build-done' ? '✓' : '⚠',
+      label: alarm.text,
+      target: { view: 'company', focus: alarm.kind === 'late-contract' ? 'production-board' : alarm.kind === 'empty-line' ? (alarm.lineId ?? 'production-board') : (alarm.facilityId ?? 'production-board') },
     })
   }
 

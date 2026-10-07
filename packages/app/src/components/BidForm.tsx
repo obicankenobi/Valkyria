@@ -6,7 +6,17 @@
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useEffect, useMemo, useState } from 'react'
-import { CUSTOMISE_TERMS, advanceAmount, bidDesignRejection, bidEstimate, designBidStamps, isExportViolation, orderTerms, playerWinCurve } from '@seventh-front/core'
+import {
+  CUSTOMISE_TERMS,
+  advanceAmount,
+  bidDesignRejection,
+  bidEstimate,
+  capacityOutlook,
+  designBidStamps,
+  isExportViolation,
+  orderTerms,
+  playerWinCurve,
+} from '@seventh-front/core'
 import type { DriverLevel } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
 import { formatMoney } from './ui.js'
@@ -83,13 +93,8 @@ export function BidForm({
   // P127 (ETAPP9 §9, budmappen): ett Segmented-val bland husets konstruktioner (plus STANDARD = basprodukten). Bara konstruktioner som går att
   // bjuda på visas (samma prövning som bidding.ts, bidDesignRejection). Vinstchansen räknas om direkt eftersom bidEstimate/playerWinCurve tar
   // designId (en formel, en källa).
-  const eligibleDesigns = useMemo(
-    () => (state.house.designs ?? []).filter((d) => bidDesignRejection(state, { designId: d.id, price: 0 }, order) === null),
-    [state, order],
-  )
-  const [designChoice, setDesignChoice] = useState<string>(
-    existingBid?.designId && eligibleDesigns.some((d) => d.id === existingBid.designId) ? existingBid.designId : 'standard',
-  )
+  const eligibleDesigns = useMemo(() => (state.house.designs ?? []).filter((d) => bidDesignRejection(state, { designId: d.id, price: 0 }, order) === null), [state, order])
+  const [designChoice, setDesignChoice] = useState<string>(existingBid?.designId && eligibleDesigns.some((d) => d.id === existingBid.designId) ? existingBid.designId : 'standard')
   const designId = designChoice === 'standard' ? undefined : designChoice
   const chosenDesign = designId ? eligibleDesigns.find((d) => d.id === designId) : undefined
   const [kit, setKit] = useState<boolean>(existingBid?.kit ?? false)
@@ -116,6 +121,11 @@ export function BidForm({
   const kitReason = chosenDesign && chosenDesign.lineage !== null ? bidDesignRejection(state, { designId: chosenDesign.id, kit: true, price }, order) : null
   const yourWinChance = interpolateConfidence(winCurve, price)
   const terms = useMemo(() => orderTerms(state, order), [state, order])
+  // P180 (ETAPP11 §8 punkt 4): när ordern kan vara klar med dagens plan, på vilken linje, och vad den tränger undan — samma projektion som produktionstavlan.
+  const capacity = useMemo(
+    () => capacityOutlook(state, { productId: order.productId, quantity: order.quantity, designId: designId ?? null, deliveryTurns }),
+    [state, order, designId, deliveryTurns],
+  )
   const advanceCash = advanceAmount(price, order.advancePct)
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
@@ -154,24 +164,31 @@ export function BidForm({
                 {chosenDesign.name} · generation {chosenDesign.generation}
               </p>
               <div className="bid-design-stamps" data-testid="bid-design-stamps">
-                {stamps?.battleProven && <span className="bid-design-stamp is-green" data-testid="stamp-battle-proven">BATTLE-PROVEN</span>}
+                {stamps?.battleProven && (
+                  <span className="bid-design-stamp is-green" data-testid="stamp-battle-proven">
+                    BATTLE-PROVEN
+                  </span>
+                )}
                 {isExportViolation(state, chosenDesign, order.buyerId) && (
-                  <span className="bid-design-stamp is-red" data-testid="stamp-export-breach">EXPORT BREACH</span>
+                  <span className="bid-design-stamp is-red" data-testid="stamp-export-breach">
+                    EXPORT BREACH
+                  </span>
                 )}
                 {chosenDesign.exclusiveTo && (
-                  <span className="bid-design-stamp" data-testid="stamp-bound">BOUND TO THE {chosenDesign.exclusiveTo.toUpperCase()}</span>
+                  <span className="bid-design-stamp" data-testid="stamp-bound">
+                    BOUND TO THE {chosenDesign.exclusiveTo.toUpperCase()}
+                  </span>
                 )}
-                {stamps?.fieldTrialled && <span className="bid-design-stamp is-green" data-testid="stamp-field-trialled">FIELD-TRIALLED HERE</span>}
-                <span
-                  className={`bid-design-stamp ${stamps?.requiredLevel === false ? 'is-red' : stamps?.requiredLevel ? 'is-green' : ''}`}
-                  data-testid="stamp-required-level"
-                >
+                {stamps?.fieldTrialled && (
+                  <span className="bid-design-stamp is-green" data-testid="stamp-field-trialled">
+                    FIELD-TRIALLED HERE
+                  </span>
+                )}
+                <span className={`bid-design-stamp ${stamps?.requiredLevel === false ? 'is-red' : stamps?.requiredLevel ? 'is-green' : ''}`} data-testid="stamp-required-level">
                   {stamps?.requiredLevel === null || stamps === null ? 'REQUIRED LEVEL ?' : stamps.requiredLevel ? 'REQUIRED LEVEL MET' : 'BELOW REQUIRED LEVEL'}
                 </span>
               </div>
-              {chosenDesign.lineage !== null && (
-                <DsToggle label="Upgrade kit (quicker, thinner margin)" checked={kit} onChange={setKit} testId="bid-kit" />
-              )}
+              {chosenDesign.lineage !== null && <DsToggle label="Upgrade kit (quicker, thinner margin)" checked={kit} onChange={setKit} testId="bid-kit" />}
               {kit && kitReason && <p className="cf-hint is-warning">{kitReason}</p>}
             </>
           ) : (
@@ -184,7 +201,8 @@ export function BidForm({
         <DsToggle label="Customise to the buyer (dearer, but a better mark)" checked={customise} onChange={setCustomise} testId="bid-customise" />
         {customise && (
           <p className="cf-hint" data-testid="bid-customise-hint">
-            Costs {Math.round((CUSTOMISE_TERMS.costFactor - 1) * 100)}% more to build. If it wins there is a {CUSTOMISE_TERMS.scandalPct}% risk of a scandal at the buyer that halves the order.
+            Costs {Math.round((CUSTOMISE_TERMS.costFactor - 1) * 100)}% more to build. If it wins there is a {CUSTOMISE_TERMS.scandalPct}% risk of a scandal at the buyer that
+            halves the order.
           </p>
         )}
       </div>
@@ -239,6 +257,8 @@ export function BidForm({
         />
       </div>
 
+      <CapacityNote outlook={capacity} deliveryTurns={deliveryTurns} turn={state.meta.turn} />
+
       <div className="cf-field">
         <DsSlider label="Bribe" value={bribe} min={0} max={bribeMax} step={bribeStep} onChange={setBribe} format={formatMoney} testId="bid-bribe" />
       </div>
@@ -290,6 +310,42 @@ export function BidForm({
           </Button>
         )}
       </div>
+    </div>
+  )
+}
+
+// "Ready by": tidigast färdigtillverkad och leveransfönstret, linjen eller underleverantören, omställningen, kön framför, och vilka väntande kontrakt ordern skulle skjuta förbi sin
+// förfallodag om den ställdes först. Det är en uppskattning av tillverkningen, inte ett löfte — leveransen tar några kvartal till och slumpen (haveri, sen underleverantör) ingår inte.
+function CapacityNote({ outlook, deliveryTurns, turn }: { outlook: ReturnType<typeof capacityOutlook>; deliveryTurns: number; turn: number }) {
+  const where = outlook.route === 'subcontractor' ? 'with a subcontractor' : outlook.line ? `on ${outlook.line.toUpperCase()}` : 'on no line'
+  return (
+    <div className={`bid-capacity${outlook.late ? ' is-late' : ''}`} data-testid="bid-capacity">
+      <span className="bid-capacity-title">Ready by</span>
+      <p className="bid-capacity-line" data-testid="bid-ready">
+        {outlook.readyTurn === null
+          ? 'No line can build this.'
+          : `Built by T${outlook.readyTurn} ${where}${outlook.setupTurns > 0 ? `, after ${outlook.setupTurns} quarter${outlook.setupTurns === 1 ? '' : 's'} of retooling` : ''}.`}
+      </p>
+      {outlook.deliveredBetween && (
+        <p className="bid-capacity-line" data-testid="bid-delivered">
+          Delivered T{outlook.deliveredBetween[0]}–T{outlook.deliveredBetween[1]}; the buyer wants it by T{turn + deliveryTurns}.
+        </p>
+      )}
+      {outlook.late && (
+        <p className="bid-capacity-line is-warning" data-testid="bid-late">
+          Too late at {deliveryTurns} quarters — short by {Math.abs(outlook.slack ?? 0)} quarter{Math.abs(outlook.slack ?? 0) === 1 ? '' : 's'}. Allow more time, or add capacity.
+        </p>
+      )}
+      {outlook.waitingAhead.length > 0 && (
+        <p className="bid-capacity-line" data-testid="bid-queue">
+          Behind {outlook.waitingAhead.length} waiting contract{outlook.waitingAhead.length === 1 ? '' : 's'}.
+        </p>
+      )}
+      {outlook.displacesIfFirst.length > 0 && (
+        <p className="bid-capacity-line is-warning" data-testid="bid-displaces">
+          Built first, it would make {outlook.displacesIfFirst.map((d) => `${d.contractId.replace(/^contract-/, '')} (+${d.delayTurns})`).join(', ')} late.
+        </p>
+      )}
     </div>
   )
 }

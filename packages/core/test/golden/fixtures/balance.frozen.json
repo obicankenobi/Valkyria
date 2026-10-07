@@ -647,6 +647,8 @@
   "stockAgingPerGeneration": 25,
   "stockDeliveryTurns": 1,
   "_p175_note": "ETAPP11_FORSLAG.md §5.6, beslut 11F (P175): depån och tillverkning på lager. Med en depå i drift kan en LEDIG linje bygga på lager (stående order STOCK: produkt och mål i enheter) — bara om linjen redan är uppsatt för just den produkten och konstruktionen (ingen omställning för lager) och depån har plats (facilities.json: depot.stockCapacity, bokfört värde per nivå). Lagret binder pengar: stockHoldingPctPerQuarter (2 %) av bokfört värde per kvartal ingår i de fasta kostnaderna, och det åldras — när det ledande blockets generation i produktens kategori stiger faller bokfört värde med stockAgingPerGeneration (25 %) per steg. Ett nyvunnet kontrakt för samma produkt (och konstruktion) fylls direkt ur lagret; leveransen anländer stockDeliveryTurns (1) kvartal efter att budet vunnits i stället för efter tillverkning plus leveransfördröjning, och lagret tar inget bokfört värde med sig in i kontraktet utöver vad som redan betalats. stockMaxTargetUnits är bara ett tak mot orimliga mål. Alla tal PROVISORISKA till balanspasset (P183).",
+  "worksAlarmUnderstaffedBelowPct": 50,
+  "worksAlarmStrikeRiskMargin": 10,
   "laboratoryTechCap": [8, 9, 10],
   "designDesksPerLevel": 1,
   "provingChamberLevel": 2,

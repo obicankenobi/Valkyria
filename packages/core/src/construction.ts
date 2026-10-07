@@ -54,7 +54,7 @@ function nextLineNumber(house: Pick<House, 'works'>): number {
 }
 
 // Rater: lika stora, resten i den sista. Forcerat: halva tiden (avrundad uppåt, minst ett kvartal) mot dubbla priset.
-function planBuild(kind: FacilityKind, toLevel: 1 | 2 | 3, forced: boolean, abroad = false): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
+export function planBuild(kind: FacilityKind, toLevel: 1 | 2 | 3, forced: boolean, abroad = false): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
   // P177: ett verk i ett köparland kostar mer och tar längre tid.
   const baseTurns = DATA.kinds[kind].buildTurns[toLevel - 1]! + (abroad ? FOREIGN_BUILD_EXTRA_TURNS : 0)
   const turnsTotal = forced ? Math.max(1, Math.ceil(baseTurns * DATA.forceTimeFactor)) : baseTurns
@@ -63,7 +63,7 @@ function planBuild(kind: FacilityKind, toLevel: 1 | 2 | 3, forced: boolean, abro
 }
 
 // P174: en modernisering (nya verktygsmaskiner) kostar en del av nivåns byggkostnad och tar ett kvartal kortare tid än bygget (minst ett); forcerat = halva tiden mot dubbla priset.
-function planModernise(kind: FacilityKind, level: 1 | 2 | 3, forced: boolean): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
+export function planModernise(kind: FacilityKind, level: 1 | 2 | 3, forced: boolean): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
   const baseTurns = Math.max(1, DATA.kinds[kind].buildTurns[level - 1]! - 1)
   const turnsTotal = forced ? Math.max(1, Math.ceil(baseTurns * DATA.forceTimeFactor)) : baseTurns
   const costTotal = round(DATA.kinds[kind].buildCost[level - 1]! * MODERNISATION_COST_FACTOR * (forced ? DATA.forceCostFactor : 1))
