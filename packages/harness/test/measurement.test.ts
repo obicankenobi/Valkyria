@@ -111,7 +111,7 @@ describe('känslighetsverktyget — rena delar', () => {
   it('skalar ett tal och rör inget annat, och ingången muteras aldrig', () => {
     const before = JSON.stringify(data)
     const scaled = scaleBalanceKey(data, 'techMarginWeight', 1.25)
-    expect(scaled['techMarginWeight']).toBeCloseTo(0.25 * 1.25)
+    expect(scaled['techMarginWeight']).toBeCloseTo((data['techMarginWeight'] as number) * 1.25)
     expect(scaled['specialisationBidBonusPct']).toBe(data['specialisationBidBonusPct'])
     expect(JSON.stringify(data)).toBe(before)
   })

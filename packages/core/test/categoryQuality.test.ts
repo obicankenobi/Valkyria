@@ -170,10 +170,14 @@ describe('categoryReputation — en formel, en källa (skyddsräcke 3)', () => {
       advancePct: 0,
     }
     const sum = (s: GameState): number => playerWinCurve(s, order, 'A').reduce((t, p) => t + p.confidence, 0)
+    // P141: med specialiseringens och tekniknivåns bonus på specens nivå (2b) ligger hela kurvan vid 100 % med husets grundrykte — ett lägre grundrykte håller kurvan under taket så att ryktestillägget syns.
+    base.house.reputation.quality = 10
     const plain = sum(base)
     const own = createInitialState('indochina-slice', 'cq-curve')
+    own.house.reputation.quality = 10
     own.house.categoryQuality.artillery = B.qualityCategoryCap
     const other = createInitialState('indochina-slice', 'cq-curve')
+    other.house.reputation.quality = 10
     other.house.categoryQuality.naval = B.qualityCategoryCap
     expect(sum(own)).toBeGreaterThan(plain)
     expect(sum(other)).toBe(plain)
