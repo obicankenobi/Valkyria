@@ -11,6 +11,7 @@ import { rivalLoadMarkup, routeCostFactor } from '../../outsourcing.js'
 import { integrityBidTerm, isSuspendedFrom, recordTrace } from '../../traces.js'
 import { recordIncome } from '../../ledger.js'
 import { applyExportViolation, isExportViolation } from '../../exportRules.js'
+import { deliverFromStock } from '../../stock.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
 
@@ -322,6 +323,7 @@ export const bidding: ResolveStep = (ctx) => {
         ...(scandal ? { scandalHalved: true } : {}),
       }
       draft.market.contracts.push(contract)
+      deliverFromStock(ctx, contract) // P175: ett kontrakt fylls ur depån om lagret räcker
       if (bribeTraceId !== null && winner.bribe > 0) {
         const bribeTrace = draft.traces?.find((t) => t.id === bribeTraceId)
         if (bribeTrace) bribeTrace.contractId = contract.id

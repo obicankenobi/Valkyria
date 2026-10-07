@@ -464,6 +464,10 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // bygger för lite för att inkörningen och slitaget ska hinna flytta något). INNAN omfrysningen verifierades att ändringen är exakt det: med `runInRatePerDoubling`,
   // `runInCostPerDoubling` och `wearPerTurn` 0 och `runIn` utelämnat ur det hashade tillståndet är alla tre hashar bit-identiska med P173:s (8eba3f29e9e9d, db3c392c3af42, 1b534f3c6003a).
   // `balance.json`/`balance.frozen.json` fick tjugotre nya tal och en anteckning. De nya hasharna: passive 95f88c7e135b4, aggressive 41d6eaaa16f32, balanced 1b534f3c6003a.
+  //
+  // P175 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): depån och tillverkning på lager lägger inga obligatoriska fält i sluttillståndet (House.stock och StandingOrders.stock är valfria och
+  // utelämnas tills något byggts) och ingen golden-bot bygger en depå eller sätter en lagerorder, så ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P174:s (95f88c7e135b4, 41d6eaaa16f32, 1b534f3c6003a) —
+  // verifierat, inte antaget. Bara balance.frozen.json följer med (nya rader: en anteckning och fyra tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '95f88c7e135b4' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '41d6eaaa16f32' },

@@ -88,6 +88,9 @@ export function describeChange(change: StandingOrderChange): string {
     case 'WORKFORCE':
       // P173: bemanning och strejksvar. Driftspanelen byggs i P179.
       return change.op === 'SET' ? `${change.facilityId.toUpperCase()} · STAFFING ${change.staffing}%` : `${change.facilityId.toUpperCase()} · STRIKE: ${change.response === 'concede' ? 'GIVE IN' : 'BREAK IT'}`
+    case 'STOCK':
+      // P175: tillverkning på lager. Depåkortet byggs i P179.
+      return change.op === 'CANCEL' ? `${change.productId.toUpperCase()} · STOP BUILDING TO STOCK` : `${change.productId.toUpperCase()} · TO STOCK, TARGET ${change.targetUnits}`
     case 'MAINTENANCE':
       // P174: underhållsnivå per monteringsverk. Driftspanelen byggs i P179.
       return `${change.facilityId.toUpperCase()} · MAINTENANCE ${change.level.toUpperCase()}`

@@ -19,6 +19,7 @@ import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
 import { advanceConstruction, worksSpeedFactor } from '../../construction.js'
+import { advanceStock, buildToStock } from '../../stock.js'
 import { advanceWorkforce, isOnStrike, lineShift, workforceSpeedFactor } from '../../workforce.js'
 import { carryRunIn, runInCostFactor, runInRateFactor } from '../../runin.js'
 import { advanceCondition, conditionQualityPenalty, lineBreaksDown, plantSpeedFactor } from '../../maintenance.js'
@@ -97,6 +98,14 @@ export const production: ResolveStep = (ctx) => {
   // en frigjord linje redan har productId: null när steg 2 tilldelar den på nytt
   // i SAMMA anrop. En linje med `tooling` behåller den även när den står ledig (P171).
   const previousTooling = new Map(allLines(house).map((l) => [l.id, currentTooling(l, draft.market.contracts)]))
+
+  // 0b) P175: en linje utan kontrakt som byggde till lager (eller stod stilla) förra turen är ledig igen.
+  for (const line of allLines(house)) {
+    if (line.assignedContractId || (line.status !== 'running' && line.status !== 'blocked')) continue
+    line.status = 'idle'
+    line.blockedReason = null
+    line.productId = null
+  }
 
   // 1) Frigör linjer vars kontrakt inte längre behöver produktion (fulfilled/
   //    voided, eller redan färdigproducerat och väntar på leverans).
@@ -333,6 +342,12 @@ export const production: ResolveStep = (ctx) => {
   // 4) P172: underleverantörerna bygger sina delar (en leverans per utlagt kontrakt och tur).
   runSubcontractors(ctx)
 
+  // 4b) P175: lediga linjer bygger till lager (stående order STOCK, kräver en depå).
+  buildToStock(ctx)
+
   // 5) P174: slitage och underhåll.
   advanceCondition(ctx)
+
+  // 6) P175: lagret åldras när blocket kliver en generation.
+  advanceStock(ctx)
 }

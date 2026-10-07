@@ -54,6 +54,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'WORKFORCE':
       // P173: en bemanning per anläggning, och ett strejksvar per anläggning (den senare vinner).
       return change.op === 'SET' ? `workforce:${change.facilityId}` : `workforce-strike:${change.facilityId}`
+    case 'STOCK':
+      // P175: ett lagermål per produkt (SET och CANCEL delar nyckel, den senare vinner).
+      return `stock:${change.productId}`
     case 'MAINTENANCE':
       // P174: en underhållsnivå per anläggning.
       return `maintenance:${change.facilityId}`

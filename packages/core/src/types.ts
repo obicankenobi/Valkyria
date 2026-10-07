@@ -241,6 +241,8 @@ export interface House {
   // P172: husets sammanlagda utlagda tillverkningskostnad per kategori — underlaget för att en underleverantör ska växa till en rival. Saknas före P172.
   outsourcedCost?: Partial<Record<TechCategory, Money>>
   plot: Plot // P170: tomten; varje anläggning (även under byggnad) tar en plats
+  // P175 (§5.6): lagret i depån. Utelämnat tills något byggts på lager.
+  stock?: StockItem[]
   // P173 (§5.1): löneindexet (1 = grundnivå), omräknat varje tur ur doomsday. Saknas i ett sparat parti från före P173 — läses som 1.
   wageIndex?: number
   works: Facility[] // P169: anläggningarna; produktionslinjerna bor i monteringsverken (works.ts: allLines)
@@ -418,6 +420,17 @@ export interface Facility {
   machineLevel?: number
   wagePremiumPct?: number
   strike?: { sinceTurn: number }
+}
+
+// P175 (ETAPP11 §5.6, beslut 11F): färdiga varor i depån. bookValue är det som betalats för enheterna (minskar när blocket kliver en generation); generation är det ledande blockets
+// generation i produktens kategori vid senaste värderingen.
+export interface StockItem {
+  productId: ProductId
+  designId: DesignId | null
+  units: number
+  bookValue: Money
+  generation: number
+  builtTurn: number
 }
 
 // P170 (§4.1): hemmatomten. slots = antal platser (åtta, 11C); en gång kan fler köpas.
@@ -1301,6 +1314,9 @@ export type StandingOrderChange =
   | { kind: 'WORKFORCE'; op: 'STRIKE'; facilityId: string; response: 'concede' | 'break' }
   // P174 (§5.3): underhållsnivån per monteringsverk (låg sparar pengar nu, hög bygger upp skicket). Gäller från nästa kvartal, kostar ingen handling.
   | { kind: 'MAINTENANCE'; facilityId: string; level: MaintenanceLevel }
+  // P175 (§5.6): tillverkning på lager. SET = lediga linjer bygger produkten till lager tills det finns targetUnits (kräver en depå i drift); CANCEL slutar bygga (lagret ligger kvar).
+  | { kind: 'STOCK'; op: 'SET'; productId: ProductId; targetUnits: number }
+  | { kind: 'STOCK'; op: 'CANCEL'; productId: ProductId }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1375,6 +1391,8 @@ export interface StandingOrders {
   workforce?: Record<string, { staffing: number; sinceTurn: number }>
   // P174: underhållsnivå per anläggning (saknas = normal), i kraft från sinceTurn.
   maintenance?: Record<string, { level: MaintenanceLevel; sinceTurn: number }>
+  // P175: lagermål per produkt (gäller från sinceTurn).
+  stock?: Record<ProductId, { targetUnits: number; sinceTurn: number }>
 }
 
 export interface TurnSubmission {

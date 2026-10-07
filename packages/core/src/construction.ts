@@ -135,6 +135,7 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (facility.status === 'under_construction') return fail('cannot sell a facility under construction')
       if (facility.kind === 'assembly' && house.works.filter((w) => w.kind === 'assembly').length <= 1) return fail('the house needs at least one assembly works')
       if (facility.lines.some((l) => l.assignedContractId !== null)) return fail('a line in it is working on a contract')
+      if (facility.kind === 'depot' && (house.stock?.length ?? 0) > 0) return fail('the depot still holds stock')
       return { ok: true }
     }
     case 'BUY_LAND': {

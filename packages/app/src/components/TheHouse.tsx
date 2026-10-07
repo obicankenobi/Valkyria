@@ -123,6 +123,12 @@ function NextQuarterPanel({ state }: { state: GameState }) {
         <dd>−{formatMoney(q.fixedCosts.stationUpkeep)}</dd>
         <dt>Facility upkeep</dt>
         <dd>−{formatMoney(q.fixedCosts.facilityUpkeep)}</dd>
+        {q.fixedCosts.stockHolding > 0 && (
+          <>
+            <dt>Depot holding cost</dt>
+            <dd>−{formatMoney(q.fixedCosts.stockHolding)}</dd>
+          </>
+        )}
         <dt>Workforce wages</dt>
         <dd>−{formatMoney(q.fixedCosts.wages)}</dd>
         <dt>R&amp;D overhead</dt>

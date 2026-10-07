@@ -32,6 +32,7 @@ import { findLine, worksOfLine } from './works.js'
 import { applyWorksChange, validateWorksChange } from './construction.js'
 import { applyOutsourceChange, validateOutsourceChange } from './outsourcing.js'
 import { applyWorkforceChange, validateWorkforceChange } from './workforce.js'
+import { applyStockChange, validateStockChange } from './stock.js'
 import { applyMaintenanceChange, validateMaintenanceChange } from './maintenance.js'
 
 interface Balance {
@@ -155,6 +156,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       return validateWorkforceChange(draft, change)
     case 'MAINTENANCE':
       return validateMaintenanceChange(draft, change)
+    case 'STOCK':
+      return validateStockChange(draft, change)
     case 'PLAN': {
       const plans = house.standingOrders?.plan ?? {}
       if (change.op === 'CLEAR') return plans[change.lineId] ? { ok: true } : fail('no plan for that line')
@@ -309,6 +312,9 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         break
       case 'MAINTENANCE':
         applyMaintenanceChange(ctx, change)
+        break
+      case 'STOCK':
+        applyStockChange(ctx, change)
         break
       case 'PLAN': {
         const plans = (orders.plan ??= {})
