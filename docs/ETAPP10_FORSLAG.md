@@ -338,6 +338,8 @@ vinner inte fler upphandlingar än det rena.
 - Huset vinner i dag omkring en tiondel av sina anmälningar mot rivaler. En anmälan med underrättelse i
   landet ska oftast lyckas.
 
+> **Utfall P143 (2026-10-08).** Spår som kommer fram ca 32 % (mål 30–60, nådd). Anmälan med underrättelse lyckas (100 % av de som görs; boten anmäler bara misstänkta). `human-clean` 45 och `human-dirty` 35 (båda ≥ 35, dirty på gränsen); dirty vinner fler upphandlingar (0,52 mot 0,15). **Hävda kontrakt inträffar men sällan (ca 0,03 per parti) — raden "fler hävda kontrakt än clean" är sann men svag; en riktig åtgärd är en regel (fler spår med kontrakt, eller att ett avslöjat spår hävt en redan levererad order), ägarbeslut.** Mätfelet i `voidedByScandal` rättat. Se ANDRINGSLOGG.
+
 **Kapplöpningen.** Generationsschemat omprövas (beslut 10B) så att gap-chockerna blir 1–3 per parti.
 - De 17 tester som låser stegen till tur 4, 8 och 12 skrivs om mot det nya schemat.
 - "Först på plats" inträffar aldrig i botspel. Villkoret ses över så att ett hus som satsar kan nå det.
