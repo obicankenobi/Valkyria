@@ -432,10 +432,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // `designBidWeight` 6 i stället för 40 är alla tre hashar bit-identiska med de nya (golden-botarna ritar inga konstruktioner), och med BÅDA
   // gamla värden är de bit-identiska med P125:s. balance.frozen.json följer med (en ny anteckning och ett ändrat tal).
   // De nya hasharna: passive 63048b0971ece, aggressive 9b9662250ca4a, balanced 9ebe54ccbc404.
+  //
+  // Omfryst i P169 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): `House.lines` ersattes av `House.works` (anläggningar med linjerna inuti).
+  // Attribution: med verken projicerade tillbaka till den gamla platta `lines`-listan är alla tre sluttillstånd bit-identiska med P130:s hashar
+  // (63048b0971ece, 9b9662250ca4a, 9ebe54ccbc404) — modellbytet ändrar ingen regel och inget utfall, bara tillståndets form. De nya hasharna:
+  // passive 1b8d2eaabbe6ba, aggressive 16ff81ba56ecd4, balanced b9cb19468bdd2.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '63048b0971ece' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9b9662250ca4a' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '9ebe54ccbc404' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1b8d2eaabbe6ba' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '16ff81ba56ecd4' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'b9cb19468bdd2' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
