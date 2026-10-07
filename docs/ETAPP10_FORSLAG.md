@@ -344,6 +344,8 @@ vinner inte fler upphandlingar än det rena.
 - Att sälja till båda sidor ska synas på doomsday (mål +10, i dag +1).
 - `aggressive` slutar i kärnvapenutbyte i 21 av 200 partier. Talen från P121 avvägs mot det.
 
+> **Utfall P142 (2026-10-08).** Gap-chocker 2,7 per parti (nådd), båda sidor +10 doomsday (nådd, aggressive 0 kärnvapenutbyten av 60), 17 stegtester omskrivna. **Först på plats nås inte i botspel** (rivalernas konstruktioner kommer före husets; en senare tidtabell kostade `human` 6 pp) — raden revideras till "nåbar i test, inte i botspel" tills ägaren avgör om rivaltidtabellen ska skjutas. Se ANDRINGSLOGG.
+
 **Konstruktionerna.** Egna konstruktioner står för 18 % av intäkten (mål 30–60 %), och olycksfåglar
 inträffar i 0,09 fall per parti.
 - Bristrisken och miljöerna avvägs så att en olycksfågel inträffar i 10–25 % av partierna.
