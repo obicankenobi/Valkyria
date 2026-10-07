@@ -442,10 +442,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // laboratorium och ett ritkontor), anläggningarnas fasta kostnader (£348 000 per kvartal i stället för £309 000) och tomten (`House.plot`) är nya.
   // Alla tre partierna slutar fortfarande i BUYOUT (tur 15, 21 och 11). Golden-botarna bygger ingenting (`WORKS` används inte), så inga byggrater
   // ingår — det som flyttar hasharna är startläget. De nya hasharna: passive 12e4e8aae7700d, aggressive 439fcf7dab844, balanced f41739bba4bc3.
+  //
+  // Omfryst i P171 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): omställningen tar nu tid och pengar efter vad som byts (familj 1 kvartal, konstruktion 2,
+  // produkt 3 — förut en tur och inga pengar), linjernas uppsättning överlever att de står lediga, och `balance.json`/`balance.frozen.json` fick sju nya tal.
+  // Golden-botarna ställer om 1, 5 respektive 0 gånger (wire-rubriker `RETOOLS`) — det är dem som flyttar hasharna; ingen bot använder produktionsplanen.
+  // Alla tre slutar fortfarande i BUYOUT (tur 15, 21, 11). De nya hasharna: passive 6c5f197fd01b2, aggressive 4a49fd41d6929, balanced d3e61be94f7ac.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '12e4e8aae7700d' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '439fcf7dab844' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'f41739bba4bc3' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '6c5f197fd01b2' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '4a49fd41d6929' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'd3e61be94f7ac' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
