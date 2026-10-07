@@ -495,7 +495,7 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await startGame(page)
       await page.getByTestId('tab-company').click()
-      for (let i = 0; i < 4; i++) await page.getByTestId('company-build-line').click()
+      for (let i = 0; i < 4; i++) await page.getByTestId('company-hire-file').click()
       await page.getByTestId('end-quarter-button').click()
       const skip = page.getByTestId('replay-skip')
       try {
