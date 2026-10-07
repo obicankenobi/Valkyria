@@ -36,14 +36,14 @@ describe('economy (isolerat steg, spec avsnitt 5)', () => {
     expect(emitted.some((e) => e.headline.includes('FIXED COSTS'))).toBe(true)
   })
 
-  it('startlägets fasta kostnad: payroll + line upkeep×4 + station upkeep×1 + 0 R&D = 309 000 (P22-balanspass, se ANDRINGSLOGG.md)', () => {
+  it('startlägets fasta kostnad: payroll + line upkeep×2 + station upkeep×1 + startpaketets tre anläggningar + 0 R&D = 348 000 (P170, se ANDRINGSLOGG.md)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const before = state.house.treasury
     const { ctx } = makeCtx(state)
 
     economy(ctx)
 
-    expect(before - state.house.treasury).toBe(309000)
+    expect(before - state.house.treasury).toBe(348000)
   })
 
   it('drar ingen ränta när skulden är 0', () => {
@@ -64,7 +64,7 @@ describe('economy (isolerat steg, spec avsnitt 5)', () => {
     economy(ctx)
 
     const expectedInterest = Math.round((1000000 * state.house.debtRateAnnual) / 4)
-    expect(before - state.house.treasury).toBe(309000 + expectedInterest)
+    expect(before - state.house.treasury).toBe(348000 + expectedInterest)
     expect(emitted.some((e) => e.headline.includes('INTEREST'))).toBe(true)
   })
 

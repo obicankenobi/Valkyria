@@ -16,6 +16,7 @@ import { settleSupplyAgreements, standingLineOrder } from '../../standingOrders.
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
+import { advanceConstruction, worksSpeedFactor } from '../../construction.js'
 
 interface Balance {
   deliveryDelayMinTurns: number
@@ -46,7 +47,8 @@ function remainingToProduce(contract: Contract, shipments: readonly Shipment[]):
 // steg 3 nedan, som nu anropar den i stället för att upprepa den.
 export function computeLineThroughput(house: House, line: ProductionLine, product: Product): number {
   const lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault
-  return product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency
+  // P170: ett monteringsverk under utbyggnad går på halv fart (construction.ts).
+  return product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency * worksSpeedFactor(house, line.id)
 }
 
 export const production: ResolveStep = (ctx) => {
@@ -57,6 +59,8 @@ export const production: ResolveStep = (ctx) => {
   // när den här turens produktion räknar sin materialkostnad. Linjeuppdragens skift sätter capacityPct
   // (fältets första skrivare) — bara för linjer med en gällande order, så ett hus utan stående order
   // räknar exakt som förut.
+  // P170: byggraterna betalas först (11H: bygge och inkörning räknas i production).
+  advanceConstruction(ctx)
   settleSupplyAgreements(ctx)
   for (const line of allLines(house)) {
     const order = standingLineOrder(house, line.id, draft.meta.turn)

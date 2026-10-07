@@ -33,7 +33,7 @@ import type { PreferenceMix } from './design.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
-import { computeFixedCostsBreakdown, computeQuarterlyInterest } from './resolve/steps/economy.js'
+import { computeFixedCostsBreakdown, computeQuarterlyInterest, totalFixedCosts as totalFixedCostsOf } from './resolve/steps/economy.js'
 import type { FixedCostsBreakdown } from './resolve/steps/economy.js'
 import { computeLineThroughput } from './resolve/steps/production.js'
 import { round } from './money.js'
@@ -761,7 +761,7 @@ export function projectedQuarter(state: GameState): ProjectedQuarter {
 
   const fixedCosts = computeFixedCostsBreakdown(state.house, state.meta.turn)
   const interest = computeQuarterlyInterest(state.house)
-  const totalFixedCosts = fixedCosts.payroll + fixedCosts.lineUpkeep + fixedCosts.stationUpkeep + fixedCosts.rndOverhead
+  const totalFixedCosts = totalFixedCostsOf(fixedCosts)
   const netChange = expectedRevenueNextTurn - totalFixedCosts - interest
 
   return { expectedRevenueNextTurn, fixedCosts, interest, netChange }

@@ -578,8 +578,9 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
   it('(P17 klart-när) BUILD_LINE höjer produktionen: en tidigare obemannad kontraktsrad får en linje och producerar', () => {
     let state: GameState = createInitialState('indochina-slice', 'p17-build-line-seed')
     state.house.treasury = 10000000 // gott om kassa för BUILD_LINE och produktion
+    state.house.works[0]!.level = 2 // P170: startverket (nivå 1) är fullt — plats för en linje till
 
-    // Alla FYRA befintliga linjer upptagna med kontrakt som aldrig blir klara.
+    // Alla befintliga linjer (två sedan P170) upptagna med kontrakt som aldrig blir klara.
     const busyContracts = allLines(state.house).map((_, i) => fillerContract(`contract-busy-${i}`))
     const waitingContract: Contract = { ...fillerContract('contract-waiting'), quantity: 1000 }
     state.market.contracts = [...busyContracts, waitingContract]
@@ -588,7 +589,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
       line.productId = busyContracts[i]!.productId
       line.status = 'running'
     })
-    // Premissen: utan en femte linje finns det inget ledigt att tilldela waitingContract.
+    // Premissen: utan en tredje linje finns det inget ledigt att tilldela waitingContract.
     expect(allLines(state.house).every((l) => l.status !== 'idle')).toBe(true)
 
     let result = resolveTurn(state, {
@@ -597,7 +598,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
       actions: [{ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }],
     })
     state = result.state
-    expect(allLines(state.house).length).toBe(5)
+    expect(allLines(state.house).length).toBe(3)
 
     // production.ts kör direkt efter applyActions i SAMMA pipeline-passage (avsnitt
     // 10), så den nya linjen kan redan ha tilldelats och producerat den här turen —

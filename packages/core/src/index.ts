@@ -9,6 +9,9 @@ export * from './rng.js'
 export { round } from './money.js'
 export { createInitialState, cloneState } from './state.js'
 // P169: anläggningarna — linjerna bor i verken; gränssnitt och harness läser dem genom de här.
+// P170: tomten och byggena.
+export { FACILITY_KINDS, advanceConstruction, facilityFixedCost, freePlotSlots, kindLabel, plotOf, validateWorksChange, worksUpkeep } from './construction.js'
+export { totalFixedCosts } from './resolve/steps/economy.js'
 export { FACILITY_DATA, allLines, assemblyWorks, findLine, freeLineSlots, lineCapacity, worksFromLines } from './works.js'
 export type { StartChoices } from './state.js'
 export { resolveTurn } from './resolve/index.js'

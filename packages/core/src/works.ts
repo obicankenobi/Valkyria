@@ -12,6 +12,7 @@ const DATA = facilitiesData as unknown as {
 
 export const FACILITY_DATA = facilitiesData as unknown as {
   maxLevel: number
+  plot: { slots: number; landSlots: number; landCost: number }
   kinds: Record<Facility['kind'], { label: string; does: string }>
 }
 
@@ -43,7 +44,7 @@ export function freeLineSlots(works: Pick<Facility, 'kind' | 'level' | 'lines'>)
 }
 
 export function newAssemblyWorks(id: string, lines: ProductionLine[], category: Facility['category'] = null): Facility {
-  return { id, kind: 'assembly', level: DATA.interimStartLevel, category, condition: 100, staffing: 100, skill: 50, status: 'operating', lines }
+  return { id, kind: 'assembly', level: DATA.interimStartLevel, category, condition: 100, staffing: 100, skill: 50, status: 'operating', lines, invested: 0 }
 }
 
 // Migreringen (11K) och startläget: linjerna delas i `interimWorksCount` monteringsverk, i ordning, den extra linjen i det första (fyra → två och två).

@@ -26,7 +26,7 @@ describe('YourActions — isolerad', () => {
     const actions: PlayerAction[] = [
       { type: 'INTEL', op: 'EXPAND', stationId: st.id },
       { type: 'INTEL', op: 'LEAK', stationId: st.id, targetId: rival.id },
-      { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} },
+      { type: 'INTERNAL', op: 'HIRE', payload: { role: 'chiefSalesman' } },
       { type: 'INTERNAL', op: 'HIRE', payload: { role: 'chiefEngineer' } }, // fjärde: ingen poäng kvar
     ]
     const submission = { standingOrders: [], bids: [], actions }
@@ -60,12 +60,12 @@ describe('NEWS DESK (P164) — "Your actions" efter ett riktigt kvartal', () => 
   it('en köad handling syns på förstasidan efter End Quarter, med sitt utfall', async () => {
     await enterGame()
     fireEvent.click(screen.getByTestId('tab-company'))
-    fireEvent.click(screen.getByTestId('company-build-line'))
+    fireEvent.click(screen.getByTestId('company-hire-file'))
     fireEvent.click(screen.getByTestId('end-quarter-button'))
     fireEvent.click(await screen.findByTestId('replay-skip'))
     const list = await screen.findByTestId('your-actions-list')
-    expect(list.textContent).toMatch(/Build a production line/)
-    expect(list.textContent).toMatch(/BUILDS A NEW PRODUCTION LINE/)
+    expect(list.textContent).toMatch(/Hire staff/)
+    expect(list.textContent).toMatch(/HIRES A NEW CHIEF/)
     expect(list.textContent).toMatch(/DONE/)
     expect(screen.getByTestId('news-front-page').contains(list)).toBe(true)
   })
@@ -73,7 +73,7 @@ describe('NEWS DESK (P164) — "Your actions" efter ett riktigt kvartal', () => 
   it('en avvisad handling står i samma lista, med orsaken', async () => {
     await enterGame()
     fireEvent.click(screen.getByTestId('tab-company'))
-    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByTestId('company-build-line'))
+    for (let i = 0; i < 4; i++) fireEvent.click(screen.getByTestId('company-hire-file'))
     fireEvent.click(screen.getByTestId('end-quarter-button'))
     fireEvent.click(await screen.findByTestId('replay-skip'))
     const list = await screen.findByTestId('your-actions-list')

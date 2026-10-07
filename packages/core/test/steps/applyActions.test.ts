@@ -234,6 +234,7 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
 
   it('BUILD_LINE: en ny idle-linje läggs till, kostar buildLineCost, en händelse emitteras', () => {
     const state = createInitialState('indochina-slice', 'seed')
+    state.house.works[0]!.level = 2 // P170: startverket (nivå 1) är fullt — en utbyggnad ger plats för fler linjer
     const linesBefore = allLines(state.house).length
     const treasuryBefore = state.house.treasury
 
@@ -1335,6 +1336,7 @@ describe('applyActions — P20: CRISIS (avsnitt 9.3, DESIGN.md §6.2) — löser
 
   it('en actionPoint konsumeras INTE av CRISIS — handlingstaket gäller bara övriga handlingstyper', () => {
     const state = createInitialState('indochina-slice', 'seed')
+    state.house.works[0]!.level = 2 // P170: plats för en linje till
     state.house.actionPoints = 1
     state.pendingCrisis = { turn: state.meta.turn, theatreId: 'indochina', restrictedRevenueThisTurn: 0 }
 

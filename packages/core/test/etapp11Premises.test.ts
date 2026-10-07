@@ -14,9 +14,11 @@ const B = balance as unknown as {
 }
 
 describe('etapp 11, §0 — premisserna stämmer med koden', () => {
-  it('0.1 huset börjar med fyra identiska linjer utan typ, plats eller nivå', () => {
+  // Omskriven i P169/P170: premissen var "fyra identiska fristående linjer". Linjerna bor nu i ett monteringsverk (två vid start, startpaketet); själva linjen
+  // är fortfarande en kopia av en annan utan egen typ, plats eller nivå — det som ger dem en uppsättning kommer med P171.
+  it('0.1 linjerna är identiska kopior utan egen typ, plats eller nivå (två vid start, i ett monteringsverk)', () => {
     const lines = allLines(createInitialState('indochina-slice', 'p168').house)
-    expect(lines).toHaveLength(4)
+    expect(lines).toHaveLength(2)
     const [first, ...rest] = lines
     for (const l of rest) expect({ ...l, id: '' }).toEqual({ ...first, id: '' })
     expect(Object.keys(first!).sort()).toEqual(

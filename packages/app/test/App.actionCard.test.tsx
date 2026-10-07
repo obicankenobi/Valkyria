@@ -43,9 +43,9 @@ describe('App (P163) — Actions-menyn öppnar mappen med verbet förvalt', () =
 
   it('att köa verbet avväpnar det: remsan försvinner', async () => {
     await enterGame()
-    await pickFromMenu('BUILD_LINE')
+    await pickFromMenu('HIRE')
     expect(await screen.findByTestId('armed-verb')).toBeTruthy()
-    fireEvent.click(screen.getByTestId('company-build-line'))
+    fireEvent.click(screen.getByTestId('company-hire-file'))
     await waitFor(() => expect(screen.queryByTestId('armed-verb')).toBeNull())
   })
 
@@ -79,9 +79,9 @@ describe('App (P163) — Actions-menyn öppnar mappen med verbet förvalt', () =
 
   it('ett handboksuppslag nås från kortet i formuläret', async () => {
     await enterGame()
-    await pickFromMenu('BUILD_LINE')
-    const card = await screen.findByTestId('action-card-BUILD_LINE')
-    fireEvent.click(within(card).getByTestId('action-card-handbook-BUILD_LINE'))
+    await pickFromMenu('HIRE')
+    const card = await screen.findByTestId('action-card-HIRE')
+    fireEvent.click(within(card).getByTestId('action-card-handbook-HIRE'))
     expect(await screen.findByTestId('handbook')).toBeTruthy()
   })
 })

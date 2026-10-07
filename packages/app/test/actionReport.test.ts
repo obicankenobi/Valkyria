@@ -45,9 +45,9 @@ describe('buildActionReport — en rad per handling', () => {
     const actions: PlayerAction[] = [
       { type: 'INTEL', op: 'EXPAND', stationId: station(base).id },
       hire,
-      { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} },
+      { type: 'INTERNAL', op: 'HIRE', payload: { role: 'chiefSalesman' } },
       hire, // fjärde handlingen: ingen handlingspoäng kvar (tre)
-      { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} },
+      { type: 'INTERNAL', op: 'HIRE', payload: { role: 'chiefOfStaff' } },
     ]
     const input = runTurn('report-seed-2', actions)
     expect(input.rejected.length).toBe(2)

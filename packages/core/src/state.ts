@@ -6,8 +6,10 @@
 // spelregel (ingen ekonomi-, anbuds- eller frontlogik hör hemma här, det är P3–P8).
 import { grownCoverage } from './stationCoverage.js'
 import { initialRace } from './race.js'
-import { worksFromLines } from './works.js'
+import { newAssemblyWorks } from './works.js'
+import { startingInvested } from './construction.js'
 import balanceData from './data/balance.json' with { type: 'json' }
+import facilitiesData from './data/facilities.json' with { type: 'json' }
 import rivalsCatalog from './data/rivals.json' with { type: 'json' }
 import officialsRegister from './data/officials.json' with { type: 'json' }
 import indochinaSlice from './data/scenarios/indochina-slice.json' with { type: 'json' }
@@ -26,6 +28,7 @@ import type {
   Official,
   OfficialId,
   Post,
+  Facility,
   ProductionLine,
   RivalHouse,
   RivalId,
@@ -269,7 +272,8 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     creditLimit: 0,
     insolventTurns: 0,
     revenueByTurn: [],
-    works: worksFromLines(lines), // P169: linjerna bor i två monteringsverk (works.ts); category null tills P171
+    plot: { slots: facilitiesData.plot.slots, landBought: false }, // P170 (11C): åtta platser
+    works: startPackage(lines, seed.specialisation), // P170 (11B): startpaketet
     rnd: [],
     stations: [station],
     staff: { ...seed.staff },
@@ -485,6 +489,15 @@ export function buildWorld(scenario: ScenarioFile): { theatres: Theatre[]; front
   }))
 
   return { theatres, fronts }
+}
+
+// P170 (ETAPP11 §4.4, 11B): ett monteringsverk på nivå 1 med startlinjerna i den valda kategorin, ett laboratorium på nivå 1 i samma kategori utan byggkostnad
+// (ägarens önskemål) och ett ritkontor. Fem platser är tomma; ingen provplats, ingen depå.
+function startPackage(lines: ProductionLine[], category: TechCategory): Facility[] {
+  const assembly = { ...newAssemblyWorks('works-1', lines, category), level: 1 as const, invested: startingInvested('assembly') }
+  const lab: Facility = { id: 'works-2', kind: 'laboratory', level: 1, category, condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: startingInvested('laboratory') }
+  const design: Facility = { id: 'works-3', kind: 'design', level: 1, category: null, condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: startingInvested('design') }
+  return [assembly, lab, design]
 }
 
 export function createInitialState(scenarioId: string, seed: string, startChoices?: StartChoices): GameState {

@@ -12,7 +12,7 @@
 // P12:s klart när-villkor ("ett parti kan stängas och återupptas MITT I en tur
 // utan förlust") kräver det uttryckligen; att bara spara efter resolveTurn hade
 // tappat ett halvifyllt anbud vid en omladdning.
-import { BLOCS, INTEGRITY_START, blocOfAlignment, initialRace, scheduledGeneration, worksFromLines } from '@seventh-front/core'
+import { BLOCS, INTEGRITY_START, blocOfAlignment, initialRace, scheduledGeneration, worksFromLines, FACILITY_DATA } from '@seventh-front/core'
 import type { Contract, GameState, Order, ProductionLine, TurnSubmission } from '@seventh-front/core'
 import type { TutorialState } from './tutorial.js'
 
@@ -151,6 +151,19 @@ export function migrate(saved: SavedGame): SavedGame | null {
       if (!Array.isArray(legacyHouse.works)) {
         const { lines: legacyLines, ...rest } = legacyHouse
         state = { ...state, house: { ...(rest as GameState['house']), works: worksFromLines(legacyLines ?? []) } }
+      }
+      // P170: tomten (House.plot) och anläggningarnas bokförda värde (Facility.invested) tillkom. Ett sparat parti från före P170 har en orörd tomt, och
+      // verken (migrerade i P169 eller nyare) får värdet 0 — det de kostade är inte känt, så en avveckling ger inget.
+      const houseP170 = state.house as Partial<GameState['house']>
+      if (!houseP170.plot || state.house.works.some((w) => typeof (w as Partial<GameState['house']['works'][number]>).invested !== 'number')) {
+        state = {
+          ...state,
+          house: {
+            ...state.house,
+            plot: houseP170.plot ?? { slots: FACILITY_DATA.plot.slots, landBought: false },
+            works: state.house.works.map((w) => ({ ...w, invested: (w as Partial<GameState['house']['works'][number]>).invested ?? 0 })),
+          },
+        }
       }
       // P125: reputation.integrity (rent rykte) tillkom på House. Ett sparat parti från före P125 saknar det och skulle
       // ge NaN i integrityBidTerm; det får startvärdet. Spåren (GameState.traces) är valfria och läses defensivt.

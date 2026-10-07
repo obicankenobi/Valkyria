@@ -9,13 +9,12 @@
 // i stället för att en avvisning dyker upp först efter End Quarter.
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { COMMODITIES, DISPLAY_THRESHOLDS, TECH_CATEGORIES, standingStationMode, validateStandingOrderChange } from '@seventh-front/core'
+import { COMMODITIES, DISPLAY_THRESHOLDS, TECH_CATEGORIES, allLines, kindLabel, standingStationMode, validateStandingOrderChange } from '@seventh-front/core'
 import type { Commodity, GameState, LineShift, StandingOrderChange, StationMode, TechCategory, TurnSubmission } from '@seventh-front/core'
 import { Button, Segmented, Stepper } from './designSystem.js'
 import { ProductionLineBand } from './ProductionLineBand.js'
 import { Panel, Tag, formatMoney } from './ui.js'
 import { standingOrderAlarms, standingOrderKey } from '../standingOrderBoard.js'
-import { allLines } from '@seventh-front/core'
 
 const CATEGORY_LABEL: Record<TechCategory, string> = {
   infantry: 'INF',
@@ -77,6 +76,11 @@ export function describeChange(change: StandingOrderChange): string {
       return change.op === 'RELEASE' ? 'RELEASE THE CHIEF DESIGNER' : `HIRE ${change.designerId.toUpperCase()}`
     case 'LICENCE':
       return change.op === 'REVOKE' ? `REVOKE ${change.licenceId}` : `LICENCE ${change.designId} TO ${change.factionId.toUpperCase()}`
+    case 'WORKS':
+      // P170: bygge, utbyggnad, avveckling, markköp. Kort för tomten byggs i P179.
+      if (change.op === 'BUILD') return `BUILD ${kindLabel(change.facilityKind).toUpperCase()}${change.category ? ` · ${change.category.toUpperCase()}` : ''}${change.forced ? ' · FORCED' : ''}`
+      if (change.op === 'EXPAND') return `EXPAND ${change.facilityId.toUpperCase()}${change.forced ? ' · FORCED' : ''}`
+      return change.op === 'SELL' ? `SELL ${change.facilityId.toUpperCase()}` : 'BUY MORE LAND'
   }
 }
 

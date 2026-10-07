@@ -29,6 +29,7 @@ import type {
   StationMode,
 } from './types.js'
 import { findLine } from './works.js'
+import { applyWorksChange, validateWorksChange } from './construction.js'
 
 interface Balance {
   supplyAgreementMinTurns: number
@@ -126,6 +127,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       return validateLicenceChange(draft, change)
     case 'DESIGNER':
       return validateDesignerChange(draft, change)
+    case 'WORKS':
+      return validateWorksChange(draft, change)
     case 'INVESTIGATION': {
       const reason = validateInvestigationChoice(house, change)
       return reason ? fail(reason) : { ok: true }
@@ -251,6 +254,9 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         break
       case 'DESIGNER':
         applyDesignerChange(ctx, change)
+        break
+      case 'WORKS':
+        applyWorksChange(ctx, change)
         break
       case 'TESTING': {
         // P110: provning i egen regi. SET byter miljö och börjar om räkningen (från nästa tur); CANCEL avbryter.

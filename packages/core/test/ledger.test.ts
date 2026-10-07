@@ -147,7 +147,7 @@ describe('ledger — ett test per penningflyttande steg (varje flöde skriver si
       const state = createInitialState('indochina-slice', 'seed')
       const before = state.house.treasury
       economy(makeCtx(state))
-      expectBooked(state, before, (e) => expect(e.expenses.fixedCosts).toBe(309000))
+      expectBooked(state, before, (e) => expect(e.expenses.fixedCosts).toBe(348000)) // lön 192 000 + 2 linjer × 18 000 + station 45 000 + startpaketets tre anläggningar 75 000
     })
 
     it('ränta → expenses.interest', () => {
@@ -270,6 +270,7 @@ describe('ledger — ett test per penningflyttande steg (varje flöde skriver si
 
     it('BUILD_LINE → expenses.lines', () => {
       const state = createInitialState('indochina-slice', 'seed')
+      state.house.works[0]!.level = 2 // P170: startverket är fullt
       const before = state.house.treasury
       applyActions(makeCtx(state, [{ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }]))
       expectBooked(state, before, (e) => expect(e.expenses.lines).toBe(balance.buildLineCost))

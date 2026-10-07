@@ -136,7 +136,8 @@ describe('migrate (P169, etapp 11 §3 11K): fyra linjer blir två verk med två 
   function preWorksSave(mutate?: (lines: ProductionLine[]) => void) {
     const save = oldSave()
     const house = save.state.house as unknown as { lines?: ProductionLine[]; works?: unknown }
-    const lines = allLines(save.state.house).map((l) => ({ ...l }))
+    const proto = allLines(save.state.house)[0]!
+    const lines = ['line-1', 'line-2', 'line-3', 'line-4'].map((id) => ({ ...proto, id })) // så här såg startläget ut före P170: fyra linjer
     mutate?.(lines)
     house.lines = lines
     delete house.works

@@ -41,22 +41,21 @@ describe('facilities.json — de sju anläggningarna (§4.2)', () => {
 describe('startläget — linjerna bor i verk (11A)', () => {
   const state = createInitialState('indochina-slice', 'works-start')
 
-  it('inga fristående linjer: house.lines finns inte, linjerna ligger i monteringsverken', () => {
+  it('inga fristående linjer: house.lines finns inte, linjerna ligger i monteringsverket (startpaketet själv testas i construction.test.ts)', () => {
     expect('lines' in state.house).toBe(false)
-    expect(state.house.works.map((w) => w.kind)).toEqual(['assembly', 'assembly'])
-    expect(state.house.works.map((w) => w.lines.length)).toEqual([2, 2])
+    expect(assemblyWorks(state.house).map((w) => w.lines.length)).toEqual([2])
   })
 
-  it('samma fyra linjer i samma ordning som förut (line-1…line-4), så att produktionen läser dem likadant', () => {
-    expect(allLines(state.house).map((l) => l.id)).toEqual(['line-1', 'line-2', 'line-3', 'line-4'])
-    expect(findLine(state.house, 'line-3')?.id).toBe('line-3')
+  it('linjerna heter line-1, line-2 …, och findLine hittar dem i verken', () => {
+    expect(allLines(state.house).map((l) => l.id)).toEqual(['line-1', 'line-2'])
+    expect(findLine(state.house, 'line-2')?.id).toBe('line-2')
     expect(findLine(state.house, 'nope')).toBeUndefined()
   })
 
   it('verken har id, nivå, skick, bemanning, skicklighet och status — modellens fält', () => {
     for (const w of state.house.works) {
       expect(w.id).toMatch(/^works-\d+$/)
-      expect(w.level).toBe(F.interimStartLevel)
+      expect(w.level).toBe(1)
       expect(w.condition).toBe(100)
       expect(w.staffing).toBe(100)
       expect(w.skill).toBeGreaterThanOrEqual(0)
@@ -64,11 +63,11 @@ describe('startläget — linjerna bor i verk (11A)', () => {
     }
   })
 
-  it('de fasta kostnaderna räknas som förut över alla verks linjer', () => {
+  it('linjernas upphåll räknas per linje över alla verk; lönen är grundlönen så länge linjerna är högst fyra', () => {
     const b = computeFixedCostsBreakdown(state.house)
-    const fixed = (balance as unknown as { fixedCosts: { lineUpkeep: number; payrollBase: number; payrollPerExtraLine: number } }).fixedCosts
-    expect(b.lineUpkeep).toBe(fixed.lineUpkeep * 4)
-    expect(b.payroll).toBe(fixed.payrollBase) // fyra linjer ingår i grundlönen
+    const fixed = (balance as unknown as { fixedCosts: { lineUpkeep: number; payrollBase: number } }).fixedCosts
+    expect(b.lineUpkeep).toBe(fixed.lineUpkeep * 2)
+    expect(b.payroll).toBe(fixed.payrollBase)
   })
 })
 
@@ -76,7 +75,6 @@ describe('kapacitet per nivå', () => {
   it('lineCapacity följer linesPerLevel, freeLineSlots räknar det som är ledigt', () => {
     const state = createInitialState('indochina-slice', 'works-cap')
     const works = state.house.works[0]!
-    works.level = 1
     expect(lineCapacity(works)).toBe(2)
     expect(freeLineSlots(works)).toBe(0)
     works.level = 2
@@ -88,30 +86,31 @@ describe('kapacitet per nivå', () => {
 
   it('bara monteringsverk rymmer linjer', () => {
     const state = createInitialState('indochina-slice', 'works-cap-2')
-    expect(assemblyWorks(state.house)).toHaveLength(2)
-    state.house.works.push({ ...state.house.works[0]!, id: 'works-x', kind: 'laboratory', lines: [] })
-    expect(assemblyWorks(state.house)).toHaveLength(2)
-    expect(lineCapacity(state.house.works[2]!)).toBe(0)
+    expect(assemblyWorks(state.house)).toHaveLength(1)
+    expect(lineCapacity(state.house.works[1]!)).toBe(0) // laboratoriet
+    expect(lineCapacity(state.house.works[2]!)).toBe(0) // ritkontoret
   })
 })
 
 describe('BUILD_LINE går in i ett verk med ledig plats', () => {
-  it('lägger linjen i första verket med plats; ids fortsätter räkna över alla verk', () => {
-    const s = createInitialState('indochina-slice', 'works-build')
-    const next = turn(s, [BUILD]).state
-    expect(allLines(next.house)).toHaveLength(5)
-    expect(next.house.works[0]!.lines.map((l) => l.id)).toEqual(['line-1', 'line-2', 'line-5'])
-    expect(next.house.works[1]!.lines).toHaveLength(2)
+  it('startverket är fullt (nivå 1, två linjer): BUILD_LINE avvisas tills verket byggts ut', () => {
+    const s = createInitialState('indochina-slice', 'works-build-0')
+    expect(validateAction(s, s, BUILD)).toEqual({ ok: false, reason: 'no assembly works has a free line slot' })
   })
 
-  it('är fullt i verken avvisas den med en tydlig orsak, och globala taket gäller fortfarande', () => {
-    const s = createInitialState('indochina-slice', 'works-full')
-    for (const w of s.house.works) w.level = 1
-    expect(validateAction(s, s, BUILD)).toEqual({ ok: false, reason: 'no assembly works has a free line slot' })
+  it('lägger linjen i första verket med plats; ids fortsätter räkna över alla verk', () => {
+    const s = createInitialState('indochina-slice', 'works-build')
+    s.house.works[0]!.level = 2
+    const next = turn(s, [BUILD]).state
+    expect(allLines(next.house)).toHaveLength(3)
+    expect(next.house.works[0]!.lines.map((l) => l.id)).toEqual(['line-1', 'line-2', 'line-3'])
+  })
+
+  it('det globala taket gäller fortfarande', () => {
     const t = createInitialState('indochina-slice', 'works-max')
+    t.house.works[0]!.level = 3
     while (allLines(t.house).length < B.maxProductionLines) {
-      const w = t.house.works.find((x) => freeLineSlots(x) > 0)!
-      w.lines.push(line(`line-${allLines(t.house).length + 1}`))
+      t.house.works[0]!.lines.push(line(`line-${allLines(t.house).length + 1}`))
     }
     expect(validateAction(t, t, BUILD)).toEqual({ ok: false, reason: 'maximum production lines reached' })
   })

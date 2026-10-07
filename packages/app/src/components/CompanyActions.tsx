@@ -34,7 +34,7 @@ import type { Tier } from './designSystem.js'
 import { ActionCard } from './ActionCard.js'
 import { Panel, formatMoney } from './ui.js'
 import { useArmedVerb } from '../uiContext.js'
-import { allLines } from '@seventh-front/core'
+import { allLines, assemblyWorks, freeLineSlots } from '@seventh-front/core'
 
 const ROLE_LABEL: Record<HirableRole, string> = {
   chiefEngineer: 'ENGINEER',
@@ -132,7 +132,9 @@ function BuildLineSection({ state, onFile }: { state: GameState; onFile: (action
     <div className="cf-field" data-verb="BUILD_LINE">
       <span className="cf-field-label">PRODUCTION</span>
       <ActionCard state={state} verb="BUILD_LINE" action={action} />
-      <p className="cf-hint">{allLines(state.house).length} lines owned. A new line accepts any product, on any won contract.</p>
+      <p className="cf-hint">
+        {allLines(state.house).length} lines in {assemblyWorks(state.house).length} assembly works, {assemblyWorks(state.house).reduce((sum, w) => sum + freeLineSlots(w), 0)} free slots. A new line accepts any product, on any won contract; a works holds more lines when it is expanded.
+      </p>
       <Button variant="secondary" disabled={!validation.ok} onClick={() => onFile(action)} testId="company-build-line">
         Build Production Line — {formatMoney(preview.cost ?? 0)}
       </Button>

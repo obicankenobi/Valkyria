@@ -56,19 +56,20 @@ describe('nollläges-kolumnerna (P168)', () => {
     expect(m.lateContracts).toBe(0)
   })
 
-  it('en policy som bygger två linjer första turen ger linesBuilt = 2', () => {
+  it('en policy som bygger ut verket och sedan två linjer ger linesBuilt = 2 (startverket är fullt; plats kommer av en utbyggnad, P170)', () => {
+    let expanded = false
     let built = false
-    const m = runGame('indochina-slice', 'p168:builder', 'builder', () => {
-      if (built) return EMPTY
-      built = true
-      return {
-        standingOrders: [],
-        bids: [],
-        actions: [
-          { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} },
-          { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} },
-        ],
+    const m = runGame('indochina-slice', 'p168:builder', 'builder', (state) => {
+      const works = state.house.works[0]!
+      if (!expanded) {
+        expanded = true
+        return { ...EMPTY, standingOrders: [{ kind: 'WORKS', op: 'EXPAND', facilityId: works.id, forced: true }] }
       }
+      if (!built && works.level === 2 && !works.build) {
+        built = true
+        return { ...EMPTY, actions: [{ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }, { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }] }
+      }
+      return EMPTY
     })
     expect(m.linesBuilt).toBe(2)
   })

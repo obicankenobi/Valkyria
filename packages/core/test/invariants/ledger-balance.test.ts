@@ -14,7 +14,7 @@ import { createInitialState } from '../../src/state.js'
 import { resolveTurn } from '../../src/resolve/index.js'
 import { createRng } from '../../src/rng.js'
 import { COMMODITIES } from '../../src/validateAction.js'
-import type { GameState, LedgerEntry, PlayerAction, TurnSubmission } from '../../src/types.js'
+import type { FacilityKind, GameState, LedgerEntry, PlayerAction, StandingOrderChange, TurnSubmission } from '../../src/types.js'
 
 const SCENARIO = 'indochina-slice'
 const MAX_TURNS = 21 // samma tak som packages/harness/src/runGame.ts
@@ -172,7 +172,18 @@ function fuzzPolicy(state: GameState): TurnSubmission {
   const actions: PlayerAction[] = []
   if (state.pendingCrisis) actions.push({ type: 'CRISIS', choice: rng.pick(['PUSH', 'BACK_DOWN', 'SELL_THE_FILE'] as const) })
   for (let i = 0; i < 4; i++) actions.push(rng.pick(makers)())
-  return { standingOrders: [], bids: base.bids, actions }
+  // P170: bygge, utbyggnad, avveckling och markköp är stående order — de skriver `expenses.works` och `income.facilitySale`, och en utbyggnad ger plats för BUILD_LINE.
+  const workIds = state.house.works.map((w) => w.id)
+  const kinds: FacilityKind[] = ['component', 'depot', 'proving', 'civil', 'assembly']
+  const worksMakers: (() => StandingOrderChange)[] = [
+    () => ({ kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category: rng.pick(['armour', 'aviation', 'naval'] as const), forced: rng.int(0, 1) === 1 }),
+    () => ({ kind: 'WORKS', op: 'BUILD', facilityKind: rng.pick(kinds.filter((k) => k !== 'assembly')) }),
+    () => ({ kind: 'WORKS', op: 'EXPAND', facilityId: rng.pick(workIds), forced: rng.int(0, 1) === 1 }),
+    () => ({ kind: 'WORKS', op: 'SELL', facilityId: rng.pick(workIds) }),
+    () => ({ kind: 'WORKS', op: 'BUY_LAND' }),
+  ]
+  const standingOrders: StandingOrderChange[] = rng.int(0, 2) === 0 ? [rng.pick(worksMakers)()] : []
+  return { standingOrders, bids: base.bids, actions }
 }
 
 describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
@@ -214,6 +225,7 @@ describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
         'income.broker',
         'income.commodityRelease',
         'income.fileSale',
+        'income.facilitySale',
         'expenses.fixedCosts',
         'expenses.production',
         'expenses.interest',
@@ -222,6 +234,7 @@ describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
         'expenses.commodityPurchase',
         'expenses.hiring',
         'expenses.lines',
+        'expenses.works',
         'financing.loans',
         'financing.repayments',
       ]

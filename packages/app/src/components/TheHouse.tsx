@@ -28,6 +28,7 @@ import {
   projectedQuarter,
   researchOutlook,
 } from '@seventh-front/core'
+import { totalFixedCosts } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { DrawingBoard } from './DrawingBoard.js'
@@ -107,7 +108,7 @@ function ExecutiveActions({
 // inget här räknas om lokalt.
 function NextQuarterPanel({ state }: { state: GameState }) {
   const q = projectedQuarter(state)
-  const totalFixed = q.fixedCosts.payroll + q.fixedCosts.lineUpkeep + q.fixedCosts.stationUpkeep + q.fixedCosts.rndOverhead
+  const totalFixed = totalFixedCosts(q.fixedCosts)
 
   return (
     <Panel info="What your books will most likely show next quarter, from deliveries already scheduled." infoTopic="board" title="Next quarter" right={<Tag tone={q.netChange >= 0 ? 'green' : 'red'}>{formatMoney(q.netChange)} net</Tag>}>
@@ -120,6 +121,8 @@ function NextQuarterPanel({ state }: { state: GameState }) {
         <dd>−{formatMoney(q.fixedCosts.lineUpkeep)}</dd>
         <dt>Station upkeep</dt>
         <dd>−{formatMoney(q.fixedCosts.stationUpkeep)}</dd>
+        <dt>Facility upkeep</dt>
+        <dd>−{formatMoney(q.fixedCosts.facilityUpkeep)}</dd>
         <dt>R&amp;D overhead</dt>
         <dd>−{formatMoney(q.fixedCosts.rndOverhead)}</dd>
         {q.interest > 0 && (

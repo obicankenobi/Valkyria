@@ -1,16 +1,169 @@
 {
-  "_note": "ETAPP11_FORSLAG.md §4.2 (P169): de sju anläggningarna. Bara det modellen läser i P169 — kostnader, byggtider och fasta kostnader per nivå kommer med P170. maxLevel är 1–3 för alla (§4.2). linesPerLevel: antalet produktionslinjer ett monteringsverk rymmer på nivå 1, 2 och 3 (§4.2: 'Har 2–6 produktionslinjer'). interimStartLevel/interimWorksCount är PROVISORISKA och bara till P170: tills den prompten ersätter startpaketet (ett nivå 1-verk med två linjer, §4.4) startar och migreras huset med två monteringsverk på nivå 3, så att BUILD_LINE och taket maxProductionLines fungerar som före etapp 11 (spelet ska inte ändras av att modellen byts, bara formen).",
+  "_note": "ETAPP11_FORSLAG.md §4.2 (P169): de sju anläggningarna. maxLevel är 1–3 för alla (§4.2). linesPerLevel: antalet produktionslinjer ett monteringsverk rymmer på nivå 1, 2 och 3 (§4.2: 'Har 2–6 produktionslinjer'). interimStartLevel/interimWorksCount används sedan P170 BARA av migreringen av sparade partier från före etapp 11 (worksFromLines): fyra fristående linjer blir två monteringsverk på nivå 3, så att ett gammalt parti kan fortsätta bygga linjer; ett nytt parti startar med startpaketet (§4.4, state.ts). Se _p170_note för tomten och byggena.",
   "maxLevel": 3,
   "interimStartLevel": 3,
   "interimWorksCount": 2,
-  "linesPerLevel": [2, 4, 6],
+  "linesPerLevel": [
+    2,
+    4,
+    6
+  ],
   "kinds": {
-    "assembly": { "label": "Assembly Works", "does": "Builds materiel in a category. Holds 2 to 6 production lines." },
-    "component": { "label": "Component Shop", "does": "Makes parts for the works: lower unit cost, half the raw-material swing. Serves at most two works." },
-    "laboratory": { "label": "Laboratory", "does": "Does research in one category. Its level caps the tech level and the number of projects at once." },
-    "design": { "label": "Design Office", "does": "Holds design projects, one per desk. The chief designer sits here." },
-    "proving": { "label": "Proving Ground", "does": "Holds testing. A climate chamber unlocks environment tests and finds environment flaws before delivery." },
-    "depot": { "label": "Depot", "does": "Stores finished materiel and spares. Allows building to stock and kits off the shelf." },
-    "civil": { "label": "Civil Works", "does": "The civil branch as a building. Can be converted to an assembly works and back." }
+    "assembly": {
+      "label": "Assembly Works",
+      "does": "Builds materiel in a category. Holds 2 to 6 production lines.",
+      "buildCost": [
+        1200000,
+        1100000,
+        1400000
+      ],
+      "buildTurns": [
+        3,
+        3,
+        4
+      ],
+      "fixedCostPerQuarter": [
+        30000,
+        50000,
+        70000
+      ],
+      "maxCount": 6
+    },
+    "component": {
+      "label": "Component Shop",
+      "does": "Makes parts for the works: lower unit cost, half the raw-material swing. Serves at most two works.",
+      "buildCost": [
+        900000,
+        1000000,
+        1200000
+      ],
+      "buildTurns": [
+        2,
+        3,
+        3
+      ],
+      "fixedCostPerQuarter": [
+        20000,
+        30000,
+        40000
+      ],
+      "maxCount": 2
+    },
+    "laboratory": {
+      "label": "Laboratory",
+      "does": "Does research in one category. Its level caps the tech level and the number of projects at once.",
+      "buildCost": [
+        800000,
+        1000000,
+        1400000
+      ],
+      "buildTurns": [
+        2,
+        3,
+        4
+      ],
+      "fixedCostPerQuarter": [
+        25000,
+        40000,
+        60000
+      ],
+      "maxCount": 6
+    },
+    "design": {
+      "label": "Design Office",
+      "does": "Holds design projects, one per desk. The chief designer sits here.",
+      "buildCost": [
+        600000,
+        800000,
+        1000000
+      ],
+      "buildTurns": [
+        2,
+        2,
+        3
+      ],
+      "fixedCostPerQuarter": [
+        20000,
+        30000,
+        45000
+      ],
+      "maxCount": 1
+    },
+    "proving": {
+      "label": "Proving Ground",
+      "does": "Holds testing. A climate chamber unlocks environment tests and finds environment flaws before delivery.",
+      "buildCost": [
+        700000,
+        900000,
+        1100000
+      ],
+      "buildTurns": [
+        2,
+        3,
+        3
+      ],
+      "fixedCostPerQuarter": [
+        20000,
+        30000,
+        40000
+      ],
+      "maxCount": 1
+    },
+    "depot": {
+      "label": "Depot",
+      "does": "Stores finished materiel and spares. Allows building to stock and kits off the shelf.",
+      "buildCost": [
+        600000,
+        800000,
+        1000000
+      ],
+      "buildTurns": [
+        2,
+        2,
+        3
+      ],
+      "fixedCostPerQuarter": [
+        15000,
+        25000,
+        35000
+      ],
+      "maxCount": 1
+    },
+    "civil": {
+      "label": "Civil Works",
+      "does": "The civil branch as a building. Can be converted to an assembly works and back.",
+      "buildCost": [
+        1000000,
+        1100000,
+        1300000
+      ],
+      "buildTurns": [
+        3,
+        3,
+        4
+      ],
+      "fixedCostPerQuarter": [
+        25000,
+        40000,
+        55000
+      ],
+      "maxCount": 1
+    }
+  },
+  "_p170_note": "ETAPP11_FORSLAG.md §4.1, §4.3, §4.4 (P170): tomten, byggen och startpaketet. Alla tal här är PROVISORISKA tills balanspasset (P183). plot.slots 8 (11C); en gång kan landSlots (4) platser till köpas för landCost — 'högt pris', mer än halva grundkapitalet. maxCount: hur många av ett slag huset får ha (ett laboratorium per kategori, ett ritkontor, en provplats, en depå, ett civilt verk, två komponentverkstäder; monteringsverken begränsas bara av tomten). buildCost[n-1] är kostnaden att nå nivå n (en utbyggnad från n-1 till n), buildTurns[n-1] byggtiden i kvartal (§4.3: 2–4), betalat i lika rater per kvartal. fixedCostPerQuarter[n-1] är anläggningens fasta kostnad på nivå n (läggs till lönen och linjernas upphåll, ingen anläggning under byggnad betalar något). forceTimeFactor/forceCostFactor: forcerat bygge är halva tiden mot dubbla priset (§4.3). expansionSpeedPct: ett monteringsverk under utbyggnad går på halv fart (§4.3). sellValuePct: en avvecklad anläggning säljs för så stor del av det som investerats i den. newAssemblyLines: ett nybyggt monteringsverk levereras med så många linjer (startpaketets två); fler fylls på med BUILD_LINE upp till nivåns plats. startingInvested: bokfört värde för startpaketets monteringsverk (laboratoriet är gratis, §4.4).",
+  "plot": {
+    "slots": 8,
+    "landSlots": 4,
+    "landCost": 2400000
+  },
+  "forceTimeFactor": 0.5,
+  "forceCostFactor": 2,
+  "expansionSpeedPct": 50,
+  "sellValuePct": 40,
+  "newAssemblyLines": 2,
+  "startingInvested": {
+    "assembly": 1200000,
+    "laboratory": 0,
+    "design": 600000
   }
 }

@@ -66,7 +66,7 @@ describe('projectedQuarter (P85)', () => {
   it('netChange = expectedRevenueNextTurn − (summan av fixedCosts) − interest', () => {
     const state = createInitialState('indochina-slice', 'projected-net-seed')
     const result = projectedQuarter(state)
-    const totalFixed = result.fixedCosts.payroll + result.fixedCosts.lineUpkeep + result.fixedCosts.stationUpkeep + result.fixedCosts.rndOverhead
+    const totalFixed = result.fixedCosts.payroll + result.fixedCosts.lineUpkeep + result.fixedCosts.stationUpkeep + result.fixedCosts.rndOverhead + result.fixedCosts.facilityUpkeep
     expect(result.netChange).toBe(result.expectedRevenueNextTurn - totalFixed - result.interest)
   })
 })

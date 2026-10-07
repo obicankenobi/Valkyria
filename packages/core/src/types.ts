@@ -143,6 +143,7 @@ export interface LedgerEntry {
     broker: Money // leveranser av BROKER-kontrakt (contract-broker-*)
     commodityRelease: Money // MARKET/RELEASE
     fileSale: Money // krisvalet SELL_THE_FILE
+    facilitySale?: Money // P170: avvecklade anläggningar — saknas i ett sparat parti från före P170
     licence?: Money // P135: licensavgifter och royalty — saknas i ett sparat parti från före P135
     civil?: Money // P133: civila linjer (netto) — saknas i ett sparat parti från före P133
   }
@@ -156,6 +157,7 @@ export interface LedgerEntry {
     hiring: Money // INTERNAL/HIRE
     lines: Money // INTERNAL/BUILD_LINE
     clawback: Money // krisvalet BACK_DOWN: kvartalets restricted-intäkt tas tillbaka
+    works?: Money // P170: byggrater, utbyggnader och markköp — saknas i ett sparat parti från före P170
   }
   financing: {
     loans: Money // INTERNAL/TAKE_LOAN
@@ -235,6 +237,7 @@ export interface House {
   creditLimit: Money // härlett, skrivs om varje tur i economy. Se 5.
   insolventTurns: number // 3 i rad → INSOLVENCY
   revenueByTurn: Money[] // index = turn. Underlag för kredit och styrelsemål.
+  plot: Plot // P170: tomten; varje anläggning (även under byggnad) tar en plats
   works: Facility[] // P169: anläggningarna; produktionslinjerna bor i monteringsverken (works.ts: allLines)
   rnd: RndProject[]
   stations: Station[]
@@ -388,6 +391,17 @@ export interface Facility {
   status: 'operating' | 'under_construction' | 'retooling' | 'idle' | 'strike'
   // Produktionslinjerna, bara i ett monteringsverk (annars tom). Det finns inga fristående linjer (skyddsräcke 1).
   lines: ProductionLine[]
+  // P170: det som investerats i anläggningen (byggkostnad, utbyggnader) — underlaget för vad den säljs för. Startpaketets labb är gratis: 0.
+  invested: Money
+  // P170: ett pågående bygge. Ett nytt hus har level 1 och status 'under_construction' tills det är klart; en utbyggnad lämnar statusen 'operating'
+  // (monteringsverket går på halv fart, expansionSpeedPct) och höjer nivån till toLevel när det är klart. Kostnaden betalas i lika rater från startTurn.
+  build?: { toLevel: 1 | 2 | 3; startTurn: number; turnsTotal: number; turnsLeft: number; costTotal: Money; costPerTurn: Money; forced: boolean }
+}
+
+// P170 (§4.1): hemmatomten. slots = antal platser (åtta, 11C); en gång kan fler köpas.
+export interface Plot {
+  slots: number
+  landBought: boolean
 }
 
 export interface RndProject {
@@ -1241,6 +1255,12 @@ export type StandingOrderChange =
   | { kind: 'DESIGNER'; op: 'RELEASE' }
   | { kind: 'LICENCE'; op: 'GRANT'; designId: DesignId; factionId: FactionId }
   | { kind: 'LICENCE'; op: 'REVOKE'; licenceId: string }
+  // P170 (ETAPP11 §4.3): bygge, utbyggnad, avveckling och markköp är stående order och kostar ingen handling. Forcerat = halva tiden mot dubbla priset.
+  // category krävs för ett monteringsverk och ett laboratorium (ett laboratorium per kategori) och ges inte för övriga slag.
+  | { kind: 'WORKS'; op: 'BUILD'; facilityKind: FacilityKind; category?: TechCategory; forced?: boolean }
+  | { kind: 'WORKS'; op: 'EXPAND'; facilityId: string; forced?: boolean }
+  | { kind: 'WORKS'; op: 'SELL'; facilityId: string }
+  | { kind: 'WORKS'; op: 'BUY_LAND' }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {

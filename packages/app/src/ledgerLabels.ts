@@ -10,6 +10,7 @@ export const INCOME_LABELS: Required<Record<keyof LedgerEntry['income'], string>
   broker: 'Brokered deliveries',
   commodityRelease: 'Commodity release',
   fileSale: 'Sale of the file',
+  facilitySale: 'Sale of facilities',
   civil: 'Civil lines',
   licence: 'Licences and royalties',
 }
@@ -23,6 +24,7 @@ export const EXPENSE_LABELS: Record<keyof LedgerEntry['expenses'], string> = {
   commodityPurchase: 'Commodity purchases',
   hiring: 'Hiring',
   lines: 'New production lines',
+  works: 'Works construction and land',
   clawback: 'Revenue clawback',
 }
 

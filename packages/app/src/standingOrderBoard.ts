@@ -45,6 +45,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'LICENCE':
       // P135: en licens per konstruktion och licenstagare (GRANT), eller en återkallelse per licens. Kort för licenser byggs i P136.
       return change.op === 'GRANT' ? `licence:${change.designId}:${change.factionId}` : `licence-revoke:${change.licenceId}`
+    case 'WORKS':
+      // P170: ett bygge per slag och kategori, en utbyggnad/avveckling per anläggning, ett markköp — en köad ändring per föremål. Tomtplanen byggs i P179.
+      return change.op === 'BUILD' ? `works-build:${change.facilityKind}:${change.category ?? ''}` : change.op === 'BUY_LAND' ? 'works-land' : `works-${change.op.toLowerCase()}:${change.facilityId}`
   }
 }
 

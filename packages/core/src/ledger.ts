@@ -59,7 +59,7 @@ export function recordIncome(draft: GameState, row: LedgerIncomeRow, amount: Mon
 
 export function recordExpense(draft: GameState, row: LedgerExpenseRow, amount: Money): void {
   const entry = currentEntry(draft)
-  entry.expenses[row] += round(amount)
+  entry.expenses[row] = (entry.expenses[row] ?? 0) + round(amount)
 }
 
 export function recordFinancing(draft: GameState, row: LedgerFinancingRow, amount: Money): void {
