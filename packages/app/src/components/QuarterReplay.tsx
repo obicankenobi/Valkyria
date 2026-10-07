@@ -110,7 +110,7 @@ export function QuarterReplay({
   }
 
   return (
-    <div className="modal-overlay is-map-replay" data-testid="quarter-replay">
+    <div className={memo && memoVisible ? 'modal-overlay' : 'modal-overlay is-map-replay'} data-testid="quarter-replay">
       <div className="modal-panel replay-panel">
         <div className="replay-head">
           <h2 className="view-title">Quarter Replay</h2>

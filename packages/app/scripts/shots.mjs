@@ -458,6 +458,25 @@ const APP_SCREENS = [
     },
   },
   {
+    // P158: kvartalsuppspelningen på kartan — panelen som flik i nederkanten och en ring där den visade händelsen hör hemma.
+    name: 'quarter-replay-map',
+    path: '/',
+    async afterGoto(page) {
+      await startGame(page)
+      for (let quarter = 0; quarter < 10; quarter++) {
+        await page.getByTestId('end-quarter-button').click()
+        try {
+          await page.getByTestId('map-replay-focus').waitFor({ state: 'visible', timeout: 4000 })
+          return
+        } catch {
+          const skip = page.getByTestId('replay-skip')
+          if (await skip.isVisible().catch(() => false)) await skip.click()
+          await page.getByTestId('tab-operations').click().catch(() => {})
+        }
+      }
+    },
+  },
+  {
     // P163: ett verb valt i Actions-menyn — remsan och den markerade knappen i CONTACTS.
     name: 'armed-verb',
     path: '/',

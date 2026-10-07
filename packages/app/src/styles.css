@@ -6071,6 +6071,7 @@ summary:focus-visible,
 .modal-overlay.is-map-replay .replay-panel {
   pointer-events: auto;
   max-height: 40dvh;
+  overflow-y: auto;
   border-color: var(--ink-dim);
   box-shadow: var(--shadow);
 }

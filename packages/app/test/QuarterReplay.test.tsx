@@ -230,4 +230,11 @@ describe('QuarterReplay — kartfokus (P158)', () => {
     render(<QuarterReplay wire={wire} state={state} fullReplay={false} onToggleFullReplay={() => {}} onDone={() => {}} />)
     expect(screen.getByTestId('quarter-replay').className).toContain('is-map-replay')
   })
+
+  it('med styrelsens PM synligt går överlagret tillbaka till ett vanligt, centrerat kort (PM:et och Continue måste rymmas)', () => {
+    mockMatchMedia(true)
+    const memo = { reviewNumber: 1, passed: true, sentence: 'x', progress: 1, required: 1, topItems: [], turnsToNext: 4 } as never
+    render(<QuarterReplay wire={[]} state={state} fullReplay={false} onToggleFullReplay={() => {}} memo={memo} onDone={() => {}} />)
+    expect(screen.getByTestId('quarter-replay').className).not.toContain('is-map-replay')
+  })
 })
