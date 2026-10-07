@@ -519,10 +519,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   //
   // Omfryst i P141 steg 3 (regel, `runInCostPerDoubling` 3 → 2 — håller raden "inkörningens andel" 15–30 % efter att marknaden blivit större, se `_p141_runin_note`). Attribution (dist ombyggd): med 3 tillbaka är alla tre hashar
   // bit-identiska med steg 2c:s (1cea1b12fa001a, bf7f96360f9e, 9488ed2a06994) — verifierat, inte antaget. De nya hasharna: passive 16e13a273d4665, aggressive 1eb8905fea3fcc, balanced 1ce6c0b77f8af2.
+  //
+  // Omfryst i P142 (regel, kapplöpningens takt): gap-chocken bedöms när BÅDA blockens steg i en kategori tagits samma tur (`race.ts` `applyGapShock`), generationsschemat är omlagt
+  // (`blocGenerationSchedule`: infanteri parat tur 14, artilleri väst 8/16 och öst 4/16, de övriga parade) och `bothSidesDoomsday` 3 → 10. Attribution (dist ombyggd): `bothSidesDoomsday` tillbaka på 3 ger
+  // samma passive/aggressive-hash som med 10 (1bf6e17b97b37d, 7127c6f45e90d) — schemat/parningen flyttar dem; `balanced` (som beväpnar båda sidor) flyttas av båda (53e36034652e0 med 3, 4e08bd3ebd90b med 10).
+  // De nya hasharna: passive 1bf6e17b97b37d, aggressive 7127c6f45e90d, balanced 4e08bd3ebd90b.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '16e13a273d4665' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1eb8905fea3fcc' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1ce6c0b77f8af2' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1bf6e17b97b37d' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '7127c6f45e90d' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '4e08bd3ebd90b' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
