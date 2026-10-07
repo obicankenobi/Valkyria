@@ -437,10 +437,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // Attribution: med verken projicerade tillbaka till den gamla platta `lines`-listan är alla tre sluttillstånd bit-identiska med P130:s hashar
   // (63048b0971ece, 9b9662250ca4a, 9ebe54ccbc404) — modellbytet ändrar ingen regel och inget utfall, bara tillståndets form. De nya hasharna:
   // passive 1b8d2eaabbe6ba, aggressive 16ff81ba56ecd4, balanced b9cb19468bdd2.
+  //
+  // Omfryst i P170 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): startpaketet (ett monteringsverk med två linjer i stället för fyra, ett gratis
+  // laboratorium och ett ritkontor), anläggningarnas fasta kostnader (£348 000 per kvartal i stället för £309 000) och tomten (`House.plot`) är nya.
+  // Alla tre partierna slutar fortfarande i BUYOUT (tur 15, 21 och 11). Golden-botarna bygger ingenting (`WORKS` används inte), så inga byggrater
+  // ingår — det som flyttar hasharna är startläget. De nya hasharna: passive 12e4e8aae7700d, aggressive 439fcf7dab844, balanced f41739bba4bc3.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1b8d2eaabbe6ba' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '16ff81ba56ecd4' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'b9cb19468bdd2' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '12e4e8aae7700d' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '439fcf7dab844' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'f41739bba4bc3' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
