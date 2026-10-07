@@ -492,10 +492,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // Omfryst i P185 regel 3 (orderstorlekar som fyller en linje, beslut 11R). Attribution: med de gamla orderstorlekarna (products.json) och den gamla styrelsetröskeln (2,9) är alla tre hashar bit-identiska med regel 2:s
   // (465f820de78a2, 7b987fa509f2e, 811c0674271ff) — verifierat, inte antaget. De två ändringarna flyttar var för sig alla tre hashar: orderstorlekarna (ordrarna är 2–4 linjekvartal) och styrelsetröskeln 2,9 → 2,45
   // (som sänktes så att spelbarhetsvakterna håller på den större marknaden). `balance.json`/`balance.frozen.json` fick en anteckning (`_p185_orders_note`). De nya hasharna: passive 1ea10b289638bc, aggressive 150ce6c75acf96, balanced 143b022bb0bc0a.
+  //
+  // Omfryst i P186 (regel, balanspasset efter P185). Attribution: med `orderDeliveryTurnsPerLineQuarter` 0 (leveranstiden växer inte med orderstorleken) och styrelsetröskeln 2,45 är alla tre hashar bit-identiska
+  // med regel 3:s (1ea10b289638bc, 150ce6c75acf96, 143b022bb0bc0a) — verifierat, inte antaget. Var och en av de två ändringarna flyttar alla tre hashar för sig (leveranstiden i orders.ts; tröskeln 2,45 → 3,4).
+  // Byggkostnaden (facilities.json, dubblerad) och lånevillkoren rör inga golden-botar — de bygger aldrig. `balance.json`/`balance.frozen.json` fick ett tal (`orderDeliveryTurnsPerLineQuarter`) och tre lånetal ändrades.
+  // De nya hasharna: passive 157045d1be5168, aggressive 17c700bf42b476, balanced 1e55408c1ee2a2.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1ea10b289638bc' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '150ce6c75acf96' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '143b022bb0bc0a' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '157045d1be5168' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '17c700bf42b476' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1e55408c1ee2a2' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
