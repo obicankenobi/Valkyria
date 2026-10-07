@@ -86,15 +86,15 @@ describe('doomsday-koppling (P121, §7.4)', () => {
     const before = state.doomsday
     const { ctx, emitted } = makeCtx(state)
     advanceRace(ctx)
-    // Tur 4 har två steg: artilleri öst (inget gap här) och marin väst (gap mot öst).
+    // Tur 4 har tre steg (P142): artilleri öst (inget gap här — väst har redan matchat) och marin i båda blocken (parat, inget gap).
     const stepRows = emitted.filter((e) => e.severity === 'headline' && e.headline.includes('REQUIREMENTS'))
-    expect(stepRows).toHaveLength(2)
+    expect(stepRows).toHaveLength(3)
     const doomsdayRows = emitted.filter((e) => e.headline.startsWith('DOOMSDAY'))
-    expect(doomsdayRows.length).toBeGreaterThanOrEqual(2)
+    expect(doomsdayRows.length).toBeGreaterThanOrEqual(3)
     const stepIndex = emitted.findIndex((e) => e.severity === 'headline' && e.headline.includes('ARTILLERY REQUIREMENTS'))
     expect(doomsdayRows.some((e) => e.causeId === `test-${stepIndex}`)).toBe(true)
-    // 2 steg + 1 gap-chock (marin) = 2·raceStepDoomsday + gapShockDoomsday
-    expect(state.doomsday).toBeCloseTo(before + 2 * B.raceStepDoomsday + B.gapShockDoomsday, 9)
+    // 3 steg, ingen gap-chock (de två blocken är jämnstora i båda kategorierna) = 3·raceStepDoomsday
+    expect(state.doomsday).toBeCloseTo(before + 3 * B.raceStepDoomsday, 9)
   })
 
   it('en gap-chock lägger gapShockDoomsday, med gap-rubriken som orsak', () => {

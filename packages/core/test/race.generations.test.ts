@@ -127,16 +127,25 @@ describe('grundschemat (P118, §7.1)', () => {
     }
   })
 
-  it('blocken kliver vid olika turer i varje kategori (annars finns inget gap att jaga)', () => {
+  it('P142: de flesta stegen är parade (båda blocken samma tur, inget gap) — högst tre förskjutna steg i hela schemat, och minst ett (annars finns inget gap att jaga)', () => {
+    let staggered = 0
     for (const category of Object.keys(SCHEDULE) as TechCategory[]) {
-      expect(SCHEDULE[category].west[0], category).not.toBe(SCHEDULE[category].east[0])
+      const s = SCHEDULE[category]
+      for (let i = 0; i < Math.max(s.west.length, s.east.length); i++) {
+        const w = s.west[i]
+        const e = s.east[i]
+        if (w === undefined || e === undefined) continue
+        if (w !== e) staggered++
+      }
     }
+    expect(staggered).toBeGreaterThanOrEqual(1)
+    expect(staggered).toBeLessThanOrEqual(3)
   })
 
-  it('de ledande stegen ligger på tur 4, 8 och 12, två kategorier per steg (ägarbeslut 2026-09-30); det andra blocket följer efter fyra turer', () => {
+  it('de ledande stegen ligger på tur 4, 8, 12 och 14; de förskjutna följer efter fyra turer (P142: schemat glesat efter P130:s mätning, infanteriets parade steg på tur 14)', () => {
     const leaders = Object.values(SCHEDULE).map((c) => Math.min(c.west[0]!, c.east[0]!))
-    expect([...leaders].sort((a, b) => a - b)).toEqual([4, 4, 8, 8, 12, 12])
-    for (const c of Object.values(SCHEDULE)) expect(Math.abs(c.west[0]! - c.east[0]!)).toBe(4)
+    expect([...leaders].sort((a, b) => a - b)).toEqual([4, 4, 8, 12, 12, 14])
+    for (const c of Object.values(SCHEDULE)) expect([0, 4]).toContain(Math.abs(c.west[0]! - c.east[0]!))
   })
 
   it('en ny partistart har generation 1 överallt och ingen framflyttning', () => {
@@ -159,23 +168,24 @@ describe('grundschemat (P118, §7.1)', () => {
 })
 
 describe('generationsskiftet (P118, §7.1)', () => {
-  const category: TechCategory = 'naval'
-  const westTurn = SCHEDULE.naval.west[0]!
+  // P142: marinen kliver nu parat (båda blocken tur 4); artilleriet är kategorin där ett block (öst, tur 4) kliver ensamt.
+  const category: TechCategory = 'artillery'
+  const westTurn = SCHEDULE.artillery.east[0]! // ledarens tur (öst)
 
   it('sker vid blockets schemalagda tur, bara i det blocket, med en rubrik utan generationsnummer', () => {
     const state = createInitialState('indochina-slice', 'gen-seed')
     state.meta.turn = westTurn - 1
     const before = makeCtx(state)
     advanceRace(before.ctx)
-    expect(blocGeneration(state, 'west', category)).toBe(1)
-    expect(before.emitted.some((e) => e.headline.includes('NAVAL'))).toBe(false)
+    expect(blocGeneration(state, 'east', category)).toBe(1)
+    expect(before.emitted.some((e) => e.headline.includes('ARTILLERY'))).toBe(false)
 
     state.meta.turn = westTurn
     const { ctx, emitted } = makeCtx(state)
     advanceRace(ctx)
-    expect(blocGeneration(state, 'west', category)).toBe(2)
-    expect(blocGeneration(state, 'east', category)).toBe(1)
-    const headline = emitted.find((e) => e.severity === 'headline' && e.headline.includes('WEST') && e.headline.includes('NAVAL'))!
+    expect(blocGeneration(state, 'east', category)).toBe(2)
+    expect(blocGeneration(state, 'west', category)).toBe(1)
+    const headline = emitted.find((e) => e.severity === 'headline' && e.headline.includes('EAST') && e.headline.includes('ARTILLERY') && !e.headline.startsWith('GAP'))!
     expect(headline).toBeDefined()
     expect(headline.headline).not.toMatch(/GENERATION \d/) // hidden: no number
     expect(headline.actorIsPlayer).toBe(false)
@@ -188,7 +198,7 @@ describe('generationsskiftet (P118, §7.1)', () => {
     advanceRace(ctx)
     const rows = emitted.length
     advanceRace(ctx)
-    expect(blocGeneration(state, 'west', category)).toBe(2)
+    expect(blocGeneration(state, 'east', category)).toBe(2)
     expect(emitted.length).toBe(rows)
   })
 
@@ -196,15 +206,15 @@ describe('generationsskiftet (P118, §7.1)', () => {
     withTechStep(1, () => {
       const state = createInitialState('indochina-slice', 'gen-seed')
       state.meta.turn = westTurn
-      const westFactions = Object.values(state.factions).filter((f) => f.alignment > 0)
-      const eastFactions = Object.values(state.factions).filter((f) => f.alignment < 0)
+      const westFactions = Object.values(state.factions).filter((f) => f.alignment < 0) // ledarens köpare (öst)
+      const eastFactions = Object.values(state.factions).filter((f) => f.alignment > 0) // det andra blockets köpare (väst)
       const before = Object.fromEntries(Object.values(state.factions).map((f) => [f.id, f.techLevel[category]]))
       const { ctx, emitted } = makeCtx(state)
       advanceRace(ctx)
       for (const f of westFactions) expect(state.factions[f.id]!.techLevel[category], f.id).toBe(before[f.id]! + 1)
       for (const f of eastFactions) expect(state.factions[f.id]!.techLevel[category], f.id).toBe(before[f.id]!)
-      const stepIndex = emitted.findIndex((e) => e.severity === 'headline' && e.headline.includes('NAVAL'))
-      const rows = emitted.filter((e) => e.headline.includes('NAVAL TECH LEVEL RISES'))
+      const stepIndex = emitted.findIndex((e) => e.severity === 'headline' && e.headline.includes('ARTILLERY'))
+      const rows = emitted.filter((e) => e.headline.includes('ARTILLERY TECH LEVEL RISES'))
       expect(rows).toHaveLength(westFactions.length)
       for (const r of rows) expect(r.causeId).toBe(`test-${stepIndex}`)
     })
@@ -219,7 +229,7 @@ describe('generationsskiftet (P118, §7.1)', () => {
       advanceRace(ctx)
       expect(JSON.stringify(Object.values(state.factions).map((f) => f.techLevel))).toBe(before)
       expect(emitted.some((e) => e.headline.includes('TECH LEVEL RISES'))).toBe(false)
-      expect(blocGeneration(state, 'west', category)).toBe(2) // generationen steg ändå
+      expect(blocGeneration(state, 'east', category)).toBe(2) // generationen steg ändå
     })
   })
 
@@ -351,8 +361,8 @@ describe('kravkort (P118, §7.1)', () => {
     const cards = requirementCards(state)
     const card = cards.find((c) => c.bloc === 'east' && c.category === 'artillery')!
     expect(card).toEqual({ bloc: 'east', category: 'artillery', inTurns: B.requirementCardHorizon })
-    // Inget annat steg ligger så nära (steg på tur 4: artillery öst och naval väst).
-    expect(cards.map((c) => `${c.bloc}-${c.category}`).sort()).toEqual(['east-artillery', 'west-naval'])
+    // Inget annat steg ligger så nära (steg på tur 4: artilleri öst och marin i båda blocken — P142: marinen kliver parat).
+    expect(cards.map((c) => `${c.bloc}-${c.category}`).sort()).toEqual(['east-artillery', 'east-naval', 'west-naval'])
     for (const c of cards) expect(Object.keys(c).sort()).toEqual(['bloc', 'category', 'inTurns'])
   })
 

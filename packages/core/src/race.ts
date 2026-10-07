@@ -221,6 +221,8 @@ export function advanceRace(ctx: ResolveContext): void {
     })
   }
   for (const category of RACE_CATEGORIES) {
+    let stepped = false
+    let lastStepId: string | null = null
     for (const bloc of BLOCS) {
       const due = nextStepTurn(draft, bloc, category)
       if (due === null || turn < due) continue
@@ -250,9 +252,12 @@ export function advanceRace(ctx: ResolveContext): void {
           subjectId: faction.id,
         })
       }
-      applyGapShock(ctx, bloc, category, stepId)
       maybeRumour(ctx, bloc, category, stepId)
+      lastStepId = stepId
+      stepped = true
     }
+    // P142: gap-chocken bedöms när båda blocken stigit färdigt den här turen — två block som kliver samma tur har inget försprång.
+    if (stepped && lastStepId !== null) applyGapShock(ctx, category, lastStepId)
   }
 }
 
@@ -394,14 +399,17 @@ export function checkBothSides(ctx: ResolveContext): void {
 
 const otherBloc = (bloc: Bloc): Bloc => (bloc === 'west' ? 'east' : 'west')
 
-// Anropas direkt efter att `bloc` klivit upp i `category`: tar steget ett försprång mot det andra blocket blir det en gap-chock
-// (en rubrik, lagrad i race.gap); matchar det en pågående chock stängs den (en rad).
-function applyGapShock(ctx: ResolveContext, bloc: Bloc, category: TechCategory, stepId: string): void {
+// Anropas en gång per kategori och tur, efter att alla block som ska kliva den turen klivit: ligger ett block före det andra blir det en gap-chock
+// (en rubrik, lagrad i race.gap — en chock som redan pågår för samma ledare ger ingen ny); är de jämnstora stängs en pågående chock (en rad).
+function applyGapShock(ctx: ResolveContext, category: TechCategory, stepId: string): void {
   const { draft, emit } = ctx
-  const other = otherBloc(bloc)
-  const gen = blocGeneration(draft, bloc, category)
-  const otherGen = blocGeneration(draft, other, category)
-  if (gen > otherGen) {
+  const west = blocGeneration(draft, 'west', category)
+  const east = blocGeneration(draft, 'east', category)
+  const existing = draft.race.gap?.[category]
+  if (west !== east) {
+    const bloc: Bloc = west > east ? 'west' : 'east'
+    const other = otherBloc(bloc)
+    if (existing && existing.leader === bloc) return
     ;(draft.race.gap ??= {})[category] = { leader: bloc, sinceTurn: draft.meta.turn }
     const gapId = emit({
       severity: 'headline',
@@ -415,13 +423,13 @@ function applyGapShock(ctx: ResolveContext, bloc: Bloc, category: TechCategory, 
     addDoomsday(ctx, BALANCE.gapShockDoomsday, gapId) // P121
     return
   }
-  const gap = draft.race.gap?.[category]
-  if (gap && gap.leader === other && gen >= otherGen) {
+  if (existing) {
+    const closer = otherBloc(existing.leader)
     delete draft.race.gap![category]
     emit({
       severity: 'report',
       scope: 'market',
-      headline: `THE ${category.toUpperCase()} GAP CLOSES: THE ${bloc.toUpperCase()} MATCHES THE ${other.toUpperCase()}`,
+      headline: `THE ${category.toUpperCase()} GAP CLOSES: THE ${closer.toUpperCase()} MATCHES THE ${existing.leader.toUpperCase()}`,
       causeId: stepId,
       delta: { [`race.gap.${category}`]: -1 },
       actorIsPlayer: false,
