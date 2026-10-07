@@ -7,6 +7,7 @@ import { round } from '../../money.js'
 import { counterBidTerm, effectiveRivalReputation, firstInPlaceBidTerm } from '../../race.js'
 import { isBidLocked } from '../../research.js'
 import { advanceAmount } from '../advance.js'
+import { rivalLoadMarkup, routeCostFactor } from '../../outsourcing.js'
 import { integrityBidTerm, isSuspendedFrom, recordTrace } from '../../traces.js'
 import { recordIncome } from '../../ledger.js'
 import { applyExportViolation, isExportViolation } from '../../exportRules.js'
@@ -204,7 +205,10 @@ export const bidding: ResolveStep = (ctx) => {
       // ingen ticker (de deltar inte, snarare än att bli diskvalificerade).
       if (rival.sabotagedUntilTurn !== null && draft.meta.turn < rival.sabotagedUntilTurn) continue
 
-      const rivalBid = computeRivalBid(rng, rival, product, order.referencePrice)
+      const baseRivalBid = computeRivalBid(rng, rival, product, order.referencePrice)
+      // P172 (11L): en rival som redan bär sin kapacitet i aktiva kontrakt är fullbelagd och bjuder dyrare. Ett enda tal per rival; ingen ny slump.
+      const loadMarkup = rivalLoadMarkup(rival.contracts.filter((c) => c.status === 'active').length, BALANCE.rivalCapacityContracts, BALANCE.rivalFullPriceMarkupPct)
+      const rivalBid = loadMarkup === 1 ? baseRivalBid : { ...baseRivalBid, price: round(baseRivalBid.price * loadMarkup) }
       if (rivalBid.price > order.trueBudget) {
         emit({
           severity: 'ticker',
@@ -281,7 +285,9 @@ export const bidding: ResolveStep = (ctx) => {
     }
 
     if (winner.source === 'player') {
-      const baseUnitCost = computeUnitCostNow(product, winner.grade, draft.market.commodities)
+      // P172: går kontraktet via en underleverantör (inget verk bygger kategorin) är dess styckkostnad den dyrare vägens.
+      const route = routeCostFactor(draft.house, product)
+      const baseUnitCost = route === 1 ? computeUnitCostNow(product, winner.grade, draft.market.commodities) : round(computeUnitCostNow(product, winner.grade, draft.market.commodities) * route)
       const winningDesign = winner.designId !== undefined ? draft.house.designs.find((d) => d.id === winner.designId) : undefined
       // P112: en uppgraderingssats sänker styckkostnaden ytterligare (lägre marginal mot snabbare affär).
       const unitCostAtSigning =

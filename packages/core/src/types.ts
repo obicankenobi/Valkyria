@@ -238,6 +238,8 @@ export interface House {
   creditLimit: Money // härlett, skrivs om varje tur i economy. Se 5.
   insolventTurns: number // 3 i rad → INSOLVENCY
   revenueByTurn: Money[] // index = turn. Underlag för kredit och styrelsemål.
+  // P172: husets sammanlagda utlagda tillverkningskostnad per kategori — underlaget för att en underleverantör ska växa till en rival. Saknas före P172.
+  outsourcedCost?: Partial<Record<TechCategory, Money>>
   plot: Plot // P170: tomten; varje anläggning (även under byggnad) tar en plats
   works: Facility[] // P169: anläggningarna; produktionslinjerna bor i monteringsverken (works.ts: allLines)
   rnd: RndProject[]
@@ -666,6 +668,9 @@ export interface Contract {
   // P109: konstruktionen kontraktet bjöds med (Bid.designId). Styckkostnaden vid signering och produktionen
   // räknas med dess unitCostFactor. Utelämnat = basprodukten.
   designId?: string
+  // P172 (ETAPP11 §5.5, 11E): hela kontraktet eller en del av det läggs ut på en underleverantör. sharePct = andel av kvantiteten; built = enheter underleverantören
+  // hunnit bygga; auto = huset lade ut det självt för att inget verk kan bygga kategorin; sinceTurn = första turen utläggningen gäller.
+  outsource?: { sharePct: number; auto: boolean; sinceTurn: number; built: number }
   // P112: kontraktet är en uppgraderingssats (Bid.kit).
   kit?: boolean
   // P135: kontraktet är kundanpassat; scandalHalved = en politisk skandal hos köparen halverade ordern vid tilldelningen.
@@ -1273,6 +1278,9 @@ export type StandingOrderChange =
   // P171 (ETAPP11 §4.5): produktionsplanen — vilken linje som bygger vilka kontrakt, i vilken ordning. Kostar ingen handling. Utan plan fördelar huset själv.
   | { kind: 'PLAN'; op: 'SET'; lineId: string; contractIds: string[] }
   | { kind: 'PLAN'; op: 'CLEAR'; lineId: string }
+  // P172 (ETAPP11 §5.5): lägg ut ett kontrakt (eller en del av det: 25/50/75/100 %) på en underleverantör, eller ta tillbaka det. Kostar ingen handling.
+  | { kind: 'OUTSOURCE'; op: 'SET'; contractId: string; sharePct: number }
+  | { kind: 'OUTSOURCE'; op: 'CANCEL'; contractId: string }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {

@@ -30,6 +30,10 @@ export function findLine(house: Lines, lineId: string): ProductionLine | undefin
   return undefined
 }
 
+export function worksOfLine(house: Lines, lineId: string): Facility | undefined {
+  return house.works.find((w) => w.lines.some((l) => l.id === lineId))
+}
+
 export function assemblyWorks(house: Lines): Facility[] {
   return house.works.filter((w) => w.kind === 'assembly')
 }

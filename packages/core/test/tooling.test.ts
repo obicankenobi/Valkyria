@@ -96,6 +96,7 @@ describe('setupChange — vad ett byte är', () => {
 describe('production — omställningen kostar tid och pengar', () => {
   function switchState(next: Partial<Contract>, tooling?: { productId: string; designId: string | null }) {
     const state = createInitialState('indochina-slice', 'tool-1')
+    state.house.works[0]!.category = null // verket bygger allt: testen gäller omställningen, inte kategorin
     state.meta.turn = 3
     const line = allLines(state.house)[0]!
     state.market.contracts = [contract({ id: 'old', unitsDelivered: 1000, status: 'fulfilled' }), contract({ id: 'new', ...next })]
@@ -168,6 +169,7 @@ describe('production — omställningen kostar tid och pengar', () => {
 
   it('en helt ny linje som får sitt första kontrakt ställer inte om, och blir uppsatt för det', () => {
     const state = createInitialState('indochina-slice', 'tool-fresh')
+    state.house.works[0]!.category = null
     state.market.contracts = [contract({ id: 'first', productId: 'm3_apc' })]
     const line = allLines(state.house)[0]!
     const t0 = state.house.treasury
@@ -186,6 +188,7 @@ describe('produktionsplanen (§4.5) — PLAN SET/CLEAR', () => {
   // Båda linjerna är upptagna med långa kontrakt (x, y); a, b och c väntar. En plan kan bara peka på kontrakt som finns.
   function busyState(seed: string): GameState {
     const state = createInitialState('indochina-slice', seed)
+    state.house.works[0]!.category = null
     const [l1, l2] = allLines(state.house) as [ReturnType<typeof allLines>[number], ReturnType<typeof allLines>[number]]
     state.market.contracts = [contract({ id: 'x', quantity: 100000 }), contract({ id: 'y', quantity: 100000 }), ...WAITING()]
     l1.assignedContractId = 'x'

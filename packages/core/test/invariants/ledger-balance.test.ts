@@ -183,6 +183,10 @@ function fuzzPolicy(state: GameState): TurnSubmission {
     () => ({ kind: 'WORKS', op: 'BUY_LAND' }),
   ]
   const standingOrders: StandingOrderChange[] = rng.int(0, 2) === 0 ? [rng.pick(worksMakers)()] : []
+  // P172: slumpad utläggning och produktionsplan på husets kontrakt.
+  const mine = state.market.contracts.filter((c) => c.status === 'active' || c.status === 'late')
+  if (mine.length > 0 && rng.int(0, 3) === 0) standingOrders.push({ kind: 'OUTSOURCE', op: 'SET', contractId: rng.pick(mine).id, sharePct: rng.pick([25, 50, 75, 100]) })
+  if (mine.length > 0 && rng.int(0, 3) === 0) standingOrders.push({ kind: 'PLAN', op: 'SET', lineId: rng.pick(['line-1', 'line-2']), contractIds: [rng.pick(mine).id] })
   return { standingOrders, bids: base.bids, actions }
 }
 
@@ -197,6 +201,7 @@ describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
         const seed = `p96-fuzz:${i}`
         let state = createInitialState(SCENARIO, seed)
         state.house.creditLimit = 5_000_000 // lån ska gå att ta, så REPAY och ränta också kan inträffa
+        if (i % 2 === 0) state.house.works[0]!.category = null // P172: jämna partier har ett verk som bygger allt (omställning nås); udda partier lägger främmande kategorier ut
         for (const official of Object.values(state.officials)) official.relationToPlayer = 60 // BROKER kräver relation
 
         for (let t = 0; t < MAX_TURNS; t++) {

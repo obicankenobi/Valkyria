@@ -21,6 +21,8 @@ interface Balance {
   gradeCostFactor: Record<Grade, number>
   bomDefaultByCategory: Record<Product['category'], Partial<Record<Commodity, number>>>
   rivalCashFloor: number
+  rivalCapacityContracts: number // P172 (11L)
+  rivalFullPriceMarkupPct: number
   rivalMarginBase: number
   rivalMarginAggressionScale: number
   rivalCashPressurePenalty: number

@@ -29,10 +29,10 @@ const MAX_WIN_PCT = 90
 // spak mot den (vid boardTarget.threshold 2,5 vinner den fortfarande 96 % medan `human` faller till 21 %). Se
 // ANDRINGSLOGG.md, raden om taket i spelbarhetstestet. Undantaget vaktas nedan: ligger boten under taket har
 // orsaken åtgärdats och boten ska strykas härifrån.
-// P170 (etapp 11, startpaketet med två linjer i stället för fyra): `balanced-pwc` vinner nu 45–60 % — kapaciteten binder, så boten bjuder
-// bort sig själv i stället för att vinna allt. Orsaken till undantaget är därmed borta och boten är struken enligt vaktens egen regel
-// nedan (en ändring av listan, inte av taket). Faller den över taket igen efter etapp 11:s balanspass läggs den tillbaka. Se ANDRINGSLOGG.md.
-const KNOWN_ABOVE_CEILING: readonly string[] = []
+// P170 (etapp 11) strök undantaget: med två linjer vann `balanced-pwc` bara 45–60 %. P172 (underleverantörer, kategori per verk och en kostnad som inkluderar
+// utläggningen i `yourUnitCost`) gör att en bot som bjuder rationellt mot `playerWinCurve` vinner 93 % igen — orsaken är densamma som förut (den bjuder aldrig förlustaffärer),
+// så undantaget är tillbaka, enligt vaktens egen regel nedan. Se ANDRINGSLOGG.md.
+const KNOWN_ABOVE_CEILING: readonly string[] = ['balanced-pwc']
 
 describe('spelbarhet (RAPPORT3 §4)', () => {
   it(

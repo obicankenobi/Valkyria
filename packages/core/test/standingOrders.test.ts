@@ -58,6 +58,7 @@ function makeCtx(
 
 function fresh(): GameState {
   const state = createInitialState('indochina-slice', 'so-state')
+  state.house.works[0]!.category = null // P172: verket bygger allt (testerna blandar kategorier)
   state.meta.turn = 5
   return state
 }

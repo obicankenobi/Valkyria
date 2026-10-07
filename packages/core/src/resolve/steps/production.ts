@@ -14,6 +14,7 @@ import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
 import { plannedOnOtherLines, settleSupplyAgreements, standingLineOrder, standingPlan } from '../../standingOrders.js'
 import { SETUP_LABEL, currentTooling, setupChange, setupCost } from '../../tooling.js'
+import { autoOutsource, lineMayBuild, ownRemaining, runSubcontractors } from '../../outsourcing.js'
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
@@ -29,16 +30,13 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-function unitsInTransit(shipments: readonly Shipment[], contractId: string): number {
-  return shipments.filter((s) => s.contractId === contractId).reduce((sum, s) => sum + s.units, 0)
-}
-
 function needsProduction(contract: Contract | undefined): contract is Contract {
   return !!contract && (contract.status === 'active' || contract.status === 'late')
 }
 
+// P172: det som återstår för husets EGNA linjer — en utlagd del (underleverantören) räknas bort (outsourcing.ts).
 function remainingToProduce(contract: Contract, shipments: readonly Shipment[]): number {
-  return contract.quantity - contract.unitsDelivered - unitsInTransit(shipments, contract.id)
+  return ownRemaining(contract, shipments)
 }
 
 // P85 (ETAPP7_TEKNISK_SPEC.md §13, P81-16): utbruten så att queries.ts kan
@@ -130,6 +128,9 @@ export const production: ResolveStep = (ctx) => {
     })
   }
 
+  // 1c) P172: ett kontrakt som inget driftsatt verk kan bygga läggs ut av huset självt.
+  autoOutsource(ctx)
+
   // 2) Tilldela lediga linjer till obemannade kontrakt som fortfarande behöver
   //    produceras. En kontraktsrad kan bara ha en linje åt gången.
   const claimed = new Set(allLines(house).map((l) => l.assignedContractId).filter((id): id is string => id !== null))
@@ -140,7 +141,9 @@ export const production: ResolveStep = (ctx) => {
     // linje utan order behåller den automatiska tilldelningen.
     const wantedCategory = standingLineOrder(house, line.id, draft.meta.turn)?.category ?? null
     // P171: linjens produktionsplan går först, i sin ordning; ett kontrakt som ligger i en ANNAN linjes plan är reserverat åt den linjen.
-    const claimable = (c: Contract | undefined): c is Contract => needsProduction(c) && !claimed.has(c.id) && remainingToProduce(c, draft.market.shipments) > 0
+    // P172: en linje i ett monteringsverk med en kategori bygger bara den kategorin (ett verk utan kategori bygger allt).
+    const claimable = (c: Contract | undefined): c is Contract =>
+      needsProduction(c) && !claimed.has(c.id) && remainingToProduce(c, draft.market.shipments) > 0 && lineMayBuild(house, line.id, getProduct(c.productId))
     const planned = standingPlan(house, line.id, draft.meta.turn) ?? []
     const reserved = plannedOnOtherLines(house, line.id, draft.meta.turn)
     const contract =
@@ -295,4 +298,7 @@ export const production: ResolveStep = (ctx) => {
       })
     }
   }
+
+  // 4) P172: underleverantörerna bygger sina delar (en leverans per utlagt kontrakt och tur).
+  runSubcontractors(ctx)
 }

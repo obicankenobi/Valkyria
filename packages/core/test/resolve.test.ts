@@ -193,6 +193,7 @@ describe('resolveTurn — P3: ekonomi och slut', () => {
 describe('resolveTurn — P5: produktion, kostnad och leverans', () => {
   it('(P5 klart-när) ett scriptat parti tar ett kontrakt, producerar, levererar och får betalt — hela kedjan går att läsa i wire', () => {
     let state: GameState = createInitialState('indochina-slice', 'p5-happy-path-seed')
+    state.house.works[0]!.category = null // P172: verket bygger allt, så kedjan går att följa oavsett vilken produkt ordern gäller
     // Ackumulera varje turs händelser separat — wire.ts:s rullande 8-turersfönster
     // (state.wire) garanterar INTE att tidiga händelser (WINS CONTRACT) fortfarande
     // finns kvar när ett långt scriptat parti väl är klart, så "hela kedjan går att

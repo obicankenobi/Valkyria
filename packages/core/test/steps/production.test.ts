@@ -198,6 +198,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     // kvar att producera/kassa, så inget annat än unitsPerLineTurn kan begränsa.
     for (const productId of ['mk9_longhand_shell', 'ch3_transport_helicopter', 'm1_rifle'] as const) {
       const state = createInitialState('indochina-slice', 'units-per-line-turn-seed')
+      state.house.works[0]!.category = null // P172: ett verk utan kategori bygger allt (annars läggs en främmande kategori ut)
       const product = getProduct(productId)
       const contract = activeContract({
         id: `contract-${productId}`,
@@ -226,6 +227,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
   describe('P27: linjeomställning kostar (avsnitt 3.2)', () => {
     it('(P27 klart-når, P171) en linje som byter produkt producerar INGET under omställningen, och återupptas exakt när den är klar', () => {
       const state = createInitialState('indochina-slice', 'seed')
+      state.house.works[0]!.category = null // P172: verket bygger allt, så bytet till en helikopter är en omställning och inte en utläggning
       state.meta.turn = 3
       const line = allLines(state.house)[0]!
       // Linjen är redan igång mot ett kontrakt (105mm_field_gun) som blir

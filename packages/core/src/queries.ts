@@ -30,6 +30,7 @@ import {
   qualityClassOf,
 } from './design.js'
 import type { PreferenceMix } from './design.js'
+import { routeCostFactor } from './outsourcing.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
@@ -502,7 +503,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
   // "plus vilket hus som ligger lägst" — bara vid depth >= 4 (spec 4.3-tabellen).
   const lowestRivalHouse = depth >= 4 && lowest ? lowest.rivalId : null
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1) * routeCostFactor(state.house, product)
 
   const faction = state.factions[order.buyerId]
   const relationToPlayer = faction ? faction.relationToPlayer : 0
@@ -581,7 +582,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
   const lowestRivalPrice = rivalPrices.length > 0 ? Math.min(...rivalPrices) : order.referencePrice
   const rivalPriceHigh = Math.round(lowestRivalPrice * (1 + pct))
 
-  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1) * (customise ? CUSTOMISE_TERMS.costFactor : 1)
+  const yourUnitCost = computeUnitCostNow(product, grade, state.market.commodities) * (design ? design.unitCostFactor : 1) * (useKit ? KIT_UNIT_COST_FACTOR : 1) * (customise ? CUSTOMISE_TERMS.costFactor : 1) * routeCostFactor(state.house, product)
   const costFloor = Math.max(1, yourUnitCost * order.quantity)
   // P112: en satsaffärs pris kapas vid kitPriceCapFactor × referenspris (lägre marginal).
   const ceiling = Math.max(costFloor, useKit ? Math.min(rivalPriceHigh, kitPriceCap(order)) : rivalPriceHigh)
