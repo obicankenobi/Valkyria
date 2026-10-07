@@ -16,6 +16,7 @@ import { createRng } from '../src/rng.js'
 import { createInitialState } from '../src/state.js'
 import type { ResolveContext } from '../src/resolve/index.js'
 import type { Contract, Design, GameState, InvestigationChoice, Shipment, StandingOrderChange, TurnSubmission, WireEvent } from '../src/types.js'
+import { allLines } from '../src/works.js'
 
 const B = balance as unknown as {
   casualtyChancePctPerSeverity: number
@@ -204,9 +205,9 @@ describe('utredningskortet: valen (P113, §5.6)', () => {
     let failed = 0
     for (let i = 0; i < 60; i++) {
       const base = openInvestigation(`fix-${i}`)
-      base.house.lines[0]!.assignedContractId = 'contract-test-0'
-      base.house.lines[0]!.productId = '105mm_field_gun'
-      base.house.lines[0]!.status = 'running'
+      allLines(base.house)[0]!.assignedContractId = 'contract-test-0'
+      allLines(base.house)[0]!.productId = '105mm_field_gun'
+      allLines(base.house)[0]!.status = 'running'
       const treasury = base.house.treasury
       const id = base.house.investigations[0]!.id
       const result = resolveTurn(base, { ...EMPTY, standingOrders: [CHOOSE(id, 'FIX')] })
@@ -217,7 +218,7 @@ describe('utredningskortet: valen (P113, §5.6)', () => {
       const ledger = s.ledger[s.ledger.length - 1]!
       expect(ledger.expenses.lines).toBeGreaterThanOrEqual(B.casualtyFixCost)
       expect(treasury - s.house.treasury).toBeGreaterThanOrEqual(B.casualtyFixCost)
-      const line = s.house.lines[0]!
+      const line = allLines(s.house)[0]!
       expect(line.status === 'retooling' || line.status === 'running' || line.status === 'idle').toBe(true)
       if (s.house.designs[0]!.latentFlaw === null) held++
       else {

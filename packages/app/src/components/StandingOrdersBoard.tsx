@@ -15,6 +15,7 @@ import { Button, Segmented, Stepper } from './designSystem.js'
 import { ProductionLineBand } from './ProductionLineBand.js'
 import { Panel, Tag, formatMoney } from './ui.js'
 import { standingOrderAlarms, standingOrderKey } from '../standingOrderBoard.js'
+import { allLines } from '@seventh-front/core'
 
 const CATEGORY_LABEL: Record<TechCategory, string> = {
   infantry: 'INF',
@@ -186,7 +187,7 @@ export function StandingOrdersBoard({
       <div className="standing-board" data-testid="standing-orders-board">
         <h3 className="standing-group">Lines</h3>
         <div className="standing-grid">
-          {state.house.lines.map((line) => {
+          {allLines(state.house).map((line) => {
             const current = orders.lines[line.id]
             const pending = pendingFor((c) => c.kind === 'LINE' && c.lineId === line.id, () => line.id)
             return (

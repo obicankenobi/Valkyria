@@ -15,6 +15,7 @@ import { getProduct, computeUnitCostNow } from '../src/pricing.js'
 import balance from '../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../src/resolve/index.js'
 import type { Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission, WireEvent } from '../src/types.js'
+import { allLines } from '../src/works.js'
 
 const B = balance as unknown as {
   overtimeCapacityPct: number
@@ -182,21 +183,21 @@ describe('linjeuppdrag', () => {
   it('en linje med en kategori tar bara kontrakt i den kategorin; "fritt" behåller den automatiska tilldelningen', () => {
     const state = fresh()
     state.market.contracts = [contract({ productId: 'm1_rifle' })] // infantry
-    for (const line of state.house.lines) {
+    for (const line of allLines(state.house)) {
       state.house.standingOrders.lines[line.id] = { category: 'artillery', shift: 'normal', sinceTurn: 1 }
     }
     production(makeCtx(state).ctx)
-    expect(state.house.lines.every((l) => l.assignedContractId === null)).toBe(true)
+    expect(allLines(state.house).every((l) => l.assignedContractId === null)).toBe(true)
 
     state.house.standingOrders.lines['line-1'] = { category: 'infantry', shift: 'normal', sinceTurn: 1 }
     production(makeCtx(state).ctx)
-    expect(state.house.lines.find((l) => l.id === 'line-1')!.assignedContractId).toBe('contract-so-0')
+    expect(allLines(state.house).find((l) => l.id === 'line-1')!.assignedContractId).toBe('contract-so-0')
 
     const freeState = fresh()
     freeState.market.contracts = [contract()]
     freeState.house.standingOrders.lines['line-1'] = { category: null, shift: 'normal', sinceTurn: 1 }
     production(makeCtx(freeState).ctx)
-    expect(freeState.house.lines.some((l) => l.assignedContractId === 'contract-so-0')).toBe(true)
+    expect(allLines(freeState.house).some((l) => l.assignedContractId === 'contract-so-0')).toBe(true)
   })
 
   it('övertid ger capacityPct 125 (linjens första skrivare) och en högre styckkostnad; normalt skift återställer 100', () => {
@@ -211,8 +212,8 @@ describe('linjeuppdrag', () => {
     production(makeCtx(normal).ctx)
     production(makeCtx(overtime, {}, 'overtime-no-breakdown-seed').ctx)
 
-    const lineN = normal.house.lines.find((l) => l.id === 'line-1')!
-    const lineO = overtime.house.lines.find((l) => l.id === 'line-1')!
+    const lineN = allLines(normal.house).find((l) => l.id === 'line-1')!
+    const lineO = allLines(overtime.house).find((l) => l.id === 'line-1')!
     expect(lineN.capacityPct).toBe(100)
     expect(lineO.capacityPct).toBe(B.overtimeCapacityPct)
     const perUnit = computeUnitCostNow(getProduct('m1_rifle'), 'A', normal.market.commodities)
@@ -229,7 +230,7 @@ describe('linjeuppdrag', () => {
     // Tillbaka till normalt skift: capacityPct 100 igen.
     overtime.house.standingOrders.lines['line-1'] = { category: null, shift: 'normal', sinceTurn: 1 }
     production(makeCtx(overtime).ctx)
-    expect(overtime.house.lines.find((l) => l.id === 'line-1')!.capacityPct).toBe(100)
+    expect(allLines(overtime.house).find((l) => l.id === 'line-1')!.capacityPct).toBe(100)
   })
 
   it('övertid kan ge ett haveri (liten risk, via rng): en linje står stilla en tur och det syns i wire — men aldrig utan övertid', () => {
@@ -262,15 +263,15 @@ describe('linjeuppdrag', () => {
     state.market.contracts = [contract()]
     state.house.standingOrders.lines['line-1'] = { category: 'artillery', shift: 'overtime', sinceTurn: 6 }
     production(makeCtx(state).ctx)
-    expect(state.house.lines.find((l) => l.id === 'line-1')!.capacityPct).toBe(100)
-    expect(state.house.lines.some((l) => l.assignedContractId === 'contract-so-0')).toBe(true)
+    expect(allLines(state.house).find((l) => l.id === 'line-1')!.capacityPct).toBe(100)
+    expect(allLines(state.house).some((l) => l.assignedContractId === 'contract-so-0')).toBe(true)
   })
 
   it('LARM 1: en linje med ett stående uppdrag som tillverkade mot ett annullerat kontrakt varnar, med causeId', () => {
     const state = fresh()
     const voided = contract({ status: 'voided', lateEventId: 'evt-late-1' })
     state.market.contracts = [voided]
-    const line = state.house.lines.find((l) => l.id === 'line-1')!
+    const line = allLines(state.house).find((l) => l.id === 'line-1')!
     line.assignedContractId = voided.id
     line.productId = voided.productId
     line.status = 'running'
@@ -288,7 +289,7 @@ describe('linjeuppdrag', () => {
     // Ingen larm för en linje utan stående order.
     const plain = fresh()
     plain.market.contracts = [voided]
-    const plainLine = plain.house.lines.find((l) => l.id === 'line-1')!
+    const plainLine = allLines(plain.house).find((l) => l.id === 'line-1')!
     plainLine.assignedContractId = voided.id
     plainLine.status = 'running'
     const second = makeCtx(plain)

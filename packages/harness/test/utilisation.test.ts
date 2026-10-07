@@ -6,6 +6,7 @@ import { createInitialState, resolveTurn } from '@seventh-front/core'
 import type { GameState, TurnSubmission } from '@seventh-front/core'
 import { POLICIES } from '../src/policies.js'
 import { runGame } from '../src/runGame.js'
+import { allLines } from '@seventh-front/core'
 
 const EMPTY: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 const MAX_TURNS = 21
@@ -13,12 +14,12 @@ const MAX_TURNS = 21
 // Omspelning med den enkla definitionen: andel linjer med status 'running' efter varje turs avgörande, medel över spelade turer.
 function replay(seed: string, policy: (s: GameState) => TurnSubmission) {
   let state = createInitialState('indochina-slice', seed)
-  const initialLines = state.house.lines.length
+  const initialLines = allLines(state.house).length
   const perTurn: number[] = []
   const late = new Set<string>()
   for (let t = 0; t < MAX_TURNS; t++) {
     state = resolveTurn(state, policy(state)).state
-    const lines = state.house.lines
+    const lines = allLines(state.house)
     perTurn.push(lines.length === 0 ? 0 : (100 * lines.filter((l) => l.status === 'running').length) / lines.length)
     for (const c of state.market.contracts) if (c.status === 'late') late.add(c.id)
     if (state.status.kind === 'ended') break
@@ -26,7 +27,7 @@ function replay(seed: string, policy: (s: GameState) => TurnSubmission) {
   return {
     mean: perTurn.reduce((a, b) => a + b, 0) / perTurn.length,
     peak: Math.max(...perTurn),
-    linesBuilt: state.house.lines.length - initialLines,
+    linesBuilt: allLines(state.house).length - initialLines,
     late: late.size,
     contracts: state.market.contracts.length,
   }

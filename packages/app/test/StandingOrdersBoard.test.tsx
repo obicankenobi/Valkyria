@@ -10,6 +10,7 @@ import type { GameState, StandingOrderChange, TurnSubmission } from '@seventh-fr
 import { StandingOrdersBoard } from '../src/components/StandingOrdersBoard.js'
 import { QuarterBand } from '../src/components/Shell.js'
 import { standingOrderAlarms, standingOrderKey } from '../src/standingOrderBoard.js'
+import { allLines } from '@seventh-front/core'
 
 afterEach(cleanup)
 
@@ -38,7 +39,7 @@ const card = (id: string) => screen.getByTestId(`standing-card-${id}`)
 describe('tavlan visar ett kort per linje, avtal och station', () => {
   it('ett kort per produktionslinje och station, plus ett "nytt leverantörsavtal"', () => {
     const { state } = setup()
-    for (const line of state.house.lines) expect(card(line.id)).toBeTruthy()
+    for (const line of allLines(state.house)) expect(card(line.id)).toBeTruthy()
     for (const station of state.house.stations) expect(card(station.id)).toBeTruthy()
     expect(card('supply-new')).toBeTruthy()
   })

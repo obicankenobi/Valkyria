@@ -44,6 +44,7 @@ import type {
   TechCategory,
   TurnSubmission,
 } from '@seventh-front/core'
+import { allLines } from '@seventh-front/core'
 
 export type Policy = (state: GameState) => TurnSubmission
 
@@ -525,7 +526,7 @@ function linesNeededFor(order: Order): number {
 }
 
 export const capacity: Policy = (state) => {
-  let availableLines = state.house.lines.filter((l) => l.status === 'idle').length
+  let availableLines = allLines(state.house).filter((l) => l.status === 'idle').length
   const bids: Bid[] = []
 
   for (const order of state.market.openOrders) {
@@ -566,7 +567,7 @@ export const balancedPwc: Policy = (state) => ({
 })
 
 export const capacityPwc: Policy = (state) => {
-  let availableLines = state.house.lines.filter((l) => l.status === 'idle').length
+  let availableLines = allLines(state.house).filter((l) => l.status === 'idle').length
   const bids: Bid[] = []
   for (const order of state.market.openOrders) {
     const needed = linesNeededFor(order)
@@ -607,7 +608,7 @@ const HUMAN_LOAN_SHARE = 0.3 // ... och då 30 % av grundkapitalet
 
 function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] {
   const lowCash = state.house.treasury < state.house.foundingCapital * HUMAN_LOW_CASH_SHARE
-  let availableLines = state.house.lines.filter((l) => l.status === 'idle').length
+  let availableLines = allLines(state.house).filter((l) => l.status === 'idle').length
   const candidates: { bid: Bid; value: number; advancePct: number; lines: number }[] = []
   // bothSides (P129): ett block där huset ännu inte har något aktivt kontrakt får en poängbonus — huset "säljer till båda sidor".
   const servedBlocs = new Set(
@@ -685,7 +686,7 @@ function humanStandingOrders(state: GameState): StandingOrderChange[] {
     (c) => c.status === 'active' && c.unitsDelivered < c.quantity && c.dueTurn - turn <= HUMAN_OVERTIME_DUE_WITHIN_TURNS,
   )
   const wanted = atRisk && affordable ? 'overtime' : 'normal'
-  for (const line of state.house.lines) {
+  for (const line of allLines(state.house)) {
     const current = state.house.standingOrders?.lines[line.id]?.shift ?? 'normal'
     if (current !== wanted) changes.push({ kind: 'LINE', lineId: line.id, category: null, shift: wanted })
   }

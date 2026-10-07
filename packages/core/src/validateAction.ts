@@ -46,6 +46,7 @@ import { findOfficial } from './officials.js'
 import { validateProcurement, validProgrammeTarget } from './programme.js'
 import { parseAssessmentTarget } from './race.js'
 import type { ActionValidation, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
+import { allLines, assemblyWorks, freeLineSlots } from './works.js'
 
 interface Balance {
   maxProductionLines: number
@@ -116,7 +117,8 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
           return ok()
         }
         case 'BUILD_LINE':
-          if (house.lines.length >= BALANCE.maxProductionLines) return fail('maximum production lines reached')
+          if (allLines(house).length >= BALANCE.maxProductionLines) return fail('maximum production lines reached')
+          if (!assemblyWorks(house).some((w) => freeLineSlots(w) > 0)) return fail('no assembly works has a free line slot')
           return ok()
         case 'HIRE':
           if (!isHirePayload(action.payload)) return fail('invalid hire role')

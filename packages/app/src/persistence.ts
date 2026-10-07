@@ -12,8 +12,8 @@
 // P12:s klart när-villkor ("ett parti kan stängas och återupptas MITT I en tur
 // utan förlust") kräver det uttryckligen; att bara spara efter resolveTurn hade
 // tappat ett halvifyllt anbud vid en omladdning.
-import { BLOCS, INTEGRITY_START, blocOfAlignment, initialRace, scheduledGeneration } from '@seventh-front/core'
-import type { Contract, GameState, Order, TurnSubmission } from '@seventh-front/core'
+import { BLOCS, INTEGRITY_START, blocOfAlignment, initialRace, scheduledGeneration, worksFromLines } from '@seventh-front/core'
+import type { Contract, GameState, Order, ProductionLine, TurnSubmission } from '@seventh-front/core'
 import type { TutorialState } from './tutorial.js'
 
 const DB_NAME = 'seventh-front'
@@ -144,6 +144,13 @@ export function migrate(saved: SavedGame): SavedGame | null {
           }
         }
         state = { ...state, race, factions }
+      }
+      // P169 (ETAPP11 11K): produktionslinjerna bor nu i monteringsverk (House.works) i stället för en fristående lista. Ett sparat parti från före
+      // etapp 11 har bara `lines`; de delas i två verk (fyra linjer → två och två), ingen linje och inget uppdrag går förlorat.
+      const legacyHouse = state.house as Partial<GameState['house']> & { lines?: ProductionLine[] }
+      if (!Array.isArray(legacyHouse.works)) {
+        const { lines: legacyLines, ...rest } = legacyHouse
+        state = { ...state, house: { ...(rest as GameState['house']), works: worksFromLines(legacyLines ?? []) } }
       }
       // P125: reputation.integrity (rent rykte) tillkom på House. Ett sparat parti från före P125 saknar det och skulle
       // ge NaN i integrityBidTerm; det får startvärdet. Spåren (GameState.traces) är valfria och läses defensivt.

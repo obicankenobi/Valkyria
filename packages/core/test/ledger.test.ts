@@ -15,6 +15,7 @@ import { cloneState, createInitialState } from '../src/state.js'
 import balance from '../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../src/resolve/index.js'
 import type { Contract, GameState, LedgerEntry, PlayerAction, TurnSubmission, WireEvent } from '../src/types.js'
+import { allLines } from '../src/works.js'
 
 function makeCtx(state: GameState, actions: PlayerAction[] = [], seed = 'ledger-test'): ResolveContext {
   let seq = 0
@@ -166,7 +167,7 @@ describe('ledger — ett test per penningflyttande steg (varje flöde skriver si
       const state = createInitialState('indochina-slice', 'seed')
       const contract = activeContract({ quantity: 1000 })
       state.market.contracts = [contract]
-      const line = state.house.lines[0]!
+      const line = allLines(state.house)[0]!
       line.assignedContractId = contract.id
       line.productId = contract.productId
       line.grade = contract.grade
@@ -185,7 +186,7 @@ describe('ledger — ett test per penningflyttande steg (varje flöde skriver si
       const state = createInitialState('indochina-slice', 'seed')
       const contract = activeContract({ quantity: 1000 })
       state.market.contracts = [contract]
-      const line = state.house.lines[0]!
+      const line = allLines(state.house)[0]!
       line.assignedContractId = contract.id
       line.productId = contract.productId
       line.grade = contract.grade

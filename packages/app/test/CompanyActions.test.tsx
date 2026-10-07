@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
 import { InternalActionsForm, RawMaterialsPanel } from '../src/components/CompanyActions.js'
+import { allLines } from '@seventh-front/core'
 
 afterEach(cleanup)
 
@@ -42,8 +43,8 @@ describe('InternalActionsForm (P85) — TAKE_LOAN/REPAY', () => {
     const state = createInitialState('indochina-slice', 'company-buildline-max-seed')
     // maxProductionLines i balance.json — fyller på fler än rimligt gott mått för
     // att garantera taket är nått, oavsett scenariots exakta startantal.
-    for (let i = state.house.lines.length; i < 50; i++) {
-      state.house.lines.push({
+    for (let i = allLines(state.house).length; i < 50; i++) {
+      state.house.works[0]!.lines.push({
         id: `line-extra-${i}`,
         productId: null,
         grade: 'A',

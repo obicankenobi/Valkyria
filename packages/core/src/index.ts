@@ -8,6 +8,8 @@ export { emptyStandingOrders, standingLineOrder, standingStationMode, validateSt
 export * from './rng.js'
 export { round } from './money.js'
 export { createInitialState, cloneState } from './state.js'
+// P169: anläggningarna — linjerna bor i verken; gränssnitt och harness läser dem genom de här.
+export { FACILITY_DATA, allLines, assemblyWorks, findLine, freeLineSlots, lineCapacity, worksFromLines } from './works.js'
 export type { StartChoices } from './state.js'
 export { resolveTurn } from './resolve/index.js'
 export { createWireEmitter, pruneWire, WIRE_WINDOW_TURNS, WIRE_CHAIN_DEPTH } from './wire.js'

@@ -63,6 +63,7 @@ import { resolveOverdueInvestigations } from '../../investigations.js'
 import type { HirableRole } from '../../validateAction.js'
 import type { ResolveContext, ResolveStep } from '../index.js'
 import type { Commodity, Contract, GameState, OfficialId, ProductionLine, Station, TechCategory } from '../../types.js'
+import { allLines, assemblyWorks, freeLineSlots } from '../../works.js'
 
 interface Balance {
   buildLineCost: number
@@ -243,8 +244,10 @@ export const applyActions: ResolveStep = (ctx) => {
           const cost = BALANCE.buildLineCost
           house.treasury -= cost
           recordExpense(draft, 'lines', cost)
+          // P169: den nya linjen går in i första monteringsverket med plats (validateAction har sett till att ett finns).
+          const works = assemblyWorks(house).find((w) => freeLineSlots(w) > 0)!
           const line: ProductionLine = {
-            id: `line-${house.lines.length + 1}`,
+            id: `line-${allLines(house).length + 1}`,
             productId: null,
             grade: 'A',
             unitsPerTurnAtFull: house.unitsPerLineTurnDefault,
@@ -254,7 +257,7 @@ export const applyActions: ResolveStep = (ctx) => {
             blockedReason: null,
             retoolingUntilTurn: null,
           }
-          house.lines.push(line)
+          works.lines.push(line)
           emit({
             severity: 'headline',
             scope: 'house',

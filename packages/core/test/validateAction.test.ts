@@ -11,6 +11,7 @@ import { resolveTurn } from '../src/resolve/index.js'
 import { createInitialState, cloneState } from '../src/state.js'
 import { officialId } from '../src/officials.js'
 import type { GameState, PlayerAction, TurnSubmission } from '../src/types.js'
+import { allLines } from '../src/works.js'
 
 function submissionOf(action: PlayerAction): TurnSubmission {
   return { standingOrders: [], bids: [], actions: [action] }
@@ -109,9 +110,9 @@ describe('validateAction — INTERNAL', () => {
 
   it('BUILD_LINE: maxProductionLines nått avvisas med "maximum production lines reached" (av båda)', () => {
     const state = createInitialState('indochina-slice', 'va-seed')
-    while (state.house.lines.length < 9) {
-      state.house.lines.push({
-        id: `line-${state.house.lines.length + 1}`,
+    while (allLines(state.house).length < 9) {
+      state.house.works[0]!.lines.push({
+        id: `line-${allLines(state.house).length + 1}`,
         productId: null,
         grade: 'A',
         unitsPerTurnAtFull: 40,

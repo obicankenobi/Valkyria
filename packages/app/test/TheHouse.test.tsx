@@ -17,7 +17,7 @@ const EMPTY_DRAFT: TurnSubmission = { standingOrders: [], bids: [], actions: [] 
 describe('TheHouse — produktionslinjebanden (P85, P81-16)', () => {
   it('en ledig linje visas ärligt som "Any product" i stället för en påhittad produktlista', () => {
     const state = createInitialState('indochina-slice', 'thehouse-idle-line-seed')
-    state.house.lines = [
+    state.house.works = [{ ...state.house.works[0]!, lines: [
       {
         id: 'line-1',
         productId: null,
@@ -29,7 +29,7 @@ describe('TheHouse — produktionslinjebanden (P85, P81-16)', () => {
         blockedReason: null,
         retoolingUntilTurn: null,
       },
-    ]
+    ] }]
 
     render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} />)
 
@@ -56,7 +56,7 @@ describe('TheHouse — produktionslinjebanden (P85, P81-16)', () => {
         frontId: null, advancePct: 0, advancePaid: 0,
       },
     ]
-    state.house.lines = [
+    state.house.works = [{ ...state.house.works[0]!, lines: [
       {
         id: 'line-1',
         productId: 'm1_rifle',
@@ -68,7 +68,7 @@ describe('TheHouse — produktionslinjebanden (P85, P81-16)', () => {
         blockedReason: null,
         retoolingUntilTurn: null,
       },
-    ]
+    ] }]
 
     render(<TheHouse state={state} draft={EMPTY_DRAFT} onAddAction={() => {}} onRemoveAction={() => {}} />)
 

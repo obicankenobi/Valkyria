@@ -235,7 +235,7 @@ export interface House {
   creditLimit: Money // härlett, skrivs om varje tur i economy. Se 5.
   insolventTurns: number // 3 i rad → INSOLVENCY
   revenueByTurn: Money[] // index = turn. Underlag för kredit och styrelsemål.
-  lines: ProductionLine[]
+  works: Facility[] // P169: anläggningarna; produktionslinjerna bor i monteringsverken (works.ts: allLines)
   rnd: RndProject[]
   stations: Station[]
   staff: {
@@ -369,6 +369,25 @@ export interface ProductionLine {
   status: 'idle' | 'running' | 'blocked' | 'retooling'
   blockedReason: string | null
   retoolingUntilTurn: number | null
+}
+
+// ── P169 (ETAPP11_FORSLAG.md §4): anläggningarna ─────────────────────────────
+
+// De sju anläggningarna (§4.2). Data (namn, en mening, nivåer) ligger i data/facilities.json.
+export type FacilityKind = 'assembly' | 'component' | 'laboratory' | 'design' | 'proving' | 'depot' | 'civil'
+
+export interface Facility {
+  id: string
+  kind: FacilityKind
+  level: 1 | 2 | 3
+  // Kategorin ett monteringsverk eller labb arbetar i; null = ingen bindning (verk migrerade från före etapp 11, och verken tills P171 ger kategorin en effekt).
+  category: TechCategory | null
+  condition: Pct // skick 0–100 (P174 sliter på det)
+  staffing: Pct // bemanning, andel av full styrka (P173)
+  skill: Pct // yrkesskicklighet (P173)
+  status: 'operating' | 'under_construction' | 'retooling' | 'idle' | 'strike'
+  // Produktionslinjerna, bara i ett monteringsverk (annars tom). Det finns inga fristående linjer (skyddsräcke 1).
+  lines: ProductionLine[]
 }
 
 export interface RndProject {

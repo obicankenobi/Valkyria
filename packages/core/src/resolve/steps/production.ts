@@ -15,6 +15,7 @@ import { recordExpense } from '../../ledger.js'
 import { settleSupplyAgreements, standingLineOrder } from '../../standingOrders.js'
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
+import { allLines } from '../../works.js'
 
 interface Balance {
   deliveryDelayMinTurns: number
@@ -57,14 +58,14 @@ export const production: ResolveStep = (ctx) => {
   // (fältets första skrivare) — bara för linjer med en gällande order, så ett hus utan stående order
   // räknar exakt som förut.
   settleSupplyAgreements(ctx)
-  for (const line of house.lines) {
+  for (const line of allLines(house)) {
     const order = standingLineOrder(house, line.id, draft.meta.turn)
     if (order) line.capacityPct = order.shift === 'overtime' ? BALANCE.overtimeCapacityPct : 100
   }
 
   // 0) Linjer vars omställning (P27, avsnitt 3.2) är klar den här turen återgår
   //    till normal drift innan resten av steget hinner röra dem.
-  for (const line of house.lines) {
+  for (const line of allLines(house)) {
     if (line.status !== 'retooling') continue
     if (line.retoolingUntilTurn === null || draft.meta.turn < line.retoolingUntilTurn) continue
     line.status = 'running'
@@ -75,11 +76,11 @@ export const production: ResolveStep = (ctx) => {
   // "linjen BYTER productId" (avsnitt 3.2) går annars inte att avgöra, eftersom
   // en frigjord linje redan har productId: null när steg 2 tilldelar den på nytt
   // i SAMMA anrop.
-  const previousProductId = new Map(house.lines.map((l) => [l.id, l.productId]))
+  const previousProductId = new Map(allLines(house).map((l) => [l.id, l.productId]))
 
   // 1) Frigör linjer vars kontrakt inte längre behöver produktion (fulfilled/
   //    voided, eller redan färdigproducerat och väntar på leverans).
-  for (const line of house.lines) {
+  for (const line of allLines(house)) {
     if (!line.assignedContractId) continue
     const contract = draft.market.contracts.find((c) => c.id === line.assignedContractId)
     const stillNeeded = needsProduction(contract) && remainingToProduce(contract, draft.market.shipments) > 0
@@ -107,8 +108,8 @@ export const production: ResolveStep = (ctx) => {
 
   // 2) Tilldela lediga linjer till obemannade kontrakt som fortfarande behöver
   //    produceras. En kontraktsrad kan bara ha en linje åt gången.
-  const claimed = new Set(house.lines.map((l) => l.assignedContractId).filter((id): id is string => id !== null))
-  for (const line of house.lines) {
+  const claimed = new Set(allLines(house).map((l) => l.assignedContractId).filter((id): id is string => id !== null))
+  for (const line of allLines(house)) {
     if (line.status !== 'idle') continue
 
     // P100: ett linjeuppdrag med en kategori tar bara kontrakt i den kategorin; "fritt" (null) och en
@@ -154,7 +155,7 @@ export const production: ResolveStep = (ctx) => {
   }
 
   // 3) Producera.
-  for (const line of house.lines) {
+  for (const line of allLines(house)) {
     if (!line.assignedContractId) continue
     if (line.status === 'retooling') continue // avsnitt 3.2: "producerar ingenting under omställningen"
     const contract = draft.market.contracts.find((c) => c.id === line.assignedContractId)

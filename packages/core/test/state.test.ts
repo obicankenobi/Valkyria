@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { cloneState, createInitialState } from '../src/state.js'
 import balance from '../src/data/balance.json' with { type: 'json' }
+import { allLines } from '../src/works.js'
 
 describe('createInitialState', () => {
   it('JSON-serialiserar och deserialiserar bitvis identiskt', () => {
@@ -49,7 +50,7 @@ describe('createInitialState', () => {
     expect(chosen.house.techLevel.artillery).toBeLessThan(defaultState.house.techLevel.artillery)
     // Allt annat (kassa, linjer, station, styrelsemål) är opåverkat.
     expect(chosen.house.treasury).toBe(defaultState.house.treasury)
-    expect(chosen.house.lines).toEqual(defaultState.house.lines)
+    expect(allLines(chosen.house)).toEqual(allLines(defaultState.house))
     expect(chosen.house.stations).toEqual(defaultState.house.stations)
     expect(chosen.house.boardTarget).toEqual(defaultState.house.boardTarget)
   })
@@ -81,7 +82,7 @@ describe('createInitialState', () => {
     expect(Object.keys(state.theatres)).toHaveLength(2)
     expect(Object.keys(state.factions)).toHaveLength(3)
     expect(Object.keys(state.rivals)).toHaveLength(3)
-    expect(state.house.lines).toHaveLength(4)
+    expect(allLines(state.house)).toHaveLength(4)
     expect(state.house.stations).toHaveLength(1)
   })
 
@@ -178,7 +179,8 @@ describe('cloneState', () => {
     expect(clone).toEqual(state)
     expect(clone).not.toBe(state)
     expect(clone.house).not.toBe(state.house)
-    expect(clone.house.lines).not.toBe(state.house.lines)
+    expect(clone.house.works).not.toBe(state.house.works)
+    expect(clone.house.works[0]!.lines).not.toBe(state.house.works[0]!.lines)
     expect(clone.factions).not.toBe(state.factions)
 
     clone.house.treasury = 0

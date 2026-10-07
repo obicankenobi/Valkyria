@@ -5,6 +5,7 @@ import { createInitialState, playerWinCurve, resolveTurn } from '@seventh-front/
 import type { GameState, Order } from '@seventh-front/core'
 import { balanced, balancedPwc, capacity, capacityPwc, human, POLICIES } from '../src/policies.js'
 import { runGame } from '../src/runGame.js'
+import { allLines } from '@seventh-front/core'
 
 function fresh(): GameState {
   const state = createInitialState('indochina-slice', 'human-seed')
@@ -94,7 +95,7 @@ describe('human — bud', () => {
     const order = sampleOrder(state)
     state.market.openOrders = Array.from({ length: 12 }, (_, i) => ({ ...order, id: `order-${i}` }))
     const submission = human(state)
-    const idle = state.house.lines.filter((l) => l.status === 'idle').length
+    const idle = allLines(state.house).filter((l) => l.status === 'idle').length
     expect(submission.bids.length).toBeLessThanOrEqual(Math.max(idle, 1) * 4)
   })
 
@@ -105,7 +106,7 @@ describe('human — bud', () => {
     const high = sampleOrder(state, { id: 'order-high', advancePct: 40 })
     state.market.openOrders = [low, high]
     // Bara en ledig linje → bara EN order får plats.
-    state.house.lines = state.house.lines.slice(0, 1)
+    state.house.works = [{ ...state.house.works[0]!, lines: allLines(state.house).slice(0, 1) }]
     const submission = human(state)
     expect(submission.bids.map((b) => b.orderId)).toEqual(['order-high'])
   })

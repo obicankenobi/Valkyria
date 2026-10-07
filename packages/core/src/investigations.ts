@@ -13,6 +13,7 @@ import { recordExpense } from './ledger.js'
 import { officialId } from './officials.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { Contract, Design, GameState, House, Investigation, InvestigationChoice } from './types.js'
+import { allLines } from './works.js'
 
 interface Balance {
   casualtyChancePctPerSeverity: number
@@ -109,7 +110,7 @@ export function applyInvestigationChoice(ctx: ResolveContext, change: { investig
       recordExpense(draft, 'lines', cost)
       inv.status = 'fixed'
       // Omställning: linjer som tillverkar för kontrakt med konstruktionen står stilla medan ändringen görs.
-      for (const line of house.lines) {
+      for (const line of allLines(house)) {
         const contract = line.assignedContractId ? draft.market.contracts.find((c) => c.id === line.assignedContractId) : undefined
         if (contract?.designId === inv.designId) {
           line.status = 'retooling'

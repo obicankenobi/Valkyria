@@ -5,6 +5,7 @@ import { bidEstimate } from '../src/queries.js'
 import { computeUnitCostNow, getProduct } from '../src/pricing.js'
 import balanceData from '../src/data/balance.json' with { type: 'json' }
 import type { Contract, GameState, TurnSubmission, WireEvent } from '../src/types.js'
+import { allLines } from '../src/works.js'
 
 const BALANCE = balanceData as unknown as { insolvencyTurns: number }
 
@@ -579,16 +580,16 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
     state.house.treasury = 10000000 // gott om kassa för BUILD_LINE och produktion
 
     // Alla FYRA befintliga linjer upptagna med kontrakt som aldrig blir klara.
-    const busyContracts = state.house.lines.map((_, i) => fillerContract(`contract-busy-${i}`))
+    const busyContracts = allLines(state.house).map((_, i) => fillerContract(`contract-busy-${i}`))
     const waitingContract: Contract = { ...fillerContract('contract-waiting'), quantity: 1000 }
     state.market.contracts = [...busyContracts, waitingContract]
-    state.house.lines.forEach((line, i) => {
+    allLines(state.house).forEach((line, i) => {
       line.assignedContractId = busyContracts[i]!.id
       line.productId = busyContracts[i]!.productId
       line.status = 'running'
     })
     // Premissen: utan en femte linje finns det inget ledigt att tilldela waitingContract.
-    expect(state.house.lines.every((l) => l.status !== 'idle')).toBe(true)
+    expect(allLines(state.house).every((l) => l.status !== 'idle')).toBe(true)
 
     let result = resolveTurn(state, {
       standingOrders: [],
@@ -596,7 +597,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
       actions: [{ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }],
     })
     state = result.state
-    expect(state.house.lines.length).toBe(5)
+    expect(allLines(state.house).length).toBe(5)
 
     // production.ts kör direkt efter applyActions i SAMMA pipeline-passage (avsnitt
     // 10), så den nya linjen kan redan ha tilldelats och producerat den här turen —

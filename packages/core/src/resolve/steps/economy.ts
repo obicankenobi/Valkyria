@@ -19,6 +19,7 @@ import { projectOverheadPerTurn } from '../../research.js'
 import { standingStationMode } from '../../standingOrders.js'
 import type { ResolveStep } from '../index.js'
 import type { House, Money } from '../../types.js'
+import { allLines } from '../../works.js'
 
 interface FixedCosts {
   payrollBase: number
@@ -76,9 +77,9 @@ export interface FixedCostsBreakdown {
 // källa"-princip som computeLineThroughput (production.ts). computeFixedCosts
 // nedan blir en ren summering av den här, bitvis identisk med tidigare.
 export function computeFixedCostsBreakdown(house: House, turn?: number): FixedCostsBreakdown {
-  const extraLines = Math.max(0, house.lines.length - BASE_LINES_INCLUDED_IN_PAYROLL)
+  const extraLines = Math.max(0, allLines(house).length - BASE_LINES_INCLUDED_IN_PAYROLL)
   const payroll = BALANCE.fixedCosts.payrollBase + BALANCE.fixedCosts.payrollPerExtraLine * extraLines
-  const lineUpkeep = BALANCE.fixedCosts.lineUpkeep * house.lines.length
+  const lineUpkeep = BALANCE.fixedCosts.lineUpkeep * allLines(house).length
   // P100: stationsläget (tyst/normal/aktiv) skalar upphållet per station. Utan `turn` ignoreras lägena
   // (och ett hus utan stående order räknar exakt som förut).
   const stationUpkeep = round(

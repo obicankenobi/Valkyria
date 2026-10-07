@@ -3,8 +3,8 @@
 // historiken FÖRE inläsningen finns inte att återskapa, så P97-grafen får tåla en huvudbok
 // som inte börjar på tur 0.
 import { describe, expect, it } from 'vitest'
-import { INTEGRITY_START, createInitialState, resolveTurn, scheduledGeneration } from '@seventh-front/core'
-import type { GameState } from '@seventh-front/core'
+import { INTEGRITY_START, allLines, createInitialState, resolveTurn, scheduledGeneration } from '@seventh-front/core'
+import type { GameState, ProductionLine } from '@seventh-front/core'
 import { migrate } from '../src/persistence'
 
 function oldSave(): { state: GameState; draft: { standingOrders: []; bids: []; actions: [] } } {
@@ -128,5 +128,54 @@ describe('migrate (P96-uppföljning)', () => {
     const kept = oldSave()
     kept.state.race.generation.west.armour = 2
     expect(migrate(kept)!.state.race.generation.west.armour).toBe(2)
+  })
+})
+
+describe('migrate (P169, etapp 11 §3 11K): fyra linjer blir två verk med två linjer var', () => {
+  // Så här såg ett sparat parti ut före etapp 11: en fristående `lines`-lista på huset, inga verk.
+  function preWorksSave(mutate?: (lines: ProductionLine[]) => void) {
+    const save = oldSave()
+    const house = save.state.house as unknown as { lines?: ProductionLine[]; works?: unknown }
+    const lines = allLines(save.state.house).map((l) => ({ ...l }))
+    mutate?.(lines)
+    house.lines = lines
+    delete house.works
+    return { save, lines }
+  }
+
+  it('två monteringsverk med två linjer var, i ordning, och inga fristående linjer kvar', () => {
+    const { save, lines } = preWorksSave()
+    const migrated = migrate(save)!
+    const house = migrated.state.house as unknown as Record<string, unknown>
+    expect('lines' in house).toBe(false)
+    expect(migrated.state.house.works.map((w) => w.id)).toEqual(['works-1', 'works-2'])
+    expect(migrated.state.house.works.map((w) => w.lines.map((l) => l.id))).toEqual([['line-1', 'line-2'], ['line-3', 'line-4']])
+    expect(allLines(migrated.state.house)).toEqual(lines)
+  })
+
+  it('ingen linje, inget uppdrag och ingen status går förlorad', () => {
+    const { save } = preWorksSave((lines) => {
+      lines[1] = { ...lines[1]!, status: 'running', assignedContractId: 'c-9', productId: 'm1_rifle' }
+      lines[3] = { ...lines[3]!, status: 'retooling', retoolingUntilTurn: 7 }
+    })
+    const migrated = migrate(save)!
+    const moved = allLines(migrated.state.house)
+    expect(moved[1]).toMatchObject({ status: 'running', assignedContractId: 'c-9', productId: 'm1_rifle' })
+    expect(moved[3]).toMatchObject({ status: 'retooling', retoolingUntilTurn: 7 })
+  })
+
+  it('partiet går att spela vidare efter migreringen, och indata muteras inte', () => {
+    const { save } = preWorksSave()
+    const before = JSON.stringify(save.state.house)
+    const migrated = migrate(save)!
+    expect(JSON.stringify(save.state.house)).toBe(before)
+    const next = resolveTurn(migrated.state, migrated.draft).state
+    expect(allLines(next.house)).toHaveLength(4)
+  })
+
+  it('ett parti som redan har verk rörs inte', () => {
+    const save = oldSave()
+    const kept = migrate(save)!
+    expect(kept.state.house.works).toBe(save.state.house.works)
   })
 })

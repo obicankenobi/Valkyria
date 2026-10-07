@@ -34,6 +34,7 @@
 import { createInitialState, DESIGN_SPREAD, deriveSectorControl, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
 import type { GameState, TurnResult } from '@seventh-front/core'
 import type { Policy } from './policies.js'
+import { allLines } from '@seventh-front/core'
 
 export interface GameMetrics {
   policy: string
@@ -113,7 +114,7 @@ export interface GameMetrics {
   lowballs: number // upphandlingar där huset spelat LOWBALL
   programmeSabotages: number // upphandlingar där huset sabotagerat eller läckt mot en deltagande rival
   rivalReports: number // anmälda rivaler i upphandlingar där huset deltog
-  // P168 (ETAPP11_FORSLAG.md §9, "Grund") — nollläget före etapp 11: tar kapaciteten slut? Lästa ur state.house.lines/state.market.contracts
+  // P168 (ETAPP11_FORSLAG.md §9, "Grund") — nollläget före etapp 11: tar kapaciteten slut? Lästa ur allLines(state.house)/state.market.contracts
   // efter varje tur, ingen ny räknare i core.
   lineUtilizationPct: number // medel över spelade turer av andelen linjer med status 'running' (efter turens avgörande)
   peakLineUtilizationPct: number // den högsta enskilda turens andel
@@ -170,7 +171,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let voidedByScandal = 0
   const programmeIds = new Set<string>()
   // P168 — linjeutnyttjande per tur och kontrakt som någon gång varit sena.
-  const initialLineCount = state.house.lines.length
+  const initialLineCount = allLines(state.house).length
   let utilisationSum = 0
   let utilisationPeak = 0
   const lateContractIds = new Set<string>()
@@ -255,9 +256,9 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     // P31 (avsnitt 6.2, retoolingTurns): "antal turer linjer stod i omställning"
     // — en löpande summa, inte ett slutläge (en linje är 'retooling' bara i
     // retoolingTurns(1) balanstur innan den går tillbaka till 'idle').
-    retoolingLineTurns += state.house.lines.filter((l) => l.status === 'retooling').length
-    const lineCount = state.house.lines.length
-    const utilisation = lineCount > 0 ? (100 * state.house.lines.filter((l) => l.status === 'running').length) / lineCount : 0
+    retoolingLineTurns += allLines(state.house).filter((l) => l.status === 'retooling').length
+    const lineCount = allLines(state.house).length
+    const utilisation = lineCount > 0 ? (100 * allLines(state.house).filter((l) => l.status === 'running').length) / lineCount : 0
     utilisationSum += utilisation
     utilisationPeak = Math.max(utilisationPeak, utilisation)
     for (const c of state.market.contracts) if (c.status === 'late') lateContractIds.add(c.id)
@@ -391,7 +392,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     rivalReports: programmes.filter((p) => enteredIds.has(p.id)).reduce((sum, p) => sum + p.entrants.filter((e) => e.houseId !== 'player' && e.reported).length, 0),
     lineUtilizationPct: turnsPlayed > 0 ? utilisationSum / turnsPlayed : 0,
     peakLineUtilizationPct: utilisationPeak,
-    linesBuilt: state.house.lines.length - initialLineCount,
+    linesBuilt: allLines(state.house).length - initialLineCount,
     lateContracts: lateContractIds.size,
     civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }

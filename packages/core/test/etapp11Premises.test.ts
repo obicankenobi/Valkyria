@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json' with { type: 'json' }
 import products from '../src/data/products.json' with { type: 'json' }
 import { createInitialState } from '../src/state.js'
+import { allLines } from '../src/works.js'
 
 const B = balance as unknown as {
   buildLineCost: number
@@ -14,7 +15,7 @@ const B = balance as unknown as {
 
 describe('etapp 11, §0 — premisserna stämmer med koden', () => {
   it('0.1 huset börjar med fyra identiska linjer utan typ, plats eller nivå', () => {
-    const lines = createInitialState('indochina-slice', 'p168').house.lines
+    const lines = allLines(createInitialState('indochina-slice', 'p168').house)
     expect(lines).toHaveLength(4)
     const [first, ...rest] = lines
     for (const l of rest) expect({ ...l, id: '' }).toEqual({ ...first, id: '' })

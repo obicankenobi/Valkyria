@@ -6,6 +6,7 @@
 // spelregel (ingen ekonomi-, anbuds- eller frontlogik hör hemma här, det är P3–P8).
 import { grownCoverage } from './stationCoverage.js'
 import { initialRace } from './race.js'
+import { worksFromLines } from './works.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import rivalsCatalog from './data/rivals.json' with { type: 'json' }
 import officialsRegister from './data/officials.json' with { type: 'json' }
@@ -268,7 +269,7 @@ function buildHouse(scenario: ScenarioFile, startChoices?: StartChoices): House 
     creditLimit: 0,
     insolventTurns: 0,
     revenueByTurn: [],
-    lines,
+    works: worksFromLines(lines), // P169: linjerna bor i två monteringsverk (works.ts); category null tills P171
     rnd: [],
     stations: [station],
     staff: { ...seed.staff },

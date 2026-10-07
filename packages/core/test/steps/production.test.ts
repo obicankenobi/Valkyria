@@ -5,6 +5,7 @@ import { createInitialState } from '../../src/state.js'
 import { computeUnitCostNow, getProduct } from '../../src/pricing.js'
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { Contract, GameState, TurnSubmission, WireEvent } from '../../src/types.js'
+import { allLines } from '../../src/works.js'
 
 const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions: [] }
 
@@ -52,7 +53,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
 
     production(makeCtx(state, 'prod-seed').ctx)
 
-    const line = state.house.lines.find((l) => l.assignedContractId === contract.id)
+    const line = allLines(state.house).find((l) => l.assignedContractId === contract.id)
     expect(line).toBeDefined()
     expect(line!.productId).toBe(contract.productId)
     expect(line!.grade).toBe('B')
@@ -66,7 +67,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
 
     production(makeCtx(state, 'prod-seed').ctx)
 
-    const assigned = state.house.lines.filter((l) => l.assignedContractId === contract.id)
+    const assigned = allLines(state.house).filter((l) => l.assignedContractId === contract.id)
     expect(assigned).toHaveLength(1)
   })
 
@@ -74,16 +75,16 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const contract = activeContract({ quantity: 1000 }) // gott om kvar att producera
     state.market.contracts = [contract]
-    state.house.lines[0]!.assignedContractId = contract.id
-    state.house.lines[0]!.productId = contract.productId
-    state.house.lines[0]!.grade = contract.grade
-    state.house.lines[0]!.status = 'running'
+    allLines(state.house)[0]!.assignedContractId = contract.id
+    allLines(state.house)[0]!.productId = contract.productId
+    allLines(state.house)[0]!.grade = contract.grade
+    allLines(state.house)[0]!.status = 'running'
     const before = state.house.treasury
 
     production(makeCtx(state, 'prod-seed').ctx)
 
     const product = getProduct(contract.productId)
-    const line = state.house.lines[0]!
+    const line = allLines(state.house)[0]!
     const expectedUnits = Math.floor(line.unitsPerTurnAtFull * (line.capacityPct / 100))
     const unitCost = computeUnitCostNow(product, contract.grade, state.market.commodities)
     expect(before - state.house.treasury).toBe(unitCost * expectedUnits)
@@ -93,7 +94,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const contract = activeContract({ quantity: 1000 })
     state.market.contracts = [contract]
-    const line = state.house.lines[0]!
+    const line = allLines(state.house)[0]!
     line.assignedContractId = contract.id
     line.productId = contract.productId
     line.grade = contract.grade
@@ -121,7 +122,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const contract = activeContract({ quantity: 1000 })
     state.market.contracts = [contract]
-    const line = state.house.lines[0]!
+    const line = allLines(state.house)[0]!
     line.assignedContractId = contract.id
     line.productId = contract.productId
     line.status = 'running'
@@ -137,7 +138,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     state.meta.turn = 5
     const contract = activeContract({ quantity: 1000 })
     state.market.contracts = [contract]
-    const line = state.house.lines[0]!
+    const line = allLines(state.house)[0]!
     line.assignedContractId = contract.id
     line.productId = contract.productId
     line.status = 'running'
@@ -154,7 +155,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const contract = activeContract({ quantity: 10, unitsDelivered: 10, status: 'fulfilled' })
     state.market.contracts = [contract]
-    const line = state.house.lines[0]!
+    const line = allLines(state.house)[0]!
     line.assignedContractId = contract.id
     line.productId = contract.productId
     line.status = 'running'
@@ -205,7 +206,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
         grade: 'A',
       })
       state.market.contracts = [contract]
-      const line = state.house.lines[0]!
+      const line = allLines(state.house)[0]!
       line.assignedContractId = contract.id
       line.productId = contract.productId
       line.grade = contract.grade
@@ -226,7 +227,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     it('(P27 klart-når) en linje som byter productId producerar INGET under omställningsturen, och återupptas exakt en tur senare', () => {
       const state = createInitialState('indochina-slice', 'seed')
       state.meta.turn = 3
-      const line = state.house.lines[0]!
+      const line = allLines(state.house)[0]!
       // Linjen är redan igång mot ett kontrakt (105mm_field_gun) som blir
       // fulfilled DEN HÄR turen — frigörs i steg 1, tilldelas sedan i steg 2 ett
       // NYTT kontrakt för en ANNAN produkt (ch3_transport_helicopter).
@@ -261,11 +262,11 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       const contract = activeContract({ quantity: 1000 })
       state.market.contracts = [contract]
       // Alla fyra default-linjer har productId: null från start (createInitialState) — se state.ts.
-      expect(state.house.lines[0]!.productId).toBeNull()
+      expect(allLines(state.house)[0]!.productId).toBeNull()
 
       production(makeCtx(state, 'prod-seed').ctx)
 
-      const line = state.house.lines.find((l) => l.assignedContractId === contract.id)!
+      const line = allLines(state.house).find((l) => l.assignedContractId === contract.id)!
       expect(line.status).toBe('running') // inte 'retooling'
       expect(line.retoolingUntilTurn).toBeNull()
       expect(state.market.shipments.find((s) => s.contractId === contract.id)).toBeDefined() // producerar direkt
@@ -274,7 +275,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
     it('en linje som byter till SAMMA productId (två separata kontrakt för samma produkt) ställer inte om', () => {
       const state = createInitialState('indochina-slice', 'seed')
       state.meta.turn = 0
-      const line = state.house.lines[0]!
+      const line = allLines(state.house)[0]!
       const oldContract = activeContract({ id: 'old', productId: '105mm_field_gun', quantity: 10, unitsDelivered: 10, status: 'fulfilled' })
       const newContract = activeContract({ id: 'new', productId: '105mm_field_gun', quantity: 1000 }) // SAMMA produkt
       state.market.contracts = [oldContract, newContract]
@@ -302,10 +303,10 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const contract = activeContract({ quantity: 1000 })
       state.market.contracts = [contract]
-      state.house.lines[0]!.assignedContractId = contract.id
-      state.house.lines[0]!.productId = contract.productId
-      state.house.lines[0]!.grade = contract.grade
-      state.house.lines[0]!.status = 'running'
+      allLines(state.house)[0]!.assignedContractId = contract.id
+      allLines(state.house)[0]!.productId = contract.productId
+      allLines(state.house)[0]!.grade = contract.grade
+      allLines(state.house)[0]!.status = 'running'
       state.house.commodityHoldings.steel = 200000 // mer än vad 40 enheter kräver
       const treasuryBefore = state.house.treasury
 
@@ -323,10 +324,10 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const contract = activeContract({ quantity: 1000 })
       state.market.contracts = [contract]
-      state.house.lines[0]!.assignedContractId = contract.id
-      state.house.lines[0]!.productId = contract.productId
-      state.house.lines[0]!.grade = contract.grade
-      state.house.lines[0]!.status = 'running'
+      allLines(state.house)[0]!.assignedContractId = contract.id
+      allLines(state.house)[0]!.productId = contract.productId
+      allLines(state.house)[0]!.grade = contract.grade
+      allLines(state.house)[0]!.status = 'running'
       state.house.commodityHoldings.steel = 50000 // mindre än de 180 000 materialkostnaden hade krävt
       const treasuryBefore = state.house.treasury
 
@@ -341,10 +342,10 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       const state = createInitialState('indochina-slice', 'seed')
       const contract = activeContract({ quantity: 1000 }) // artillery, bara steel i bom
       state.market.contracts = [contract]
-      state.house.lines[0]!.assignedContractId = contract.id
-      state.house.lines[0]!.productId = contract.productId
-      state.house.lines[0]!.grade = contract.grade
-      state.house.lines[0]!.status = 'running'
+      allLines(state.house)[0]!.assignedContractId = contract.id
+      allLines(state.house)[0]!.productId = contract.productId
+      allLines(state.house)[0]!.grade = contract.grade
+      allLines(state.house)[0]!.status = 'running'
       state.house.commodityHoldings.oil = 500000 // stort, men produkten bär ingen olja
       const treasuryBefore = state.house.treasury
 

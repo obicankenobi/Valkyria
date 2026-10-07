@@ -9,6 +9,7 @@ import { alignmentPenalty } from '../../src/pricing.js'
 import balance from '../../src/data/balance.json' with { type: 'json' }
 import type { ResolveContext } from '../../src/resolve/index.js'
 import type { GameState, Order, PlayerAction, TurnSubmission, WireEvent } from '../../src/types.js'
+import { allLines } from '../../src/works.js'
 
 function makeCtx(
   state: GameState,
@@ -233,14 +234,14 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
 
   it('BUILD_LINE: en ny idle-linje läggs till, kostar buildLineCost, en händelse emitteras', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    const linesBefore = state.house.lines.length
+    const linesBefore = allLines(state.house).length
     const treasuryBefore = state.house.treasury
 
     const { ctx, emitted } = makeCtx(state, [{ type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }])
     applyActions(ctx)
 
-    expect(state.house.lines.length).toBe(linesBefore + 1)
-    const newLine = state.house.lines[state.house.lines.length - 1]!
+    expect(allLines(state.house).length).toBe(linesBefore + 1)
+    const newLine = allLines(state.house)[allLines(state.house).length - 1]!
     expect(newLine.status).toBe('idle')
     expect(newLine.assignedContractId).toBeNull()
     expect(newLine.unitsPerTurnAtFull).toBe(state.house.unitsPerLineTurnDefault)
@@ -251,16 +252,16 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
 
   it('BUILD_LINE avvisas med "maximum production lines reached" vid maxProductionLines (9)', () => {
     const state = createInitialState('indochina-slice', 'seed')
-    while (state.house.lines.length < 9) {
-      state.house.lines.push({ ...state.house.lines[0]!, id: `line-extra-${state.house.lines.length}` })
+    while (allLines(state.house).length < 9) {
+      state.house.works[0]!.lines.push({ ...allLines(state.house)[0]!, id: `line-extra-${allLines(state.house).length}` })
     }
-    const linesBefore = state.house.lines.length
+    const linesBefore = allLines(state.house).length
 
     const action: PlayerAction = { type: 'INTERNAL', op: 'BUILD_LINE', payload: {} }
     const { ctx } = makeCtx(state, [action])
     applyActions(ctx)
 
-    expect(state.house.lines.length).toBe(linesBefore)
+    expect(allLines(state.house).length).toBe(linesBefore)
     expect(ctx.rejected).toEqual([{ action, reason: 'maximum production lines reached' }])
   })
 
@@ -1343,7 +1344,7 @@ describe('applyActions — P20: CRISIS (avsnitt 9.3, DESIGN.md §6.2) — löser
     applyActions(ctx)
 
     expect(ctx.rejected).toEqual([]) // internalAction fick plats — CRISIS drog inget ur actionPoints-taket
-    expect(state.house.lines.length).toBeGreaterThan(0)
+    expect(allLines(state.house).length).toBeGreaterThan(0)
   })
 
   it('inget pendingCrisis satt → CRISIS-handlingen (om en ändå skickas in) är en no-op, ingen krishändelse löses', () => {

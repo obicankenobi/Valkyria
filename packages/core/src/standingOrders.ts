@@ -28,6 +28,7 @@ import type {
   StandingOrders,
   StationMode,
 } from './types.js'
+import { findLine } from './works.js'
 
 interface Balance {
   supplyAgreementMinTurns: number
@@ -72,7 +73,7 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
   const house = draft.house
   switch (change.kind) {
     case 'LINE': {
-      if (!house.lines.some((l) => l.id === change.lineId)) return fail('unknown line')
+      if (!findLine(house, change.lineId)) return fail('unknown line')
       if (change.category !== null && !(TECH_CATEGORIES as readonly string[]).includes(change.category)) return fail('unknown category')
       if (!(SHIFTS as readonly string[]).includes(change.shift)) return fail('unknown shift')
       return { ok: true }
