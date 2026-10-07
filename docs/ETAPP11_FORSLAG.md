@@ -105,6 +105,12 @@ Följd: i dag finns inget beslut om produktion som spelaren måste fatta. Etappe
 | **11R** | Orderstorlekar | **Höjs mot linjernas takt,** så att ett kontrakt håller en linje sysselsatt i flera kvartal. |
 | **11S** | Ryktet som kostnad för utläggning | **Nej.** Fällde alla botar i mätningen och syns inte för spelaren. |
 | **11T** | Speltestet P184 | **Flyttas till efter P186.** Före dess kan bara skärmarna bedömas. |
+| **11U** | `human-broad` vinner 86–89 % mot taket 90 (2026-10-07, efter P186) | **Godkänns tills vidare.** Taket i spelbarhetstestet ändras inte. Siffran följer av den smala marknaden och mäts om efter P141. |
+| **11V** | Marknadens bredd | **Löses i P141 (etapp 10), som körs direkt.** Köparna kan i dag bara beställa infanteri och artilleri, eftersom `blocTechLevelStep` står på 0. Ingen ny prompt i etapp 11. |
+| **11W** | 11R:s klausul "marknadens värde ungefär oförändrat" | **Stryks.** Värdet steg cirka 3,4 gånger och styrelsens tröskel höjdes till 3,4. Utfallet godkänns; P141 kalibrerar om helheten. |
+| **11X** | NLF:s och Laos budgetar | **Ändras inte nu.** En höjning bröt `capacity`-referensen. Ses över i P141. |
+| **11Y** | Fältprovets sats, som växte med 11R | **Återställs** till storleken före P185 genom att andelen sänks. Görs i P141. |
+| **11Z** | Speltestet P184 | **Flyttas till efter P141.** Ändrar 11T. Med dagens marknad får den som väljer en annan kategori än infanteri eller artilleri ett verk utan beställningar. |
 
 ---
 
@@ -445,9 +451,16 @@ behövs det, stanna och redovisa vad som krävs.
 > Att fördubbla de fasta kostnaderna fäller även startpaketet; längre byggtider bryter ett test (2–4 kvartal). **Det kräver en regel eller en efterfrågeändring (fler kategorier i marknaden, lägre linjetakt), inte ett tal.**
 > Spelbarhetstestets golv och tak och `capacity`-referensen är **oförändrade och höll**; `human-broad` ligger dock på 86–89 % mot taket 90 (vakten kör 30 partier). Se `docs/ANDRINGSLOGG.md` (P185, P186) och `docs/SPELTEST_ETAPP11.md`.
 
-### P184 efter P186
+### P184 efter P141
 
-Speltestet görs när P186 är klart (11T). `docs/SPELTEST_ETAPP11.md` uppdateras då med det nya utfallet.
+Speltestet görs när P141 i etapp 10 är klart (11Z, ändrar 11T). `docs/SPELTEST_ETAPP11.md` uppdateras då
+med det nya utfallet.
+
+### Raderna som återstår efter P186
+
+Utnyttjande, byggda anläggningar, full tomt, driftsbeslut, `human-specialist` och `human-outsource` nåddes
+inte i P186. Orsaken är marknadens bredd, inte verken (11V). De förs över som mål till P141 i
+`docs/ETAPP10_FORSLAG.md` §6, som mäter dem mot samma tabell (§9 här).
 
 ---
 
@@ -489,7 +502,7 @@ Speltestet görs när P186 är klart (11T). `docs/SPELTEST_ETAPP11.md` uppdatera
 | | P183 | Balanspass; vakterna revideras om ägaren beslutar det | regel |
 | **Kapaciteten** | P185 | Huvudleverantörsregeln, byggnadslån och ordrar som fyller en linje (§9b) | regel |
 | | P186 | Balanspass mot §9 efter P185 | regel |
-| | P184 | Speltest, efter P186 (11T) | ingen kod |
+| | P184 | Speltest, efter P141 i etapp 10 (11Z) | ingen kod |
 
 **Kapningsordning:** P177 (utlandet) först, sedan P175 (depån), sedan strejkerna i P173. Anläggningarna,
 byggtiden, omställningen, kapaciteten och inkörningen kapas inte.

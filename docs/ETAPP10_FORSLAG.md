@@ -160,6 +160,8 @@ säger det inte; `infantry` saknas bland specialiseringarna i `NewGameScreen.tsx
 - **10S — P145 utgår.** THE COMPANY byggs om av etapp 11. Skärmarna för det som saknar en (§8 punkt 2)
   flyttas till P146.
 - **10T — P141:s mätning görs om** efter etapp 11, innan omläggningen bestäms.
+- **10U — P141 utökas efter etapp 11 (2026-10-07).** Prompten bär också de rader i etapp 11:s måltabell
+  som P186 inte nådde, och stoppregeln i §6 punkt 0 byts ut. Se "Tillägg efter etapp 11" i §6.
 
 ### Begriplighetspaketet (P162–P164)
 
@@ -256,6 +258,33 @@ med `blocTechLevelStep` på gick `passive` från 0 till 96 % vinst.
    - `techMarginWeight` och `specialisationBidBonusPct`: mot specens ursprungliga nivå.
    - `counterDemandOrders`: motmedelskedjan ger märkbar efterfrågan.
 3. **Den som inte går att slå på tas bort** ur kod, data och gränssnitt, med loggrad (princip 1).
+
+### Tillägg efter etapp 11 (beslut 10U, 2026-10-07)
+
+P186 visade vad den uppdämda efterfrågan kostar sedan verken byggdes. Köparnas tekniknivå är 2, 1 och 1,
+så marknaden består av infanteri och artilleri, cirka 2,2 Mkr per kvartal. Behovet är 1–1,5 linjekvartal
+per kvartal mot startverkets två linjer. Linjerna går därför 18–25 % av tiden, och den som specialiserar
+sig på en annan kategori har ingen marknad.
+
+P141 gäller som den står ovan, med fyra ändringar:
+
+1. **Stoppregeln byts.** Punkt 0 sa att prompten stannar om omläggningen flyttar `human` mer än 15
+   procentenheter. Den skrevs före etapp 11. Nu är avsikten att marknaden ska ändras, så regeln blir:
+   mätningen görs först och redovisas, sedan fortsätter prompten. Den stannar och frågar bara om ingen
+   kalibrering håller `human` inom 40–70 % med vakterna orörda.
+2. **Målen är etapp 11:s måltabell** (`docs/ETAPP11_FORSLAG.md` §9), främst raderna som inte nåddes:
+   utnyttjande 70–90 %, byggda anläggningar 3–6 per parti, full tomt i 30–60 % av partierna,
+   driftsbeslut i minst 60 % av kvartalen, `human-specialist` minst 35 %, `human-outsource` 20–50 %.
+   De fem rader som nåddes i P186 ska fortfarande hålla. `human-broad` ska ligga under taket 90 %.
+3. **Kassadalen kvartal 6–9 hör hit.** Lägsta kassa per kvartal mäts för varje `human`-variant före och
+   efter. Startvärde för målet: `human` går i konkurs i högst 10 % av partierna (18 % efter P186).
+4. **Tre följdfrågor från etapp 11 avgörs här:** små köpares budgetar (NLF, Laos) mot kontrakt på
+   3–4 Mkr (11X), fältprovets sats återställs till storleken före P185 (11Y), och `boardTarget.threshold`
+   kalibreras om sedan marknadens värde ändrats (11W).
+
+Spakar för kalibreringen, i den här ordningen: styrelsens tröskel, köparnas budgetandel, orderstorlekarna,
+linjernas takt. Spelbarhetstestets gränser och `capacity`-referensen ändras bara efter ägarens beslut.
+Huvudleverantörsregeln, byggnadslånet och fristen som växer med ordern (P185–P186) ändras inte.
 
 ## 7. Fusket, kapplöpningen och konstruktionerna
 
