@@ -23,6 +23,7 @@ import type { ResolveStep, ResolveContext } from '../index.js'
 import type { Agenda, Faction, FactionId, FrontId, GameState, Official, Order, OrderReason, Product, RivalId, TechCategory } from '../../types.js'
 
 interface NeedBalance {
+  unmetNeedBacklogFactor: number
   orderTriggerThreshold: Record<TechCategory, number>
   maxOrdersPerFactionPerTurn: number
   weightPressureShift: number
@@ -547,7 +548,10 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
       frontId,
       { kind: 'PEACETIME_REPLACEMENT' },
     )
-    if (!issuedOrder) continue
+    if (!issuedOrder) {
+      holdUnmetBacklog(ctx, faction, official, category)
+      continue
+    }
 
     // Golvat vid 0 (samma symmetri som needCeiling golvar taket) — se
     // ANDRINGSLOGG.md: en bokstavlig `need[c] -= quantity` driver need långt
@@ -573,6 +577,27 @@ function generateNeedDrivenOrders(ctx: ResolveContext, factionId: FactionId, fac
       subjectId: factionId,
     })
   }
+}
+
+// P141 steg 1 (ETAPP10_FORSLAG.md §6 punkt 1, beslut 10U): efterfrågan följer krigets förbrukning turen den uppstår i stället för att samlas på hög bakom tekniknivån. Ett behov som köparen inte kan
+// beställa (ingen produkt i kategorin klarar dess techLevel) hålls vid unmetNeedBacklogFactor × orderTriggerThreshold — samma grepp som P53a tog för startvärdet. Stiger tekniknivån (blocTechLevelStep)
+// har köparen då ett behov att beställa mot, men inte en hög som släpper loss hela den uppdämda efterfrågan på en gång. Ett behov köparen inte KAN betala (CANNOT AFFORD) hålls inte: där är budgeten
+// det som styr, inte tekniknivån. Ändringen bär en rubrik (hård regel 4): den enda state-ändringen sker i samma tur som UNMET NEED redan rapporterats.
+function holdUnmetBacklog(ctx: ResolveContext, faction: Faction, official: Official, category: TechCategory): void {
+  if (bestEligibleProduct(category, faction, official.agenda) !== null) return
+  const cap = NEED_BALANCE.orderTriggerThreshold[category] * NEED_BALANCE.unmetNeedBacklogFactor
+  const before = faction.materielNeed[category]
+  if (before <= cap) return
+  faction.materielNeed[category] = cap
+  ctx.emit({
+    severity: 'ticker',
+    scope: 'market',
+    headline: `${faction.name.toUpperCase()}: UNMET NEED FOR ${category.toUpperCase()} IS NOT STOCKPILED — HELD AT ${cap}`,
+    causeId: null,
+    delta: { [`materielNeed.${category}`]: cap - before },
+    actorIsPlayer: false,
+    subjectId: faction.id,
+  })
 }
 
 function clampQuantity(value: number, min: number, max: number): number {
