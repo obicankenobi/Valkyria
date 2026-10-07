@@ -28,10 +28,11 @@ import type {
   StandingOrders,
   StationMode,
 } from './types.js'
-import { findLine } from './works.js'
+import { findLine, worksOfLine } from './works.js'
 import { applyWorksChange, validateWorksChange } from './construction.js'
 import { applyOutsourceChange, validateOutsourceChange } from './outsourcing.js'
 import { applyWorkforceChange, validateWorkforceChange } from './workforce.js'
+import { applyMaintenanceChange, validateMaintenanceChange } from './maintenance.js'
 
 interface Balance {
   planMaxContracts: number
@@ -41,7 +42,7 @@ interface Balance {
 }
 const BALANCE = balanceData as unknown as Balance
 
-const SHIFTS = ['normal', 'overtime'] as const
+const SHIFTS = ['normal', 'overtime', 'double'] as const
 const MODES: readonly StationMode[] = ['quiet', 'normal', 'active']
 const PACES: readonly ResearchPace[] = ['low', 'normal', 'high']
 
@@ -94,6 +95,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       if (!findLine(house, change.lineId)) return fail('unknown line')
       if (change.category !== null && !(TECH_CATEGORIES as readonly string[]).includes(change.category)) return fail('unknown category')
       if (!(SHIFTS as readonly string[]).includes(change.shift)) return fail('unknown shift')
+      // P174 (§5.4): två skift kräver dubbel bemanning — verket ska vara fullt bemannat (och betalar en andra skiftlag).
+      if (change.shift === 'double' && (worksOfLine(house, change.lineId)?.staffing ?? 0) < 100) return fail('two shifts need the works fully staffed')
       return { ok: true }
     }
     case 'SUPPLY': {
@@ -150,6 +153,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       return validateOutsourceChange(draft, change)
     case 'WORKFORCE':
       return validateWorkforceChange(draft, change)
+    case 'MAINTENANCE':
+      return validateMaintenanceChange(draft, change)
     case 'PLAN': {
       const plans = house.standingOrders?.plan ?? {}
       if (change.op === 'CLEAR') return plans[change.lineId] ? { ok: true } : fail('no plan for that line')
@@ -301,6 +306,9 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         break
       case 'WORKFORCE':
         applyWorkforceChange(ctx, change)
+        break
+      case 'MAINTENANCE':
+        applyMaintenanceChange(ctx, change)
         break
       case 'PLAN': {
         const plans = (orders.plan ??= {})

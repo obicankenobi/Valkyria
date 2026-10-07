@@ -2,10 +2,12 @@
 // (`WORKS`, ingen handling, gäller från nästa tur). Tomten har åtta platser (11C); varje anläggning, även en under byggnad, tar en plats. Ett bygge tar två till
 // fyra kvartal och betalas i lika rater under tiden; forcerat bygge är halva tiden mot dubbla priset. Raterna räknas i `production` (11H), de fasta kostnaderna
 // i `economy`. Alla tal ligger i data/facilities.json.
+import balanceData from './data/balance.json' with { type: 'json' }
 import facilitiesData from './data/facilities.json' with { type: 'json' }
 import { recordExpense, recordIncome } from './ledger.js'
 import { round } from './money.js'
 import { TECH_CATEGORIES } from './validateAction.js'
+import { MODERNISATION_MAX, maintenanceCostFactor, maintenanceOf } from './maintenance.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { ActionValidation, Facility, FacilityKind, GameState, House, Money, Plot, ProductionLine, StandingOrderChange } from './types.js'
 
@@ -22,6 +24,9 @@ const DATA = facilitiesData as unknown as {
   startingInvested: Partial<Record<FacilityKind, number>>
   kinds: Record<FacilityKind, KindData>
 }
+
+const BALANCE_MODERNISATION_RATE_PCT = (balanceData as unknown as { modernisationRatePct: number }).modernisationRatePct
+const MODERNISATION_COST_FACTOR = (balanceData as unknown as { modernisationCostFactor: number }).modernisationCostFactor
 
 type WorksChange = Extract<StandingOrderChange, { kind: 'WORKS' }>
 const CATEGORY_KINDS: readonly FacilityKind[] = ['assembly', 'laboratory'] // slagen som arbetar i en kategori
@@ -55,13 +60,22 @@ function planBuild(kind: FacilityKind, toLevel: 1 | 2 | 3, forced: boolean): { t
   return { turnsTotal, costTotal, costPerTurn: Math.floor(costTotal / turnsTotal) }
 }
 
-// Anläggningens fasta kostnad per kvartal på dess nivå. En anläggning under byggnad betalar bara sina rater.
-export function facilityFixedCost(facility: Pick<Facility, 'kind' | 'level' | 'status'>): Money {
-  return facility.status === 'under_construction' ? 0 : DATA.kinds[facility.kind].fixedCostPerQuarter[facility.level - 1]!
+// P174: en modernisering (nya verktygsmaskiner) kostar en del av nivåns byggkostnad och tar ett kvartal kortare tid än bygget (minst ett); forcerat = halva tiden mot dubbla priset.
+function planModernise(kind: FacilityKind, level: 1 | 2 | 3, forced: boolean): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
+  const baseTurns = Math.max(1, DATA.kinds[kind].buildTurns[level - 1]! - 1)
+  const turnsTotal = forced ? Math.max(1, Math.ceil(baseTurns * DATA.forceTimeFactor)) : baseTurns
+  const costTotal = round(DATA.kinds[kind].buildCost[level - 1]! * MODERNISATION_COST_FACTOR * (forced ? DATA.forceCostFactor : 1))
+  return { turnsTotal, costTotal, costPerTurn: Math.floor(costTotal / turnsTotal) }
 }
 
-export function worksUpkeep(house: Pick<House, 'works'>): Money {
-  return round(house.works.reduce((sum, w) => sum + facilityFixedCost(w), 0))
+// Anläggningens fasta kostnad per kvartal på dess nivå. En anläggning under byggnad betalar bara sina rater.
+export function facilityFixedCost(facility: Pick<Facility, 'kind' | 'level' | 'status'>, factor = 1): Money {
+  return facility.status === 'under_construction' ? 0 : round(DATA.kinds[facility.kind].fixedCostPerQuarter[facility.level - 1]! * factor)
+}
+
+// P174: underhållsnivån skalar ett monteringsverks fasta kostnad (låg 0,8, normal 1, hög 1,3); utan `turn` räknas en väntande order som gällande.
+export function worksUpkeep(house: Pick<House, 'works' | 'standingOrders'>, turn?: number): Money {
+  return round(house.works.reduce((sum, w) => sum + facilityFixedCost(w, w.kind === 'assembly' ? maintenanceCostFactor(maintenanceOf(house, w.id, turn)) : 1), 0))
 }
 
 // Hur snabbt en linje går just nu relativt full fart: ett monteringsverk under utbyggnad går på halv fart (§4.3).
@@ -103,6 +117,16 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (facility.build) return fail('already being built')
       if (facility.level >= DATA.maxLevel) return fail('already at the highest level')
       if (house.treasury < planBuild(facility.kind, (facility.level + 1) as 2 | 3, change.forced === true).costPerTurn) return fail('cannot afford the first instalment')
+      return { ok: true }
+    }
+    case 'MODERNISE': {
+      const facility = house.works.find((w) => w.id === change.facilityId)
+      if (!facility) return fail('unknown facility')
+      if (facility.kind !== 'assembly') return fail('only an assembly works can be modernised')
+      if (facility.status !== 'operating') return fail('the works is not in operation')
+      if (facility.build) return fail('already being built')
+      if ((facility.machineLevel ?? 0) >= MODERNISATION_MAX) return fail('already as modern as it gets')
+      if (house.treasury < planModernise(facility.kind, facility.level, change.forced === true).costPerTurn) return fail('cannot afford the first instalment')
       return { ok: true }
     }
     case 'SELL': {
@@ -165,6 +189,21 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
         severity: 'report',
         scope: 'house',
         headline: `${DATA.kinds[facility.kind].label.toUpperCase()} ${facility.id.toUpperCase()} IS BEING EXPANDED TO LEVEL ${toLevel} — ${plan.turnsTotal} QUARTERS, ${money(plan.costTotal)}${facility.kind === 'assembly' ? `, RUNNING AT ${DATA.expansionSpeedPct}% MEANWHILE` : ''}`,
+        causeId: null,
+        delta: {},
+        actorIsPlayer: true,
+        subjectId: facility.id,
+      })
+      break
+    }
+    case 'MODERNISE': {
+      const facility = house.works.find((w) => w.id === change.facilityId)!
+      const plan = planModernise(facility.kind, facility.level, change.forced === true)
+      facility.build = { toLevel: facility.level, startTurn: turn + 1, turnsTotal: plan.turnsTotal, turnsLeft: plan.turnsTotal, costTotal: plan.costTotal, costPerTurn: plan.costPerTurn, forced: change.forced === true, modernise: true }
+      emit({
+        severity: 'report',
+        scope: 'house',
+        headline: `${DATA.kinds[facility.kind].label.toUpperCase()} ${facility.id.toUpperCase()} IS BEING MODERNISED — ${plan.turnsTotal} QUARTER${plan.turnsTotal === 1 ? '' : 'S'}, ${money(plan.costTotal)}${change.forced ? ', FORCED' : ''}, RUNNING AT ${DATA.expansionSpeedPct}% MEANWHILE`,
         causeId: null,
         delta: {},
         actorIsPlayer: true,
@@ -250,6 +289,22 @@ export function advanceConstruction(ctx: ResolveContext): void {
       continue
     }
     const wasNew = facility.status === 'under_construction'
+    if (build.modernise) {
+      facility.condition = 100
+      facility.machineLevel = (facility.machineLevel ?? 0) + 1
+      facility.invested += build.costTotal
+      delete facility.build
+      emit({
+        severity: 'headline',
+        scope: 'house',
+        headline: `${label} ${facility.id.toUpperCase()} IS MODERNISED (FINAL INSTALMENT ${money(instalment)}) — NEW MACHINE TOOLS, CONDITION BACK TO 100, OUTPUT +${facility.machineLevel * BALANCE_MODERNISATION_RATE_PCT}%`,
+        causeId: null,
+        delta: { treasury: -instalment, condition: 100 },
+        actorIsPlayer: true,
+        subjectId: facility.id,
+      })
+      continue
+    }
     facility.level = build.toLevel
     facility.status = 'operating'
     facility.invested += build.costTotal

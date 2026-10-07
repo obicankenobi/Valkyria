@@ -80,6 +80,7 @@ export function describeChange(change: StandingOrderChange): string {
       // P170: bygge, utbyggnad, avveckling, markköp. Kort för tomten byggs i P179.
       if (change.op === 'BUILD') return `BUILD ${kindLabel(change.facilityKind).toUpperCase()}${change.category ? ` · ${change.category.toUpperCase()}` : ''}${change.forced ? ' · FORCED' : ''}`
       if (change.op === 'EXPAND') return `EXPAND ${change.facilityId.toUpperCase()}${change.forced ? ' · FORCED' : ''}`
+      if (change.op === 'MODERNISE') return `MODERNISE ${change.facilityId.toUpperCase()}${change.forced ? ' · FORCED' : ''}`
       return change.op === 'SELL' ? `SELL ${change.facilityId.toUpperCase()}` : 'BUY MORE LAND'
     case 'OUTSOURCE':
       // P172: utläggning på en underleverantör. Planeringstavlan byggs i P180.
@@ -87,6 +88,9 @@ export function describeChange(change: StandingOrderChange): string {
     case 'WORKFORCE':
       // P173: bemanning och strejksvar. Driftspanelen byggs i P179.
       return change.op === 'SET' ? `${change.facilityId.toUpperCase()} · STAFFING ${change.staffing}%` : `${change.facilityId.toUpperCase()} · STRIKE: ${change.response === 'concede' ? 'GIVE IN' : 'BREAK IT'}`
+    case 'MAINTENANCE':
+      // P174: underhållsnivå per monteringsverk. Driftspanelen byggs i P179.
+      return `${change.facilityId.toUpperCase()} · MAINTENANCE ${change.level.toUpperCase()}`
     case 'PLAN':
       // P171: produktionsplanen. Planeringstavlan byggs i P180.
       return change.op === 'CLEAR' ? `${change.lineId.toUpperCase()} · AUTOMATIC ASSIGNMENT` : `${change.lineId.toUpperCase()} · ${change.contractIds.length === 0 ? 'AUTOMATIC ASSIGNMENT' : change.contractIds.join(' → ')}`

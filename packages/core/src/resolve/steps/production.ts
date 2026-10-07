@@ -19,7 +19,9 @@ import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
 import { advanceConstruction, worksSpeedFactor } from '../../construction.js'
-import { advanceWorkforce, isOnStrike, workforceSpeedFactor } from '../../workforce.js'
+import { advanceWorkforce, isOnStrike, lineShift, workforceSpeedFactor } from '../../workforce.js'
+import { carryRunIn, runInCostFactor, runInRateFactor } from '../../runin.js'
+import { advanceCondition, conditionQualityPenalty, lineBreaksDown, plantSpeedFactor } from '../../maintenance.js'
 
 interface Balance {
   deliveryDelayMinTurns: number
@@ -28,6 +30,7 @@ interface Balance {
   overtimeCapacityPct: number
   overtimeUnitCostFactor: number
   overtimeBreakdownChancePct: number
+  doubleShiftCapacityPct: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -48,8 +51,16 @@ function remainingToProduce(contract: Contract, shipments: readonly Shipment[]):
 export function computeLineThroughput(house: House, line: ProductionLine, product: Product): number {
   const lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault
   // P170: ett monteringsverk under utbyggnad går på halv fart (construction.ts).
-  // P173: bemanning och skicklighet (en strejk ger noll).
-  return product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency * worksSpeedFactor(house, line.id) * workforceSpeedFactor(house, line.id)
+  // P173: bemanning och skicklighet (en strejk ger noll). P174: inkörningen, verkets skick och moderniseringarna.
+  return (
+    product.unitsPerLineTurn *
+    (line.capacityPct / 100) *
+    lineEfficiency *
+    worksSpeedFactor(house, line.id) *
+    workforceSpeedFactor(house, line.id) *
+    runInRateFactor(line, product) *
+    plantSpeedFactor(house, line.id)
+  )
 }
 
 export const production: ResolveStep = (ctx) => {
@@ -66,7 +77,10 @@ export const production: ResolveStep = (ctx) => {
   settleSupplyAgreements(ctx)
   for (const line of allLines(house)) {
     const order = standingLineOrder(house, line.id, draft.meta.turn)
-    if (order) line.capacityPct = order.shift === 'overtime' ? BALANCE.overtimeCapacityPct : 100
+    if (order) {
+      const shift = lineShift(house, line.id, draft.meta.turn) // P174: två skift kräver full bemanning
+      line.capacityPct = shift === 'overtime' ? BALANCE.overtimeCapacityPct : shift === 'double' ? BALANCE.doubleShiftCapacityPct : 100
+    }
   }
 
   // 0) Linjer vars omställning (P27, avsnitt 3.2) är klar den här turen återgår
@@ -161,6 +175,7 @@ export const production: ResolveStep = (ctx) => {
     // längst för en annan produkt. En helt ny linje (ingen uppsättning än) straffas inte, den startar bara upp.
     const change = setupChange(house, previousTooling.get(line.id) ?? null, contract)
     const setup = setupCost(change)
+    carryRunIn(line, change) // P174: omställning nollställer inkörningen (samma familj behåller en del)
     line.tooling = { productId: contract.productId, designId: contract.designId ?? null }
 
     line.assignedContractId = contract.id
@@ -214,6 +229,8 @@ export const production: ResolveStep = (ctx) => {
     const plannedUnits = Math.min(remaining, Math.floor(lineThroughput))
     if (plannedUnits <= 0) continue
 
+    // P174: ett nedslitet verk kan få ett haveri (en dragning bara när skicket är under tröskeln).
+    if (lineBreaksDown(ctx, line)) continue
     // P100: övertid = högre styckkostnad + en liten slitagerisk (rng dras BARA för en linje på övertid).
     const overtime = standingLineOrder(house, line.id, draft.meta.turn)?.shift === 'overtime'
     if (overtime && rng.chance(BALANCE.overtimeBreakdownChancePct)) {
@@ -234,7 +251,8 @@ export const production: ResolveStep = (ctx) => {
     const unitCostNow =
       computeUnitCostNow(product, line.grade, draft.market.commodities) *
       (overtime ? BALANCE.overtimeUnitCostFactor : 1) *
-      designUnitCostFactor(house, contract.designId)
+      designUnitCostFactor(house, contract.designId) *
+      runInCostFactor(line, product) // P174: inkörningen sänker styckkostnaden
     // affordableUnits räknas mot RÅ unitCostNow, inte mot kostnaden EFTER ett
     // BUY_FORWARD-innehav — en medveten förenkling (P51, avsnitt 4.5): ett
     // stort innehav sänker vad du FAKTISKT betalar, men relaxar inte hur
@@ -284,6 +302,9 @@ export const production: ResolveStep = (ctx) => {
     }
 
     if (actualUnits > 0) {
+      line.runIn = (line.runIn ?? 0) + actualUnits // P174: inkörningen växer med byggda enheter
+      const penalty = conditionQualityPenalty(house, line.id)
+      if (penalty > 0) house.reputation.quality = Math.max(0, house.reputation.quality - penalty) // P174: ett nedslitet verk bygger sämre
       const arrivalTurn = draft.meta.turn + rng.int(BALANCE.deliveryDelayMinTurns, BALANCE.deliveryDelayMaxTurns)
       draft.market.shipments.push({
         id: `shipment-${contract.id}-${draft.meta.turn}`,
@@ -311,4 +332,7 @@ export const production: ResolveStep = (ctx) => {
 
   // 4) P172: underleverantörerna bygger sina delar (en leverans per utlagt kontrakt och tur).
   runSubcontractors(ctx)
+
+  // 5) P174: slitage och underhåll.
+  advanceCondition(ctx)
 }

@@ -380,6 +380,8 @@ export interface ProductionLine {
   // P171 (ETAPP11 §4.5): vad linjen är uppsatt för. Överlever att linjen står ledig (förut nollställdes productId); saknas på en ny linje (den startar
   // utan omställning) och i ett sparat parti från före P171 (då läses uppsättningen ur productId och det tilldelade kontraktet, se tooling.ts).
   tooling?: LineTooling | null
+  // P174 (ETAPP11 §5.2): enheterna linjen byggt under sin nuvarande uppsättning — underlaget för inkörningen (runin.ts). Saknas = 0 (ny linje, ett sparat parti från före P174).
+  runIn?: number
 }
 
 export interface LineTooling {
@@ -408,10 +410,12 @@ export interface Facility {
   invested: Money
   // P170: ett pågående bygge. Ett nytt hus har level 1 och status 'under_construction' tills det är klart; en utbyggnad lämnar statusen 'operating'
   // (monteringsverket går på halv fart, expansionSpeedPct) och höjer nivån till toLevel när det är klart. Kostnaden betalas i lika rater från startTurn.
-  build?: { toLevel: 1 | 2 | 3; startTurn: number; turnsTotal: number; turnsLeft: number; costTotal: Money; costPerTurn: Money; forced: boolean }
+  build?: { toLevel: 1 | 2 | 3; startTurn: number; turnsTotal: number; turnsLeft: number; costTotal: Money; costPerTurn: Money; forced: boolean; modernise?: boolean }
   // P173 (ETAPP11 §5.1): stämningen på anläggningen (0–100; saknas = moraleBaseline), ett lönepåslag i procent efter en eftergift i en strejk (saknas = 0) och en pågående strejk
   // (status 'strike'). Ett sparat parti från före P173 saknar fälten och läses med standardvärdena.
   morale?: Pct
+  // P174 (§5.3): antal moderniseringar verket fått (varje höjer takten, WORKS MODERNISE). Saknas = 0.
+  machineLevel?: number
   wagePremiumPct?: number
   strike?: { sinceTurn: number }
 }
@@ -1236,7 +1240,8 @@ export type InternalOp = 'BUILD_LINE' | 'HIRE' | 'REPRIORITISE_RND' | 'TAKE_LOAN
 
 // P100 (ETAPP8_FORSLAG.md §5.1): stående order i tre slag — de tre av DESIGN.md §4:s fem som är ekonomi.
 // En ändring kostar INGEN handling (skyddsräcke 6), gäller från NÄSTA tur och ligger kvar tills den ändras.
-export type LineShift = 'normal' | 'overtime'
+export type LineShift = 'normal' | 'overtime' | 'double'
+export type MaintenanceLevel = 'low' | 'normal' | 'high'
 export type StationMode = 'quiet' | 'normal' | 'active'
 export type ResearchPace = 'low' | 'normal' | 'high'
 
@@ -1280,6 +1285,8 @@ export type StandingOrderChange =
   // category krävs för ett monteringsverk och ett laboratorium (ett laboratorium per kategori) och ges inte för övriga slag.
   | { kind: 'WORKS'; op: 'BUILD'; facilityKind: FacilityKind; category?: TechCategory; forced?: boolean }
   | { kind: 'WORKS'; op: 'EXPAND'; facilityId: string; forced?: boolean }
+  // P174 (§5.3): modernisering av ett monteringsverk — en investering med byggtid som återställer skicket och höjer takten.
+  | { kind: 'WORKS'; op: 'MODERNISE'; facilityId: string; forced?: boolean }
   | { kind: 'WORKS'; op: 'SELL'; facilityId: string }
   | { kind: 'WORKS'; op: 'BUY_LAND' }
   // P171 (ETAPP11 §4.5): produktionsplanen — vilken linje som bygger vilka kontrakt, i vilken ordning. Kostar ingen handling. Utan plan fördelar huset själv.
@@ -1292,6 +1299,8 @@ export type StandingOrderChange =
   // strejk (ge med sig eller bryta den) och gäller direkt. Kostar ingen handling.
   | { kind: 'WORKFORCE'; op: 'SET'; facilityId: string; staffing: number }
   | { kind: 'WORKFORCE'; op: 'STRIKE'; facilityId: string; response: 'concede' | 'break' }
+  // P174 (§5.3): underhållsnivån per monteringsverk (låg sparar pengar nu, hög bygger upp skicket). Gäller från nästa kvartal, kostar ingen handling.
+  | { kind: 'MAINTENANCE'; facilityId: string; level: MaintenanceLevel }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1364,6 +1373,8 @@ export interface StandingOrders {
   plan?: Record<string, { contractIds: string[]; sinceTurn: number }>
   // P173: väntande bemanningsändringar per anläggning (anställning eller uppsägning till ett mål, 25/50/75/100) — gäller från sinceTurn och tas bort när de genomförts.
   workforce?: Record<string, { staffing: number; sinceTurn: number }>
+  // P174: underhållsnivå per anläggning (saknas = normal), i kraft från sinceTurn.
+  maintenance?: Record<string, { level: MaintenanceLevel; sinceTurn: number }>
 }
 
 export interface TurnSubmission {

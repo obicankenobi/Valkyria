@@ -9,7 +9,7 @@ import { round } from './money.js'
 import { standingLineOrder } from './standingOrders.js'
 import { recordExpense } from './ledger.js'
 import type { ResolveContext } from './resolve/index.js'
-import type { ActionValidation, Facility, FacilityKind, GameState, House, Money, StandingOrderChange } from './types.js'
+import type { ActionValidation, Facility, FacilityKind, GameState, House, LineShift, Money, StandingOrderChange } from './types.js'
 
 const BALANCE = balanceData as unknown as {
   wageDoomsdaySlope: number
@@ -34,6 +34,8 @@ const BALANCE = balanceData as unknown as {
   strikeBreakMoraleHit: number
   strikeBreakIntegrityPenalty: number
   strikeEndMorale: number
+  doubleShiftWageFactor: number
+  moraleDoubleShiftPenalty: number
 }
 const WAGES = facilitiesData as unknown as { kinds: Record<FacilityKind, { label: string; wagePerQuarter: number[] }> }
 
@@ -52,15 +54,29 @@ export function hasWorkforce(kind: FacilityKind): boolean {
 }
 
 // Anläggningens lön per kvartal: grundlönen på nivån × bemanningen × löneindexet × ett eventuellt påslag. Ingen lön under bygge eller strejk.
-export function facilityWage(facility: Pick<Facility, 'kind' | 'level' | 'status' | 'staffing' | 'wagePremiumPct'>, index: number): Money {
+export function facilityWage(facility: Pick<Facility, 'kind' | 'level' | 'status' | 'staffing' | 'wagePremiumPct'>, index: number, doubleShift = false): Money {
   if (facility.status === 'under_construction' || facility.status === 'strike') return 0
   const base = WAGES.kinds[facility.kind].wagePerQuarter[facility.level - 1] ?? 0
-  return round(base * (facility.staffing / 100) * index * (1 + (facility.wagePremiumPct ?? 0) / 100))
+  return round(base * (facility.staffing / 100) * index * (1 + (facility.wagePremiumPct ?? 0) / 100) * (doubleShift ? BALANCE.doubleShiftWageFactor : 1))
 }
 
-export function totalWages(house: Pick<House, 'works' | 'wageIndex'>): Money {
+// Linjens gällande skift. Två skift kräver full bemanning: under det går linjen på normalt skift (P174).
+export function lineShift(house: Pick<House, 'works' | 'standingOrders'>, lineId: string, turn: number): LineShift {
+  const order = standingLineOrder(house as House, lineId, turn)
+  if (!order) return 'normal'
+  if (order.shift === 'double') {
+    const works = house.works.find((w) => w.lines.some((l) => l.id === lineId))
+    return works && works.staffing >= 100 ? 'double' : 'normal'
+  }
+  return order.shift
+}
+
+export const worksOnDoubleShift = (house: Pick<House, 'works' | 'standingOrders'>, works: Facility, turn: number): boolean => works.lines.some((l) => lineShift(house, l.id, turn) === 'double')
+
+// Utan `turn` räknas inga tvåskiftslöner (samma konvention som stationslägena i economy.ts).
+export function totalWages(house: Pick<House, 'works' | 'wageIndex' | 'standingOrders'>, turn?: number): Money {
   const index = wageIndexOf(house)
-  return round(house.works.reduce((sum, w) => sum + facilityWage(w, index), 0))
+  return round(house.works.reduce((sum, w) => sum + facilityWage(w, index, turn !== undefined && worksOnDoubleShift(house, w, turn)), 0))
 }
 
 // Genomströmningsfaktorn för en linje: bemanningen × skicklighetens effekt; 0 under en strejk. Skicklighet 50 är neutral (1,0).
@@ -242,11 +258,12 @@ export function advanceWorkforce(ctx: ResolveContext): void {
     }
 
     // Stämningen: tillbaka mot grundnivån, ner av övertid och av lönetrycket.
-    const overtime = facility.lines.some((l) => standingLineOrder(house, l.id, turn)?.shift === 'overtime')
+    const overtime = facility.lines.some((l) => lineShift(house, l.id, turn) === 'overtime')
+    const doubleShift = worksOnDoubleShift(house, facility, turn)
     const wagePressure = Math.max(0, (wageIndexOf(house) - 1) * 100 * BALANCE.moraleWageWeight - (facility.wagePremiumPct ?? 0) * BALANCE.moraleWageWeight)
     const morale = moraleOf(facility)
     const recovered = morale < BALANCE.moraleBaseline ? Math.min(BALANCE.moraleBaseline, morale + BALANCE.moraleRecoveryPerTurn) : morale
-    const next = clamp(Math.round(recovered - (overtime ? BALANCE.moraleOvertimePenalty : 0) - wagePressure), 0, 100)
+    const next = clamp(Math.round(recovered - (overtime ? BALANCE.moraleOvertimePenalty : 0) - (doubleShift ? BALANCE.moraleDoubleShiftPenalty : 0) - wagePressure), 0, 100)
     if (next !== morale || facility.morale !== undefined) facility.morale = next
     if (morale >= BALANCE.strikeMoraleThreshold && next < BALANCE.strikeMoraleThreshold) {
       emit({

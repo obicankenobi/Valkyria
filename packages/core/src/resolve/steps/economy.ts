@@ -102,7 +102,7 @@ export function computeFixedCostsBreakdown(house: House, turn?: number): FixedCo
     house.rnd.reduce((sum, p) => sum + projectOverheadPerTurn(house, p), 0) +
       testingOverheadCount(house, turn) * BALANCE.fixedCosts.rndOverhead * BALANCE.testingOverheadFactor,
   )
-  return { payroll, lineUpkeep, stationUpkeep, rndOverhead, facilityUpkeep: worksUpkeep(house), wages: totalWages(house) }
+  return { payroll, lineUpkeep, stationUpkeep, rndOverhead, facilityUpkeep: worksUpkeep(house, turn), wages: totalWages(house, turn) }
 }
 
 // Summan av en uppdelning — EN källa, läst av economy, queries och gränssnittet.
