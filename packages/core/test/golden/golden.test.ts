@@ -475,11 +475,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   //
   // P177 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): verk i köparland (foreign.ts). Facility.location/localKnowledge/hostAlignment, Contract.counterPurchase och budtermen localWorksBidTerm är valfria eller noll utan ett
   // verk utomlands, och ingen golden-bot bygger ett (och ingen upphandling med motköp förekommer), så ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P174:s–P176:s (95f88c7e135b4, 41d6eaaa16f32, 1b534f3c6003a) — verifierat, inte antaget.
+  // Omfryst i P183 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I, balanspasset): två dataändringar — `boardTarget.threshold` 2,45 → 2,9 (indochina-slice.json) och
+  // `buildCost` halverad för alla sju anläggningar (facilities.json). Attribution (verifierad, inte antagen): med tröskeln på 2,45 och halverade byggkostnader är alla tre
+  // hashar bit-identiska med P177:s (95f88c7e135b4, 41d6eaaa16f32, 1b534f3c6003a) — golden-botarna bygger aldrig, så byggkostnaden rör dem inte; det som flyttar hasharna är
+  // enbart styrelsetröskeln (granskningarna avgör partiets slut). De nya hasharna: passive 389f60409b52c, aggressive 119a385a480b3f, balanced 8861794d3366e.
   // Bara balance.frozen.json följer med (nya rader: en anteckning och sexton tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '95f88c7e135b4' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '41d6eaaa16f32' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1b534f3c6003a' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '389f60409b52c' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '119a385a480b3f' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '8861794d3366e' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
