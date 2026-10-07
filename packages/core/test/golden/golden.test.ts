@@ -507,10 +507,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // hashar bit-identiska med steg 1:s (bccb17349d041, 1f7ea98fa37c1e, 1cca601750ef5c) — verifierat, inte antaget. Var och en av de tre ändringarna flyttar alla tre hashar för sig (tekniknivån släpper fram nya
   // kategorier; budgetandelen ändrar vilka ordrar som hinner utlysas; tröskeln ändrar styrelsens utfall). `balance.json`/`balance.frozen.json` fick en anteckning (`_p141_2a_note`). De nya hasharna: passive
   // 166faa53ef813e, aggressive 9c5ef5451d80b, balanced 7da5dc2999b52.
+  //
+  // Omfryst i P141 steg 2b (regel, `techMarginWeight` 0,25 → 2 och `specialisationBidBonusPct` 1 → 10 — specens ursprungliga nivåer — med styrelsetröskeln 9 → 11). Attribution (dist ombyggd för varje värde — golden-botarna
+  // läser `bidEstimate`/`playerWinCurve` ur harness-dist, så en gammal dist ger fel hash): med de gamla vikterna och tröskeln 9 är alla tre hashar bit-identiska med steg 2a:s (166faa53ef813e, 9c5ef5451d80b, 7da5dc2999b52) —
+  // verifierat, inte antaget. Var och en av de två ändringarna flyttar alla tre hashar för sig. `balance.json`/`balance.frozen.json` fick en anteckning (`_p141_2b_note`). De nya hasharna: passive 16d1011e686455,
+  // aggressive 1414ab9753b47a, balanced 12b972dcd29ab1.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '166faa53ef813e' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9c5ef5451d80b' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '7da5dc2999b52' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '16d1011e686455' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1414ab9753b47a' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '12b972dcd29ab1' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
