@@ -40,8 +40,8 @@ const B = balance as unknown as {
 }
 const SCHEDULE = B.blocGenerationSchedule
 
-// Datan har blocTechLevelStep 0 (se balance.json _p118_note: ett steg 1 släpper loss hela scenariots uppdämda efterfrågan och flyttar
-// vakterna). Mekanismen testas därför med steget påslaget i just de testerna — balansobjektet är samma objekt race.ts läser.
+// P141 steg 2a: datan har blocTechLevelStep 1 (var 0 till P141; se balance.json _p118_note och _p141_note). Mekanismens olika steg testas med ett uttryckligt värde i just de testerna — balansobjektet är samma
+// objekt race.ts läser.
 function withTechStep<T>(step: number, run: () => T): T {
   const before = B.blocTechLevelStep
   B.blocTechLevelStep = step
@@ -210,16 +210,32 @@ describe('generationsskiftet (P118, §7.1)', () => {
     })
   })
 
-  it('med datans värde (0) rör ett generationsskifte inte köparnas techLevel — och emitterar inga techLevel-rader', () => {
-    expect(B.blocTechLevelStep).toBe(0)
+  it('med steget 0 rör ett generationsskifte inte köparnas techLevel — och emitterar inga techLevel-rader', () => {
+    withTechStep(0, () => {
+      const state = createInitialState('indochina-slice', 'gen-seed')
+      state.meta.turn = westTurn
+      const before = JSON.stringify(Object.values(state.factions).map((f) => f.techLevel))
+      const { ctx, emitted } = makeCtx(state)
+      advanceRace(ctx)
+      expect(JSON.stringify(Object.values(state.factions).map((f) => f.techLevel))).toBe(before)
+      expect(emitted.some((e) => e.headline.includes('TECH LEVEL RISES'))).toBe(false)
+      expect(blocGeneration(state, 'west', category)).toBe(2) // generationen steg ändå
+    })
+  })
+
+  it('med datans värde (P141 steg 2a: minst 1) höjer ett generationsskifte köparnas techLevel i blocket — med en rad per köpare', () => {
+    expect(B.blocTechLevelStep).toBeGreaterThanOrEqual(1)
     const state = createInitialState('indochina-slice', 'gen-seed')
     state.meta.turn = westTurn
-    const before = JSON.stringify(Object.values(state.factions).map((f) => f.techLevel))
+    const before = Object.fromEntries(Object.values(state.factions).map((f) => [f.id, f.techLevel[category]]))
     const { ctx, emitted } = makeCtx(state)
     advanceRace(ctx)
-    expect(JSON.stringify(Object.values(state.factions).map((f) => f.techLevel))).toBe(before)
-    expect(emitted.some((e) => e.headline.includes('TECH LEVEL RISES'))).toBe(false)
-    expect(blocGeneration(state, 'west', category)).toBe(2) // generationen steg ändå
+    const rows = emitted.filter((e) => e.headline.includes('TECH LEVEL RISES'))
+    expect(rows.length).toBeGreaterThan(0)
+    for (const f of Object.values(state.factions)) {
+      const rose = state.factions[f.id]!.techLevel[category] - before[f.id]!
+      expect(rose === 0 || rose === B.blocTechLevelStep).toBe(true)
+    }
   })
 
   it('går vidare till nästa steg i listan (tvåstegskategori) och stannar efter det sista', () => {

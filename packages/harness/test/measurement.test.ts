@@ -104,7 +104,7 @@ describe('känslighetsverktyget — rena delar', () => {
     expect(numbers.some((n) => n.key.startsWith('_'))).toBe(false)
     expect(numbers.find((n) => n.key === 'techMarginWeight')).toEqual({ key: 'techMarginWeight', kind: 'scalar' })
     expect(numbers.find((n) => n.key === 'gradePriceFactor')?.kind).toBe('group')
-    expect(zeroValued).toContain('blocTechLevelStep')
+    expect(zeroValued).toContain('maintenanceRestoreLow') // P141: blocTechLevelStep är 1 sedan steg 2a
     expect(numbers.length).toBeGreaterThan(400)
   })
 

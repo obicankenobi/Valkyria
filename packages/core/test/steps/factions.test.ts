@@ -188,8 +188,8 @@ describe('factions — militaryBudget-påfyllnad (ETAPP1_5_TEKNISK_SPEC.md avsni
     const { ctx, emitted } = makeCtx(state, 'faction-seed')
     factions(ctx)
 
-    // militaryBudgetQuarterlyShare = 0.08 → 10 000 000 × 0.08 = 800 000
-    expect(faction.militaryBudget).toBe(before + 800000)
+    // militaryBudgetQuarterlyShare (0,08 till P141, 0,24 sedan steg 2a) × 10 000 000
+    expect(faction.militaryBudget).toBe(before + Math.round(10000000 * (balance as { militaryBudgetQuarterlyShare: number }).militaryBudgetQuarterlyShare))
     expect(emitted.some((e) => e.headline.includes('MILITARY BUDGET'))).toBe(true)
   })
 
