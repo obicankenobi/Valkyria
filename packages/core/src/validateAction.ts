@@ -41,12 +41,13 @@ import { laboratoryFor, researchBlockedReason } from './knowledge.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { capturedSystem } from './capture.js'
 import { fieldTrialBatch } from './design.js'
+import { leadSupplierRejection } from './leadSupplier.js'
 import { round } from './money.js'
-import { allProducts } from './pricing.js'
+import { allProducts, getProduct } from './pricing.js'
 import { findOfficial } from './officials.js'
 import { validateProcurement, validProgrammeTarget } from './programme.js'
 import { parseAssessmentTarget } from './race.js'
-import type { ActionValidation, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
+import type { ActionValidation, Bid, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
 import { allLines, assemblyWorks, freeLineSlots } from './works.js'
 
 interface Balance {
@@ -88,6 +89,15 @@ function ok(): ActionValidation {
 }
 function fail(reason: string): ActionValidation {
   return { ok: false, reason }
+}
+
+// P185 (11O/11P): ett bud i en kategori kräver ett monteringsverk i den. Bud är ingen PlayerAction, så prövningen är en syskonfunktion till validateAction med samma form och samma skäl i klartext
+// ("Requires an Assembly Works for armour"); bidding.ts, budmappen, kartans orderlager, This Quarter och botarna läser den. En okänd order bedöms inte här — bidding.ts avvisar den på sitt eget sätt.
+export function validateBid(_state: Readonly<GameState>, draft: Readonly<GameState>, bid: Pick<Bid, 'orderId'>): ActionValidation {
+  const order = draft.market.openOrders.find((o) => o.id === bid.orderId)
+  if (!order) return ok()
+  const reason = leadSupplierRejection(draft.house, getProduct(order.productId), order.quantity)
+  return reason === null ? ok() : fail(reason)
 }
 
 export function validateAction(state: Readonly<GameState>, draft: Readonly<GameState>, action: PlayerAction): ActionValidation {
@@ -278,6 +288,9 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
       if (!Number.isFinite(action.quantity) || action.quantity <= 0) return fail('invalid quantity')
       if (!Number.isFinite(action.price) || action.price <= 0) return fail('invalid price')
       if (!allProducts().some((p) => p.id === action.productId)) return fail('unknown product')
+      // P185 (11O): en förmedlad affär är ett bud i en kategori — den kräver också ett monteringsverk i den.
+      const lead = leadSupplierRejection(draft.house, getProduct(action.productId), action.quantity)
+      if (lead) return fail(lead)
 
       const official = findOfficial(draft, action.buyerId, 'procurement')
       if (

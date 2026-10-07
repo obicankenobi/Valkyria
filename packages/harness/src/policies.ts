@@ -14,6 +14,7 @@ import {
   CUSTOMISE_TERMS,
   TECH_CATEGORIES,
   bidDesignRejection,
+  validateBid,
   bidEstimate,
   blocGeneration,
   blocOfFaction,
@@ -618,6 +619,7 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
   )
 
   for (const order of state.market.openOrders) {
+    if (!validateBid(state, state, { orderId: order.id }).ok) continue // P185 (11O): huvudleverantörsregeln — inga bud där huset saknar ett monteringsverk (eller ett som blir klart i tid)
     const grade = chooseGrade(state, order)
     // P129: standardbudet, och ett bud per konstruktion som går att bjuda på — den med störst förväntad vinst vinner.
     const options: { designId: string | undefined; kit: boolean }[] = [{ designId: undefined, kit: false }]

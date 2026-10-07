@@ -6,6 +6,8 @@ import { CUSTOMISE_TERMS, KIT_UNIT_COST_FACTOR, bidDesignRejection, customiseBid
 import { round } from '../../money.js'
 import { counterBidTerm, effectiveRivalReputation, firstInPlaceBidTerm } from '../../race.js'
 import { isBidLocked } from '../../research.js'
+import { leadSupplierActive } from '../../leadSupplier.js'
+import { validateBid } from '../../validateAction.js'
 import { advanceAmount } from '../advance.js'
 import { rivalLoadMarkup, routeCostFactor } from '../../outsourcing.js'
 import { integrityBidTerm, isSuspendedFrom, recordTrace } from '../../traces.js'
@@ -141,6 +143,19 @@ export const bidding: ResolveStep = (ctx) => {
           actorIsPlayer: true,
           subjectId: order.buyerId,
         })
+      } else if (leadSupplierActive() && !validateBid(draft, draft, playerBid).ok) {
+        // P185 (11O/11P): huvudleverantörsregeln — ett bud i en kategori kräver ett monteringsverk i den. Skälet i klartext kommer ur validateBid, samma som budmappen visar.
+        const lock = validateBid(draft, draft, playerBid) as { ok: false; reason: string }
+        rejected.push({ action: playerBid, reason: lock.reason })
+        emit({
+          severity: 'ticker',
+          scope: 'market',
+          headline: `BID ON ${order.id} DISQUALIFIED: ${lock.reason.toUpperCase()}`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: true,
+          subjectId: order.buyerId,
+        })
       } else if (isBidLocked(draft.house, product.category, draft.meta.turn)) {
         // P108 (ETAPP9 §4.5): ett krasprogram i kategorin förra turen låser husets bud i den här.
         rejected.push({ action: playerBid, reason: 'crash programme: no bids in this category this quarter' })
@@ -206,6 +221,8 @@ export const bidding: ResolveStep = (ctx) => {
       // Avsnitt 2.5: en saboterad rival "lägger inga bud" — hoppas över helt,
       // ingen ticker (de deltar inte, snarare än att bli diskvalificerade).
       if (rival.sabotagedUntilTurn !== null && draft.meta.turn < rival.sabotagedUntilTurn) continue
+      // P185 (11O/11L): huvudleverantörsregeln gäller rivalerna genom kapacitetstalet — en fullbelagd rival bjuder inte utanför sin specialisering (i den bjuder den, dyrare).
+      if (leadSupplierActive() && rival.specialisation !== product.category && rival.contracts.filter((c) => c.status === 'active').length >= BALANCE.rivalCapacityContracts) continue
 
       const baseRivalBid = computeRivalBid(rng, rival, product, order.referencePrice)
       // P172 (11L): en rival som redan bär sin kapacitet i aktiva kontrakt är fullbelagd och bjuder dyrare. Ett enda tal per rival; ingen ny slump.

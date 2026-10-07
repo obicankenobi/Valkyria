@@ -9,6 +9,7 @@ import { production } from '../src/resolve/steps/production.js'
 import { createRng } from '../src/rng.js'
 import { computeUnitCostNow, getProduct } from '../src/pricing.js'
 import { OUTSOURCE_SHARES, canBuildHere, outsourceTarget, ownRemaining, rivalLoadMarkup, runSubcontractors, subcontractorRivalId } from '../src/outsourcing.js'
+import { subcontractCostFactorFor } from '../src/leadSupplier.js'
 import { validateStandingOrderChange } from '../src/standingOrders.js'
 import { allLines } from '../src/works.js'
 import type { ResolveContext } from '../src/resolve/index.js'
@@ -123,7 +124,8 @@ describe('underleverantörens tillverkning', () => {
     const shipment = s.market.shipments.find((x) => x.contractId === 'c')!
     expect(shipment.units).toBe(Math.min(30, rate))
     expect(s.market.contracts[0]!.outsource!.built).toBe(shipment.units)
-    const unitCost = computeUnitCostNow(product, 'A', s.market.commodities) * B.subcontractCostFactor
+    // P185: i den mjuka spärren kostar en utlagd order huset saknar verk för ett påslag till (subcontractCostFactorFor); utan regel är det bara subcontractCostFactor.
+    const unitCost = computeUnitCostNow(product, 'A', s.market.commodities) * subcontractCostFactorFor(s.house, product)
     expect(t0 - s.house.treasury).toBe(Math.round(unitCost * shipment.units))
     expect(s.house.reputation.quality).toBe(q0 - B.subcontractQualityPenalty)
     expect(s.ledger.at(-1)!.expenses.production).toBe(Math.round(unitCost * shipment.units))

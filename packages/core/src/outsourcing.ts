@@ -7,6 +7,7 @@ import { designUnitCostFactor } from './design.js'
 import { recordExpense } from './ledger.js'
 import { round } from './money.js'
 import { computeUnitCostNow, getProduct } from './pricing.js'
+import { hasWorksFor, leadSupplierActive, maxOutsourcePct, subcontractCostFactorFor } from './leadSupplier.js'
 import { blocOfFaction } from './race.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { ActionValidation, Contract, FactionId, GameState, House, Money, Product, RivalHouse, Shipment, StandingOrderChange, TechCategory } from './types.js'
@@ -63,7 +64,7 @@ export function canBuildHere(house: Pick<House, 'works'>, product: Pick<Product,
 // Kostnadsfaktorn för vägen en order skulle gå: husets egna linjer (1) eller en underleverantör (subcontractCostFactor) när inget driftsatt verk kan bygga kategorin.
 // Budmappen och kontraktets styckkostnad vid signering räknar med den — du känner din egen verkstad, och vet att en främmande kategori kostar mer att få gjord.
 export function routeCostFactor(house: Pick<House, 'works'>, product: Pick<Product, 'category'>): number {
-  return canBuildHere(house, product) ? 1 : BALANCE.subcontractCostFactor
+  return canBuildHere(house, product) ? 1 : subcontractCostFactorFor(house, product) // P185: den mjuka spärren lägger ett påslag på en order huset saknar verk för
 }
 
 // Får en linje (i verket den bor i) ta ett kontrakt i den här kategorin?
@@ -78,6 +79,9 @@ export function validateOutsourceChange(draft: Readonly<GameState>, change: Extr
   if (change.op === 'CANCEL') return contract.outsource && contract.outsource.sharePct > 0 ? { ok: true } : { ok: false, reason: 'that contract is not outsourced' }
   if (!isActiveContract(contract)) return { ok: false, reason: 'that contract needs no more production' }
   if (!OUTSOURCE_SHARES.includes(change.sharePct)) return { ok: false, reason: `outsource ${OUTSOURCE_SHARES.join(', ')} percent` }
+  // P185 (11O): med ett verk i kategorin får högst hälften av kontraktet läggas ut.
+  const cap = maxOutsourcePct(draft.house, getProduct(contract.productId))
+  if (change.sharePct > cap) return { ok: false, reason: `At most ${cap} percent of a contract may be outsourced` }
   const produced = contract.unitsDelivered + unitsInTransit(draft.market.shipments, contract.id)
   if (Math.ceil((contract.quantity * change.sharePct) / 100) <= (contract.outsource?.built ?? 0)) return { ok: false, reason: 'the subcontractor has already built that much' }
   if (produced >= contract.quantity) return { ok: false, reason: 'that contract needs no more production' }
@@ -117,6 +121,8 @@ export function autoOutsource(ctx: ResolveContext): void {
     if (!isActiveContract(contract) || contract.outsource) continue
     const product = getProduct(contract.productId)
     if (canBuildHere(draft.house, product)) continue
+    // P185: ett verk i kategorin som blir klart inom ett kvartal — kontraktet väntar på det i stället för att läggas ut helt.
+    if (leadSupplierActive() && hasWorksFor(draft.house, product.category)) continue
     contract.outsource = { sharePct: 100, auto: true, sinceTurn: draft.meta.turn, built: 0 }
     emit({
       severity: 'report',
@@ -176,7 +182,7 @@ export function runSubcontractors(ctx: ResolveContext): void {
       continue
     }
     const planned = Math.min(remaining, subcontractRate(product))
-    const unitCost = computeUnitCostNow(product, contract.grade, draft.market.commodities) * BALANCE.subcontractCostFactor * designUnitCostFactor(house, contract.designId)
+    const unitCost = computeUnitCostNow(product, contract.grade, draft.market.commodities) * subcontractCostFactorFor(house, product) * designUnitCostFactor(house, contract.designId)
     const affordable = unitCost > 0 ? Math.floor(Math.max(0, house.treasury) / unitCost) : planned
     const units = Math.max(0, Math.min(planned, affordable))
     if (units <= 0) continue

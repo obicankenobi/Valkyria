@@ -18,6 +18,7 @@ import {
   projectedQuarter,
   totalFixedCosts,
   validateAction,
+  validateBid,
   validateStandingOrderChange,
 } from '@seventh-front/core'
 import type { Bid, Contract, GameState, MaintenanceLevel, PlayerAction, StandingOrderChange, TechCategory } from '@seventh-front/core'
@@ -132,6 +133,21 @@ function outsourcedCategory(state: GameState): TechCategory | null {
   return best
 }
 
+// P185 (11O): kategorin där flest ordrar går huset förbi just nu — öppna ordrar som huvudleverantörsregeln låser (inget monteringsverk i kategorin) och som tekniknivån räcker till. Störst sammanlagt
+// referenspris vinner. null när inget är låst (regeln av, eller huset har verk överallt där det finns ordrar).
+function passedByCategory(state: GameState): TechCategory | null {
+  const value = new Map<TechCategory, number>()
+  for (const order of state.market.openOrders) {
+    if (validateBid(state, state, { orderId: order.id }).ok) continue
+    const product = getProduct(order.productId)
+    if (state.house.techLevel[product.category] < product.techRequired) continue
+    value.set(product.category, (value.get(product.category) ?? 0) + order.referencePrice)
+  }
+  let best: TechCategory | null = null
+  for (const [category, v] of value) if (best === null || v > (value.get(best) ?? 0)) best = category
+  return best
+}
+
 function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[] {
   if (opts.style === 'static') return []
   const house = state.house
@@ -143,7 +159,7 @@ function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[
 
   // 0) Steady och eager: ett nytt monteringsverk där huset just nu betalar en underleverantör — det är vad en spelare som läser tavlan gör.
   if (opts.categories === 'start' && !opts.expandAlways) {
-    const category = outsourcedCategory(state)
+    const category = passedByCategory(state) ?? outsourcedCategory(state)
     if (category) {
       const change: StandingOrderChange = { kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category }
       if (afford(change)) return [change]

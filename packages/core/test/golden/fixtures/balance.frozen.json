@@ -698,5 +698,11 @@
   "backChannelGainScaleMax": 2.5,
   "assassinateSpendHalf": 500000,
   "assassinateMaxReductionPct": 60,
-  "investigationActionPointPenalty": 1
+  "investigationActionPointPenalty": 1,
+  "_p185_note": "ETAPP11_FORSLAG.md §9b, beslut 11O/11P (P185, regel 1): huvudleverantörsregeln. leadSupplierMode: off (som före P185 — bara för mätning och attribuering), hard (ett bud i en kategori kräver ett monteringsverk i den) eller soft (utan verk får huset ta små ordrar, helt utlagda, till sämre marginal). Ett verk räknas om det är i drift, eller under byggnad med högst leadSupplierBuildQuartersLeft kvartal kvar (verk utomlands räknas); en upphandling räknar ett pågående bygge hur långt det än har kvar. Högst leadSupplierMaxOutsourcePct procent av ett kontrakts enheter får läggas ut när huset har ett verk i kategorin. Mjuk spärr: en liten order är högst leadSupplierSoftMaxLineTurns × produktens unitsPerLineTurn enheter, och dess utläggning kostar ytterligare leadSupplierSoftCostFactor × subcontractCostFactor per enhet. ALLA PROVISORISKA tills P186.",
+  "leadSupplierMode": "off",
+  "leadSupplierMaxOutsourcePct": 50,
+  "leadSupplierBuildQuartersLeft": 1,
+  "leadSupplierSoftMaxLineTurns": 1,
+  "leadSupplierSoftCostFactor": 1.15
 }

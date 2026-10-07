@@ -126,7 +126,7 @@ describe('bygge', () => {
   it('den breda varianten bygger ett monteringsverk i en saknad kategori så fort en order visar den och kassan tål det, trångt eller inte', () => {
     const state = fresh()
     state.house.treasury = 20_000_000
-    state.market.openOrders = [order(state, { productId: 'm3_apc' })]
+    state.market.openOrders = [order(state, { productId: 'm3_apc', quantity: 10 })] // liten: den mjuka spärren låser den inte, så steady-varianten har ingen anledning att bygga
     state.house.techLevel.armour = 9
     const broad = { ...DEFAULT_WORKS, categories: 'broad' as const }
     expect(worksStandingOrders(state, broad)).toContainEqual({ kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category: 'armour' })
@@ -195,5 +195,32 @@ describe('varianterna och kolumnerna', () => {
     const builds = Array.from({ length: 6 }, (_, i) => runGame('indochina-slice', `cols-builder-${i}`, 'human-builder', POLICIES['human-builder']!))
     expect(builds.some((g) => g.worksExpansions > 0 || g.worksBuilt > 0)).toBe(true)
     for (const g of builds) expect(g.worksBuiltKinds === '' || /^[a-z]+:\d+(\|[a-z]+:\d+)*$/.test(g.worksBuiltKinds)).toBe(true)
+  })
+})
+
+describe('huvudleverantörsregeln (P185, 11O)', () => {
+  it('human lägger inget bud där huset saknar ett monteringsverk och ordern är för stor för den mjuka spärren', () => {
+    const state = fresh('lead-bot-1')
+    const product = getProduct('m3_apc')
+    const big = order(state, { id: 'order-big', productId: 'm3_apc', quantity: product.unitsPerLineTurn * 10, referencePrice: 8_000_000, trueBudget: 12_000_000 })
+    const mine = order(state, { id: 'order-gun' })
+    state.market.openOrders = [big, mine]
+    state.house.techLevel.armour = 9
+    const bids = human(state).bids
+    expect(bids.some((b) => b.orderId === 'order-big')).toBe(false)
+  })
+
+  it('en bot bygger ett monteringsverk där flest ordrar går den förbi (störst sammanlagt referenspris), inte där det redan finns ett verk', () => {
+    const state = fresh('lead-bot-2')
+    state.house.treasury = 40_000_000
+    state.house.techLevel.armour = 9
+    state.house.techLevel.naval = 9
+    const product = getProduct('m3_apc')
+    const big = order(state, { id: 'order-apc', productId: 'm3_apc', quantity: product.unitsPerLineTurn * 10, referencePrice: 9_000_000, trueBudget: 12_000_000 })
+    const gun = order(state, { id: 'order-gun2', productId: '105mm_field_gun', quantity: 400, referencePrice: 20_000_000, trueBudget: 30_000_000 })
+    state.market.openOrders = [big, gun]
+    const orders = worksStandingOrders(state, DEFAULT_WORKS)
+    const build = orders.find((o) => o.kind === 'WORKS' && o.op === 'BUILD')
+    expect(build).toMatchObject({ kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category: 'armour' })
   })
 })

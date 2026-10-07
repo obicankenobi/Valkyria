@@ -47,6 +47,7 @@ function makeOrder(state: GameState): Order {
 describe('BidForm — P21 klart-når: bruttomarginalen stämmer mot price − unitCost × quantity', () => {
   it('visar en bruttomarginal (£ och %) som räknats mot samma yourUnitCost och quantity som resten av formuläret', () => {
     const state = createInitialState('indochina-slice', 'bidform-margin-seed')
+    state.house.works[0]!.category = null // P185: ett verk som bygger allt — testet gäller bruttomarginalen, inte huvudleverantörsregeln (den mjuka spärrens utläggningspåslag ger ett bråktal)
     const order = makeOrder(state)
     const estimate = bidEstimate(state, order, 'A')
 
@@ -79,6 +80,7 @@ describe('BidForm — P21 klart-når: bruttomarginalen stämmer mot price − un
     // supplyIndexMaxStep-fynd, dokumenterat i ANDRINGSLOGG.md) — kvar att testa är
     // att golvet visas som 0 % och fortfarande får varningsstilen.
     const state = createInitialState('indochina-slice', 'bidform-margin-floor-seed')
+    state.house.works[0]!.category = null // P185: ett verk som bygger allt — testet gäller bruttomarginalen, inte huvudleverantörsregeln (den mjuka spärrens utläggningspåslag ger ett bråktal)
     const order = makeOrder(state)
     const estimate = bidEstimate(state, order, 'A')
 

@@ -14,6 +14,7 @@ import { bindDesignToGrantBloc } from './exportRules.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { categoryReputation } from './bidTerms.js'
 import { designBaseProduct, designBenchmark, designTrueValues, frontEnvironments, revealFlaw } from './design.js'
+import { programmeRejection } from './leadSupplier.js'
 import { recordExpense, recordIncome } from './ledger.js'
 import { round } from './money.js'
 import { findOfficial } from './officials.js'
@@ -275,6 +276,8 @@ export function validateProgrammeChange(_state: Readonly<GameState>, draft: Game
       if (!programmeEligible(draft.house.homeState, blocOfFaction(draft, programme.buyerId))) return fail('your home state bars you from this ministry')
       if (entered) return fail('already entered')
       if ((draft.house.suspendedFrom?.[programme.buyerId] ?? 0) > draft.meta.turn) return fail('suspended from this buyer') // P125
+      const lead = programmeRejection(draft.house, programme.category) // P185 (11O): ett verk i kategorin eller ett pågående bygge
+      if (lead) return fail(lead)
       return { ok: true }
     }
     case 'WITHDRAW': {

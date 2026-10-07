@@ -360,6 +360,7 @@ describe('bidding — P28: techspärr (avsnitt 3.3)', () => {
   it('(P28 klart-når) m3_apc/ch3_transport_helicopter/coastal_patrol_boat/tac_radio_suite är alla biddbara vid scenariots start med den höjda techLevelDefault', () => {
     for (const productId of ['m3_apc', 'ch3_transport_helicopter', 'coastal_patrol_boat', 'tac_radio_suite'] as const) {
       const state = createInitialState('indochina-slice', 'seed')
+      state.house.works[0]!.category = null // P185: ett verk utan kategori bygger allt — testet gäller tekniknivån, inte huvudleverantörsregeln
       const order = dueOrder({
         id: `order-${productId}`,
         productId,

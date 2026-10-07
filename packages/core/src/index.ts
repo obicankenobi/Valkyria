@@ -77,7 +77,10 @@ export { officialId, findOfficial } from './officials.js'
 // enda väg att pröva ett kort mot exakt samma regler som resolveTurn faktiskt
 // använder (P79). ActionValidation/ActionPreview exporteras redan via
 // `export * from './types.js'` ovan.
-export { validateAction } from './validateAction.js'
+export { validateAction, validateBid } from './validateAction.js'
+// P185 (11O/11P): huvudleverantörsregeln — frågorna budmappen, kartan, This Quarter och botarna ställer.
+export { hasWorksFor, leadSupplierActive, leadSupplierMode, leadSupplierRejection, maxOutsourcePct, programmeRejection, softSmallOrderUnits, subcontractCostFactorFor } from './leadSupplier.js'
+export type { LeadSupplierMode } from './leadSupplier.js'
 // P127: budmappen filtrerar konstruktionerna med samma prövning som bidding.ts.
 export { CUSTOMISE_TERMS, bidDesignRejection } from './design.js'
 export { DESIGNERS, DESIGNER_TRAIT_TEXT, designerEmployer, hireCostFor, hiredDesigner } from './designer.js'
