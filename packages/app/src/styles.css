@@ -768,6 +768,7 @@ td.is-key {
 .news-more {
   margin-top: 4px;
   font-size: 12px;
+  min-height: 44px; /* regel 11: träffytor minst 44×44 px (knappen syns bara när en avdelning har fler än fem rader) */
 }
 
 /* wire-anchor — P80: var en händelse hör hemma (wireAnchor/anchorLabel),
