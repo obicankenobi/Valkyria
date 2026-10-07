@@ -502,10 +502,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // hashar bit-identiska med P186:s (157045d1be5168, 17c700bf42b476, 1e55408c1ee2a2) — verifierat, inte antaget. Hållet flyttar `materielNeed` för de kategorier en köpare inte kan beställa (nlf/laos pansar,
   // flyg, marin, elektronik; rvn flyg) och bär en rubrik; ingen annan regel är ändrad. `balance.json`/`balance.frozen.json` fick ett tal och en anteckning. De nya hasharna: passive bccb17349d041,
   // aggressive 1f7ea98fa37c1e, balanced 1cca601750ef5c.
+  //
+  // Omfryst i P141 steg 2a (regel, `blocTechLevelStep` 0 → 1 med omkalibrering: `militaryBudgetQuarterlyShare` 0,08 → 0,24 och `boardTarget.threshold` 3,4 → 9). Attribution: med de tre gamla värdena tillbaka är alla tre
+  // hashar bit-identiska med steg 1:s (bccb17349d041, 1f7ea98fa37c1e, 1cca601750ef5c) — verifierat, inte antaget. Var och en av de tre ändringarna flyttar alla tre hashar för sig (tekniknivån släpper fram nya
+  // kategorier; budgetandelen ändrar vilka ordrar som hinner utlysas; tröskeln ändrar styrelsens utfall). `balance.json`/`balance.frozen.json` fick en anteckning (`_p141_2a_note`). De nya hasharna: passive
+  // 166faa53ef813e, aggressive 9c5ef5451d80b, balanced 7da5dc2999b52.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'bccb17349d041' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1f7ea98fa37c1e' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1cca601750ef5c' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '166faa53ef813e' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '9c5ef5451d80b' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '7da5dc2999b52' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
