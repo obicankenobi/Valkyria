@@ -524,10 +524,13 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // (`blocGenerationSchedule`: infanteri parat tur 14, artilleri väst 8/16 och öst 4/16, de övriga parade) och `bothSidesDoomsday` 3 → 10. Attribution (dist ombyggd): `bothSidesDoomsday` tillbaka på 3 ger
   // samma passive/aggressive-hash som med 10 (1bf6e17b97b37d, 7127c6f45e90d) — schemat/parningen flyttar dem; `balanced` (som beväpnar båda sidor) flyttas av båda (53e36034652e0 med 3, 4e08bd3ebd90b med 10).
   // De nya hasharna: passive 1bf6e17b97b37d, aggressive 7127c6f45e90d, balanced 4e08bd3ebd90b.
+  //
+  // Omfryst i P143 (regel, fuskets risk: `traceBaseChancePct` 0,4 → 2 och `traceAgeChancePerTurn` 0,08 → 0,3). Attribution (dist ombyggd): med de gamla talen tillbaka är alla tre hashar bit-identiska med P142:s — verifierat, inte antaget.
+  // Bara `balanced` flyttas (dess FAVOUR-spår kommer nu fram); passive och aggressive lämnar inga spår. De nya hasharna: passive 1bf6e17b97b37d, aggressive 7127c6f45e90d, balanced 157f3bbd4a5fbf.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1bf6e17b97b37d' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '7127c6f45e90d' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '4e08bd3ebd90b' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '157f3bbd4a5fbf' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
