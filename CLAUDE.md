@@ -887,7 +887,7 @@ tolka rubriker). **Fynd:** `WITHDRAW` är i praktiken meningslös (en vilande st
 kan inte öppnas igen); följderna av ett misslyckat LEAK/SABOTAGE/TURN har `causeId: null`. Se `docs/ANDRINGSLOGG.md`.
 **P165–P167 BYGGDA 2026-10-06/07.** P165: ett tryck på kartan väljer föremålet och ger ett informationskort (`mapInfo.ts`,
 `MapInfoCard.tsx`); alla sex länder tryckbara. P166: fem kartlager med tal (`mapLayers.ts`), WAR/CEASEFIRE/QUIET vid
-frontlinjen och en egen NLF-markering. **P158 (kvartalsuppspelning på kartan) är ännu inte körd.** P167 (regel): stationens
+frontlinjen och en egen NLF-markering. **P158 (kvartalsuppspelning på kartan) BYGGD 2026-10-07** — ring vid händelsens ankare och panelen som flik i kartans nederkant (`replayFocus.ts`, `TheatreMap.tsx`); `MovementArrow` mot riktiga data och historiska händelser ännu inte gjorda, golden orörd. P167 (regel): stationens
 täckning växer med djupet (`stationCoverage.ts`, militär 2/industri 3/kabinett 4, provisoriska) och en vilande station kan
 öppnas igen med nya verbet `REOPEN`; golden-hasharna oförändrade, bara `balance.frozen.json` omfryst. **Fynd:** `industry`-
 täckning har ingen egen effekt (samma som `military`). Se `docs/ANDRINGSLOGG.md`.

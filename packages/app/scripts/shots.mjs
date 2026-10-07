@@ -462,12 +462,19 @@ const APP_SCREENS = [
     name: 'quarter-replay-map',
     path: '/',
     async afterGoto(page) {
+      // Sidan delas mellan skärmarna och en tidigare skärm kan ha satt reducerad rörelse,
+      // vilket gör uppspelningen omedelbar (ingen ring att fotografera).
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
       await startGame(page)
       for (let quarter = 0; quarter < 10; quarter++) {
         await page.getByTestId('end-quarter-button').click()
         try {
           await page.getByTestId('map-replay-focus').waitFor({ state: 'visible', timeout: 4000 })
-          return
+          // Ett kvartal med en enda rubrik är klart innan skärmdumpen tas — kräv att
+          // uppspelningen fortfarande pågår en stund efter att ringen dykt upp.
+          await page.waitForTimeout(500)
+          if (await page.getByTestId('map-replay-focus').isVisible()) return
+          throw new Error('replay already finished')
         } catch {
           const skip = page.getByTestId('replay-skip')
           if (await skip.isVisible().catch(() => false)) await skip.click()
@@ -1157,6 +1164,7 @@ async function main() {
       const page = await context.newPage()
 
       for (const screen of APP_SCREENS) {
+        if (process.env.SHOTS_ONLY && !process.env.SHOTS_ONLY.split(',').includes(screen.name)) continue
         await page.goto(`http://localhost:${APP_PORT}${screen.path}`)
         if (screen.afterGoto) await screen.afterGoto(page)
         await page.waitForTimeout(300)

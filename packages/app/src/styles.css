@@ -6075,6 +6075,29 @@ summary:focus-visible,
   border-color: var(--ink-dim);
   box-shadow: var(--shadow);
 }
+/* Kartläget: en smal flik i nederkanten så att händelsens ring på kartan syns ovanför. */
+.modal-overlay.is-map-replay .replay-panel {
+  max-height: 26dvh;
+  padding: 8px 12px;
+}
+.modal-overlay.is-map-replay .replay-head .view-title {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  margin: 0;
+}
+.modal-overlay.is-map-replay .replay-list {
+  gap: 4px;
+}
+@media (min-width: 1024px) {
+  .modal-overlay.is-map-replay .replay-panel {
+    max-height: 40dvh;
+    padding: 16px;
+  }
+  .modal-overlay.is-map-replay .replay-head .view-title {
+    font-size: inherit;
+    letter-spacing: inherit;
+  }
+}
 @media (min-width: 1024px) {
   .modal-overlay.is-map-replay {
     padding-bottom: 24px;
