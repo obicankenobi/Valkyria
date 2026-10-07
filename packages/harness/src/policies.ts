@@ -862,7 +862,11 @@ function designStandingOrders(state: GameState, opts: HumanOptions): StandingOrd
   if (Object.keys(testing).length === 0) {
     const env = frontEnvironments('front-1')[0] ?? 'jungle'
     const untested = (house.designs ?? []).find((d) => d.status === 'active' && d.uncertainty > 0 && d.testedIn.length === 0)
-    if (untested) out.push({ kind: 'TESTING', op: 'SET', designId: untested.id, environment: env })
+    if (untested) {
+      // P176: provning kräver en provplats (och klimatkammare för annat än grundmiljön) — humans enda anpassning till anläggningarna tills P182.
+      const change: StandingOrderChange = { kind: 'TESTING', op: 'SET', designId: untested.id, environment: env }
+      if (validateStandingOrderChange(state, state, change).ok) out.push(change)
+    }
   }
   return out
 }

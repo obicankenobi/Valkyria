@@ -136,6 +136,10 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (facility.kind === 'assembly' && house.works.filter((w) => w.kind === 'assembly').length <= 1) return fail('the house needs at least one assembly works')
       if (facility.lines.some((l) => l.assignedContractId !== null)) return fail('a line in it is working on a contract')
       if (facility.kind === 'depot' && (house.stock?.length ?? 0) > 0) return fail('the depot still holds stock')
+      // P176: ett labb, ritkontor eller en provplats med pågående arbete kan inte avvecklas.
+      if (facility.kind === 'laboratory' && house.rnd.some((p) => p.category === facility.category && !p.design)) return fail('the laboratory is running a project')
+      if (facility.kind === 'design' && house.rnd.some((p) => p.design)) return fail('the design office is running a project')
+      if (facility.kind === 'proving' && Object.keys(house.standingOrders?.testing ?? {}).length > 0) return fail('the proving ground is running a test')
       return { ok: true }
     }
     case 'BUY_LAND': {

@@ -5,6 +5,7 @@
 // test/golden/golden.test.ts (oförändrat, se ANDRINGSLOGG.md) — den här filen
 // täcker den andra halvan: EN test per avvisningsorsak, som visar att
 // validateAction() och resolveTurn() ger EXAKT samma svar för samma indata.
+import { withKnowledgeWorks } from './helpers/facilities.js'
 import { describe, expect, it } from 'vitest'
 import { validateAction } from '../src/validateAction.js'
 import { resolveTurn } from '../src/resolve/index.js'
@@ -370,7 +371,7 @@ describe('validateAction — CRISIS och handlingstaket', () => {
   })
 
   it('"no executive actions remaining" är INTE en validateAction-kontroll (könskapacitet, inte handlingens giltighet) — men resolveTurn avvisar ändå en handling utöver taket', () => {
-    const state = createInitialState('indochina-slice', 'va-seed')
+    const state = withKnowledgeWorks(createInitialState('indochina-slice', 'va-seed'))
     state.house.actionPoints = 1
     const first: PlayerAction = { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'infantry' } }
     const second: PlayerAction = { type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'artillery' } }

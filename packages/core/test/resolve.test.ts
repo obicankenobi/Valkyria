@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { withKnowledgeWorks } from './helpers/facilities.js'
 import { resolveTurn } from '../src/resolve/index.js'
 import { createInitialState } from '../src/state.js'
 import { bidEstimate } from '../src/queries.js'
@@ -614,7 +615,7 @@ describe('resolveTurn — P17: executive actions (INTERNAL)', () => {
   })
 
   it('(P17 klart-när) ett R&D-projekt som löper klart höjer techLevel i rätt kategori, och rndOverhead debiteras varje tur under tiden', () => {
-    let state: GameState = createInitialState('indochina-slice', 'p17-rnd-seed')
+    let state: GameState = withKnowledgeWorks(createInitialState('indochina-slice', 'p17-rnd-seed'))
     state.house.treasury = 10000000
     const techBefore = state.house.techLevel.naval
     const EMPTY: TurnSubmission = { standingOrders: [], bids: [], actions: [] }

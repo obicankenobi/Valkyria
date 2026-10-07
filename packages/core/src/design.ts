@@ -4,6 +4,7 @@
 //
 // EN källa för budtermen (skyddsräcke 3): bidding.ts, bidEstimate och playerWinCurve (via WinBandInputs) läser alla
 // designBidTerm, och den läggs EFTER computeScore (skyddsräcke 1). Ett bud utan konstruktion får ingen term.
+import { designBlockedReason, testingBlockedReason } from './knowledge.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import environmentsData from './data/environments.json' with { type: 'json' }
 import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
@@ -384,6 +385,8 @@ export function validateDesignStart(
     return 'tech level too low for a design in that category'
   }
   if (house.rnd.some((p) => p.category === change.category && p.design)) return 'a design project is already running in that category'
+  const deskReason = designBlockedReason(house) // P176: ritkontor och ledigt bord
+  if (deskReason) return deskReason
   if (change.skunk && change.upgradeOf !== undefined && change.upgradeOf !== null) return 'a special project cannot be an upgrade'
   if (change.upgradeOf !== undefined && change.upgradeOf !== null) {
     const pred = house.designs?.find((d) => d.id === change.upgradeOf)
@@ -443,7 +446,9 @@ export function validateTestingChange(
   if (!design) return 'unknown design'
   if (!(DESIGN_ENVIRONMENTS as readonly string[]).includes(change.environment)) return 'unknown test environment'
   if (design.status !== 'active') return 'design is withdrawn'
-  return null
+  // P176: provplatsen — i drift, med plats för en provning till (en provning i samma konstruktion byts, den räknas inte), och klimatkammare för annat än grundmiljön.
+  const others = Object.keys(house.standingOrders?.testing ?? {}).filter((id) => id !== change.designId).length
+  return testingBlockedReason(house, change.environment, others)
 }
 
 // Avslöjar en konstruktions dolda brist (provning i rätt miljö nu, en front med rätt miljö i P113). Returnerar sant om

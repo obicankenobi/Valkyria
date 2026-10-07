@@ -40,6 +40,8 @@ function setup(designs: Design[], tweak: (state: GameState) => void = () => {}, 
   const state = createInitialState('indochina-slice', 'type-seed')
   state.house.treasury = 20_000_000
   state.house.designs = designs
+  // P176: provning kräver en provplats (nivå 2 = klimatkammare för alla miljöer).
+  state.house.works.push({ id: 'works-proving', kind: 'proving', level: 2, category: null, condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: 0 })
   tweak(state)
   const onSet = vi.fn<(change: StandingOrderChange) => void>()
   const onAdd = vi.fn<(action: PlayerAction) => void>()

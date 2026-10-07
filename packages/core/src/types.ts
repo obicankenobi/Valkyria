@@ -1348,6 +1348,8 @@ export interface StationStandingOrder {
 export interface ResearchTrackOrder {
   pace: ResearchPace
   sinceTurn: number
+  // P176: skälet till att spåret just nu inte kan starta ett projekt (inget labb, labbet på sitt tak eller fullt) — rubriken skrivs en gång när skälet ändras.
+  blocked?: string
   // P117 (§6.6): spåret riktar varje nytt projekt mot ett studerat fiendesystem.
   counterTo?: string
 }

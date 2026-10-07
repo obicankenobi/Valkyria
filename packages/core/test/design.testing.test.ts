@@ -4,6 +4,7 @@
 // smalnar av osäkerheten) och miljöbrister: en brist hör till en miljö (monsunfukt, djungel, minor, slitage) och
 // syns inte vid provning i fel miljö. Fronter har miljöer (data/environments.json); bristen visar sig på en front
 // med rätt miljö (P113) eller vid provning i rätt miljö (här).
+import { withKnowledgeWorks } from './helpers/facilities.js'
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
 import environments from '../src/data/environments.json'
@@ -46,7 +47,7 @@ function design(over: Partial<Design> = {}): Design {
 }
 
 function fresh(d: Design = design()): GameState {
-  const state = createInitialState('indochina-slice', 'testing-seed')
+  const state = withKnowledgeWorks(createInitialState('indochina-slice', 'testing-seed'))
   state.house.treasury = 50_000_000
   state.house.designs = [d]
   return state

@@ -5,6 +5,7 @@
 // blir ett krasprogram: halverad tid, dubbel totalkostnad, kostar en handling och huset kan inte bjuda i
 // kategorin nästa kvartal. staff.chiefEngineer får sin första läsare: ett projekt blir en tur kortare över en
 // tröskel.
+import { withKnowledgeWorks } from './helpers/facilities.js'
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
 import { advanceRndQueue } from '../src/resolve/upkeep.js'
@@ -35,7 +36,7 @@ const SET = (category: 'naval' | 'artillery', pace: 'low' | 'normal' | 'high'): 
 const CANCEL = (category: 'naval' | 'artillery'): StandingOrderChange => ({ kind: 'RESEARCH', op: 'CANCEL', category })
 
 function fresh(): GameState {
-  const state = createInitialState('indochina-slice', 'research-seed')
+  const state = withKnowledgeWorks(createInitialState('indochina-slice', 'research-seed'))
   state.house.treasury = 50_000_000
   return state
 }

@@ -5,6 +5,7 @@
 //
 // Egenskaperna läses av `newDesignProject` (snabb: −1 tur; sparsam: lägre kostnad) och `rollDesign` (noggrann: lägre bristrisk; ritar konstruktören
 // i sin egen inriktning ger det ett litet kvalitetstillägg). Anställningen i sig kostar `designerSalaryPerTurn` per tur och en engångssumma.
+import { designOffice } from './knowledge.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import designersData from './data/designers.json' with { type: 'json' }
 import { recordExpense } from './ledger.js'
@@ -55,6 +56,7 @@ export function hireCostFor(state: Pick<GameState, 'designerMarket'>, designerId
 export function validateDesignerChange(draft: Readonly<GameState>, change: Extract<StandingOrderChange, { kind: 'DESIGNER' }>): ActionValidation {
   if (change.op === 'RELEASE') return draft.house.designer ? { ok: true } : { ok: false, reason: 'no chief designer to release' }
   if (!DESIGNERS[change.designerId]) return { ok: false, reason: 'unknown designer' }
+  if (!designOffice(draft.house)) return { ok: false, reason: 'the chief designer needs a design office in operation' } // P176
   if (draft.house.designer) return { ok: false, reason: 'you already employ a chief designer' }
   if (designerEmployer(draft, change.designerId) === 'player') return { ok: false, reason: 'you already employ that designer' }
   if (draft.house.treasury < hireCostFor(draft, change.designerId)) return { ok: false, reason: 'cannot afford the signing fee' }

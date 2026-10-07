@@ -37,6 +37,7 @@
 // igenom hela test-sviten). Se test/validateAction.test.ts för både det
 // exakta fallet (flera TAKE_LOAN, REPAY-före-TAKE_LOAN) och en kommentar om
 // den kvarstående, medvetet accepterade avvikelsen.
+import { laboratoryFor, researchBlockedReason } from './knowledge.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { capturedSystem } from './capture.js'
 import { fieldTrialBatch } from './design.js'
@@ -135,6 +136,13 @@ export function validateAction(state: Readonly<GameState>, draft: Readonly<GameS
           // P108: ett krasprogram per kategori åt gången.
           if (draft.house.rnd.some((p) => p.category === (action.payload as { category: TechCategory }).category && p.crash && !p.design)) {
             return fail('crash programme already running for that category')
+          }
+          {
+            // P176: ett krasprogram startar ett nytt projekt (kräver labb med plats) eller omvandlar ett pågående (kräver bara labb i drift).
+            const category = (action.payload as { category: TechCategory }).category
+            const running = draft.house.rnd.some((p) => p.category === category && !p.design)
+            const reason = running ? (laboratoryFor(draft.house, category) ? null : `no laboratory in ${category}`) : researchBlockedReason(draft.house, category)
+            if (reason) return fail(reason)
           }
           return ok()
       }

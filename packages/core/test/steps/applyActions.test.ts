@@ -1,4 +1,5 @@
 import { assassinateReductionFactor, backChannelGain } from '../../src/spendCurves.js'
+import { withKnowledgeWorks } from '../helpers/facilities.js'
 import { describe, expect, it } from 'vitest'
 import { applyActions } from '../../src/resolve/steps/applyActions.js'
 import { endings } from '../../src/resolve/steps/endings.js'
@@ -301,7 +302,7 @@ describe('applyActions (isolerat steg, spec avsnitt 3.1, 5 "Ekonomi", ETAPP1_5_T
   })
 
   it('REPRIORITISE_RND: ett RndProject läggs i kön med turnsTotal = rndProjectTurns, en händelse emitteras', () => {
-    const state = createInitialState('indochina-slice', 'seed')
+    const state = withKnowledgeWorks(createInitialState('indochina-slice', 'seed'))
     expect(state.house.rnd).toEqual([])
 
     const { ctx, emitted } = makeCtx(state, [{ type: 'INTERNAL', op: 'REPRIORITISE_RND', payload: { category: 'aviation' } }])

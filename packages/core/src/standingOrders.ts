@@ -5,6 +5,7 @@
 // En ändring kostar INGEN handling (skyddsräcke 6), gäller från NÄSTA tur (sinceTurn = tur + 1) och
 // ligger kvar. Ett sparat parti från före P100 saknar House.standingOrders — allt här läser fältet
 // defensivt, så ett gammalt sparat parti är ett parti utan stående order.
+import { laboratoryFor } from './knowledge.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { round } from './money.js'
 import { recordExpense } from './ledger.js'
@@ -129,6 +130,7 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
         return house.standingOrders?.research?.[change.category] ? { ok: true } : fail('no research track for that category')
       }
       if (!(PACES as readonly string[]).includes(change.pace)) return fail('unknown research pace')
+      if (!laboratoryFor(house, change.category)) return fail(`no laboratory in ${change.category}`) // P176
       if (change.counterTo !== undefined) {
         // P117 (§6.6): ett spår kan riktas mot ett fiendesystem huset studerat med REVERSE_ENGINEER, i samma kategori.
         if ((house.studiedSystems?.[change.counterTo] ?? 0) <= 0) return fail('that enemy system has not been studied')

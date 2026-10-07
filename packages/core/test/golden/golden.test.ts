@@ -468,6 +468,10 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // P175 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): depån och tillverkning på lager lägger inga obligatoriska fält i sluttillståndet (House.stock och StandingOrders.stock är valfria och
   // utelämnas tills något byggts) och ingen golden-bot bygger en depå eller sätter en lagerorder, så ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P174:s (95f88c7e135b4, 41d6eaaa16f32, 1b534f3c6003a) —
   // verifierat, inte antaget. Bara balance.frozen.json följer med (nya rader: en anteckning och fyra tal).
+  //
+  // P176 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): labb, ritkontor och provplats sätter tak för forskning, konstruktion och provning (knowledge.ts). De tre scriptade partierna forskar i husets
+  // specialisering (som startlabbet täcker) och ritar/provar inget, så ALLA TRE HASHAR ÄR OFÖRÄNDRADE mot P174:s/P175:s (95f88c7e135b4, 41d6eaaa16f32, 1b534f3c6003a) — verifierat, inte antaget.
+  // Bara balance.frozen.json följer med (nya rader: en anteckning och sju tal).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '95f88c7e135b4' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '41d6eaaa16f32' },

@@ -5,6 +5,7 @@
 // konstruktion är en variant av en basprodukt (9B): ett bud kan bära designId på en order för basprodukten, och
 // termen läggs EFTER computeScore via en enda funktion (designBidTerm) som bidding.ts, bidEstimate och
 // playerWinCurve delar. Ett bud utan konstruktion beter sig exakt som förut. Dolda värden läcker inte.
+import { withKnowledgeWorks } from './helpers/facilities.js'
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
 import {
@@ -55,7 +56,7 @@ const START = (focus: DesignFocus, ambition: DesignAmbition, category: 'artiller
 })
 
 function fresh(): GameState {
-  const state = createInitialState('indochina-slice', 'design-seed')
+  const state = withKnowledgeWorks(createInitialState('indochina-slice', 'design-seed'))
   state.house.treasury = 50_000_000
   return state
 }

@@ -21,7 +21,8 @@ import { allLines } from '../../works.js'
 import { advanceConstruction, worksSpeedFactor } from '../../construction.js'
 import { advanceStock, buildToStock } from '../../stock.js'
 import { advanceWorkforce, isOnStrike, lineShift, workforceSpeedFactor } from '../../workforce.js'
-import { carryRunIn, runInCostFactor, runInRateFactor } from '../../runin.js'
+import { carryRunIn, runInCostFactor, runInRateFactor, runInScale } from '../../runin.js'
+import { isRobustDesign } from '../../knowledge.js'
 import { advanceCondition, conditionQualityPenalty, lineBreaksDown, plantSpeedFactor } from '../../maintenance.js'
 
 interface Balance {
@@ -32,6 +33,8 @@ interface Balance {
   overtimeUnitCostFactor: number
   overtimeBreakdownChancePct: number
   doubleShiftCapacityPct: number
+  robustRetoolTurnsSaved: number
+  robustRetoolCostFactor: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -59,7 +62,7 @@ export function computeLineThroughput(house: House, line: ProductionLine, produc
     lineEfficiency *
     worksSpeedFactor(house, line.id) *
     workforceSpeedFactor(house, line.id) *
-    runInRateFactor(line, product) *
+    runInRateFactor(line, product, runInScale(house, line)) *
     plantSpeedFactor(house, line.id)
   )
 }
@@ -183,7 +186,10 @@ export const production: ResolveStep = (ctx) => {
     // P27, avsnitt 3.2 + P171 (§4.5): en linje som BYTER uppsättning kostar tid och pengar — kort inom samma konstruktionsfamilj, längre för en ny konstruktion,
     // längst för en annan produkt. En helt ny linje (ingen uppsättning än) straffas inte, den startar bara upp.
     const change = setupChange(house, previousTooling.get(line.id) ?? null, contract)
-    const setup = setupCost(change)
+    const base = setupCost(change)
+    // P176 (§6, kopplingen till verken): en konstruktion ritad för enkel tillverkning ('robust') ställs om fortare och billigare.
+    const robust = base.turns > 0 && isRobustDesign(house, contract.designId)
+    const setup = robust ? { turns: Math.max(1, base.turns - BALANCE.robustRetoolTurnsSaved), cost: Math.round(base.cost * BALANCE.robustRetoolCostFactor) } : base
     carryRunIn(line, change) // P174: omställning nollställer inkörningen (samma familj behåller en del)
     line.tooling = { productId: contract.productId, designId: contract.designId ?? null }
 
@@ -261,7 +267,7 @@ export const production: ResolveStep = (ctx) => {
       computeUnitCostNow(product, line.grade, draft.market.commodities) *
       (overtime ? BALANCE.overtimeUnitCostFactor : 1) *
       designUnitCostFactor(house, contract.designId) *
-      runInCostFactor(line, product) // P174: inkörningen sänker styckkostnaden
+      runInCostFactor(line, product, runInScale(house, line)) // P174: inkörningen sänker styckkostnaden
     // affordableUnits räknas mot RÅ unitCostNow, inte mot kostnaden EFTER ett
     // BUY_FORWARD-innehav — en medveten förenkling (P51, avsnitt 4.5): ett
     // stort innehav sänker vad du FAKTISKT betalar, men relaxar inte hur

@@ -6,6 +6,7 @@
 // namngivet, studerat fiendesystem. Livscykel: en ny konstruktion har ett nyhetsvärde som avtar, rivalernas konstruktioner (9F)
 // kommer enligt schema och syns bara med underrättelse, och när en generation fasas ut förlorar äldre konstruktioner
 // behörighet automatiskt (spelaren pensionerar aldrig något för hand).
+import { withKnowledgeWorks } from './helpers/facilities.js'
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
 import { bidEstimate } from '../src/queries.js'
@@ -75,7 +76,7 @@ function design(over: Partial<Design> = {}): Design {
 }
 
 function fresh(d: Design = design()): GameState {
-  const state = createInitialState('indochina-slice', 'race-seed')
+  const state = withKnowledgeWorks(createInitialState('indochina-slice', 'race-seed'))
   state.house.designs = [d]
   return state
 }
@@ -176,7 +177,7 @@ describe('motmedel (P117, §6.6)', () => {
 
 describe('forskning mot ett namngivet fiendesystem (P117, §6.6)', () => {
   function withStudied(): GameState {
-    const state = createInitialState('indochina-slice', 'counter-seed')
+    const state = withKnowledgeWorks(createInitialState('indochina-slice', 'counter-seed'))
     state.house.studiedSystems = { 'nlf-artillery': 40 }
     return state
   }
@@ -194,7 +195,7 @@ describe('forskning mot ett namngivet fiendesystem (P117, §6.6)', () => {
     state.meta.turn = 3
     state.house.standingOrders!.research = { artillery: { pace: 'normal', sinceTurn: 0, counterTo: 'nlf-artillery' } }
     const { ctx } = makeCtx(state)
-    const plain = createInitialState('indochina-slice', 'counter-seed')
+    const plain = withKnowledgeWorks(createInitialState('indochina-slice', 'counter-seed'))
     plain.meta.turn = 3
     plain.house.standingOrders!.research = { artillery: { pace: 'normal', sinceTurn: 0 } }
     startTrackedResearch(makeCtx(plain).ctx)

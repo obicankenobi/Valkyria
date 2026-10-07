@@ -155,3 +155,6 @@ export {
   validateProgrammeChange,
 } from './programme.js'
 export type { ProtocolEntry, ProtocolView, TrialInputs, TrialMeasurement } from './programme.js'
+
+// P176 (ETAPP11 §6): labb, ritkontor och provplats sätter tak.
+export { climateChamber, designBlockedReason, designDesks, designOffice, isRobustDesign, laboratoryFor, laboratoryTechCap, provingGround, researchBlockedReason, testingBlockedReason } from './knowledge.js'

@@ -8,6 +8,7 @@
 // halverad tid, dubbel totalkostnad och inga bud i kategorin nästa kvartal.
 import balanceData from './data/balance.json' with { type: 'json' }
 import { enemySystemName } from './capture.js'
+import { researchBlockedReason } from './knowledge.js'
 import { round } from './money.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { ResolveContext } from './resolve/index.js'
@@ -92,6 +93,24 @@ export function startTrackedResearch(ctx: ResolveContext): void {
     if (!track || draft.meta.turn < track.sinceTurn) continue
     if (house.techLevel[category] >= MAX_TECH_LEVEL) continue
     if (house.rnd.some((p) => p.category === category && !p.design)) continue
+    // P176: ett spår kräver ett laboratorium i kategorin med plats och tak. Skälet meldas en gång (när det ändras), inte varje tur.
+    const blocked = researchBlockedReason(house, category)
+    if (blocked) {
+      if (track.blocked !== blocked) {
+        track.blocked = blocked
+        emit({
+          severity: 'report',
+          scope: 'house',
+          headline: `RESEARCH TRACK IN ${category.toUpperCase()} STANDS STILL — ${blocked.toUpperCase()}`,
+          causeId: null,
+          delta: {},
+          actorIsPlayer: false,
+          subjectId: null,
+        })
+      }
+      continue
+    }
+    delete track.blocked
     // Ett riktat spår förutsätter att systemet fortfarande är studerat (annars löper det som ett vanligt spår).
     const counterTo = track.counterTo && (house.studiedSystems?.[track.counterTo] ?? 0) > 0 ? track.counterTo : undefined
     const project = newProject(house, category, track.pace, draft.meta.turn, counterTo)
