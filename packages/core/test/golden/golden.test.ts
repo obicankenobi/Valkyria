@@ -458,9 +458,15 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // `wageDoomsdaySlope` 0 och `skillGrowthPerTurn` 0 (och de nya fälten utelämnade när de står på grundnivån) är alla tre hashar bit-identiska med P172:s (1de9d92bf0a69f, 1d5b7f06974e37,
   // 196059d3dfc0eb). `balance.json`/`balance.frozen.json` fick tjugotvå nya tal och en anteckning, `payrollBase` ändrades. De nya hasharna: passive 8eba3f29e9e9d, aggressive db3c392c3af42,
   // balanced 1b534f3c6003a.
+  //
+  // Omfryst i P174 (ETAPP11_FORSLAG.md §11, "regel", beslut 11I): inkörning (ProductionLine.runIn: takt och styckkostnad ändras med byggda enheter), slitage och underhåll
+  // (verkets skick faller av att arbeta; hög/låg underhållsnivå skalar de fasta kostnaderna), moderniseringar och tvåskiftsdrift. `balanced` är OFÖRÄNDRAD (1b534f3c6003a — den
+  // bygger för lite för att inkörningen och slitaget ska hinna flytta något). INNAN omfrysningen verifierades att ändringen är exakt det: med `runInRatePerDoubling`,
+  // `runInCostPerDoubling` och `wearPerTurn` 0 och `runIn` utelämnat ur det hashade tillståndet är alla tre hashar bit-identiska med P173:s (8eba3f29e9e9d, db3c392c3af42, 1b534f3c6003a).
+  // `balance.json`/`balance.frozen.json` fick tjugotre nya tal och en anteckning. De nya hasharna: passive 95f88c7e135b4, aggressive 41d6eaaa16f32, balanced 1b534f3c6003a.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '8eba3f29e9e9d' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'db3c392c3af42' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '95f88c7e135b4' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '41d6eaaa16f32' },
     { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '1b534f3c6003a' },
   ]
 
