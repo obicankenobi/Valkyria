@@ -6,7 +6,7 @@
 // (ingen handling) med underrättelse i köparens land: rätt → diskvalificerad, fel → relationen till tjänstemannen sjunker.
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json'
-import { advanceProgrammes, applyProcurement, measureEntrant, programmeProtocol, programmeRequirements } from '../src/programme.js'
+import { advanceProgrammes, applyProcurement, measureEntrant, programmeProtocol, programmeRequirements, suspectedRivals } from '../src/programme.js'
 import { previewAction } from '../src/previewAction.js'
 import { resolveTurn } from '../src/resolve/index.js'
 import { createRng } from '../src/rng.js'
@@ -393,6 +393,18 @@ describe('anmälan av en rival (stående order, ingen handling) (P124, §8.2)', 
     }
     return s
   }
+
+  it('suspectedRivals (P143): med underrättelse syns bara de rivaler som mutat nämnden; utan underrättelse eller efter en anmälan syns ingen', () => {
+    const s = withIntel(true)
+    const programme = s.programmes![0]!
+    expect(suspectedRivals(s, programme)).toEqual(['brandt'])
+    expect(suspectedRivals(withIntel(false), withIntel(false).programmes![0]!)).toEqual([])
+    const blind = withIntel(true)
+    blind.house.stations = []
+    expect(suspectedRivals(blind, blind.programmes![0]!)).toEqual([])
+    programme.entrants.find((e) => e.houseId === 'brandt')!.reported = true
+    expect(suspectedRivals(s, programme)).toEqual([])
+  })
 
   it('valideras: kräver underrättelse i köparens land, en deltagande rival och en öppen infordran', () => {
     const s = withIntel(true)

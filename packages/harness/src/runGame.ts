@@ -115,6 +115,8 @@ export interface GameMetrics {
   lowballs: number // upphandlingar där huset spelat LOWBALL
   programmeSabotages: number // upphandlingar där huset sabotagerat eller läckt mot en deltagande rival
   rivalReports: number // anmälda rivaler i upphandlingar där huset deltog
+  reportsConfirmed: number // P143: anmälningar som bekräftades (rivalen diskvalificerad)
+  reportsFalse: number // P143: anmälningar som visade sig falska
   // P168 (ETAPP11_FORSLAG.md §9, "Grund") — nollläget före etapp 11: tar kapaciteten slut? Lästa ur allLines(state.house)/state.market.contracts
   // efter varje tur, ingen ny räknare i core.
   lineUtilizationPct: number // medel över spelade turer av andelen linjer med status 'running' (efter turens avgörande)
@@ -203,6 +205,8 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let suspensions = 0
   let exportBreaches = 0
   let voidedByScandal = 0
+  let reportsConfirmed = 0
+  let reportsFalse = 0
   const programmeIds = new Set<string>()
   // P168 — linjeutnyttjande per tur och kontrakt som någon gång varit sena.
   const initialLineCount = allLines(state.house).length
@@ -294,7 +298,9 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       if (event.actorIsPlayer && event.headline.includes(' IS FIRST IN PLACE ')) firstInPlace++
       if (event.actorIsPlayer && isSuspensionHeadline(event.headline)) suspensions++
       if (event.actorIsPlayer && event.headline.startsWith('EXPORT CONTROL BREACHED')) exportBreaches++
-      if (event.actorIsPlayer && event.headline.includes('CANCELS AFTER THE SCANDAL')) voidedByScandal++
+      if (event.headline.startsWith('CONTRACT ') && event.headline.includes('CANCELS AFTER THE SCANDAL')) voidedByScandal++
+      if (event.actorIsPlayer && event.headline.includes('IRREGULARITIES CONFIRMED')) reportsConfirmed++
+      if (event.actorIsPlayer && event.headline.includes('PROVES FALSE')) reportsFalse++
       if (STANDING_ORDER_ALARMS.some((pattern) => event.headline.includes(pattern))) standingOrderAlarms++
       if (event.headline.includes('WINS CONTRACT')) {
         if (event.actorIsPlayer) playerWins++
@@ -427,6 +433,8 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     traces: traces.length,
     tracesSurfaced: traces.filter((tr) => tr.status !== 'open').length,
     voidedByScandal,
+    reportsConfirmed,
+    reportsFalse,
     suspensions,
     contractsWonViaProgramme: wonProgrammes.length,
     civilRevenue: (state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0),

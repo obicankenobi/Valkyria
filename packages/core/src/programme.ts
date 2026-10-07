@@ -265,6 +265,13 @@ function buildProgramme(state: GameState, t: Trigger, id: string): Programme | n
 
 // ── anmälan (stående order) ──────────────────────────────────────────────────
 
+// P143 (§7): med underrättelse i köparens land syns vilka rivaler som mutat nämnden — det är vad en anmälan kan lyckas med. Utan underrättelse
+// finns inga misstankar att gå på. Rena data, ingen slump.
+export function suspectedRivals(state: Readonly<GameState>, programme: Programme): string[] {
+  if (effectiveDepth(state, programme.buyerId) === 0) return []
+  return programme.entrants.filter((e) => e.houseId !== 'player' && e.boardBribed && !e.reported && !e.barred).map((e) => e.houseId as string)
+}
+
 export function validateProgrammeChange(_state: Readonly<GameState>, draft: GameState, change: Extract<StandingOrderChange, { kind: 'PROGRAMME' }>): ActionValidation {
   const fail = (reason: string): ActionValidation => ({ ok: false, reason })
   const programme = draft.programmes?.find((p) => p.id === change.programmeId)

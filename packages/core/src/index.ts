@@ -163,6 +163,7 @@ export {
   maybeAnnounceProgramme,
   measureEntrant,
   programmeProtocol,
+  suspectedRivals,
   programmeBloc,
   programmeEligible,
   programmeRequirements,

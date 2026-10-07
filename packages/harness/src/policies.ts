@@ -27,6 +27,7 @@ import {
   officialId,
   playerWinCurve,
   programmeEligible,
+  suspectedRivals,
   programmeBloc,
   requirementCards,
   validateAction,
@@ -771,7 +772,7 @@ const CLASSIC_HUMAN: HumanOptions = {
 // `human` = P129:s spelare + P140:s fältprov och uppgraderingar. `PLAIN_HUMAN` är den oförändrade P129–P137-spelaren (variant `human-plain`),
 // kvar som referens så att före/efter-jämförelsen går att köra om.
 const PLAIN_HUMAN: HumanOptions = { ...CLASSIC_HUMAN, designs: true, programmes: true, inquiry: 'settle' }
-const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true, works: DEFAULT_WORKS }
+export const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true, works: DEFAULT_WORKS }
 
 const HUMAN_DESIGN_CASH_SHARE = 0.6 // en ny konstruktion startas bara när kassan är minst så här stor andel av grundkapitalet
 const HUMAN_SETTLE_RESERVE_SHARE = 0.25 // en förlikning betalas bara om kassan efteråt är över så här stor andel av grundkapitalet
@@ -907,8 +908,8 @@ function programmeStandingOrders(state: GameState, opts: HumanOptions): Standing
     }
     // P140: anmälan av en rival — den första ännu oanmälda deltagaren, om huset har underrättelse i köparens land (validateStandingOrderChange avgör).
     if (opts.reportRival) {
-      for (const rival of programme.entrants.filter((e) => e.houseId !== 'player' && !e.reported)) {
-        const report: StandingOrderChange = { kind: 'PROGRAMME', op: 'REPORT', programmeId: programme.id, rivalId: rival.houseId as string }
+      for (const rivalId of suspectedRivals(state, programme)) {
+        const report: StandingOrderChange = { kind: 'PROGRAMME', op: 'REPORT', programmeId: programme.id, rivalId }
         if (validateStandingOrderChange(state, state, report).ok) {
           out.push(report)
           break
@@ -1093,7 +1094,9 @@ export const POLICIES: Record<string, Policy> = {
   'human-noresearch': makeHuman({ ...BASE_HUMAN, research: false, designs: false, programmes: false }),
   'human-bothsides': makeHuman({ ...BASE_HUMAN, bothSides: true }),
   'human-clean': makeHuman({ ...BASE_HUMAN, courting: false, tricks: false, legal: false, reportRival: true }),
-  'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny', lowball: true, sabotageProgramme: true }),
+  // P143: human-dirty är fusket självt (knepen, rådgivaren, förnekade kort); underbud och sabotage mot en upphandling är egna val som tar handlingspoäng från uppvaktningen och sänker vinsten (mätt: 22–33 % mot 43 %) — de ligger i human-underhand.
+  'human-dirty': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny' }),
+  'human-underhand': makeHuman({ ...BASE_HUMAN, tricks: true, legal: true, inquiry: 'deny', lowball: true, sabotageProgramme: true }),
   'human-engineer': makeHuman({ ...BASE_HUMAN, reverseEngineer: true, kits: true }),
   'human-plain': makeHuman(PLAIN_HUMAN),
   'human-civil': makeHuman({ ...BASE_HUMAN, civil: true }),

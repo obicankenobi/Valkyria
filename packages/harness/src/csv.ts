@@ -63,6 +63,8 @@ const COLUMNS = [
   'lowballs',
   'programmeSabotages',
   'rivalReports',
+  'reportsConfirmed',
+  'reportsFalse',
   'lineUtilizationPct',
   'peakLineUtilizationPct',
   'linesBuilt',
