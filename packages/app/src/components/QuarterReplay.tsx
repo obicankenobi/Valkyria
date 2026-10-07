@@ -42,6 +42,7 @@ export function QuarterReplay({
   fullReplay,
   onToggleFullReplay,
   memo = null,
+  onFocus,
   onDone,
 }: {
   wire: readonly WireEvent[]
@@ -53,6 +54,8 @@ export function QuarterReplay({
   // tyst kvartal — det ska visas vid varje granskningstur, så spelaren kvitterar det med
   // "Continue" i stället för att det försvinner med tidsgränsen.
   memo?: BoardMemoData | null
+  // P158: händelsen som visas just nu (null när uppspelningen är slut eller inget visas) — kartan ritar en ring där den hör hemma.
+  onFocus?: (event: WireEvent | null) => void
   onDone: () => void
 }) {
   const events = fullReplay ? wire : wire.filter((e) => e.severity === 'headline')
@@ -71,6 +74,11 @@ export function QuarterReplay({
       onDone()
     }
   }, [])
+
+  useEffect(() => {
+    onFocus?.(nothingToAnimate || shown === 0 ? null : (events[Math.min(shown, events.length) - 1] ?? null))
+  }, [shown])
+  useEffect(() => () => onFocus?.(null), [])
 
   useEffect(() => {
     if (nothingToAnimate) return
@@ -102,7 +110,7 @@ export function QuarterReplay({
   }
 
   return (
-    <div className="modal-overlay" data-testid="quarter-replay">
+    <div className="modal-overlay is-map-replay" data-testid="quarter-replay">
       <div className="modal-panel replay-panel">
         <div className="replay-head">
           <h2 className="view-title">Quarter Replay</h2>

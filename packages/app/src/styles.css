@@ -6018,3 +6018,65 @@ summary:focus-visible,
   stroke: var(--ink-dim);
   stroke-dasharray: 2 2;
 }
+
+/* ── P158: kvartalsuppspelningen på kartan (ETAPP10_FORSLAG.md §11 punkt 1) ──────
+   En ring som växer och bleknar där händelsen hör hemma, och uppspelningspanelen som en
+   arkflik i kartans nederkant i stället för ett helskärmsöverlägg — kartan ska synas.
+   Bara transform och opacity; reducerad rörelse stänger av ringens animation (global regel). */
+.map-replay-focus {
+  pointer-events: none;
+}
+.map-replay-ring {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-replay-ping 1.4s ease-out infinite;
+}
+.map-replay-core {
+  fill: var(--amber);
+  opacity: 0.85;
+}
+.map-replay-focus.is-flash .map-replay-ring {
+  stroke: var(--red);
+  stroke-width: 3;
+}
+.map-replay-focus.is-flash .map-replay-core {
+  fill: var(--red);
+}
+.map-replay-focus.is-minor .map-replay-ring {
+  stroke-width: 1.5;
+}
+.map-replay-focus.is-minor .map-replay-core {
+  opacity: 0.55;
+}
+@keyframes map-replay-ping {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.modal-overlay.is-map-replay {
+  background: transparent;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 72px);
+  pointer-events: none;
+}
+.modal-overlay.is-map-replay .replay-panel {
+  pointer-events: auto;
+  max-height: 40dvh;
+  border-color: var(--ink-dim);
+  box-shadow: var(--shadow);
+}
+@media (min-width: 1024px) {
+  .modal-overlay.is-map-replay {
+    padding-bottom: 24px;
+    padding-left: 220px;
+  }
+}

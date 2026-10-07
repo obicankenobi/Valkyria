@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { createInitialState, DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import { TheatreMap, capitalLabel, supplyDotStyle } from '../src/components/TheatreMap.js'
-import { ArmedVerbContext } from '../src/uiContext.js'
+import { ArmedVerbContext, ReplayFocusContext } from '../src/uiContext.js'
 
 afterEach(cleanup)
 
@@ -797,5 +797,43 @@ describe('TheatreMap (P166) — lager, frontstatus och NLF', () => {
     await ready(quiet)
     expect(document.querySelector('[data-testid="map-front-status-front-1"]')!.textContent).toBe('CEASEFIRE')
     expect(document.querySelector('[data-testid="map-frontline-marker-front-1"]')!.getAttribute('class')).toContain('is-quiet')
+  })
+})
+
+describe('TheatreMap — kvartalsuppspelningens ring (P158)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response))
+  })
+
+  const focusOf = (anchor: { kind: 'sector' | 'country' | 'station' | 'hud'; id: string }, kind: 'flash' | 'headline' | 'minor' = 'headline') => ({ eventId: 'ev-1', anchor, kind })
+
+  it('utan uppspelning ritas ingen ring', async () => {
+    render(<TheatreMap state={createInitialState('indochina-slice', 'replay-ring-0')} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    expect(document.querySelector('[data-testid="map-replay-focus"]')).toBeNull()
+  })
+
+  it('en händelse med en plats får en ring där den hör hemma; en blixt får blixtens klass', async () => {
+    const state = createInitialState('indochina-slice', 'replay-ring-1')
+    const front = Object.values(state.fronts)[0]!
+    render(
+      <ReplayFocusContext.Provider value={focusOf({ kind: 'sector', id: front.id }, 'flash')}>
+        <TheatreMap state={state} />
+      </ReplayFocusContext.Provider>,
+    )
+    await waitFor(() => expect(document.querySelector('[data-testid="map-replay-focus"]')).toBeTruthy())
+    expect(document.querySelector('[data-testid="map-replay-focus"]')!.getAttribute('class')).toContain('is-flash')
+    expect(document.querySelector('[data-testid="map-replay-focus"] circle.map-replay-ring')).toBeTruthy()
+  })
+
+  it('en husövergripande händelse (HUD) har ingen plats och ingen ring', async () => {
+    const state = createInitialState('indochina-slice', 'replay-ring-2')
+    render(
+      <ReplayFocusContext.Provider value={focusOf({ kind: 'hud', id: 'hud' })}>
+        <TheatreMap state={state} />
+      </ReplayFocusContext.Provider>,
+    )
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    expect(document.querySelector('[data-testid="map-replay-focus"]')).toBeNull()
   })
 })

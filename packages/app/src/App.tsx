@@ -4,7 +4,7 @@
 // (TheFloor.tsx m.fl.) rörs INTE av namnbytet — bara det spelaren ser här i
 // skalet. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10 för den ursprungliga
 // arkitekturen detta bygger vidare på.
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
 import { NewGameScreen } from './components/NewGameScreen.js'
@@ -15,7 +15,7 @@ import type { ShellView } from './components/Shell.js'
 import { TheatreMap } from './components/TheatreMap.js'
 import { CountryFile } from './components/CountryFile.js'
 import { boardMemo } from '@seventh-front/core'
-import type { FactionId } from '@seventh-front/core'
+import type { FactionId, WireEvent } from '@seventh-front/core'
 import { TheFloor } from './components/TheFloor.js'
 import { TheHouse } from './components/TheHouse.js'
 import { ThePolitics } from './components/ThePolitics.js'
@@ -26,8 +26,10 @@ import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
 import { ArmedVerbStrip } from './components/ArmedVerbStrip.js'
 import { actionVerb } from './actionInfo.js'
-import { ArmedVerbContext, HandbookContext } from './uiContext.js'
-import type { ArmedVerb } from './uiContext.js'
+import { ArmedVerbContext, HandbookContext, ReplayFocusContext } from './uiContext.js'
+import type { ArmedVerb, ReplayFocus } from './uiContext.js'
+import { replayKind } from './replayFocus.js'
+import { wireAnchor } from './wireAnchor.js'
 import type { ActionCatalogEntry } from './actionCatalog.js'
 import { TutorialOverlay } from './components/TutorialOverlay.js'
 import { Handbook } from './components/Handbook.js'
@@ -137,6 +139,12 @@ export function App() {
   // (QuarterReplay.tsx:s onDone), samma sekvens som §5:s skärmarkitektur
   // ("End Quarter → Quarter Replay → Front Page").
   const [replaying, setReplaying] = useState(false)
+  // P158: händelsen uppspelningen visar just nu — kartan ritar en ring där den hör hemma.
+  const [replayEvent, setReplayEvent] = useState<WireEvent | null>(null)
+  const replayFocus = useMemo<ReplayFocus | null>(
+    () => (replayEvent ? { eventId: replayEvent.id, anchor: wireAnchor(state, replayEvent), kind: replayKind(replayEvent) } : null),
+    [replayEvent, state],
+  )
   const [fullReplay, setFullReplay] = useState(false)
   // P81b (§13, P81-6): pausöverlaget. Regel 16 ("Esc för paus") nås oavsett
   // vilken flik som är aktiv, samma princip som End Quarter-fallbacken.
@@ -676,12 +684,14 @@ export function App() {
   function handleEndTurn() {
     endTurn()
     setReplaying(true) // §5: End Quarter → Quarter Replay → Front Page (NEWS DESK)
+    setView('operations') // P158: uppspelningen sker på kartan, så kartan ska synas under den
     if (tutorial.active) setTutorial((t) => completeTutorialStep(t, 'end-quarter'))
   }
 
   return (
     <HandbookContext.Provider value={handleOpenHandbook}>
     <ArmedVerbContext.Provider value={armed}>
+    <ReplayFocusContext.Provider value={replayFocus}>
     <div className="ds-shell">
       <HudBar state={state} onOpenMenu={() => setPaused(true)} onOpenHandbook={handleOpenHandbook} />
       <QuarterBand
@@ -806,6 +816,7 @@ export function App() {
           state={state}
           fullReplay={fullReplay}
           onToggleFullReplay={handleToggleFullReplay}
+          onFocus={setReplayEvent}
           memo={boardMemo(state, state.meta.turn - 1)}
           onDone={() => {
             setReplaying(false)
@@ -878,6 +889,7 @@ export function App() {
       />
       <Handbook open={handbookOpen} focusId={handbookFocusId} onClose={() => setHandbookOpen(false)} />
     </div>
+    </ReplayFocusContext.Provider>
     </ArmedVerbContext.Provider>
     </HandbookContext.Provider>
   )

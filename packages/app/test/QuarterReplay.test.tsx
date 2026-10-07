@@ -200,3 +200,34 @@ describe('QuarterReplay', () => {
     }
   })
 })
+
+describe('QuarterReplay — kartfokus (P158)', () => {
+  it('onFocus får varje händelse i tur och ordning medan den visas, och null när uppspelningen är slut eller stängs', () => {
+    mockMatchMedia(false)
+    vi.useFakeTimers()
+    const focused: (string | null)[] = []
+    const wire = [makeEvent({ id: 'a', severity: 'headline', headline: 'A' }), makeEvent({ id: 'b', severity: 'headline', headline: 'B' })]
+    const { unmount } = render(
+      <QuarterReplay wire={wire} state={state} fullReplay={false} onToggleFullReplay={() => {}} onFocus={(e) => focused.push(e ? e.id : null)} onDone={() => {}} />,
+    )
+    expect(focused.at(-1)).toBeNull() // ingen händelse än
+    act(() => {
+      vi.advanceTimersByTime(REPLAY_INTERVAL_MS)
+    })
+    expect(focused.at(-1)).toBe('a')
+    act(() => {
+      vi.advanceTimersByTime(REPLAY_INTERVAL_MS)
+    })
+    expect(focused.at(-1)).toBe('b')
+    unmount()
+    expect(focused.at(-1)).toBeNull() // kartan ska inte behålla en ring efter uppspelningen
+    vi.useRealTimers()
+  })
+
+  it('överlagret är en flik i kartans nederkant (kartan ska synas), inte ett helskärmsöverlägg', () => {
+    mockMatchMedia(false)
+    const wire = [makeEvent({ severity: 'headline', headline: 'A' })]
+    render(<QuarterReplay wire={wire} state={state} fullReplay={false} onToggleFullReplay={() => {}} onDone={() => {}} />)
+    expect(screen.getByTestId('quarter-replay').className).toContain('is-map-replay')
+  })
+})

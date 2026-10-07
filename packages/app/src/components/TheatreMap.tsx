@@ -40,7 +40,8 @@ import { playerSupplyLines, rivalSupplyLines, snapshotAttribution } from '../sup
 import { ACTION_CATALOG } from '../actionCatalog.js'
 import { COUNTRY_TO_FACTION, deriveMapInfo } from '../mapInfo.js'
 import type { MapSelection } from '../mapInfo.js'
-import { useArmedVerb } from '../uiContext.js'
+import { useArmedVerb, useReplayFocus } from '../uiContext.js'
+import { replayGeoAnchor } from '../replayFocus.js'
 import { MapPlaceholder } from './Shell.js'
 import { MapLegend } from './MapLegend.js'
 import { MapInfoCard } from './MapInfoCard.js'
@@ -347,6 +348,8 @@ export function TheatreMap({
   // P166: ett kartlager åt gången, med tal vid varje köpare (eller front). null = inget lager.
   const [layer, setLayer] = useState<MapLayerId | null>(null)
   const armed = useArmedVerb()
+  // P158: händelsen kvartalsuppspelningen visar just nu — kartan ritar en ring där den hör hemma (replayFocus.ts).
+  const replayFocus = useReplayFocus()
   const armedGoesToCountry = armed !== null && ACTION_CATALOG.some((e) => e.verb === armed.verb && e.target === 'operations')
   const tags = useMemo(() => (layer ? layerTags(state, layer) : []), [state, layer])
   const landless = useMemo(() => landlessFactions(state), [state])
@@ -1108,6 +1111,25 @@ export function TheatreMap({
               )
             })}
           </g>
+          {/* P158: kvartalsuppspelningen pekar ut var händelsen hör hemma — en ring som växer och bleknar (bara transform och opacity). Ingen tryckyta, ingen etikett. */}
+          {replayFocus &&
+            (() => {
+              const geo = replayGeoAnchor(state, replayFocus.anchor)
+              const xy = geo ? project([geo[1], geo[0]]) : null
+              if (!xy) return null
+              return (
+                <g
+                  key={replayFocus.eventId}
+                  className={`map-replay-focus is-${replayFocus.kind}`}
+                  transform={`translate(${xy[0]},${xy[1]})`}
+                  data-testid="map-replay-focus"
+                  aria-hidden="true"
+                >
+                  <circle r={9} className="map-replay-ring" />
+                  <circle r={3} className="map-replay-core" />
+                </g>
+              )
+            })()}
         </g>
       </svg>
       <MapLayerBar active={layer} onChange={setLayer} />

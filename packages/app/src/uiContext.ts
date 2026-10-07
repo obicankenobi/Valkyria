@@ -19,3 +19,14 @@ export const ArmedVerbContext = createContext<ArmedVerb | null>(null)
 export function useArmedVerb(): ArmedVerb | null {
   return useContext(ArmedVerbContext)
 }
+
+// P158 (ETAPP10 §11 punkt 1): händelsen kvartalsuppspelningen visar just nu. Kartan ritar en ring där den hör hemma. null = ingen uppspelning pågår.
+export interface ReplayFocus {
+  eventId: string
+  anchor: { kind: 'sector' | 'country' | 'station' | 'hud'; id: string }
+  kind: 'flash' | 'headline' | 'minor'
+}
+export const ReplayFocusContext = createContext<ReplayFocus | null>(null)
+export function useReplayFocus(): ReplayFocus | null {
+  return useContext(ReplayFocusContext)
+}

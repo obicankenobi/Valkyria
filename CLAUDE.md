@@ -895,6 +895,15 @@ täckning har ingen egen effekt (samma som `military`). Se `docs/ANDRINGSLOGG.md
 härnessen har fyra nya kolumner (utnyttjande, topp, byggda linjer, sena kontrakt). Nolläge: utnyttjande 27–49 % (hela partier),
 0 byggda linjer, sena kontrakt ≈ 0 — se `docs/ETAPP11_FORSLAG.md` §9. **P169 är nästa** (anläggningsmodellen; "regel", golden får
 omfrysas i egen commit).
+**P169–P172 BYGGDA 2026-10-07 (del A, "Anläggningarna", körda på ägarens schemalagda uppdrag medan ägaren sov).** P169: `House.lines` är borta — linjerna bor i
+`House.works` (`Facility`, sju slag ur `data/facilities.json`, `works.ts`: `allLines`/`findLine`/…); sparade partier migreras (fyra linjer → två verk).
+P170: tomten (åtta platser, `House.plot`), stående order `WORKS` (bygge med byggtid och rater, utbyggnad, forcering, avveckling, markköp, `construction.ts`) och
+startpaketet (ett monteringsverk nivå 1 med två linjer, ett gratis labb, ett ritkontor; startkostnad £348 000/kvartal). P171: uppsättning och omställning
+(`tooling.ts`: familj/konstruktion/produkt kostar växande tid och pengar; en ny konstruktion kräver omställning) och produktionsplanen (`PLAN`). P172: verkets kategori
+binder linjerna, underleverantörer (`OUTSOURCE`, auto-utläggning när inget verk kan bygga kategorin, `outsourcing.ts`), "ready by" (`capacity.ts`) och rivalernas kapacitet.
+Golden omfryst i egen commit i varje prompt. **Viktigt för speltestet efter P172:** appen har ännu inget gränssnitt för verken (P179), planen (P180) eller
+utläggningen — startverket är fullt, så en spelare i appen kan inte bygga fler linjer — och botarna känner inte till verken (P182): `human` vinner ~10 % (var 67 %).
+`capacity`-referensen håller bara tack vare valda utläggningstal; `balanced-pwc` är tillbaka över taket. Se `docs/ANDRINGSLOGG.md` (P169–P172) för allt som lämnats öppet.
 Etapp 11, "Verken", `docs/ETAPP11_FORSLAG.md` (P168–P184, **antagen 2026-10-06**, ägarbesluten 11A–11N
 loggade i `docs/ANDRINGSLOGG.md`; filen behåller namnet) körs efter P162–P167. Den gör produktionen till ett
 system som måste skötas: sju slags anläggningar på en hemmatomt med åtta platser (monteringsverk,
