@@ -353,6 +353,8 @@ inträffar i 0,09 fall per parti.
 - Bristrisken och miljöerna avvägs så att en olycksfågel inträffar i 10–25 % av partierna.
 - Linjeomställning vid byte till ny konstruktion (premissfyndet i P112) avgörs: byggs eller stryks ur specen.
 
+> **Utfall P144 (2026-10-08).** Unga konstruktioners intäkt ca 31 % (nådd), olycksfåglar i 11–15 % av partierna (nådd), linjeomställning redan byggd i P171 (stryks), civila boten lagad (laboratoriet), exportbrott 0 i botspel (raden reviderad: nåbar i test, ingen frekvensgräns), epilogens civila rad byggd. Se ANDRINGSLOGG.
+
 **Del F.** `human-civil` går i konkurs i 59 av 200 partier, och exportbrott inträffar aldrig i botspel.
 Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
 
