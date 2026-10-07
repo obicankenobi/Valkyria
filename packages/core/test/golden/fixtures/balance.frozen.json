@@ -433,14 +433,7 @@
     "electronics": 1
   },
   "needCeiling": 400,
-  "orderTriggerThreshold": {
-    "infantry": 60,
-    "artillery": 12,
-    "armour": 8,
-    "aviation": 2,
-    "naval": 2,
-    "electronics": 6
-  },
+  "orderTriggerThreshold": { "infantry": 60, "artillery": 12, "armour": 8, "aviation": 2, "naval": 2, "electronics": 6 },
   "_p35_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.2 ger maxOrdersPerFactionPerTurn(2) direkt i pseudokoden, inte i avsnitt 4.1:s fältlista -- specens eget tal, inte provisoriskt. orderGenerationChancePct borttagen helt (avsnitt 9:s egen instruktion: 'Ta bort orderGenerationChancePct') -- P4:s ursprungliga tärningsregel, ersatt av den behovsdrivna utlysningen.",
   "maxOrdersPerFactionPerTurn": 2,
   "_p36_note": "ETAPP3_KRIGET_SOM_MARKNAD_TEKNISK_SPEC.md avsnitt 4.3 ger weightPressureShift(0,25) ordagrant. pressurePositionSpan är PROVISORISKT -- specen ger 'position-förändring senaste 3 turerna' och en 0..1-skala men aldrig vilket antal positionspoäng som motsvarar full pressure (1,0). Kalibrerat mot frontBreakthroughMagnitude (5 positionspoäng per genombrott) -- två genombrott på tre turer räcker för full pressure via positionskomponenten ensam, empiriskt avstämt mot härnessens 8-25%-mål (avsnitt 8). Se docs/ANDRINGSLOGG.md.",
@@ -708,5 +701,6 @@
   "_p185_loan_note": "ETAPP11_FORSLAG.md §9b, beslut 11Q (P185, regel 2): byggnadslån. WORKS BUILD och EXPAND kan lånefinansieras: lånet täcker buildLoanSharePct procent av varje rat under byggtiden och ligger utanför house.debt och creditLimit. Räntan är buildLoanRateAnnual per år (högre än husets vanliga ränta — lånet är dyrare men räcker i dalen) och betalas varje kvartal på det utestående. Amorteringen börjar kvartalet efter driftstart, i lika delar under buildLoanAmortTurns kvartal. Säkerheten är anläggningen: kan huset inte betala ett kvartals ränta och amortering tas den, med linjer och arbetsstyrka. ALLA PROVISORISKA tills P186.",
   "buildLoanSharePct": 70,
   "buildLoanRateAnnual": 0.1,
-  "buildLoanAmortTurns": 8
+  "buildLoanAmortTurns": 8,
+  "_p185_orders_note": "ETAPP11_FORSLAG.md §9b, beslut 11R (P185, regel 3): orderstorlekar som fyller en linje. orderQuantityMin/Max i products.json är 2× respektive 4× produktens unitsPerLineTurn (ett typiskt kontrakt tar en linje i två till fyra kvartal; Mk-9-granaten är scriptad och rörs inte). Antalet ordrar sjunker av sig självt (behovet förbrukas av en större order: mätt 18 ordrar per parti mot 42), men INTE i samma mån som storleken ökar: specens villkor att marknadens värde per kvartal ska vara ungefär oförändrat gick inte att hålla. Med trösklarna skalade efter storleken (orderTriggerThreshold gamla × nya min / gamla min, och därutöver 1,5×) blev flödet så glest och klumpigt att varje bot gick under (mätt vinst 0 % för alla; ett hus utan order i fyra kvartal bär fasta kostnader på 0,35 Mkr per kvartal) — köparnas budgetar (militaryBudgetQuarterlyShare 8 % av statskassan) är det som egentligen sätter marknadens storlek. Trösklarna och needCeiling står därför kvar. Marknadens ordinarie värde blev ca 2,7 Mkr per kvartal mot 0,8 före (gevär och kanoner; Mk-9-ordrarna oförändrade). Bieffekter: ett fältprov (fieldTrialBatchFraction × orderQuantityMin) blir en större sats, och en upphandling (programme.ts) räknar på det nya minimum. boardTarget.threshold justerades 2,9 → 2,45 så att spelbarhetsvakterna håller på den större marknaden. ALLA PROVISORISKA tills P186."
 }

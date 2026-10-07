@@ -488,10 +488,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   //
   // P185 regel 2 (byggnadslån, beslut 11Q): ALLA TRE HASHAR OFÖRÄNDRADE mot regel 1:s (465f820de78a2, 7b987fa509f2e, 811c0674271ff) — verifierat, inte antaget. Ingen golden-bot bygger, så inget lån tas;
   // `Facility.loan` och `build.financed` utelämnas ur det hashade tillståndet tills ett lån tagits. `balance.frozen.json` följer med (fyra nya tal och en anteckning).
+  //
+  // Omfryst i P185 regel 3 (orderstorlekar som fyller en linje, beslut 11R). Attribution: med de gamla orderstorlekarna (products.json) och den gamla styrelsetröskeln (2,9) är alla tre hashar bit-identiska med regel 2:s
+  // (465f820de78a2, 7b987fa509f2e, 811c0674271ff) — verifierat, inte antaget. De två ändringarna flyttar var för sig alla tre hashar: orderstorlekarna (ordrarna är 2–4 linjekvartal) och styrelsetröskeln 2,9 → 2,45
+  // (som sänktes så att spelbarhetsvakterna håller på den större marknaden). `balance.json`/`balance.frozen.json` fick en anteckning (`_p185_orders_note`). De nya hasharna: passive 1ea10b289638bc, aggressive 150ce6c75acf96, balanced 143b022bb0bc0a.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '465f820de78a2' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '7b987fa509f2e' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '811c0674271ff' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1ea10b289638bc' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '150ce6c75acf96' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '143b022bb0bc0a' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
