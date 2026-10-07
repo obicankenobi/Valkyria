@@ -160,6 +160,46 @@ async function injectWorksState(page) {
   await page.getByTestId('hud').waitFor()
 }
 
+// P185 (ETAPP11 §9b): ett låst bud, en lånefinansierad anläggning och en rad i This Quarter med skälet — samma IndexedDB-injektion som injectWorksState.
+async function injectLoanState(page) {
+  await enterOperationsAndPlay(page, 0)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    const saved = await new Promise((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const state = saved.state
+    state.house.techLevel.armour = 9
+    state.market.openOrders = [
+      {
+        id: 'order-locked-1', buyerId: 'rvn', productId: 'm3_apc', quantity: 60, statedBudget: 4_000_000, trueBudget: 5_000_000, referencePrice: 4_200_000, requiredDeliveryTurns: 5,
+        expiresTurn: state.meta.turn + 2, competingRivals: [], weights: { price: 0.55, delivery: 0.3, relationship: 0.15 }, officialId: 'official-rvn-procurement',
+        reason: { kind: 'PEACETIME_REPLACEMENT' }, frontId: 'front-1', advancePct: 10,
+      },
+    ]
+    state.house.works.push({
+      id: 'works-9', kind: 'assembly', level: 1, category: 'infantry', condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: 1_000_000,
+      loan: { principal: 900_000, outstanding: 720_000, amortPerTurn: 112_500, amortFromTurn: state.meta.turn },
+    })
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+}
+
 // P97: ett nytt parti spelat `quarters` kvartal med reducerad rörelse (uppspelningen
 // omedelbar, PM:et undantaget — se QuarterReplay.tsx). Samma New Game-väg som övriga skärmar.
 async function enterOperationsAndPlay(page, quarters) {
@@ -1067,6 +1107,63 @@ const APP_SCREENS = [
       await injectWorksState(page)
       await page.getByTestId('quarterband-toggle').click()
       await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
+    },
+  },
+  {
+    // P185: ett låst bud — LOCKED-rutan med skälet i klartext i budmappen, Place Bid avstängd.
+    name: 'bid-locked',
+    path: '/',
+    async afterGoto(page) {
+      await injectLoanState(page)
+      await page.getByTestId('tab-contracts').click()
+      await page.getByRole('button', { name: 'quote' }).first().click()
+      await page.getByTestId('bid-locked').waitFor()
+    },
+  },
+  {
+    // P185: byggmenyn med byggnadslån valt — villkoren i klartext.
+    name: 'works-build-loan',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.getByTestId('tab-company').click()
+      await page.locator('[data-testid^="works-slot-free-"]').first().click()
+      await page.getByTestId('build-option-assembly').click()
+      await page.getByText('BUILDING LOAN').click()
+      await page.getByTestId('build-loan-hint').waitFor()
+    },
+  },
+  {
+    // P185: anläggningskortet med lånet.
+    name: 'works-facility-loan',
+    path: '/',
+    async afterGoto(page) {
+      await injectLoanState(page)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('works-slot-works-9').click()
+      await page.getByTestId('facility-loan').waitFor()
+    },
+  },
+  {
+    // P185: Books med byggnadslånen och kvartalets betalning.
+    name: 'books-loans',
+    path: '/',
+    async afterGoto(page) {
+      await injectLoanState(page)
+      await page.getByTestId('tab-company').click()
+      await page.getByTestId('company-drawer-books').click()
+      await page.getByTestId('build-loans').waitFor()
+      await page.getByTestId('build-loans').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    // P185: This Quarter med den låsta ordern och skälet.
+    name: 'quarter-locked',
+    path: '/',
+    async afterGoto(page) {
+      await injectLoanState(page)
+      await page.getByTestId('quarterband-toggle').click()
+      await page.getByTestId('quarterband-item-order-order-locked-1').waitFor()
     },
   },
   {

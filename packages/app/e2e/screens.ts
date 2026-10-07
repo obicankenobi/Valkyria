@@ -298,6 +298,82 @@ export async function enterWorksAlarms(page: Page): Promise<void> {
   await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
 }
 
+// P185 (ETAPP11 §9b): ett låst bud, en lånefinansierad anläggning och en rad i This Quarter med skälet — ett riktigt parti har ingen låst pansarorder eller något byggnadslån vid tur 0,
+// så samma IndexedDB-injektion som injectWorksState: en öppen pansarorder (huset har bara ett artilleriverk), ett verk med lån och tekniknivå så att ordern är en riktig order.
+export async function injectLoanState(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    type Loose = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- injicerar fält i en sparad state i webbläsaren, utan att kopiera hela typen dit
+    const saved = await new Promise<{ state: Loose }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const state = saved.state
+    state.house.techLevel.armour = 9
+    state.market.openOrders = [
+      {
+        id: 'order-locked-1', buyerId: 'rvn', productId: 'm3_apc', quantity: 60, statedBudget: 4_000_000, trueBudget: 5_000_000, referencePrice: 4_200_000, requiredDeliveryTurns: 5,
+        expiresTurn: state.meta.turn + 2, competingRivals: [], weights: { price: 0.55, delivery: 0.3, relationship: 0.15 }, officialId: 'official-rvn-procurement',
+        reason: { kind: 'PEACETIME_REPLACEMENT' }, frontId: 'front-1', advancePct: 10,
+      },
+    ]
+    state.house.works.push({
+      id: 'works-9', kind: 'assembly', level: 1, category: 'infantry', condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: 1_000_000,
+      loan: { principal: 900_000, outstanding: 720_000, amortPerTurn: 112_500, amortFromTurn: state.meta.turn },
+    })
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+}
+
+export async function enterBidLocked(page: Page): Promise<void> {
+  await injectLoanState(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.getByTestId('tab-contracts').click()
+  await page.getByRole('button', { name: 'quote' }).first().click()
+  await page.getByTestId('bid-locked').waitFor()
+}
+
+export async function enterWorksBuildLoan(page: Page): Promise<void> {
+  await enterWorksBuildDetail(page)
+  await page.getByText('BUILDING LOAN').click()
+  await page.getByTestId('build-loan-hint').waitFor()
+}
+
+export async function enterWorksFacilityLoan(page: Page): Promise<void> {
+  await injectLoanState(page)
+  await page.getByTestId('tab-company').click()
+  await page.getByTestId('works-slot-works-9').click()
+  await page.getByTestId('facility-loan').waitFor()
+}
+
+export async function enterBooksLoans(page: Page): Promise<void> {
+  await injectLoanState(page)
+  await page.getByTestId('tab-company').click()
+  await page.getByTestId('company-drawer-books').click()
+  await page.getByTestId('build-loans').waitFor()
+}
+
+export async function enterQuarterLocked(page: Page): Promise<void> {
+  await injectLoanState(page)
+  await page.getByTestId('quarterband-toggle').click()
+  await page.getByTestId('quarterband-item-order-order-locked-1').waitFor()
+}
+
 // P181: ett verk i ett köparland (RVN) syns på teaterkartan — ett riktigt parti har inget förrän ett bygge utomlands gått klart, så samma IndexedDB-injektion.
 export async function enterMapWorks(page: Page): Promise<void> {
   await enterOperations(page)
@@ -821,6 +897,11 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'works-alarms', path: '/', setup: enterWorksAlarms },
   { name: 'works-build', path: '/', setup: enterWorksBuild },
   { name: 'works-build-detail', path: '/', setup: enterWorksBuildDetail },
+  { name: 'bid-locked', path: '/', setup: enterBidLocked },
+  { name: 'works-build-loan', path: '/', setup: enterWorksBuildLoan },
+  { name: 'works-facility-loan', path: '/', setup: enterWorksFacilityLoan },
+  { name: 'books-loans', path: '/', setup: enterBooksLoans },
+  { name: 'quarter-locked', path: '/', setup: enterQuarterLocked },
   { name: 'news', path: '/', setup: enterNews },
   { name: 'contacts', path: '/', setup: enterContacts },
   { name: 'crisis', path: '/', setup: enterCrisis },
