@@ -76,6 +76,7 @@ import {
   INITIAL_TUTORIAL_STATE,
   completeTutorialStep,
   currentTutorialStep,
+  tutorialContext,
   startTutorial,
   stopTutorial,
   tutorialIsDone,
@@ -402,6 +403,15 @@ export function App() {
     if (!tutorial.active) return
     if (draft.standingOrders.some((c) => c.kind === 'WORKS' && c.op === 'BUILD')) setTutorial((t) => completeTutorialStep(t, 'build-works'))
     if (draft.standingOrders.some((c) => c.kind === 'PLAN' && c.op === 'SET')) setTutorial((t) => completeTutorialStep(t, 'plan-line'))
+  }, [tutorial.active, draft.standingOrders])
+
+  // P146: etapp 9:s tre steg — rita en konstruktion, anmäl dig till en upphandling, svara på ett kort. Alla tre är köade stående order i draften (ingen handling).
+  useEffect(() => {
+    if (!tutorial.active) return
+    const orders = draft.standingOrders
+    if (orders.some((c) => c.kind === 'DESIGN' && c.op === 'START')) setTutorial((t) => completeTutorialStep(t, 'draw-design'))
+    if (orders.some((c) => c.kind === 'PROGRAMME' && (c.op === 'ENTER' || c.op === 'SUBMIT'))) setTutorial((t) => completeTutorialStep(t, 'enter-programme'))
+    if (orders.some((c) => c.kind === 'TRACE' || c.kind === 'INVESTIGATION')) setTutorial((t) => completeTutorialStep(t, 'answer-card'))
   }, [tutorial.active, draft.standingOrders])
 
   useEffect(() => {
@@ -738,7 +748,7 @@ export function App() {
 
         {/* P91a (§9/§13, P81-20): synlig oavsett flik, samma princip som
             RejectedBanner ovan — se TutorialOverlay.tsx:s egen kommentar. */}
-        <TutorialOverlay step={currentTutorialStep(tutorial)} onDismiss={handleDismissTutorial} />
+        <TutorialOverlay step={currentTutorialStep(tutorial, state.meta.turn, tutorialContext(state))} onDismiss={handleDismissTutorial} />
 
         {armed && <ArmedVerbStrip verb={armed.verb} onClear={() => setArmed(null)} />}
 

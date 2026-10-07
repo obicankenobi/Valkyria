@@ -18,24 +18,62 @@
 // spelaren faktiskt gör dem. Panelen visar alltid det tidigaste steget som
 // ÄNNU inte är klart, vilket i praktiken leder en spelare som följer tipsen
 // rakt igenom i ordning, utan att straffa en som hoppar runt.
-export type TutorialStepId = 'select-country' | 'place-bid' | 'fill-action-slot' | 'end-quarter' | 'read-news' | 'build-works' | 'plan-line' | 'read-alarm'
+import type { GameState } from '@seventh-front/core'
 
+export type TutorialStepId =
+  | 'select-country'
+  | 'place-bid'
+  | 'fill-action-slot'
+  | 'end-quarter'
+  | 'read-news'
+  | 'build-works'
+  | 'plan-line'
+  | 'read-alarm'
+  | 'draw-design'
+  | 'enter-programme'
+  | 'answer-card'
+
+// P146 (ETAPP10 §8 punkt 3): de tre sista stegen hör till etapp 9:s system, som inte finns att göra förrän runt tur 3 (första upphandlingen utlyses tidigast tur 3 och ett utredningskort
+// kommer först när något hänt). Därför delas stegen i två faser: 'early' visas före tur TUTORIAL_TURN_LIMIT, 'late' därefter till TUTORIAL_LATE_LIMIT. Samma icke-grindade form som förut.
 export interface TutorialStep {
   id: TutorialStepId
   prompt: string
+  phase: 'early' | 'late'
+  // late-stegen som bara går att göra när något finns: en öppen anbudsinfordran respektive ett öppet kort.
+  needs?: 'programme' | 'card'
 }
 
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
-  { id: 'select-country', prompt: 'Tap a capital on the map, then open its country file.' },
-  { id: 'place-bid', prompt: 'Open CONTRACTS and place a bid on an open order.' },
-  { id: 'fill-action-slot', prompt: 'Tap an empty action slot and queue a card.' },
-  { id: 'end-quarter', prompt: 'Press End Quarter to resolve the turn.' },
-  { id: 'read-news', prompt: "Read NEWS DESK to see what happened." },
+  { id: 'select-country', prompt: 'Tap a capital on the map, then open its country file.', phase: 'early' },
+  { id: 'place-bid', prompt: 'Open CONTRACTS and place a bid on an open order.', phase: 'early' },
+  { id: 'fill-action-slot', prompt: 'Tap an empty action slot and queue a card.', phase: 'early' },
+  { id: 'end-quarter', prompt: 'Press End Quarter to resolve the turn.', phase: 'early' },
+  { id: 'read-news', prompt: "Read NEWS DESK to see what happened.", phase: 'early' },
   // P181 (ETAPP11 §8 punkt 8): de tre nya stegen för verken. Samma princip som de fem första — aldrig hårt grindade i ordning.
-  { id: 'build-works', prompt: 'Open THE COMPANY and queue a building on a free plot.' },
-  { id: 'plan-line', prompt: 'On the production board, put a contract on a line.' },
-  { id: 'read-alarm', prompt: 'Open This Quarter and tap an alarm to see what needs you.' },
+  { id: 'build-works', prompt: 'Open THE COMPANY and queue a building on a free plot.', phase: 'early' },
+  { id: 'plan-line', prompt: 'On the production board, put a contract on a line.', phase: 'early' },
+  { id: 'read-alarm', prompt: 'Open This Quarter and tap an alarm to see what needs you.', phase: 'early' },
+  // P146: etapp 9:s system.
+  { id: 'draw-design', prompt: 'Open the Drawing office and start a design — it gives you a type of your own to bid with.', phase: 'late' },
+  { id: 'enter-programme', prompt: 'A tender is open on CONTRACTS. Enter it and submit a design.', phase: 'late', needs: 'programme' },
+  { id: 'answer-card', prompt: 'A card is waiting in Legal or the Drawing office. Answer it before the deadline, or it counts as a denial.', phase: 'late', needs: 'card' },
 ]
+
+// Vad som finns att göra just nu; styr vilka late-steg som visas.
+export interface TutorialContext {
+  programmeOpen?: boolean
+  cardOpen?: boolean
+}
+
+// En öppen anbudsinfordran huset inte anmält sig till, respektive ett kort (pappersspår eller utredning) som väntar på svar.
+export function tutorialContext(state: Pick<GameState, 'programmes' | 'traces' | 'house'>): TutorialContext {
+  return {
+    programmeOpen: (state.programmes ?? []).some((p) => p.phase === 'announced' && !p.entrants.some((e) => e.houseId === 'player')),
+    cardOpen:
+      (state.traces ?? []).some((t) => t.houseId === 'player' && t.status === 'surfaced' && t.choice === undefined) ||
+      (state.house.investigations ?? []).some((i) => i.status === 'open'),
+  }
+}
 
 export interface TutorialState {
   active: boolean
@@ -48,16 +86,27 @@ export const INITIAL_TUTORIAL_STATE: TutorialState = { active: false, completed:
 // completion: även en spelare som aldrig råkar göra alla fem (t.ex. hoppar
 // över att bjuda) får inte se banderollen resten av partiet.
 export const TUTORIAL_TURN_LIMIT = 3
+// ...och de sena stegen (etapp 9:s system) får finnas kvar till här.
+export const TUTORIAL_LATE_LIMIT = 12
 
-export function currentTutorialStep(tutorial: TutorialState): TutorialStep | null {
+export function currentTutorialStep(tutorial: TutorialState, turn = 0, context: TutorialContext = {}): TutorialStep | null {
   if (!tutorial.active) return null
-  return TUTORIAL_STEPS.find((step) => !tutorial.completed.includes(step.id)) ?? null
+  const phase = turn >= TUTORIAL_TURN_LIMIT ? 'late' : 'early'
+  return (
+    TUTORIAL_STEPS.find((step) => {
+      if (step.phase !== phase || tutorial.completed.includes(step.id)) return false
+      if (step.needs === 'programme') return context.programmeOpen === true
+      if (step.needs === 'card') return context.cardOpen === true
+      return true
+    }) ?? null
+  )
 }
 
 export function tutorialIsDone(tutorial: TutorialState, turn: number): boolean {
   if (!tutorial.active) return true
-  if (turn >= TUTORIAL_TURN_LIMIT) return true
-  return TUTORIAL_STEPS.every((step) => tutorial.completed.includes(step.id))
+  if (turn >= TUTORIAL_LATE_LIMIT) return true
+  const phase = turn >= TUTORIAL_TURN_LIMIT ? 'late' : 'early'
+  return TUTORIAL_STEPS.filter((step) => step.phase === phase).every((step) => tutorial.completed.includes(step.id))
 }
 
 // Idempotent — markera ett steg klart flera gånger (t.ex. varje ny

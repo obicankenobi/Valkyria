@@ -27,7 +27,7 @@
 // hade varit att uppfinna en detalj i blindo. 7C bygger resten.
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { INFLUENCE_BALANCE, previewAction, validateAction } from '@seventh-front/core'
+import { INFLUENCE_BALANCE, TECH_CATEGORIES, blocOfFaction, previewAction, validateAction } from '@seventh-front/core'
 import type { FactionId, GameState, Official, PlayerAction, RivalId } from '@seventh-front/core'
 import { BottomSheet, Button, Card, Segmented, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
@@ -36,6 +36,7 @@ import { StationCard } from './StationCard.js'
 import { formatMoney } from './ui.js'
 import { VerbIcon } from './VerbIcon.js'
 import { useArmedVerb } from '../uiContext.js'
+import { CATEGORY_NAME } from '../designSheet.js'
 
 type DirectVerb = 'EXPAND' | 'WITHDRAW' | 'RECRUIT' | 'REOPEN'
 // P163: EXPAND/WITHDRAW/RECRUIT köades förut direkt vid ett tryck. De går nu via ett kort som säger vad verbet gör, kostar och riskerar, och köas först med FILE.
@@ -232,6 +233,7 @@ export function CountryFile({
           state={state}
           op={view.op}
           station={station!}
+          factionId={factionId}
           officials={officials}
           rivals={rivals}
           onBack={() => setView({ kind: 'overview' })}
@@ -459,6 +461,7 @@ function TargetPicker({
   state,
   op,
   station,
+  factionId,
   officials,
   rivals,
   onBack,
@@ -467,6 +470,7 @@ function TargetPicker({
   state: GameState
   op: 'LEAK' | 'SABOTAGE' | 'TURN'
   station: { id: string }
+  factionId: FactionId
   officials: Official[]
   rivals: { id: RivalId; name: string }[]
   onBack: () => void
@@ -490,6 +494,31 @@ function TargetPicker({
             {t.label}
           </Card>
         ))}
+      </div>
+      {op === 'LEAK' && <RumourTargets state={state} station={station} factionId={factionId} onPick={onPick} />}
+    </div>
+  )
+}
+
+// P146 (ETAPP10 §8 punkt 2): LEAK mot en bedömning. Ett läckage kan plantera ett rykte hos landets block om att det andra blocket gått före i en kategori — köparnas budgetar följer det upplevda hotet
+// (P120). Målet är "assessment:<block som sägs ligga före>:<kategori>"; validateAction avgör vilka som går (ett redan uppblåst rykte kan inte planteras igen).
+function RumourTargets({ state, station, factionId, onPick }: { state: GameState; station: { id: string }; factionId: FactionId; onPick: (targetId: string) => void }) {
+  const perceiver = blocOfFaction(state, factionId)
+  if (perceiver === null) return null
+  const ahead = perceiver === 'west' ? 'east' : 'west'
+  const open = TECH_CATEGORIES.map((category) => ({ category, targetId: `assessment:${ahead}:${category}` })).filter(
+    ({ targetId }) => validateAction(state, state, { type: 'INTEL', op: 'LEAK', stationId: station.id, targetId }).ok,
+  )
+  return (
+    <div data-testid="cf-rumour-targets">
+      <p className="cf-hint">Or plant a rumour: make this country&apos;s bloc believe the {ahead.toUpperCase()} bloc has pulled ahead in</p>
+      <div className="cf-target-list">
+        {open.map(({ category, targetId }) => (
+          <Card key={category} onClick={() => onPick(targetId)} testId={`cf-rumour-${category}`}>
+            {CATEGORY_NAME[category].toUpperCase()}
+          </Card>
+        ))}
+        {open.length === 0 && <p className="cf-hint">A rumour is already running in every category.</p>}
       </div>
     </div>
   )

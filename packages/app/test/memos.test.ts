@@ -4,13 +4,25 @@ import { createInitialState } from '@seventh-front/core'
 import { MEMOS, dueMemos, findMemo } from '../src/memos.js'
 
 describe('daterade PM (P127)', () => {
-  it('fyra PM i den ordning systemen införs, alla med ett fast datum, en avsändare och minst ett stycke', () => {
-    expect(MEMOS.map((m) => m.id)).toEqual(['drawing-board', 'requirement-cards', 'arms-race', 'procurement'])
+  it('sju PM i den ordning systemen införs (P146 lade till pappersspåret, rapporten från fältet och exportlistan), alla med ett fast datum, en avsändare och minst ett stycke', () => {
+    expect(MEMOS.map((m) => m.id)).toEqual(['drawing-board', 'requirement-cards', 'arms-race', 'procurement', 'paper-trail', 'field-report', 'export-list'])
     for (const m of MEMOS) {
       expect(m.date).toMatch(/^\d{1,2} [A-Z]+ 19\d\d$/)
       expect(m.from.length).toBeGreaterThan(0)
       expect(m.body.length).toBeGreaterThan(0)
     }
+  })
+
+  it('P146: de tre nya PM blir aktuella när deras system har något att visa — ett spår mot huset, en utredning, ett block på generation 2', () => {
+    const state = createInitialState('indochina-slice', 'memo-seed')
+    const ids = (s: typeof state) => dueMemos(s, []).map((m) => m.id)
+    expect(ids(state)).not.toContain('paper-trail')
+    expect(ids(state)).not.toContain('field-report')
+    expect(ids(state)).not.toContain('export-list')
+    state.traces = [{ id: 't1', houseId: 'player', officialId: null, buyerId: 'rvn', kind: 'bribe', severity: 1, turn: 2, status: 'open' }]
+    state.house.investigations = [{ id: 'i1' } as never]
+    state.race.generation.west.armour = 2
+    expect(ids(state)).toEqual(expect.arrayContaining(['paper-trail', 'field-report', 'export-list']))
   })
 
   it('ritbordets PM är aktuellt från start; de andra väntar på sitt system', () => {

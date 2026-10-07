@@ -1,7 +1,7 @@
 // designSheet.ts — P126 (ETAPP9_FORSLAG.md §9). Rena hjälpare åt ritbordet och typbladet: stämpeln ett typblad bär,
 // klassetiketten med osäkerhet ("B ±1"), projektets framsteg och etiketterna. Ren och testbar — ingen state skrivs,
 // och trueQuality/latentFlaw rörs aldrig här (designDisplay i core är den enda vägen till dem, skyddsräcke 5).
-import type { DesignAmbition, DesignEnvironment, DesignFocus, Investigation, QualityClass, RndProject, TechCategory } from '@seventh-front/core'
+import type { Design, DesignAmbition, DesignEnvironment, DesignFocus, GameState, Investigation, QualityClass, RndProject, TechCategory } from '@seventh-front/core'
 
 export type DesignStampKind = 'RECALLED' | 'UNDER REVIEW' | 'PROVEN IN THE FIELD' | 'UNTESTED'
 
@@ -57,3 +57,25 @@ export const AMBITION_HINT: Record<DesignAmbition, string> = {
   ahead: 'Well ahead of its time — the longest, dearest and riskiest.',
 }
 export const ENVIRONMENT_LABEL: Record<DesignEnvironment, string> = { jungle: 'JUNGLE', monsoon: 'MONSOON', mine: 'MINES', wear: 'WEAR' }
+
+// P146 (ETAPP10 §8 punkt 2): var konstruktionen står i kapplöpningen — först på plats hos ett block (huset eller en rival), eller en rivals måttstock den bedöms mot. Bara gällande anspråk
+// (anspråkets generation är blockets nuvarande), samma villkor som race.ts:s currentClaim. Ren, ingen slump.
+export interface DesignStanding {
+  bloc: 'west' | 'east'
+  kind: 'first' | 'yardstick'
+  holder: string // husets namn eller rivalens
+}
+
+export function designStandings(
+  state: { race: GameState['race']; house: Pick<GameState['house'], 'name'>; rivals: GameState['rivals'] },
+  design: Pick<Design, 'category' | 'status'>,
+): DesignStanding[] {
+  const out: DesignStanding[] = []
+  for (const bloc of ['west', 'east'] as const) {
+    const claim = state.race.firstInPlace?.[bloc]?.[design.category]
+    if (!claim || claim.generation !== (state.race.generation[bloc]?.[design.category] ?? 1)) continue
+    if (claim.holder === 'player') out.push({ bloc, kind: 'first', holder: state.house.name })
+    else out.push({ bloc, kind: 'yardstick', holder: state.rivals[claim.holder]?.name ?? claim.holder })
+  }
+  return out
+}

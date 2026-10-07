@@ -918,6 +918,18 @@ td.is-key {
   color: var(--amber-ink);
 }
 
+.order-mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  padding: 4px 12px 8px;
+  font-size: 13px;
+}
+.order-mix-unknown {
+  color: var(--ink-faint, #6a5d48);
+}
+
 .order-meta {
   display: flex;
   gap: 8px;
@@ -6660,4 +6672,18 @@ summary:focus-visible,
 .loan-card-line.is-warning {
   color: var(--red);
   font-weight: 700;
+}
+
+.race-claims {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.race-claim {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  transform: rotate(-0.6deg);
 }

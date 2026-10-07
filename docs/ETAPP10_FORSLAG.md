@@ -372,6 +372,8 @@ Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
 3. **Handledningen** får tre steg till: rita en konstruktion, anmäl dig till en upphandling, svara på ett
    utredningskort. Samma icke-grindade form som P91a.
 4. **Handboken** får uppslag för det som tillkommit sedan P91b och saknar ett.
+> **Utfall P146 (2026-10-08).** Byggt: punkt 2 (alla fyra skärmarna: kedjan och först på plats på tavlan, preferensmixen i ordermappen, först på plats/måttstock på typbladet, ryktet i landmappen), punkt 3 (tre sena handledningssteg, tur 3–12) och punkt 4 (två nya handboksuppslag, *The Arms Race* och *The Paper Trail*; tre nya PM). Punkt 1 (THE COMPANY i fyra lådor) gjordes redan av P179. Se ANDRINGSLOGG.
+
 5. Regel 17 och 18 gäller: `npm run shots` och klippningstestet för varje ny eller flyttad skärm.
 
 ---

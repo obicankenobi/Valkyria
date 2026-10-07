@@ -7,7 +7,7 @@
 import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
 import { useState } from 'react'
-import { getProduct, leadSupplierRejection, orderTerms } from '@seventh-front/core'
+import { buyerPreferenceDisplay, getProduct, leadSupplierRejection, orderTerms } from '@seventh-front/core'
 import type { Bid, GameState, Order, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
@@ -91,8 +91,30 @@ function OrderFolder({
         </span>
       </div>
 
+      <PreferenceMix state={state} order={order} />
+
       {open && (
         <BidForm state={state} order={order} existingBid={existingBid} onSubmit={onSubmit} onRemove={onRemove} />
+      )}
+    </div>
+  )
+}
+
+// P146 (ETAPP10 §8 punkt 2, P111): vad köparen väger i en konstruktion — prestanda, tillförlitlighet, pris. Bara med en station i landet (skyddsräcke 5): utan den "?".
+function PreferenceMix({ state, order }: { state: GameState; order: Order }) {
+  const mix = buyerPreferenceDisplay(state, order, getProduct(order.productId).category)
+  const pct = (v: number) => `${Math.round(v * 100)} %`
+  return (
+    <div className="order-mix" data-testid="order-preference-mix">
+      <span className="meter-label">Buyer weighs</span>
+      {mix === null ? (
+        <span className="order-mix-unknown" title="You need a station in the buyer's country to see what it weighs.">
+          ? — no intelligence
+        </span>
+      ) : (
+        <span>
+          Performance {pct(mix.performance)} · Reliability {pct(mix.reliability)} · Cost {pct(mix.cost)}
+        </span>
       )}
     </div>
   )

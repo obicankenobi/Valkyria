@@ -16,7 +16,7 @@ import type { DecisionGauge } from './DecisionDots.js'
 import { ActionCard } from './ActionCard.js'
 import { Panel, Tag } from './ui.js'
 import { wearClass } from '../stampWear.js'
-import { AMBITION_LABEL, CATEGORY_NAME, ENVIRONMENT_LABEL, FOCUS_LABEL, designStamp, openInvestigationsFor, qualityLabel } from '../designSheet.js'
+import { AMBITION_LABEL, CATEGORY_NAME, ENVIRONMENT_LABEL, FOCUS_LABEL, designStamp, designStandings, openInvestigationsFor, qualityLabel } from '../designSheet.js'
 import type { DesignStampKind } from '../designSheet.js'
 import { standingOrderKey } from '../standingOrderBoard.js'
 
@@ -225,6 +225,15 @@ export function TypeSheet({
           {design.exclusiveTo && <Tag tone="amber">BOUND TO THE {design.exclusiveTo.toUpperCase()}</Tag>}
           {isExportControlled(design) && <Tag tone="red">EXPORT-CONTROLLED</Tag>}
           {design.skunk && <Tag>SPECIAL PROJECT</Tag>}
+        </div>
+      )}
+      {designStandings(state, design).length > 0 && (
+        <div className="type-tags" data-testid={`type-standing-${design.id}`}>
+          {designStandings(state, design).map((s) => (
+            <Tag key={s.bloc} tone={s.kind === 'first' ? 'green' : 'amber'}>
+              {s.kind === 'first' ? `FIRST IN PLACE — ${s.bloc.toUpperCase()}` : `YARDSTICK: ${s.holder.toUpperCase()} — ${s.bloc.toUpperCase()}`}
+            </Tag>
+          ))}
         </div>
       )}
       {view.phasedOutFor.length > 0 && <Tag tone="amber">PHASED OUT FOR {view.phasedOutFor.map((b) => b.toUpperCase()).join(' & ')}</Tag>}

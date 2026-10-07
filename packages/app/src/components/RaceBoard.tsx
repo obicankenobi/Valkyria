@@ -3,7 +3,7 @@
 // rad bär en stämpel för säkerheten (CONFIRMED eller ESTIMATE — … CONFIDENCE) ur raceAssessment. Under tavlan ligger nästa kvartals kravkort,
 // synliga: vilket block som höjer kraven i vilken kategori, men aldrig generationsnumret (requirementCards). Husets egen bästa konstruktion i
 // kategorin är ett litet märke på skalan, så tavlan svarar på frågan "hur ligger jag till?".
-import { BLOCS, TECH_CATEGORIES, raceAssessment, requirementCards } from '@seventh-front/core'
+import { BLOCS, TECH_CATEGORIES, counterCategoryOf, raceAssessment, requirementCards } from '@seventh-front/core'
 import type { Bloc, GameState, TechCategory } from '@seventh-front/core'
 import { DrawingSilhouette } from './DrawingBoard.js'
 import { Panel, Tag } from './ui.js'
@@ -35,6 +35,18 @@ export function RaceBoard({ state }: { state: GameState }) {
   const cards = requirementCards(state)
   const assessments = BLOCS.flatMap((bloc) => TECH_CATEGORIES.map((category) => raceAssessment(state, bloc, category)))
   const own = new Map(TECH_CATEGORIES.map((c) => [c, ownBestGeneration(state, c)] as const))
+  const chain = TECH_CATEGORIES.flatMap((c) => {
+    const to = counterCategoryOf(c)
+    return to === null ? [] : [[c, to] as const]
+  })
+  // Gällande anspråk som först på plats (anspråkets generation = blockets nuvarande): vem som är först hos vilket block.
+  const claims = BLOCS.flatMap((bloc) =>
+    TECH_CATEGORIES.flatMap((category) => {
+      const claim = state.race.firstInPlace?.[bloc]?.[category]
+      if (!claim || claim.generation !== (state.race.generation[bloc]?.[category] ?? 1)) return []
+      return [{ bloc, category, holder: (claim.holder === 'player' ? state.house.name : (state.rivals[claim.holder]?.name ?? claim.holder)).toUpperCase() }]
+    }),
+  )
   const scaleMax = Math.max(4, ...assessments.map((a) => a.high), ...[...own.values()].map((g) => g ?? 0)) + 1
 
   return (
@@ -68,6 +80,20 @@ export function RaceBoard({ state }: { state: GameState }) {
           ))}
         </div>
         <p className="cf-hint race-legend">◆ marks your best design in the category. The crayon line is what your intelligence believes — never the truth.</p>
+
+        <h3 className="race-cards-title">Countermeasure chain</h3>
+        <p className="cf-hint race-chain" data-testid="race-chain">
+          {chain.map(([from, to]) => `${CATEGORY_NAME[from]} pulls ${CATEGORY_NAME[to]}`).join(' · ')}. A strong system in the first category makes the other bloc ask for the second — and arming both sides speeds the chain up.
+        </p>
+        {claims.length > 0 && (
+          <div className="race-claims" data-testid="race-claims">
+            {claims.map((c) => (
+              <span className="race-claim" key={`${c.bloc}-${c.category}`} data-testid={`race-claim-${c.bloc}-${c.category}`}>
+                FIRST IN PLACE · {BLOC_NAME[c.bloc]} · {CATEGORY_NAME[c.category]} · {c.holder}
+              </span>
+            ))}
+          </div>
+        )}
 
         <h3 className="race-cards-title">Requirement cards</h3>
         {cards.length === 0 ? (

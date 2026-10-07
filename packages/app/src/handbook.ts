@@ -25,7 +25,7 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works'
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works' | 'race' | 'trail'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -156,6 +156,29 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'A design that won a procurement with a research grant is bound to the buyer\'s bloc: it cannot be offered to the other bloc or to non-aligned buyers. A design of generation 2 or higher is on the export list — if a house of one bloc sells it across the line, it breaches the list: doomsday rises, heat builds in the buyer\'s theatre and a paper trail is left. A neutral house is exempt.',
       'A civil line (tractors from armour, radio sets from electronics, transport helicopters from aviation) needs tech level 5 in the category. It pays a small, steady sum every quarter whatever the war does — it keeps paying through a ceasefire — and feeds a head start back into research. A special project on the drawing board (skunk works) is faster and dearer, but with less oversight the risk of a hidden flaw is higher.',
       'A chief designer is a named person with a trait — fast, careful or frugal — and a focus of their own; hire one on the drawing board (a rival\'s designer can be poached, at twice the fee, and a rival may poach yours). A bid can be customised to the buyer: dearer to build, a better mark in the scoring — and if it wins there is a one-in-five risk of a scandal at the buyer that halves the order. A licence gives a lump sum and a royalty every quarter, but the licensee learns the design. An embargoed state learns twice as fast, and when it has learnt enough it stops paying and builds on its own — a new rival on your markets. Revoke a licence in time if you do not want one.',
+    ],
+  },
+  {
+    id: 'race',
+    title: 'The Arms Race',
+    summary: 'Each bloc steps up a generation per category on its own timetable. A bloc that pulls ahead leaves the other paying a premium; the first house to deliver on the new level is rewarded.',
+    body: [
+      'West and East each hold a generation in every category (infantry, artillery, armour, aviation, naval, electronics). The arms race board on CONTRACTS shows how far each bloc has come as your intelligence judges it: a crayon line with a stamp for how sure the estimate is. Better cover narrows the line.',
+      'A requirement card says which bloc steps up in which category next quarter — never how far. Buyers raise their tech level with their bloc, so orders that were closed to you open up; a design one generation behind can be phased out for that bloc\'s buyers.',
+      'When one bloc steps and the other does not, the trailing side\'s buyers pay an overprice and a higher advance in that category for a few quarters (a gap shock), and doomsday rises. The gap closes when the other bloc catches up. A ceasefire slows the race and removes the premium.',
+      'The first house to deliver a design on a bloc\'s new level is first in place: a bonus with that bloc that fades over a year and ends when the bloc steps again. Its specifications become the yardstick others are judged against.',
+      'Arming both sides speeds up the race — the counter-measure chain (armour pulls infantry, aviation pulls artillery, artillery pulls electronics) — and the headline names your house. A rumour of a gap can be false — and you can plant one yourself: LEAK against an assessment in a country file makes that country\'s bloc believe the other has pulled ahead, and its buyers raise their budgets.',
+    ],
+  },
+  {
+    id: 'trail',
+    title: 'The Paper Trail',
+    summary: 'Every bribe, favour and trick leaves a paper trail. Sooner or later a trail can surface, and then a card asks you to deny, sacrifice a director or settle.',
+    body: [
+      'A bribe, a favour, a broker deal, a bribe on a bid, and the tricks in a procurement each write a trail against the house. Each quarter an open trail may surface: the chance grows with its age, with the official\'s scandal risk and with the country\'s counter-intelligence, and is higher for a graver trail. Legal counsel costs a little every quarter and makes it much less likely, but leaves a small trail of its own.',
+      'A surfaced trail becomes a card in Legal with a deadline. Deny: cheap now, costs probity, and the truth may come out later and make it worse. Sacrifice a director: a staff member leaves and the damage is one grade lower. Settle: pay, and the damage is one grade lower. An unanswered card counts as a denial.',
+      'The damage depends on the grade: the house\'s name for probity falls; from grade two the quality reputation suffers, the contract the trail was tied to is voided (an advance is repaid), the house is suspended from tendering to that buyer for a while, the official loses standing and the board notes a deduction; at grade three the official falls. A rival\'s exposed trail disqualifies it from an open tender.',
+      'You can report a rival you suspect of bribing a tender board — with intelligence in the buyer\'s country you can see which ones did. A report that is right disqualifies the rival; a false one costs relation with the buyer. A regime change opens the archives.',
     ],
   },
   {
