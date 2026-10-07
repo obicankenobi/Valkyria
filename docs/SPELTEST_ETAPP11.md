@@ -3,7 +3,7 @@
 P184 är ett speltest utan kod. Det kan inte göras av en kodsession: frågan är om verken gör produktionen till något som måste skötas — och
 det avgörs av någon som spelar. Det här dokumentet är det en kodsession kan leverera i stället: vad härnessen redan visar (efter P185–P186,
 100 partier per bot, `indochina-slice`) och vad du behöver känna efter själv. **Läs först avsnittet "Det härnessen visar" — det ändrar
-vad du ska leta efter.** Inget här ersätter att spela. (Uppdaterat 2026-10-07 efter P185–P186; tidigare version byggde på P183.)
+vad du ska leta efter.** Inget här ersätter att spela. (Uppdaterat 2026-10-07 efter P141, som körs före speltestet enligt beslut 11Z; tidigare versioner byggde på P183 och P186.)
 
 ## Hur du spelar
 
@@ -15,42 +15,48 @@ Tre partier på telefon (390×844, installerad som helskärms-PWA). Spela hela s
 
 ## Vad som är nytt sedan P183
 
-- **Huvudleverantörsregeln.** Ett bud i en kategori kräver ett monteringsverk i den (i drift, eller med högst ett kvartal kvar av bygget; verk utomlands räknas). *Mjuk spärr:* utan verk
-  går det att ta små ordrar (högst en linjetur), helt utlagda, med 15 % högre utläggningspåslag. Högst hälften av ett kontrakt får läggas ut. Skälet visas i budmappen (LOCKED), på kartans
-  orderlager ("N open, M locked") och i This Quarter.
-- **Byggnadslån.** Byggmenyn och utbyggnaden har valet CASH / BUILDING LOAN (90 % av kostnaden, 8 % årsränta, avbetalning över 12 kvartal efter driftstart, anläggningen som säkerhet).
-  Lånet syns på anläggningskortet, i Books (`build-loans`) och i Next quarter.
-- **Större ordrar.** Kontrakten är 2–4 gånger linjetakten; färre ordrar (18 i stället för 42 per parti) men ~3,4 gånger så stort ordinarie värde. Leveransfristen växer med ordern (en linjetur extra per
-  linjekvartal), annars vore varje stor order sen per konstruktion.
+- **Huvudleverantörsregeln** (P185). Ett bud i en kategori kräver ett monteringsverk i den (i drift, eller med högst ett kvartal kvar av bygget; verk utomlands räknas). *Mjuk spärr:* utan verk går det att ta små ordrar
+  (högst en linjetur), helt utlagda, med 15 % högre utläggningspåslag. Högst hälften av ett kontrakt får läggas ut. Skälet visas i budmappen (LOCKED), på kartans orderlager ("N open, M locked") och i This Quarter.
+- **Byggnadslån** (P185). Byggmenyn och utbyggnaden har valet CASH / BUILDING LOAN (90 % av kostnaden, 8 % årsränta, avbetalning över 12 kvartal efter driftstart, anläggningen som säkerhet).
+- **Större ordrar och frist som växer med ordern** (P185–P186). Kontrakten är 2–4 gånger linjetakten; leveransfristen växer med en tur per linjekvartal.
+- **Marknaden är bredare och större** (P141). Köparnas tekniknivå följer blockens generation (`blocTechLevelStep` 1): marin öppnas för RVN tur 4, pansar och elektronik tur 12, NLF får artilleri tur 4. Köparnas budgetandel är
+  0,24 (var 0,08), så marknaden är ca 7 Mkr per kvartal (var ca 2,2). Teknik- och specialiseringsbonusen i budpoängen är på specens nivå (2 och 10 %), och en stridsbeprövad eller rivalernas nya konstruktion ger motsidan
+  ett helt behov i motmedelskategorin. Styrelsens tröskel är 11 (var 3,4).
 
 ## Det härnessen visar
 
-| Rad (§9) | Mål | Före (P183) | Efter (P186) | Läsning |
+| Rad (§9) | Mål | Före (P186) | Efter (P141) | Läsning |
 |---|---|---|---|---|
-| `human`, `SCENARIO_COMPLETE` | 40–70 % | 53 % | **48 %** (18 % konkurs) | nådd |
-| `human` mot `human-static`, vinst | ≥ 25 pp | +2 pp | **+41 pp** (48 mot 7 %) | **nådd** — att aldrig bygga lönar sig inte längre |
-| `human-builder`, konkurs | 10–30 % | 90 % | **27 %** | nådd |
-| `human-broad`, vinst | ≥ 35 % | 0 % | **86 %** | nådd — men nära spelbarhetstakets 90 % |
-| `human-specialist`, vinst | ≥ 35 % | 12 % | **1 %** | inte nådd |
-| `human-outsource`, vinst | 20–50 % | 48 % | 10 % | inte nådd (utläggning är nu en dålig strategi) |
-| Utnyttjande, `human` | 70–90 % | 14 % | 18–25 % | inte nådd |
-| Byggda anläggningar per parti, `human` | 3–6 | 0,4 | 0,1–1,0 | inte nådd |
-| Kvartal med ett driftsbeslut | ≥ 60 % | 22 % | 24–29 % | inte nådd |
-| Sena leveranser per parti, `human` | 1–4 | 0,7 | 0,8 | strax under |
-| Partier där tomten tar slut | 30–60 % | 0 % | 0 % | inte nådd |
-| Inkörningens andel av styckkostnadens fall | 15–30 % | ej mätt | **17 %** | nådd (`broad` 24 %, `static` 12 %) |
+| `human`, `SCENARIO_COMPLETE` | 40–70 % | 48 % (18 % konkurs) | **47 %** (0 % konkurs) | nådd |
+| `human` mot `human-static`, vinst | ≥ 25 pp | +41 pp | **+47 pp** (47 mot 0 %) | nådd |
+| `human-builder`, konkurs | 10–30 % | 27 % | **18 %** | nådd |
+| `human-broad`, vinst | ≥ 35 %, under 90 | 86 % | **80 %** | nådd |
+| `human-outsource`, vinst | 20–50 % | 10 % | **33 %** | nådd |
+| Inkörningens andel | 15–30 % | 17 % | **27 %** | nådd |
+| Sena leveranser per parti | 1–4 | 0,8 | 1,0 | på gränsen |
+| `human-specialist`, vinst | ≥ 35 % | 1 % | **1 %** | inte nådd |
+| Utnyttjande, `human` | 70–90 % | 18–25 % | **28 %** | inte nådd |
+| Nya anläggningar per parti, `human` | 3–6 | 0,1 | **1,8** (+ 2,0 utbyggnader) | inte nådd |
+| Kvartal med ett driftsbeslut | ≥ 60 % | 24–29 % | **44 %** | inte nådd |
+| Partier där tomten tar slut | 30–60 % | 0 % | **0 %** | inte nådd |
 
-Övriga botar efter P186: `balanced` 9 %, `aggressive` 13 %, `passive` 5 %, `balanced-pwc` 27 %, `capacity` 0 % vinst / 100 % `BUYOUT` (referensen oförändrad).
+Övriga botar efter P141: `balanced` 36 %, `balanced-pwc` 36 %, `aggressive` 0 %, `passive` 0 %, `human-classic` 0 %, `capacity` 0 % vinst / 97 % `BUYOUT` (referensen oförändrad).
+
+## Kassadalen (P141 tog med den)
+
+`human`, kassa i början av kvartalet, medel / median (Mkr), före → efter: kvartal 7 0,21 / 0,14 → 0,21 / −0,01; kvartal 8 0,30 / 0,36 → 0,16 / 0,08; kvartal 9 0,12 / −0,03 → 1,39 / 1,37; kvartal 10 0,80 / 0,85 → 2,21 / 2,33; kvartal 20
+−0,42 / −0,56 → 3,88 / 3,51. Konkurs 18 % → 0 %. **Dalen i kvartal 5–8 finns kvar** (medianen ligger runt noll, lägsta enskilda −0,5 Mkr): inga kontrakt är bokförda de första fyra kvartalen medan fasta kostnader och tillverkning
+löper. Huset kommer ur den ett till två kvartal tidigare. Du märker den i spelet som en kassa som sjunker från 4 Mkr till nära noll och en första leverans som ger luft.
 
 ## Varför de sista raderna inte nås (verifierat, inte gissat)
 
-1. **Marknaden är budgetbunden och smal.** Köparnas budget är 8 % av deras kassa per kvartal (≈ 2,2 Mkr/kvartal totalt) och marknaden innehåller bara infanteri- och artilleriordrar (köparnas tekniknivå
-   är 2/1/1). Kapacitetsbehovet är ~1–1,5 linjekvartal per kvartal mot två linjer, så utnyttjandet kan inte komma upp i 70 % och ingen fyller åtta platser. NLF:s och Laos budgetar (2,5 / 1,2 Mkr) är mindre
-   än ett 3–4 Mkr-kontrakt, så de beställer sent.
-2. **Specialisten förlorar mot den breda.** I en marknad med två kategorier får `human-specialist` (en kategori, djupt) för få bud; `human-broad` bygger ett infanteriverk tidigt och tar hela infanterimarknaden.
-3. **Att slå på fasta kostnader hjälper inte.** Dubbla fasta kostnader fäller även startpaketet; längre byggtider bryter ett test som pinnar 2–4 kvartal.
+1. **En ren artillerispecialist kan inte nå styrelsemålet.** Artilleri är ca 1,2 ordrar per kvartal; infanteri är hälften av marknadens värde men låst för den som inte byggt ett infanteriverk. `human-specialist` fick 0–3 % vid varje
+   tröskel (8–15) och i varje kombination som prövades.
+2. **Ett kontrakt tillverkas på en linje i taget.** `human` har 3,5–4,7 aktiva kontrakt men fyller på till 7,5 linjer mot slutet; linjerna går 28 % av tiden. En större marknad ger fler kontrakt, inte fler linjer per kontrakt.
+3. **Prövat och förkastat:** orderstorlekar × 2, linjetakt × 0,5 med orderstorlekar × 0,5 (bryter `capacity`-referensen), tre gånger fredspåfyllning, dubbel förbrukningskoppling, budgetandel 0,4–0,6, spridda startbehov, höjda NLF/Laos-
+   budgetar. Se `docs/ETAPP10_FORSLAG.md` §6 för talen.
 
-**Slutsats:** de kvarvarande raderna kräver en regel eller en efterfrågeändring (fler kategorier i marknaden, lägre linjetakt, större budgetar för de små köparna), inte ett tal.
+**Slutsats:** de kvarvarande raderna kräver en regel (ett kontrakt som tar flera linjer, eller en marknad vars form hör ihop med husets specialisering), inte ett tal.
 
 ## Det du behöver känna efter
 
@@ -71,13 +77,14 @@ Tre partier på telefon (390×844, installerad som helskärms-PWA). Spela hela s
 - Verk i NLF:s land, civilt verk utomlands och historiska händelser som träffar ett verk finns inte.
 - Depån (tillverkning på lager) och strejksvaren används inte av någon bot utom strejksvaret; depåns värde i botspel är 0.
 - Ryktet som kostnad för utläggning är inte byggt (11S); `subcontractQualityPenalty` är oförändrad.
-- Kassadalen kvartal 6–9 är inte åtgärdad (P141).
-- `human-broad` vinner 86–89 % — under taket 90, men vakten kör 30 partier och marginalen är tunn.
+- Kassadalen kvartal 5–8 finns kvar i djupet (P141 flyttade bara utgången).
 
 ## Beslut som behövs från ägaren
 
-- **Taket för `human-broad`:** är 86–89 % acceptabelt, eller ska taket (90) eller marknaden ändras? Kodsessionen har inte rört spelbarhetstestet.
-- **Marknadens bredd:** ska scenariot få fler kategorier i efterfrågan (så att specialisten och utnyttjandet kan nå sina rader)? Det är en regel/scenarioändring, inte ett tal.
-- **11R:s klausul "marknadens värde ungefär oförändrat"** gick inte att hålla (värdet steg ~3,4×; en skalning av tröskelvärdena fällde alla botar) — godkänn utfallet eller ge en ny linje.
-- **Små köparnas budgetar** (NLF 2,5 / Laos 1,2 Mkr mot ett kontrakt på 3–4 Mkr): ska de höjas?
-- **`fieldTrialBatchFraction`:** fältprovets sats räknas mot `orderQuantityMin` och är nu större (bieffekt av 11R).
+- **11U–11Z är genomförda** (P141): `human-broad` 80 % (taket orört), marknadens bredd löst (tekniknivån följer blocken), 11R-klausulen struken, NLF/Laos lämnade som de är efter mätning, fältprovets sats återställd, och
+  speltestet P184 kan göras nu (11Z).
+- **Rader som inte nåddes — välj regel eller sänk raden:** (a) ska ett kontrakt kunna tillverkas på flera linjer samtidigt (det gör kapaciteten knapp och bygge/specialisering lönsamma, men ändrar `production.ts` och golden)?
+  (b) ska marknaden formas efter husets specialisering (t.ex. artilleriköpare i större andel), eller ska raden "specialist ≥ 35 %" strykas? (c) är "driftsbeslut ≥ 60 % av kvartalen" och "full tomt 30–60 %" rätt rader
+  för en bot som bygger efter behov, eller ska de följa botens val?
+- **`runInCostPerDoubling` 3 → 2** hölls för att behålla raden "inkörningens andel" (annars 44 %). Specens 3 var markerad provisorisk (P174); godkänn eller ange en annan väg.
+- **Kassadalen** kvartal 5–8 är oförändrad i djup. Vill du ha en regel som mildrar den (större förskott, första ordern garanterad, lägre fasta kostnader de första fyra kvartalen)?

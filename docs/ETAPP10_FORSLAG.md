@@ -286,6 +286,48 @@ Spakar för kalibreringen, i den här ordningen: styrelsens tröskel, köparnas 
 linjernas takt. Spelbarhetstestets gränser och `capacity`-referensen ändras bara efter ägarens beslut.
 Huvudleverantörsregeln, byggnadslånet och fristen som växer med ordern (P185–P186) ändras inte.
 
+> **Utfall P141 (2026-10-07; 100 partier per bot om inget annat anges, `indochina-slice`).**
+>
+> **Steg 0 — mätningen, ingen regel ändrad.** *Var den uppdämda efterfrågan sitter:* behovet (summa för de tre köparna, medel över 60 partier) växte under partiet i alla kategorier — infanteri 180 → 670, artilleri
+> 36 → 119, pansar 24 → 84, flyg 6 → 24, marin 6 → 14, elektronik 18 → 81 — men köparnas tekniknivå (2/1/1) släpper bara fram infanteri och artilleri (pansar, marin och elektronik kräver 3, flyg 4). Pansar, flyg, marin
+> och elektronik låg alltså på tio gånger utlysningströskeln (8/2/2/6) utan att kunna beställas. *Men högen är liten mot en order:* 28 pansarenheter per köpare efter tjugo kvartal mot en minsta order på 30, så den
+> släpper inte loss en störtflod när tekniknivån stiger — den ger en order. Det som faktiskt sätter marknadens storlek är (a) köparnas budgetar (`militaryBudgetQuarterlyShare` 0,08 × statskassorna 28 Mkr = 2,2 Mkr
+> per kvartal) och (b) att en kategori utlyser en order när behovet når tröskeln och sedan golvas till 0 (fredspåfyllningen är 12/2/1/0,3/0,2/1 per kvartal), vilket ger en lucka i kvartal 2–4 (0,0–1,0 nya ordrar) efter de
+> tre första ordrarna i kvartal 1. *Marknadens värde:* 1,0 order per kvartal, ordinarie ca 2,2 Mkr per kvartal, bara infanteri (7,6 ordrar per parti) och artilleri (12,1). *Kassadalen (`human`):* medelkassan faller från
+> 4,0 Mkr till 0,1–0,4 Mkr vid kvartal 5–9, lägsta enskilda −0,5 Mkr, median −0,03 Mkr vid kvartal 9, 18 % konkurs, och slutar på −0,56 Mkr (median) vid kvartal 20. *Utgångsläget mot etapp 11:s måltabell:* se
+> `docs/ETAPP11_FORSLAG.md` §9 (kolumnen "före").
+>
+> **Steg 1 — omläggningen (`unmetNeedBacklogFactor` 2, `orders.ts` `holdUnmetBacklog`).** Ett behov som köparen inte kan beställa hålls vid två gånger utlysningströskeln i stället för att samlas på hög bakom
+> tekniknivån (samma grepp som P53a). Enligt mätningen ovan flyttar det ingen order i dag; det hindrar att en höjd tekniknivå släpper loss en hög. Golden flyttade (egen commit). Ärligt: **efterfrågan begränsas av
+> budgeten och tröskeln, inte av tekniknivån** — det är därför steg 2a behövde en större budgetandel.
+>
+> **Steg 2 — det som slogs på, en i taget, med vakterna körda mellan varje (golden omfryst i egen commit för var och en; attribuerat genom att sätta tillbaka det gamla värdet med ombyggd dist):**
+> - **2a `blocTechLevelStep` 0 → 1** med `militaryBudgetQuarterlyShare` 0,08 → 0,24 och styrelsetröskeln 3,4 → 9. Steget ensamt vid 0,08 gav `human` 5 % vinst och 25 % konkurs vid varje tröskel (0,08: marknaden för liten för
+>   bredare kategorier); steg 2 (två nivåer) gav samma bild som steg 1. Efter kalibreringen: `human` 43–58 %, ingen bot över 90 %.
+> - **2b `techMarginWeight` 0,25 → 2 och `specialisationBidBonusPct` 1 → 10** (specens ursprungliga nivåer) med tröskeln 9 → 11. Vakterna höll (`human-broad` bröt taket vid 10,5 med 28/30 och håller vid 11).
+> - **2c `counterDemandOrders` 0,25 → 1** med oförändrad tröskel (11): `human-builder` vann 28 % med 17 % konkurs (var 8 %), `human` 51 %.
+> - **Inget togs bort:** alla tre gick att slå på med vakterna orörda.
+>
+> **Steg 3 — följdfrågorna.** *11X (NLF/Laos budgetar):* NLF och Laos står redan för ungefär hälften av ordrarna (20 av 40 per parti); en höjning av startbudgetarna (4,0/2,5 och 6,0/4,0 Mkr, 100 partier) sänkte `human` 51 → 38 % och
+> `human-builder` 28 → 22 % utan att flytta någon rad som inte nåddes — **lämnas som de är**. *11Y (fältprovet):* `fieldTrialBatchFraction` 0,25 → 0,0625 (kanon 5 enheter som före P185, pansarbil 2 (3), helikopter och båt 1,
+> radio 3 (5); i pund inom 0,7–4× av före P185 för varje produkt). *11W (styrelsetröskeln):* 11, kalibrerad mot det nya marknadsvärdet (ca 7 Mkr per kvartal). *Följd:* inkörningens andel steg från 17 % till 44 % (mer
+> tillverkning per linje: 3,2 fördubblingar mot 1,7), så `runInCostPerDoubling` 3 → 2 håller raden (27 %).
+>
+> **Prövat och förkastat (40–100 partier):** orderstorlekar × 2 (`human` föll till 3–13 % vid samma tröskel; vid tröskel 12 gav det `human-outsource` 98 % och `human-broad` 95 %); linjetakt × 0,5 med orderstorlekar × 0,5
+> (`human` 85–100 %, `capacity` 8 % vinst / 40 % konkurs — bryter capacity-referensen); fredspåfyllning × 2–3 och `equipmentAttritionCoupling` × 2 (utnyttjandet 28 → 31–35 %, `human-outsource` 70 %); budgetandel 0,4–0,6
+> (utnyttjandet 33 %, ingen rad flyttar); spridda startbehov per köpare (flyttar luckan, tar inte bort den; borttaget igen); en justering av `human-specialist` (bygger först efter första leveransen: 0 % vinst oförändrat;
+> återtagen).
+>
+> **Kassadalen före och efter (`human`, medel/median av lägsta kassa, Mkr):** kvartal 7: 0,21 / 0,14 → 0,21 / −0,01; kvartal 8: 0,30 / 0,36 → 0,16 / 0,08; kvartal 9: 0,12 / −0,03 → 1,39 / 1,37; kvartal 10: 0,80 / 0,85 →
+> 2,21 / 2,33; kvartal 20: −0,42 / −0,56 → 3,88 / 3,51. Konkurs 18 % → 0 %. **Dalen i kvartal 5–8 finns kvar (medianen runt noll)** — den följer av att inga kontrakt är bokförda de första fyra kvartalen medan husets fasta
+> kostnader och tillverkningen löper — men huset kommer ur den ett till två kvartal tidigare och slutar med 3,5–3,9 Mkr i stället för underskott.
+>
+> **Raderna i etapp 11:s måltabell, före och efter:** se `docs/ETAPP11_FORSLAG.md` §9. Nådda: `human` 47 % (konkurs 0 %), +47 pp mot `human-static`, `human-builder` konkurs 18 %, `human-broad` 80 %, `human-outsource` 33 %,
+> inkörningens andel 27 %. **Inte nådda:** utnyttjande 28 % (70–90), `human-specialist` 1 % (≥ 35), driftsbeslut 44 % (≥ 60), full tomt 0 % (30–60), nya anläggningar 1,8 per parti (3–6; med utbyggnader 3,8), sena leveranser
+> 1,0 (gräns 1–4: precis på). **Varför:** en ren artillerispecialist kan inte nå styrelsemålet i en marknad där hälften av värdet är infanteri och låst för den som inte byggt ett verk (artilleri är ca 1,2 ordrar per kvartal);
+> `human` har i genomsnitt 3,5–4,7 aktiva kontrakt men ett bygge per kontrakt går på *en* linje, så linjerna (som boten fyller på till 7,5 mot slutet) går 28 % av tiden. Det är en spak i regelns form (marknadens form, ett kontrakt
+> på flera linjer, eller kapaciteten som kostnad), inte ett tal.
+
 ## 7. Fusket, kapplöpningen och konstruktionerna
 
 **Fusket** (delfråga 2). I dag kommer 12 % av spåren fram, inget kontrakt hävs, och det smutsiga huset
@@ -593,9 +635,8 @@ Spelbarhetstestets golv och tak och capacity-referensen ska hålla efter varje p
 | | P166 | Kartlager med tal | UI |
 | | P167 | Stationens täckning växer med djupet; vilande station kan öppnas igen | regel |
 
-**Körordning (beslut 10P, 2026-10-06).** Klart: premisskontrollen, P139, P140, mätningen i P141, P155.
-Därefter: P162–P164 → P165, P166, P158 → P167 → **etapp 11** → P141 (mätningen om, sedan omläggningen),
-P142–P144, P146–P148 → P149–P154, P156, P157, P159–P161. P145 utgår (10S).
+**Körordning (beslut 10P, 2026-10-06).** Klart: premisskontrollen, P139, P140, mätningen i P141, P155, P162–P167, P158, etapp 11 och **P141 (körd 2026-10-07, se utfallet i §6)**.
+Därefter: P142–P144, P146–P148 → P149–P154, P156, P157, P159–P161. P145 utgår (10S).
 
 **Kapningsordning** om etappen blir för stor: priskriget och sabotaget i P153 först, sedan telexraderna.
 De åtta besluten, motvikten och kartuppspelningen (P158, beslut 10R) kapas inte.

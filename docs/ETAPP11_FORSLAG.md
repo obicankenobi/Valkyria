@@ -342,6 +342,34 @@ fulla samtidigt, vilket är den siffra P172 (kapaciteten räknas om) ska flytta.
 >
 > **Efter P185–P186 (2026-10-07):** se utfallstabellen i §9b — fem av de fetstilta raderna nås (`human` 48 %, +41 pp mot `human-static`, `human-broad` 86 %, `human-builder` konkurs 27 %, inkörningens andel 17 %); utnyttjande, `human-specialist`, driftsbeslut och tomten full nås inte.
 
+> **Efter P141 (2026-10-07; beslut 11U–11Z, 100 partier per bot).** Marknaden är bredare (tekniknivån följer blockens generation), fem gånger större (köparnas budgetandel 0,24) och styrelsetröskeln är 11. Se
+> `docs/ETAPP10_FORSLAG.md` §6 för vad som slogs på och vad som prövades och förkastades.
+>
+> | Rad | Mål | Före (P186) | Efter (P141) | |
+> |---|---|---|---|---|
+> | `human`, `SCENARIO_COMPLETE` | 40–70 % | 48 % | **47 %** | nådd |
+> | `human`, konkurs | ≤ 10 % | 18 % | **0 %** | nådd |
+> | `human` mot `human-static`, vinst | ≥ 25 pp | +41 pp | **+47 pp** (47 mot 0 %) | nådd |
+> | `human-builder`, konkurs | 10–30 % | 27 % | **18 %** | nådd |
+> | `human-broad`, vinst | ≥ 35 % och under taket 90 | 86 % | **80 %** | nådd (marginalen mot taket växte) |
+> | `human-outsource`, vinst | 20–50 % | 10 % | **33 %** | **nådd** (var inte nådd) |
+> | Inkörningens andel av styckkostnadens fall | 15–30 % | 17 % | **27 %** | nådd (efter `runInCostPerDoubling` 3 → 2; utan det 44 %) |
+> | Sena leveranser per parti, `human` | 1–4 | 0,8 | **1,0** | på gränsen |
+> | `human-specialist`, vinst | ≥ 35 % | 1 % | 1 % | inte nådd |
+> | Utnyttjande, `human` | 70–90 % | 18–25 % | 28 % | inte nådd |
+> | Nya anläggningar per parti, `human` | 3–6 | 0,1 (+ 1,4 utbyggnader) | 1,8 (+ 2,0 utbyggnader = 3,8) | inte nådd för nya verk; inom för verk + utbyggnader |
+> | Kvartal med driftsbeslut | ≥ 60 % | 24–29 % | 44 % | inte nådd |
+> | Tomten full | 30–60 % | 0 % | 0 % | inte nådd |
+>
+> Övriga botar före → efter: `balanced` 9 → 36, `balanced-pwc` 27 → 36, `aggressive` 13 → 0, `passive` 5 → 0, `capacity` 0 % vinst / 100 → 97 % BUYOUT (referensen oförändrad), `human-classic` 12 → 0.
+> Spelbarhetstestet (ingen bot över 90 %, bästa ≥ 30 %, bästa aktiva ≥ 20 %) och `capacity`-referensen **orörda och gröna**.
+>
+> **Varför de sista raderna inte nås:** i den här marknaden är artilleri ca 1,2 ordrar per kvartal och infanteri låst för den som inte byggt ett verk; en ren artillerispecialist når därför inte styrelsemålet hur den än
+> bygger (`human-specialist` 0–3 % vid varje tröskel och i varje kombination som prövades), och eftersom ett kontrakt tillverkas på *en* linje i taget går `human`s linjer (som boten fyller på till 7,5 mot slutet) bara
+> 28 % av tiden — en större marknad ger fler kontrakt, inte fler linjer per kontrakt. En order × 2, en linjetakt × 0,5, tre gånger så stor fredspåfyllning och en budgetandel på 0,4–0,6 flyttade utnyttjandet till högst 40 % och
+> bröt andra rader. Det som skulle göra kapaciteten knapp är en regel (ett kontrakt som tar flera linjer, eller en marknad vars form hör ihop med husets specialisering), inte ett tal. **Beslut för ägaren:** se
+> `docs/SPELTEST_ETAPP11.md`.
+
 Spelbarhetstestets golv och tak och capacity-referensen ska hålla, eller revideras uttryckligen av ägaren.
 Etappen flyttar hela ekonomin, så en revidering är trolig och ska beslutas, inte ske tyst.
 
