@@ -110,7 +110,7 @@ describe('bygge', () => {
     trangt(state)
     const works = assemblyWorks(state.house)[0]!
     expect(worksStandingOrders(state, DEFAULT_WORKS)).toContainEqual({ kind: 'WORKS', op: 'EXPAND', facilityId: works.id })
-    state.house.treasury = 1_000_000 // under reserven
+    state.house.treasury = 600_000 // under reserven och under husets fasta kostnader för två kvartal: inte ens med lån
     expect(worksStandingOrders(state, DEFAULT_WORKS).filter((c) => c.kind === 'WORKS')).toEqual([])
   })
 
@@ -222,5 +222,25 @@ describe('huvudleverantörsregeln (P185, 11O)', () => {
     const orders = worksStandingOrders(state, DEFAULT_WORKS)
     const build = orders.find((o) => o.kind === 'WORKS' && o.op === 'BUILD')
     expect(build).toMatchObject({ kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category: 'armour' })
+  })
+})
+
+describe('byggnadslån (P185, 11Q)', () => {
+  it('räcker kassan inte för bygget kontant men för en kontant del av första raten tar boten byggnadslån, annars kontant', () => {
+    const rich = fresh('loan-bot-rich')
+    rich.house.treasury = 40_000_000
+    rich.house.techLevel.armour = 9
+    const product = getProduct('m3_apc')
+    rich.market.openOrders = [order(rich, { id: 'order-apc', productId: 'm3_apc', quantity: product.unitsPerLineTurn * 10, referencePrice: 9_000_000, trueBudget: 12_000_000 })]
+    const cash = worksStandingOrders(rich, DEFAULT_WORKS).find((o) => o.kind === 'WORKS' && o.op === 'BUILD')
+    expect(cash).toMatchObject({ kind: 'WORKS', op: 'BUILD', category: 'armour' })
+    expect((cash as { financing?: string }).financing).toBeUndefined()
+
+    const tight = fresh('loan-bot-tight')
+    tight.house.treasury = 1_500_000 // under reserven (25 % av grundkapitalet + två kvartals fasta kostnader) men över de fasta kostnaderna efter den kontanta delen
+    tight.house.techLevel.armour = 9
+    tight.market.openOrders = [order(tight, { id: 'order-apc', productId: 'm3_apc', quantity: product.unitsPerLineTurn * 10, referencePrice: 9_000_000, trueBudget: 12_000_000 })]
+    const loan = worksStandingOrders(tight, DEFAULT_WORKS).find((o) => o.kind === 'WORKS' && o.op === 'BUILD')
+    expect(loan).toMatchObject({ kind: 'WORKS', op: 'BUILD', category: 'armour', financing: 'loan' })
   })
 })

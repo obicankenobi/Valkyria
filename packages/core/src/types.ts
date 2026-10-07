@@ -396,6 +396,18 @@ export interface LineTooling {
 // De sju anläggningarna (§4.2). Data (namn, en mening, nivåer) ligger i data/facilities.json.
 export type FacilityKind = 'assembly' | 'component' | 'laboratory' | 'design' | 'proving' | 'depot' | 'civil'
 
+// P185 (beslut 11Q): ett bygge eller en utbyggnad betalas kontant (standard) eller delvis med ett byggnadslån.
+export type WorksFinancing = 'cash' | 'loan'
+
+// P185 (11Q): byggnadslånet på en anläggning. principal = det som dragits sammanlagt, outstanding = det som återstår att betala. Amorteringen börjar kvartalet efter driftstart (amortFromTurn)
+// i lika delar (amortPerTurn); räntan löper på det utestående. Utanför house.debt och creditLimit; säkerheten är anläggningen.
+export interface BuildLoan {
+  principal: Money
+  outstanding: Money
+  amortPerTurn: Money | null
+  amortFromTurn: number | null
+}
+
 export interface Facility {
   id: string
   kind: FacilityKind
@@ -412,7 +424,9 @@ export interface Facility {
   invested: Money
   // P170: ett pågående bygge. Ett nytt hus har level 1 och status 'under_construction' tills det är klart; en utbyggnad lämnar statusen 'operating'
   // (monteringsverket går på halv fart, expansionSpeedPct) och höjer nivån till toLevel när det är klart. Kostnaden betalas i lika rater från startTurn.
-  build?: { toLevel: 1 | 2 | 3; startTurn: number; turnsTotal: number; turnsLeft: number; costTotal: Money; costPerTurn: Money; forced: boolean; modernise?: boolean }
+  build?: { toLevel: 1 | 2 | 3; startTurn: number; turnsTotal: number; turnsLeft: number; costTotal: Money; costPerTurn: Money; forced: boolean; modernise?: boolean; financed?: boolean }
+  // P185 (11Q): byggnadslånet, när bygget eller en utbyggnad lånefinansierats. Saknas = inget lån.
+  loan?: BuildLoan
   // P173 (ETAPP11 §5.1): stämningen på anläggningen (0–100; saknas = moraleBaseline), ett lönepåslag i procent efter en eftergift i en strejk (saknas = 0) och en pågående strejk
   // (status 'strike'). Ett sparat parti från före P173 saknar fälten och läses med standardvärdena.
   morale?: Pct
@@ -1303,8 +1317,8 @@ export type StandingOrderChange =
   | { kind: 'LICENCE'; op: 'REVOKE'; licenceId: string }
   // P170 (ETAPP11 §4.3): bygge, utbyggnad, avveckling och markköp är stående order och kostar ingen handling. Forcerat = halva tiden mot dubbla priset.
   // category krävs för ett monteringsverk och ett laboratorium (ett laboratorium per kategori) och ges inte för övriga slag.
-  | { kind: 'WORKS'; op: 'BUILD'; facilityKind: FacilityKind; category?: TechCategory; forced?: boolean; abroad?: FactionId }
-  | { kind: 'WORKS'; op: 'EXPAND'; facilityId: string; forced?: boolean }
+  | { kind: 'WORKS'; op: 'BUILD'; facilityKind: FacilityKind; category?: TechCategory; forced?: boolean; abroad?: FactionId; financing?: WorksFinancing }
+  | { kind: 'WORKS'; op: 'EXPAND'; facilityId: string; forced?: boolean; financing?: WorksFinancing }
   // P174 (§5.3): modernisering av ett monteringsverk — en investering med byggtid som återställer skicket och höjer takten.
   | { kind: 'WORKS'; op: 'MODERNISE'; facilityId: string; forced?: boolean }
   | { kind: 'WORKS'; op: 'SELL'; facilityId: string }

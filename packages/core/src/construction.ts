@@ -4,7 +4,8 @@
 // i `economy`. Alla tal ligger i data/facilities.json.
 import balanceData from './data/balance.json' with { type: 'json' }
 import facilitiesData from './data/facilities.json' with { type: 'json' }
-import { recordExpense, recordIncome } from './ledger.js'
+import { cashPartOf, drawOnInstalment, loanBlocksSale, startAmortisation } from './buildLoan.js'
+import { recordExpense, recordFinancing, recordIncome } from './ledger.js'
 import { round } from './money.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import { FOREIGN_BUILD_COST_FACTOR, FOREIGN_BUILD_EXTRA_TURNS, foreignBuildBlockedReason, homeWorks, hostAlignmentOf } from './foreign.js'
@@ -106,7 +107,7 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (change.abroad) {
         const reason = foreignBuildBlockedReason(draft, change)
         if (reason) return fail(reason)
-        if (house.treasury < planBuild(change.facilityKind, 1, change.forced === true, true).costPerTurn) return fail('cannot afford the first instalment')
+        if (house.treasury < cashPartOf(planBuild(change.facilityKind, 1, change.forced === true, true).costPerTurn, change.financing)) return fail('cannot afford the first instalment')
         return { ok: true }
       }
       if (homeWorks(house).length >= plotOf(house).slots) return fail('the plot is full')
@@ -116,7 +117,7 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (house.works.filter((w) => w.kind === change.facilityKind).length >= data.maxCount) {
         return fail(`the house already has the most ${data.label.toLowerCase()}s it may have`)
       }
-      if (house.treasury < planBuild(change.facilityKind, 1, change.forced === true).costPerTurn) return fail('cannot afford the first instalment')
+      if (house.treasury < cashPartOf(planBuild(change.facilityKind, 1, change.forced === true).costPerTurn, change.financing)) return fail('cannot afford the first instalment')
       return { ok: true }
     }
     case 'EXPAND': {
@@ -124,7 +125,7 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (!facility) return fail('unknown facility')
       if (facility.build) return fail('already being built')
       if (facility.level >= DATA.maxLevel) return fail('already at the highest level')
-      if (house.treasury < planBuild(facility.kind, (facility.level + 1) as 2 | 3, change.forced === true).costPerTurn) return fail('cannot afford the first instalment')
+      if (house.treasury < cashPartOf(planBuild(facility.kind, (facility.level + 1) as 2 | 3, change.forced === true).costPerTurn, change.financing)) return fail('cannot afford the first instalment')
       return { ok: true }
     }
     case 'MODERNISE': {
@@ -144,6 +145,7 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (facility.kind === 'assembly' && house.works.filter((w) => w.kind === 'assembly').length <= 1) return fail('the house needs at least one assembly works')
       if (facility.lines.some((l) => l.assignedContractId !== null)) return fail('a line in it is working on a contract')
       if (facility.kind === 'depot' && (house.stock?.length ?? 0) > 0) return fail('the depot still holds stock')
+      if (loanBlocksSale(facility, saleValueOf(facility))) return fail('the sale would not cover the building loan') // P185 (11Q): avvecklingen löser lånet först
       // P176: ett labb, ritkontor eller en provplats med pågående arbete kan inte avvecklas.
       if (facility.kind === 'laboratory' && house.rnd.some((p) => p.category === facility.category && !p.design)) return fail('the laboratory is running a project')
       if (facility.kind === 'design' && house.rnd.some((p) => p.design)) return fail('the design office is running a project')
@@ -156,6 +158,11 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       return { ok: true }
     }
   }
+}
+
+// P185: vad en avvecklad anläggning säljs för (en andel av det investerade).
+export function saleValueOf(facility: Pick<Facility, 'invested'>): Money {
+  return round((DATA.sellValuePct / 100) * facility.invested)
 }
 
 const money = (n: number): string => `£${n.toLocaleString('en-GB')}`
@@ -178,7 +185,7 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
         status: 'under_construction',
         lines: [],
         invested: 0,
-        build: { toLevel: 1, startTurn: turn + 1, turnsTotal: plan.turnsTotal, turnsLeft: plan.turnsTotal, costTotal: plan.costTotal, costPerTurn: plan.costPerTurn, forced: change.forced === true },
+        build: { toLevel: 1, startTurn: turn + 1, turnsTotal: plan.turnsTotal, turnsLeft: plan.turnsTotal, costTotal: plan.costTotal, costPerTurn: plan.costPerTurn, forced: change.forced === true, ...(change.financing === 'loan' ? { financed: true } : {}) },
         ...(change.abroad ? { location: change.abroad, hostAlignment: hostAlignmentOf(draft, change.abroad), localKnowledge: 0 } : {}),
       }
       house.plot = { ...plotOf(house) }
@@ -186,7 +193,7 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
       emit({
         severity: 'report',
         scope: 'house',
-        headline: `${house.name.toUpperCase()} BREAKS GROUND ON A ${DATA.kinds[change.facilityKind].label.toUpperCase()}${change.abroad ? ` IN ${(draft.factions[change.abroad]?.name ?? change.abroad).toUpperCase()}` : ''}${change.category ? ` (${change.category.toUpperCase()})` : ''} — ${plan.turnsTotal} QUARTERS, ${money(plan.costTotal)}${change.forced ? ', FORCED' : ''}`,
+        headline: `${house.name.toUpperCase()} BREAKS GROUND ON A ${DATA.kinds[change.facilityKind].label.toUpperCase()}${change.abroad ? ` IN ${(draft.factions[change.abroad]?.name ?? change.abroad).toUpperCase()}` : ''}${change.category ? ` (${change.category.toUpperCase()})` : ''} — ${plan.turnsTotal} QUARTERS, ${money(plan.costTotal)}${change.forced ? ', FORCED' : ''}${change.financing === 'loan' ? ', ON A BUILDING LOAN' : ''}`,
         causeId: null,
         delta: {},
         actorIsPlayer: true,
@@ -198,7 +205,7 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
       const facility = house.works.find((w) => w.id === change.facilityId)!
       const toLevel = (facility.level + 1) as 2 | 3
       const plan = planBuild(facility.kind, toLevel, change.forced === true)
-      facility.build = { toLevel, startTurn: turn + 1, turnsTotal: plan.turnsTotal, turnsLeft: plan.turnsTotal, costTotal: plan.costTotal, costPerTurn: plan.costPerTurn, forced: change.forced === true }
+      facility.build = { toLevel, startTurn: turn + 1, turnsTotal: plan.turnsTotal, turnsLeft: plan.turnsTotal, costTotal: plan.costTotal, costPerTurn: plan.costPerTurn, forced: change.forced === true, ...(change.financing === 'loan' ? { financed: true } : {}) }
       emit({
         severity: 'report',
         scope: 'house',
@@ -227,18 +234,24 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
     }
     case 'SELL': {
       const facility = house.works.find((w) => w.id === change.facilityId)!
-      const value = round((DATA.sellValuePct / 100) * facility.invested)
+      const value = saleValueOf(facility)
       house.works = house.works.filter((w) => w !== facility)
       const lineOrders = house.standingOrders?.lines
       if (lineOrders) for (const line of facility.lines) delete lineOrders[line.id]
       house.treasury += value
       recordIncome(draft, 'facilitySale', value)
+      // P185 (11Q): lånet löses först — det utestående dras av försäljningen och bokförs som återbetalning.
+      const repaid = facility.loan?.outstanding ?? 0
+      if (repaid > 0) {
+        house.treasury -= repaid
+        recordFinancing(draft, 'repayments', repaid)
+      }
       emit({
         severity: 'report',
         scope: 'house',
-        headline: `${house.name.toUpperCase()} CLOSES ITS ${DATA.kinds[facility.kind].label.toUpperCase()} ${facility.id.toUpperCase()} — SOLD FOR ${money(value)}, THE WORKFORCE GOES`,
+        headline: `${house.name.toUpperCase()} CLOSES ITS ${DATA.kinds[facility.kind].label.toUpperCase()} ${facility.id.toUpperCase()} — SOLD FOR ${money(value)}${repaid > 0 ? `, THE BUILDING LOAN (${money(repaid)}) PAID OFF FIRST` : ''}, THE WORKFORCE GOES`,
         causeId: null,
-        delta: { treasury: value },
+        delta: { treasury: value - repaid },
         actorIsPlayer: true,
         subjectId: facility.id,
       })
@@ -288,6 +301,7 @@ export function advanceConstruction(ctx: ResolveContext): void {
     const instalment = build.turnsLeft === 1 ? build.costTotal - build.costPerTurn * (build.turnsTotal - 1) : build.costPerTurn
     house.treasury -= instalment
     recordExpense(draft, 'works', instalment)
+    if (build.financed) drawOnInstalment(ctx, facility, instalment) // P185 (11Q): en andel av raten lånas
     build.turnsLeft -= 1
     const label = DATA.kinds[facility.kind].label.toUpperCase()
     if (build.turnsLeft > 0) {
@@ -323,6 +337,7 @@ export function advanceConstruction(ctx: ResolveContext): void {
     facility.status = 'operating'
     facility.invested += build.costTotal
     delete facility.build
+    startAmortisation(facility, turn) // P185 (11Q): amorteringen börjar kvartalet efter driftstart
     if (wasNew && facility.kind === 'assembly') facility.lines = newLines(house, DATA.newAssemblyLines)
     emit({
       severity: 'headline',

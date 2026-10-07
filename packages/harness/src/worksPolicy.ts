@@ -10,10 +10,12 @@ import {
   allLines,
   assemblyWorks,
   capacityOutlook,
+  cashPartOf,
   freeLineSlots,
   getProduct,
   lineMayBuild,
   maintenanceOf,
+  planBuild,
   productionBoard,
   projectedQuarter,
   totalFixedCosts,
@@ -148,6 +150,17 @@ function passedByCategory(state: GameState): TechCategory | null {
   return best
 }
 
+// Första ratens storlek för ett bygge eller en utbyggnad (samma plan som motorn räknar med).
+function instalmentOf(state: GameState, change: StandingOrderChange): number {
+  if (change.kind !== 'WORKS') return 0
+  if (change.op === 'BUILD') return planBuild(change.facilityKind, 1, change.forced === true, change.abroad !== undefined).costPerTurn
+  if (change.op === 'EXPAND') {
+    const works = state.house.works.find((w) => w.id === change.facilityId)
+    return works ? planBuild(works.kind, (works.level + 1) as 2 | 3, change.forced === true).costPerTurn : 0
+  }
+  return 0
+}
+
 function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[] {
   if (opts.style === 'static') return []
   const house = state.house
@@ -156,13 +169,23 @@ function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[
   const trangt = opts.style === 'eager' || opts.expandAlways || pressure(state)
   const carry = (opts.style === 'eager' ? EAGER_FIXED_COST_QUARTERS : FIXED_COST_QUARTERS) * totalFixedCosts(projectedQuarter(state).fixedCosts)
   const afford = (change: StandingOrderChange): boolean => valid(state, change) && house.treasury >= reserve(state, share) + carry
+  // P185 (11Q): räcker kassan inte för bygget kontant — men skulle räcka om en andel av första raten lånades — tar boten byggnadslån. Kassan som blir kvar efter den kontanta delen ska täcka reserven för
+  // husets fasta kostnader (carry); en reservandel av grundkapitalet krävs inte, det är just den lånet ersätter.
+  const withFinancing = (change: StandingOrderChange): StandingOrderChange | null => {
+    if (afford(change)) return change
+    if (change.kind !== 'WORKS' || (change.op !== 'BUILD' && change.op !== 'EXPAND')) return null
+    const loan: StandingOrderChange = { ...change, financing: 'loan' }
+    const firstCash = cashPartOf(instalmentOf(state, change), 'loan')
+    return valid(state, loan) && house.treasury - firstCash >= carry ? loan : null
+  }
 
   // 0) Steady och eager: ett nytt monteringsverk där huset just nu betalar en underleverantör — det är vad en spelare som läser tavlan gör.
   if (opts.categories === 'start' && !opts.expandAlways) {
     const category = passedByCategory(state) ?? outsourcedCategory(state)
     if (category) {
       const change: StandingOrderChange = { kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category }
-      if (afford(change)) return [change]
+      const financed = withFinancing(change)
+      if (financed) return [financed]
     }
   }
   // 1) Ett nytt monteringsverk i en saknad kategori (breda varianter), upp till tre kategorier.
@@ -170,7 +193,8 @@ function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[
     const category = missingCategories(state)[0]
     if (category) {
       const change: StandingOrderChange = { kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category }
-      if (afford(change)) return [change] // bredden byggs tidigt, trångt eller inte
+      const financed = withFinancing(change)
+      if (financed) return [financed] // bredden byggs tidigt, trångt eller inte
     }
   }
   if (!trangt) return []
@@ -179,7 +203,8 @@ function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[
     const works = assemblyWorks(house).find((w) => w.level < 3 && w.status === 'operating' && freeLineSlots(w) === 0)
     if (works) {
       const change: StandingOrderChange = { kind: 'WORKS', op: 'EXPAND', facilityId: works.id }
-      if (afford(change)) return [change]
+      const financed = withFinancing(change)
+      if (financed) return [financed]
     }
   }
   return []

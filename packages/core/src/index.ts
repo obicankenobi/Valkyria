@@ -25,7 +25,7 @@ export { facilityCard, worksAbroadOptions, worksBuildOptions, worksSite } from '
 export type { AbroadOption, BuildOption, FacilityCardData, FacilityLamp } from './facilityCard.js'
 export { MAINTENANCE_LEVELS, maintenanceOf } from './maintenance.js'
 export { STAFFING_STEPS, hasWorkforce } from './workforce.js'
-export { FACILITY_KINDS, advanceConstruction, facilityFixedCost, freePlotSlots, kindLabel, plotOf, validateWorksChange, worksUpkeep } from './construction.js'
+export { FACILITY_KINDS, advanceConstruction, facilityFixedCost, freePlotSlots, kindLabel, planBuild, plotOf, validateWorksChange, worksUpkeep } from './construction.js'
 export { totalFixedCosts } from './resolve/steps/economy.js'
 export { FACILITY_DATA, allLines, assemblyWorks, findLine, freeLineSlots, lineCapacity, worksFromLines } from './works.js'
 export type { StartChoices } from './state.js'
@@ -78,6 +78,9 @@ export { officialId, findOfficial } from './officials.js'
 // använder (P79). ActionValidation/ActionPreview exporteras redan via
 // `export * from './types.js'` ovan.
 export { validateAction, validateBid } from './validateAction.js'
+// P185 (11Q): byggnadslån — villkor, kvartalets betalning och lånet på en anläggning.
+export { buildLoanOf, buildLoanOutlook, buildLoanTerms, cashPartOf, loanAmortisation, loanInterest, loanPartOf } from './buildLoan.js'
+export type { BuildLoanOutlook, BuildLoanRow } from './buildLoan.js'
 // P185 (11O/11P): huvudleverantörsregeln — frågorna budmappen, kartan, This Quarter och botarna ställer.
 export { hasWorksFor, leadSupplierActive, leadSupplierMode, leadSupplierRejection, maxOutsourcePct, programmeRejection, softSmallOrderUnits, subcontractCostFactorFor } from './leadSupplier.js'
 export type { LeadSupplierMode } from './leadSupplier.js'

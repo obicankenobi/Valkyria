@@ -23,6 +23,7 @@ import { allLines } from '../../works.js'
 import { worksUpkeep } from '../../construction.js'
 import { totalWages } from '../../workforce.js'
 import { stockHolding } from '../../stock.js'
+import { serviceBuildLoans } from '../../buildLoan.js'
 
 interface FixedCosts {
   payrollBase: number
@@ -180,6 +181,8 @@ export const economy: ResolveStep = (ctx) => {
       subjectId: null,
     })
   }
+
+  serviceBuildLoans(ctx) // P185 (11Q): byggnadslånens ränta och amortering — uteblir betalningen tas anläggningen
 
   const previousInsolventTurns = house.insolventTurns
   house.insolventTurns = house.treasury < 0 ? house.insolventTurns + 1 : 0

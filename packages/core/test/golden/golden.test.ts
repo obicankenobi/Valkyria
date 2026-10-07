@@ -485,6 +485,9 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // (389f60409b52c, 119a385a480b3f, 8861794d3366e) — verifierat, inte antaget. Golden-botarna bjuder aldrig på en order som den mjuka spärren låser (0 låsta bud i alla tre partier), så det som flyttar hasharna är de
   // två andra delarna av regeln: den mjuka utläggningens påslag (`leadSupplierSoftCostFactor` — med påslaget 1 är aggressive och balanced bit-identiska med P183:s) och rivalernas kapacitetsregel (med påslaget 1 flyttas
   // bara passive). `balance.json`/`balance.frozen.json` fick fem tal och en anteckning. De nya hasharna: passive 465f820de78a2, aggressive 7b987fa509f2e, balanced 811c0674271ff.
+  //
+  // P185 regel 2 (byggnadslån, beslut 11Q): ALLA TRE HASHAR OFÖRÄNDRADE mot regel 1:s (465f820de78a2, 7b987fa509f2e, 811c0674271ff) — verifierat, inte antaget. Ingen golden-bot bygger, så inget lån tas;
+  // `Facility.loan` och `build.financed` utelämnas ur det hashade tillståndet tills ett lån tagits. `balance.frozen.json` följer med (fyra nya tal och en anteckning).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
     { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '465f820de78a2' },
     { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '7b987fa509f2e' },

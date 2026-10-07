@@ -704,5 +704,9 @@
   "leadSupplierMaxOutsourcePct": 50,
   "leadSupplierBuildQuartersLeft": 1,
   "leadSupplierSoftMaxLineTurns": 1,
-  "leadSupplierSoftCostFactor": 1.15
+  "leadSupplierSoftCostFactor": 1.15,
+  "_p185_loan_note": "ETAPP11_FORSLAG.md §9b, beslut 11Q (P185, regel 2): byggnadslån. WORKS BUILD och EXPAND kan lånefinansieras: lånet täcker buildLoanSharePct procent av varje rat under byggtiden och ligger utanför house.debt och creditLimit. Räntan är buildLoanRateAnnual per år (högre än husets vanliga ränta — lånet är dyrare men räcker i dalen) och betalas varje kvartal på det utestående. Amorteringen börjar kvartalet efter driftstart, i lika delar under buildLoanAmortTurns kvartal. Säkerheten är anläggningen: kan huset inte betala ett kvartals ränta och amortering tas den, med linjer och arbetsstyrka. ALLA PROVISORISKA tills P186.",
+  "buildLoanSharePct": 70,
+  "buildLoanRateAnnual": 0.1,
+  "buildLoanAmortTurns": 8
 }
