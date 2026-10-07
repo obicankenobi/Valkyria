@@ -28,13 +28,6 @@ const stroke = (shapes, rand, rough) => shapes.map((s) => shapeToSvg(s, rand, ro
 const fillPoly = (pts, color, opacity = 1) => `<path d="M${pts.map((p) => p.join(' ')).join('L')}Z" fill="${color}" fill-opacity="${opacity}" stroke="none"/>`
 const rectPts = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]
 
-// Taktäckning: tunna parallella linjer, som en ritares skrafferingar.
-function hatch(x, y, w, h, step, slant = 0) {
-  const out = []
-  for (let yy = y + step; yy < y + h; yy += step) out.push(['line', x + 1, yy, x + w - 1, yy + slant])
-  return out
-}
-
 // Sprites i en 76×64-ruta. Varje slag har en egen siluett: sågtaksverket, verkstaden med travar, kupolen och masten, ritsalen med takljus, provbanan,
 // lagret med lastbryggor och fabriken med skorsten. Byggnaden står i markplanens papper (--panel) med --ink-linjer; skuggan ligger nedåt höger.
 const SPRITES = {
