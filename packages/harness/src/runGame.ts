@@ -31,7 +31,7 @@
 // exakt så många rivalbud bidding.ts försöker pröva den turen. En rival som
 // saknas ur draft.rivals (finns inte i etapp 1,5) skulle göra denna nämnare en
 // aning för hög; ingen sådan borttagning existerar ännu.
-import { createInitialState, DESIGN_SPREAD, deriveSectorControl, PLAYER_ATTRIBUTION_KEY, resolveTurn } from '@seventh-front/core'
+import { createInitialState, DESIGN_SPREAD, deriveSectorControl, freePlotSlots, getProduct, PLAYER_ATTRIBUTION_KEY, resolveTurn, runInDoublings } from '@seventh-front/core'
 import type { GameState, TurnResult } from '@seventh-front/core'
 import type { Policy } from './policies.js'
 import { allLines } from '@seventh-front/core'
@@ -120,6 +120,18 @@ export interface GameMetrics {
   peakLineUtilizationPct: number // den högsta enskilda turens andel
   linesBuilt: number // linjer huset byggt under partiet (slutantal minus startantal; BUILD_LINE är enda vägen)
   lateContracts: number // husets kontrakt som någon gång stod som 'late' (distinkta, även om de sedan levererades eller hävdes)
+  // P182 (ETAPP11_FORSLAG.md §9) — kolumnerna för verken. Lästa ur slutläget och ur wire-rubriker (samma teknik som ovan), ingen ny räknare i core.
+  worksBuilt: number // anläggningar huset har vid slutet utöver startpaketet (sålda och förlorade räknas av)
+  worksBuiltKinds: string // vilka, per slag: "assembly:1|depot:1" (tom sträng = inga)
+  worksExpansions: number // utbyggnader som påbörjats ("IS BEING EXPANDED")
+  outsourcedSharePct: number // andel av husets kontraktskvantitet som en underleverantör byggt
+  runInLevel: number // högsta inkörningsnivå (fördubblingar) någon linje nått under sin uppsättning, vid partiets slut
+  strikes: number // strejker som brutit ut
+  breakdowns: number // haverier (skick och övertid)
+  stockValue: number // depåns bokförda värde vid slutet
+  foreignWorksLost: number // verk utomlands som funnits men inte längre finns vid slutet (förlorade i kriget, förstatligade, sålda)
+  operatingDecisionPct: number // andel spelade turer där policyn lade minst en driftsorder (verk, bemanning, underhåll, plan, utläggning, lager, ny linje) — en övre gräns för "driftsbeslut som ändrar utfallet"
+  plotFull: number // 1 om hemmatomten var full efter någon tur före partiets slut, annars 0
 }
 
 // P140 (ETAPP10 §5 punkt 1, premiss 0.14): bara rubriken från traces.ts ("<HUS> IS SUSPENDED FROM TENDERING TO <KÖPARE> UNTIL TURN <n>")
@@ -139,6 +151,24 @@ const STANDING_ORDER_ALARMS = [
 
 const MAX_TURNS = 21
 const YOUNG_DESIGN_TURNS = 4 // §10: "konstruktioner yngre än fyra kvartal" — en tur är ett kvartal
+
+// "assembly:1|depot:1" — slagen huset har vid slutet utöver startpaketets (multimängd-differens, i slagens ordning).
+function builtKinds(initial: readonly string[], final: readonly string[]): string {
+  const counts = new Map<string, number>()
+  for (const k of final) counts.set(k, (counts.get(k) ?? 0) + 1)
+  for (const k of initial) counts.set(k, (counts.get(k) ?? 0) - 1)
+  return [...counts.entries()]
+    .filter(([, n]) => n > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, n]) => `${k}:${n}`)
+    .join('|')
+}
+
+function outsourcedShare(state: GameState): number {
+  const total = state.market.contracts.reduce((sum, c) => sum + c.quantity, 0)
+  const built = state.market.contracts.reduce((sum, c) => sum + (c.outsource?.built ?? 0), 0)
+  return total > 0 ? Math.min(100, (100 * built) / total) : 0
+}
 
 export function runGame(scenarioId: string, seed: string, policyName: string, policy: Policy): GameMetrics {
   let state: GameState = createInitialState(scenarioId, seed)
@@ -175,6 +205,14 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let utilisationSum = 0
   let utilisationPeak = 0
   const lateContractIds = new Set<string>()
+  // P182 — verkens räknare.
+  const initialWorks = state.house.works.map((w) => w.kind)
+  let worksExpansions = 0
+  let strikes = 0
+  let breakdowns = 0
+  let operatingDecisionTurns = 0
+  let plotFull = 0
+  const foreignSeen = new Set<string>()
   // Kontrakt med en konstruktion: konstruktionens ålder (i turer) vid tecknandet, exakt — Contract har inget signeringsfält.
   const designContractAge = new Map<string, number>()
   const enteredIds = new Set<string>()
@@ -199,6 +237,10 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       if (d) designContractAge.set(c.id, state.meta.turn - d.introducedTurn)
     }
     turnsPlayed++
+    const OPERATING_KINDS = ['WORKS', 'WORKFORCE', 'MAINTENANCE', 'PLAN', 'OUTSOURCE', 'STOCK']
+    if (submission.standingOrders.some((c) => OPERATING_KINDS.includes(c.kind)) || submission.actions.some((a) => a.type === 'INTERNAL' && a.op === 'BUILD_LINE')) operatingDecisionTurns++
+    for (const w of state.house.works) if (w.location !== undefined) foreignSeen.add(w.id)
+    if (state.status.kind !== 'ended' && freePlotSlots(state.house) === 0) plotFull = 1
 
     // P75 — jämför prevState (före denna resolveTurn) mot state (efter).
     // Fronter/förband matchas på id; en front eller ett förband som bara
@@ -240,6 +282,9 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
       if (event.headline.startsWith('CEASEFIRE ON THE')) ceasefires++
       if (event.headline.startsWith('FIELD REPORT:')) casualties++
       if (event.headline.startsWith('GAP SHOCK:')) gapShocks++
+      if (event.actorIsPlayer && event.headline.includes('IS BEING EXPANDED TO LEVEL')) worksExpansions++
+      if (event.headline.startsWith('STRIKE AT ')) strikes++
+      if (event.headline.includes(' BREAKS DOWN')) breakdowns++
       if (event.actorIsPlayer && event.headline.includes(' IS FIRST IN PLACE ')) firstInPlace++
       if (event.actorIsPlayer && isSuspensionHeadline(event.headline)) suspensions++
       if (event.actorIsPlayer && event.headline.startsWith('EXPORT CONTROL BREACHED')) exportBreaches++
@@ -394,6 +439,17 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     peakLineUtilizationPct: utilisationPeak,
     linesBuilt: allLines(state.house).length - initialLineCount,
     lateContracts: lateContractIds.size,
+    worksBuilt: state.house.works.length - initialWorks.length,
+    worksBuiltKinds: builtKinds(initialWorks, state.house.works.map((w) => w.kind)),
+    worksExpansions,
+    outsourcedSharePct: outsourcedShare(state),
+    runInLevel: Math.max(0, ...allLines(state.house).map((l) => (l.tooling ? runInDoublings(l, getProduct(l.tooling.productId)) : 0))),
+    strikes,
+    breakdowns,
+    stockValue: (state.house.stock ?? []).reduce((sum, item) => sum + item.bookValue, 0),
+    foreignWorksLost: [...foreignSeen].filter((id) => !state.house.works.some((w) => w.id === id)).length,
+    operatingDecisionPct: turnsPlayed > 0 ? (100 * operatingDecisionTurns) / turnsPlayed : 0,
+    plotFull,
     civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }
 }

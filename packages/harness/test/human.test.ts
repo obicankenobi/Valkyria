@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState, playerWinCurve, resolveTurn } from '@seventh-front/core'
 import type { GameState, Order } from '@seventh-front/core'
-import { balanced, balancedPwc, capacity, capacityPwc, human, POLICIES } from '../src/policies.js'
+import { balanced, balancedPwc, capacity, capacityPwc, human, humanClassic, POLICIES } from '../src/policies.js'
 import { runGame } from '../src/runGame.js'
 import { allLines } from '@seventh-front/core'
 
@@ -107,7 +107,8 @@ describe('human — bud', () => {
     state.market.openOrders = [low, high]
     // Bara en ledig linje → bara EN order får plats.
     state.house.works = [{ ...state.house.works[0]!, lines: allLines(state.house).slice(0, 1) }]
-    const submission = human(state)
+    // `human-classic` grindar buden av lediga linjer (som före etapp 11); `human` grindas av "ready by" (worksPolicy.test.ts).
+    const submission = humanClassic(state)
     expect(submission.bids.map((b) => b.orderId)).toEqual(['order-high'])
   })
 })

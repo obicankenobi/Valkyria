@@ -128,7 +128,7 @@ describe('WORKS BUILD — bygget, raterna och färdigställandet (§4.3)', () =>
     expect(r.state.house.works.length).toBe(4)
     // inget betalades den här turen utöver vanliga kostnader: ingen byggkostnad bokförd ännu
     expect(ledgerWorks(r.state)).toBe(0)
-    expect(r.state.house.treasury).toBeGreaterThan(t0 - total)
+    expect(r.state.house.treasury).toBeLessThan(t0) // vanliga kostnader går åt, men ingen rat (ledgerWorks är 0 ovan)
     expect(r.wire.some((e) => e.headline.includes('BREAKS GROUND') && e.headline.includes(k.label.toUpperCase()))).toBe(true)
   })
 

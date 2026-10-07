@@ -1,6 +1,7 @@
 // foreign.test.ts — P177 (ETAPP11_FORSLAG.md §7, beslut 11G): verk i köparland — bygge, fördelar, motköpet som blir verkligt, och riskerna (kriget, regimskifte, kunskapsspridning).
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json' with { type: 'json' }
+import facilitiesData from '../src/data/facilities.json' with { type: 'json' }
 import { createInitialState } from '../src/state.js'
 import { createRng } from '../src/rng.js'
 import { resolveTurn } from '../src/resolve/index.js'
@@ -14,6 +15,7 @@ import { licenceRivalId } from '../src/licence.js'
 import type { ResolveContext } from '../src/resolve/index.js'
 import type { Contract, Facility, GameState, StandingOrderChange, WireEvent } from '../src/types.js'
 
+const FACILITIES = facilitiesData as unknown as { kinds: { assembly: { buildCost: number[] } } }
 const B = balance as unknown as Record<
   | 'foreignMinRelation' | 'foreignWorksMax' | 'foreignBuildCostFactor' | 'foreignBuildExtraTurns' | 'foreignWageFactor' | 'foreignDeliveryTurnsSaved' | 'localWorksBidBonusPct'
   | 'localWorksNonAlignedFactor' | 'scoreBase' | 'foreignKnowledgePerTurn' | 'foreignKnowledgeThreshold' | 'foreignKnowledgeAfterSpawn' | 'foreignCoupIntegrityPenalty'
@@ -86,7 +88,7 @@ describe('bygget (P177)', () => {
     const works = foreignWorksIn(given.state.house, 'rvn')!
     expect(works).toMatchObject({ kind: 'assembly', status: 'under_construction', location: 'rvn', category: 'infantry' })
     expect(freePlotSlots(given.state.house)).toBe(slotsBefore) // ingen plats på hemmatomten
-    expect(works.build!.costTotal).toBe(Math.round(1_200_000 * B.foreignBuildCostFactor))
+    expect(works.build!.costTotal).toBe(Math.round(FACILITIES.kinds.assembly.buildCost[0]! * B.foreignBuildCostFactor))
     expect(works.build!.turnsTotal).toBe(3 + B.foreignBuildExtraTurns)
     expect(given.wire.some((e) => e.headline.includes('BREAKS GROUND') && e.headline.includes('REPUBLIC OF VIETNAM'))).toBe(true)
     // ett andra verk i samma land

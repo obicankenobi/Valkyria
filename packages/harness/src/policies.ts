@@ -45,6 +45,8 @@ import type {
   TurnSubmission,
 } from '@seventh-front/core'
 import { allLines } from '@seventh-front/core'
+import { DEFAULT_WORKS, buildLineAction, fitsCapacity, worksStandingOrders } from './worksPolicy.js'
+import type { WorksOptions } from './worksPolicy.js'
 
 export type Policy = (state: GameState) => TurnSubmission
 
@@ -668,6 +670,14 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
 
   candidates.sort((a, b) => (lowCash ? b.advancePct - a.advancePct || b.value - a.value : b.value - a.value))
   const bids: Bid[] = []
+  // P182: med verksskötsel grindas buden av "ready by" (kapaciteten i dag och buden redan lagda den här turen), inte av antalet lediga linjer.
+  if (opts.works) {
+    for (const c of candidates) {
+      if (opts.works.gate === 'outlook' && !fitsCapacity(state, bids, c.bid)) continue
+      bids.push(c.bid)
+    }
+    return bids
+  }
   for (const c of candidates) {
     if (c.lines > availableLines) continue
     availableLines -= c.lines
@@ -749,6 +759,8 @@ export interface HumanOptions {
   lowball?: boolean // PROCUREMENT LOWBALL bland knepen
   sabotageProgramme?: boolean // SABOTAGE mot en deltagande rival i en upphandling (targetId 'programme:<id>:<rival>')
   reportRival?: boolean // anmäler (PROGRAMME REPORT) en rival i en upphandling där huset deltar och har underrättelse
+  // P182 (ETAPP11 §9): hur verken sköts (worksPolicy.ts). Utan det beter sig boten som före etapp 11 (bud grindade av lediga linjer, inga byggen) — `human-classic`/`human-plain`.
+  works?: WorksOptions
 }
 
 const CLASSIC_HUMAN: HumanOptions = {
@@ -757,7 +769,7 @@ const CLASSIC_HUMAN: HumanOptions = {
 // `human` = P129:s spelare + P140:s fältprov och uppgraderingar. `PLAIN_HUMAN` är den oförändrade P129–P137-spelaren (variant `human-plain`),
 // kvar som referens så att före/efter-jämförelsen går att köra om.
 const PLAIN_HUMAN: HumanOptions = { ...CLASSIC_HUMAN, designs: true, programmes: true, inquiry: 'settle' }
-const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true }
+const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true, works: DEFAULT_WORKS }
 
 const HUMAN_DESIGN_CASH_SHARE = 0.6 // en ny konstruktion startas bara när kassan är minst så här stor andel av grundkapitalet
 const HUMAN_SETTLE_RESERVE_SHARE = 0.25 // en förlikning betalas bara om kassan efteråt är över så här stor andel av grundkapitalet
@@ -1040,8 +1052,13 @@ export function makeHuman(opts: HumanOptions): Policy {
     if (opts.reverseEngineer) actions.push(...reverseEngineerActions(state))
     if (opts.fieldTrial) actions.push(...fieldTrialActions(state))
 
-    const affordable = [...spendOnlyFromSurplus(state, actions), ...(opts.sabotageProgramme ? programmeSabotageActions(state) : [])].slice(0, state.house.actionPoints)
+    const affordable = [
+      ...spendOnlyFromSurplus(state, actions),
+      ...(opts.sabotageProgramme ? programmeSabotageActions(state) : []),
+      ...(opts.works ? buildLineAction(state, opts.works) : []),
+    ].slice(0, state.house.actionPoints)
     const standing: StandingOrderChange[] = [...humanStandingOrders(state)]
+    if (opts.works) standing.push(...worksStandingOrders(state, opts.works))
     if (opts.research) standing.push(...researchStandingOrders(state, true))
     if (opts.designs) standing.push(...designStandingOrders(state, opts))
     if (opts.programmes) standing.push(...programmeStandingOrders(state, opts))
@@ -1082,6 +1099,12 @@ export const POLICIES: Record<string, Policy> = {
   'human-licence': makeHuman({ ...BASE_HUMAN, licence: true }),
   'human-designer': makeHuman({ ...BASE_HUMAN, designer: true }),
   'human-custom': makeHuman({ ...BASE_HUMAN, customise: true }),
+  // P182 (ETAPP11 §9): fem sätt att sköta verken.
+  'human-static': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, style: 'static' } }),
+  'human-builder': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, style: 'eager', categories: 'broad' } }),
+  'human-outsource': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, style: 'static', gate: 'none', outsource: true } }),
+  'human-specialist': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, expandAlways: true } }),
+  'human-broad': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, categories: 'broad' } }),
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }
