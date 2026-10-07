@@ -16,6 +16,8 @@ import {
   isExportViolation,
   orderTerms,
   playerWinCurve,
+  getProduct,
+  leadSupplierRejection,
 } from '@seventh-front/core'
 import type { DriverLevel } from '@seventh-front/core'
 import type { Bid, GameState, Grade, Order, PlayerWinCurvePoint } from '@seventh-front/core'
@@ -127,6 +129,8 @@ export function BidForm({
     [state, order, designId, deliveryTurns],
   )
   const advanceCash = advanceAmount(price, order.advancePct)
+  // P185 (11O): huvudleverantörsregeln — samma prövning som avgörandet (validateBid), skälet i klartext.
+  const lockReason = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
   // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste därför skalas med
@@ -141,6 +145,15 @@ export function BidForm({
 
   return (
     <div className="bid-panel" data-testid="bid-form">
+      {lockReason !== null && (
+        <div className="bid-locked" role="alert" data-testid="bid-locked">
+          <span className="bid-locked-stamp">LOCKED</span>
+          <p className="bid-locked-reason" data-testid="bid-locked-reason">
+            {lockReason}
+          </p>
+          <p className="bid-locked-hint">Build one in The Company, under Works. A works that is ready within a quarter counts.</p>
+        </div>
+      )}
       <div className="cf-field">
         <span className="cf-field-label">GRADE</span>
         <Segmented options={GRADES.map((g) => ({ value: g, label: g }))} value={grade} onChange={setGrade} testId="bid-grade" />
@@ -287,7 +300,7 @@ export function BidForm({
       <div className="form-actions">
         <Button
           variant="primary"
-          disabled={useKit && kitReason !== null}
+          disabled={lockReason !== null || (useKit && kitReason !== null)}
           onClick={() =>
             onSubmit({
               orderId: order.id,

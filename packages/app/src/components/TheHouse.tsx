@@ -24,7 +24,7 @@
 import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct, projectedQuarter, researchOutlook } from '@seventh-front/core'
 import { totalFixedCosts } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { DrawingBoard } from './DrawingBoard.js'
 import { LedgerChart } from './LedgerChart.js'
@@ -128,6 +128,35 @@ function ExecutiveActions({
 // prognos för nästa kvartal ur accepterade kontrakt och fasta kostnader."
 // projectedQuarter (queries.ts) är den enda källan för alla fem talen nedan —
 // inget här räknas om lokalt.
+// P185 (11Q): byggnadslånen i Books — vad som är utestående per anläggning, och kvartalets betalning. Lånen ligger utanför kreditgränsen; dragen bokförs under "Loans taken" och
+// återbetalningarna under "Repayments" i huvudboken ovan. Läser projectedQuarter (en källa).
+function BuildLoansPanel({ state }: { state: GameState }) {
+  const outlook = projectedQuarter(state).buildLoans
+  if (outlook.loans.length === 0) return null
+  return (
+    <Panel
+      title="Building loans"
+      info="Money the bank lent for building, outside your credit limit. The works is the security: miss a payment and the bank takes it."
+      infoTopic="works"
+      right={<Tag tone="amber">{formatMoney(outlook.outstanding)} owed</Tag>}
+    >
+      <dl className="kv" data-testid="build-loans">
+        {outlook.loans.map((row) => {
+          const works = state.house.works.find((w) => w.id === row.facilityId)
+          return (
+            <Fragment key={row.facilityId}>
+              <dt>{works ? `${works.kind} ${works.id}${works.category ? ` (${works.category})` : ''}` : row.facilityId}</dt>
+              <dd>
+                {formatMoney(row.outstanding)} owed · {formatMoney(row.interest + row.amortisation)} next quarter
+              </dd>
+            </Fragment>
+          )
+        })}
+      </dl>
+    </Panel>
+  )
+}
+
 function NextQuarterPanel({ state }: { state: GameState }) {
   const q = projectedQuarter(state)
   const totalFixed = totalFixedCosts(q.fixedCosts)
@@ -164,6 +193,12 @@ function NextQuarterPanel({ state }: { state: GameState }) {
           <>
             <dt>Debt interest</dt>
             <dd>−{formatMoney(q.interest)}</dd>
+          </>
+        )}
+        {q.buildLoans.total > 0 && (
+          <>
+            <dt>Building loans (interest and repayment)</dt>
+            <dd data-testid="next-quarter-build-loans">−{formatMoney(q.buildLoans.total)}</dd>
           </>
         )}
         <dt>Fixed costs total</dt>
@@ -356,6 +391,8 @@ export function TheHouse({
           </div>
 
           <LedgerChart state={state} />
+
+          <BuildLoansPanel state={state} />
 
           <NextQuarterPanel state={state} />
 

@@ -7,6 +7,7 @@ import { DISPLAY_THRESHOLDS, deriveSectorControl, facilityCard, foreignSite, for
 import type { Faction, FactionId, Front, GameState } from '@seventh-front/core'
 import { findHandbookEntry } from './handbook.js'
 import type { HandbookTopicId } from './handbook.js'
+import { lockedOrders } from './orderLocks.js'
 import { SECTOR_REGIONS } from './sectorRegions.js'
 import { stationOutlook } from './stationOutlook.js'
 import { THEATRE_ENTRY_POINTS } from './supplyLines.js'
@@ -120,6 +121,7 @@ function factionCard(state: GameState, factionId: FactionId, label: string, kick
     ? `${[...new Set(landless)].map((id) => factionName(state, id)).join(' and ')} has no territory of its own on this map; its forces hold sectors inside ${label}.`
     : null
 
+  const lockedForYou = lockedOrders(state, factionId) // P185 (11O): huvudleverantörsregeln, skälet i klartext
   const yours = state.market.contracts.filter((c) => c.buyerId === factionId && (c.status === 'active' || c.status === 'late')).length
   const rivals = Object.values(state.rivals).reduce(
     (sum, r) => sum + r.contracts.filter((c) => c.buyerId === factionId && (c.status === 'active' || c.status === 'late')).length,
@@ -141,6 +143,7 @@ function factionCard(state: GameState, factionId: FactionId, label: string, kick
             : 'None — you have no station here',
       },
       { label: 'Open orders', value: String(state.market.openOrders.filter((o) => o.buyerId === factionId).length) },
+      ...(lockedForYou.length > 0 ? [{ label: 'Locked for you', value: [...new Set(lockedForYou.map((l) => l.reason))].join(' · ') }] : []),
       { label: 'Contracts', value: `${yours} yours, ${rivals} rivals${faction.embargoed ? ' · embargoed' : ''}` },
       {
         label: 'Formations',

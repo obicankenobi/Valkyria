@@ -11,6 +11,7 @@
 // att bli sena, kreditgränsen nära, pågående kris.
 import type { FactionId, GameState } from '@seventh-front/core'
 import { DISPLAY_THRESHOLDS, getProduct, worksAlarms } from '@seventh-front/core'
+import { lockedOrders } from './orderLocks.js'
 import { standingOrderAlarms } from './standingOrderBoard.js'
 
 export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing' | 'inquiry' | 'works'
@@ -42,14 +43,17 @@ const CREDIT_NEAR_LIMIT_PCT = 90 // andel av creditLimit förbrukad: nära grän
 export function deriveThisQuarter(state: GameState): ThisQuarterItem[] {
   const items: ThisQuarterItem[] = []
 
+  const locks = new Map(lockedOrders(state).map((l) => [l.order.id, l.reason]))
   for (const order of state.market.openOrders) {
     const buyer = state.factions[order.buyerId]
     const product = getProduct(order.productId)
+    // P185 (11O): en order huset inte får bjuda på står med skälet i klartext.
+    const lock = locks.get(order.id)
     items.push({
       id: `order-${order.id}`,
       kind: 'order',
-      icon: '§',
-      label: `New order: ${product.name} for ${buyer?.name ?? order.buyerId}`,
+      icon: lock ? '⊘' : '§',
+      label: `${lock ? 'Locked order' : 'New order'}: ${product.name} for ${buyer?.name ?? order.buyerId}${lock ? ` — ${lock}` : ''}`,
       target: { view: 'contracts' },
     })
   }

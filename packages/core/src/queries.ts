@@ -32,6 +32,8 @@ import {
 } from './design.js'
 import type { PreferenceMix } from './design.js'
 import { routeCostFactor } from './outsourcing.js'
+import { buildLoanOutlook } from './buildLoan.js'
+import type { BuildLoanOutlook } from './buildLoan.js'
 import { alignmentPenalty, allProducts, BALANCE, computeRivalBid, computeScore, getProduct, computeUnitCostNow, rivalBlocTerm } from './pricing.js'
 import { computeExpectedProgress } from './resolve/steps/board.js'
 import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/advance.js'
@@ -741,6 +743,8 @@ export interface ProjectedQuarter {
   expectedRevenueNextTurn: Money
   fixedCosts: FixedCostsBreakdown
   interest: Money
+  // P185 (11Q): byggnadslånens ränta och amortering nästa kvartal (utanför husets vanliga skuld) — noll utan lån.
+  buildLoans: BuildLoanOutlook
   netChange: Money
 }
 
@@ -764,9 +768,10 @@ export function projectedQuarter(state: GameState): ProjectedQuarter {
   const fixedCosts = computeFixedCostsBreakdown(state.house, state.meta.turn)
   const interest = computeQuarterlyInterest(state.house)
   const totalFixedCosts = totalFixedCostsOf(fixedCosts)
-  const netChange = expectedRevenueNextTurn - totalFixedCosts - interest
+  const buildLoans = buildLoanOutlook(state.house, state.meta.turn)
+  const netChange = expectedRevenueNextTurn - totalFixedCosts - interest - buildLoans.total
 
-  return { expectedRevenueNextTurn, fixedCosts, interest, netChange }
+  return { expectedRevenueNextTurn, fixedCosts, interest, buildLoans, netChange }
 }
 
 const TECH_CATEGORIES: readonly TechCategory[] = ['infantry', 'artillery', 'armour', 'aviation', 'naval', 'electronics']

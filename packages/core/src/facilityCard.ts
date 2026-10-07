@@ -3,6 +3,7 @@
 // Läser aldrig ur rng. Texterna är engelska (gränssnittets språk).
 import balanceData from './data/balance.json' with { type: 'json' }
 import facilitiesData from './data/facilities.json' with { type: 'json' }
+import { buildLoanTerms, cashPartOf, loanAmortisation, loanInterest } from './buildLoan.js'
 import { FACILITY_KINDS, facilityFixedCost, planBuild, planModernise, plotOf, validateWorksChange } from './construction.js'
 import { foreignBuildBlockedReason, foreignSite, foreignWorks, homeWorks } from './foreign.js'
 import { laboratoryTechCap } from './knowledge.js'
@@ -49,8 +50,10 @@ export interface FacilityCardData {
   build: { toLevel: number; turnsLeft: number; turnsTotal: number; costPerTurn: Money; modernise: boolean } | null
   machineLevel: number
   canModernise: boolean
-  next: { level: number; cost: Money; turns: number; fixedCost: Money; gives: string } | null
+  next: { level: number; cost: Money; turns: number; fixedCost: Money; gives: string; firstInstalment: Money } | null
   sellValue: Money
+  // P185 (11Q): byggnadslånet på anläggningen — utestående, kvartalets ränta och amortering, och när amorteringen börjar (null = under bygget, ännu inte påbörjad).
+  loan: { principal: Money; outstanding: Money; interest: Money; amortisation: Money; amortFromTurn: number | null; turnsLeft: number | null } | null
 }
 
 const money = (n: number): string => `£${n.toLocaleString('en-GB')}`
@@ -150,8 +153,18 @@ export function facilityCard(state: GameState, facilityId: string): FacilityCard
     build: f.build ? { toLevel: f.build.toLevel, turnsLeft: f.build.turnsLeft, turnsTotal: f.build.turnsTotal, costPerTurn: f.build.costPerTurn, modernise: f.build.modernise === true } : null,
     machineLevel: f.machineLevel ?? 0,
     canModernise: f.kind === 'assembly' && f.status === 'operating' && !f.build && (f.machineLevel ?? 0) < MODERNISATION_MAX,
-    next: nextPlan ? { level: nextLevel, cost: nextPlan.costTotal, turns: nextPlan.turnsTotal, fixedCost: round(facilityFixedCost({ kind: f.kind, level: nextLevel as 2 | 3, status: 'operating' })), gives: gives(f.kind, nextLevel) } : null,
+    next: nextPlan ? { level: nextLevel, cost: nextPlan.costTotal, turns: nextPlan.turnsTotal, fixedCost: round(facilityFixedCost({ kind: f.kind, level: nextLevel as 2 | 3, status: 'operating' })), gives: gives(f.kind, nextLevel), firstInstalment: nextPlan.costPerTurn } : null,
     sellValue: round((f.invested * KINDS.sellValuePct) / 100),
+    loan: f.loan
+      ? {
+          principal: f.loan.principal,
+          outstanding: f.loan.outstanding,
+          interest: loanInterest(f.loan),
+          amortisation: loanAmortisation(f.loan, turn, f.build !== undefined),
+          amortFromTurn: f.loan.amortFromTurn,
+          turnsLeft: f.loan.amortPerTurn && f.loan.amortPerTurn > 0 ? Math.ceil(f.loan.outstanding / f.loan.amortPerTurn) : null,
+        }
+      : null,
   }
 }
 
@@ -166,6 +179,10 @@ export interface BuildOption {
   fixedCost: Money
   wage: Money
   needsCategory: boolean
+  // P185 (11Q): första raten (normalt och forcerat) och villkoren för ett byggnadslån — så att menyn kan visa vad kassan betalar kontant och vad banken lånar.
+  firstInstalment: Money
+  forcedFirstInstalment: Money
+  loan: { sharePct: number; rateAnnual: number; amortTurns: number; cashFirstInstalment: Money; forcedCashFirstInstalment: Money }
   // Ett skäl som gäller slaget i stort (null = går att bygga); för ett slag med kategori finns skälet per kategori.
   blockedReason: string | null
   categories: { category: TechCategory; blockedReason: string | null }[]
@@ -205,6 +222,9 @@ export function worksBuildOptions(state: GameState): BuildOption[] {
       fixedCost: facilityFixedCost({ kind, level: 1, status: 'operating' }),
       wage: round(facilityWage({ kind, level: 1, status: 'operating', staffing: 100 }, wageIndexOf(state.house))),
       needsCategory,
+      firstInstalment: plan.costPerTurn,
+      forcedFirstInstalment: forced.costPerTurn,
+      loan: { ...buildLoanTerms(), cashFirstInstalment: cashPartOf(plan.costPerTurn, 'loan'), forcedCashFirstInstalment: cashPartOf(forced.costPerTurn, 'loan') },
       blockedReason,
       categories,
       gives: gives(kind, 1),

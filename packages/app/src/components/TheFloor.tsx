@@ -7,7 +7,7 @@
 import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
 import { useState } from 'react'
-import { getProduct, orderTerms } from '@seventh-front/core'
+import { getProduct, leadSupplierRejection, orderTerms } from '@seventh-front/core'
 import type { Bid, GameState, Order, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
@@ -38,6 +38,8 @@ function OrderFolder({
   // inte krascha vyn" — SCRIPTED-ordrar och krisköp har frontId: null.
   const frontLabel = order.frontId ?? 'No front'
   const deadlineLabel = turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`
+  // P185 (11O): en order huset inte får bjuda på (inget monteringsverk i kategorin) har en LOCKED-stämpel; skälet står i mappen.
+  const lockReason = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
 
   return (
     <div className="order-folder" data-testid="order-folder">
@@ -69,6 +71,11 @@ function OrderFolder({
           <span className={`order-stamp${turnsLeft <= 1 ? ' is-urgent' : ''} ${wearClass(`${order.id}-deadline`)}`} data-testid="order-deadline-stamp">
             {deadlineLabel}
           </span>
+          {lockReason !== null && (
+            <span className={`order-stamp is-urgent is-locked ${wearClass(`${order.id}-locked`)}`} data-testid="order-locked-stamp" title={lockReason}>
+              Locked
+            </span>
+          )}
           <span className={`order-stamp is-advance ${wearClass(`${order.id}-advance`)}`} data-testid="order-advance-stamp">
             {terms.advancePct > 0 ? `Advance ${terms.advancePct} %` : 'No advance'}
           </span>

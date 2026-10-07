@@ -13,6 +13,8 @@ import {
   worksBuildOptions,
   worksSite,
   allLines,
+  buildLoanTerms,
+  cashPartOf,
 } from '@seventh-front/core'
 import type { BuildOption, FacilityCardData, FacilityKind, GameState, MaintenanceLevel, StandingOrderChange, TechCategory, TurnSubmission } from '@seventh-front/core'
 import { standingOrderKey } from '../standingOrderBoard.js'
@@ -67,9 +69,9 @@ function describeQueued(change: StandingOrderChange): string {
   switch (change.kind) {
     case 'WORKS':
       if (change.op === 'BUILD')
-        return `Build ${change.facilityKind}${change.category ? ` (${change.category})` : ''}${change.abroad ? ` in ${change.abroad.toUpperCase()}` : ''}${change.forced ? ', forced' : ''}`
+        return `Build ${change.facilityKind}${change.category ? ` (${change.category})` : ''}${change.abroad ? ` in ${change.abroad.toUpperCase()}` : ''}${change.forced ? ', forced' : ''}${change.financing === 'loan' ? ', on a building loan' : ''}`
       if (change.op === 'BUY_LAND') return 'Buy more land'
-      return `${change.op === 'EXPAND' ? 'Expand' : change.op === 'MODERNISE' ? 'Modernise' : 'Sell'}${'forced' in change && change.forced ? ', forced' : ''}`
+      return `${change.op === 'EXPAND' ? 'Expand' : change.op === 'MODERNISE' ? 'Modernise' : 'Sell'}${'forced' in change && change.forced ? ', forced' : ''}${'financing' in change && change.financing === 'loan' ? ', on a building loan' : ''}`
     case 'WORKFORCE':
       return change.op === 'SET' ? `Staffing to ${change.staffing}%` : `Strike: ${change.response === 'concede' ? 'give in' : 'break it'}`
     case 'MAINTENANCE':
@@ -365,6 +367,21 @@ function FacilitySheet({
         </dl>
       </div>
 
+      {card.loan && (
+        <div className="loan-card" data-testid="facility-loan">
+          <span className="loan-card-title">Building loan</span>
+          <p className="loan-card-line" data-testid="facility-loan-outstanding">
+            {formatMoney(card.loan.outstanding)} outstanding of {formatMoney(card.loan.principal)} drawn. The works is the security.
+          </p>
+          <p className="loan-card-line" data-testid="facility-loan-payment">
+            {card.loan.amortFromTurn === null || card.loan.amortFromTurn > state.meta.turn
+              ? `Interest ${formatMoney(card.loan.interest)} a quarter; repayments start the quarter after it opens.`
+              : `Interest ${formatMoney(card.loan.interest)} and repayment ${formatMoney(card.loan.amortisation)} a quarter${card.loan.turnsLeft !== null ? `, ${card.loan.turnsLeft} left` : ''}.`}
+          </p>
+          <p className="loan-card-line is-warning">Miss a payment and the bank seizes the works, its lines and its workforce.</p>
+        </div>
+      )}
+
       {queued.length > 0 && (
         <div className="facility-queued" data-testid="facility-queued">
           {queued.map((c) => (
@@ -386,6 +403,7 @@ function FacilitySheet({
 
 function FacilityActions({ state, card, onFile }: { state: GameState; card: FacilityCardData; onFile: (c: StandingOrderChange) => void }) {
   const [forced, setForced] = useState<'normal' | 'forced'>('normal')
+  const [financing, setFinancing] = useState<'cash' | 'loan'>('cash')
   const [staffing, setStaffing] = useState<string>(String(card.staffing?.target ?? card.staffing?.current ?? 100))
   const [level, setLevel] = useState<MaintenanceLevel>(card.maintenance ?? 'normal')
   const id = card.id
@@ -395,6 +413,7 @@ function FacilityActions({ state, card, onFile }: { state: GameState; card: Faci
     op: 'EXPAND',
     facilityId: id,
     ...(isForced ? { forced: true } : {}),
+    ...(financing === 'loan' ? { financing: 'loan' as const } : {}),
   }
   const modernise: StandingOrderChange = {
     kind: 'WORKS',
@@ -437,6 +456,13 @@ function FacilityActions({ state, card, onFile }: { state: GameState; card: Faci
             onChange={setForced}
             testId="facility-pace"
           />
+        </div>
+      )}
+      {card.next && (
+        <div className="cf-field">
+          <span className="cf-field-label">PAID FOR</span>
+          <FinancingPicker value={financing} onChange={setFinancing} testId="facility-financing" />
+          {financing === 'loan' && <p className="cf-hint">{loanHint(card.next.firstInstalment)}</p>}
         </div>
       )}
       {card.next && (
@@ -596,6 +622,27 @@ function DepotEditor({ state, onFile }: { state: GameState; onFile: (c: Standing
 }
 
 // ── Byggmenyn: ett val per slag, sedan kategori, byggtakt och bekräftelse ──
+// P185 (11Q): kontant eller byggnadslån. Villkoren kommer ur kärnan (buildLoanTerms, cashPartOf) — inget räknas om här.
+function FinancingPicker({ value, onChange, testId }: { value: 'cash' | 'loan'; onChange: (v: 'cash' | 'loan') => void; testId: string }) {
+  return (
+    <Segmented
+      options={[
+        { value: 'cash' as const, label: 'CASH' },
+        { value: 'loan' as const, label: 'BUILDING LOAN' },
+      ]}
+      value={value}
+      onChange={onChange}
+      testId={testId}
+    />
+  )
+}
+
+function loanHint(firstInstalment: number): string {
+  const terms = buildLoanTerms()
+  const cash = cashPartOf(firstInstalment, 'loan')
+  return `The bank lends ${terms.sharePct}% of each instalment (cash now ${formatMoney(cash)} of the first ${formatMoney(firstInstalment)}), outside your credit limit. Interest ${Math.round(terms.rateAnnual * 100)}% a year; repaid in ${terms.amortTurns} equal quarters once the works opens. The works is the security.`
+}
+
 function BuildMenu({ state, onFile }: { state: GameState; onFile: (c: StandingOrderChange) => void }) {
   const options = worksBuildOptions(state)
   const abroad = worksAbroadOptions(state)
@@ -638,6 +685,7 @@ function BuildDetail({ state, option, onBack, onFile }: { state: GameState; opti
   const firstFree = option.categories.find((c) => c.blockedReason === null)?.category ?? CATEGORIES[0]!
   const [category, setCategory] = useState<TechCategory>(firstFree)
   const [pace, setPace] = useState<'normal' | 'forced'>('normal')
+  const [financing, setFinancing] = useState<'cash' | 'loan'>('cash')
   const forced = pace === 'forced'
   const change: StandingOrderChange = {
     kind: 'WORKS',
@@ -645,6 +693,7 @@ function BuildDetail({ state, option, onBack, onFile }: { state: GameState; opti
     facilityKind: option.kind,
     ...(option.needsCategory ? { category } : {}),
     ...(forced ? { forced: true } : {}),
+    ...(financing === 'loan' ? { financing: 'loan' as const } : {}),
   }
   const validation = validateStandingOrderChange(state, state, change)
   return (
@@ -707,6 +756,15 @@ function BuildDetail({ state, option, onBack, onFile }: { state: GameState; opti
           onChange={setPace}
           testId="build-pace"
         />
+      </div>
+      <div className="cf-field">
+        <span className="cf-field-label">PAID FOR</span>
+        <FinancingPicker value={financing} onChange={setFinancing} testId="build-financing" />
+        {financing === 'loan' && (
+          <p className="cf-hint" data-testid="build-loan-hint">
+            {loanHint(forced ? option.forcedFirstInstalment : option.firstInstalment)}
+          </p>
+        )}
       </div>
       <Button variant="primary" disabled={!validation.ok} onClick={() => onFile(change)} testId="build-file">
         BUILD

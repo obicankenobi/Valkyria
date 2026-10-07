@@ -8,6 +8,7 @@ import { CAPITALS } from './capitals.js'
 import { COUNTRY_TO_FACTION } from './mapInfo.js'
 import type { MapSelection } from './mapInfo.js'
 import { SECTOR_REGIONS } from './sectorRegions.js'
+import { lockedOrders } from './orderLocks.js'
 import { STATION_BAND_PCT } from './stationOutlook.js'
 
 export type MapLayerId = 'orders' | 'supply' | 'rivals' | 'intelligence' | 'politics'
@@ -92,7 +93,9 @@ function linesFor(state: GameState, layer: MapLayerId, buyer: Buyer): string[] {
     case 'orders': {
       const open = state.market.openOrders.filter((o) => o.buyerId === id).length
       const need = faction ? Math.round(Object.values(faction.materielNeed).reduce((a, b) => a + b, 0)) : 0
-      return [`${open} open`, `${contractsOf(state, id).yours} yours`, `need ${need}`]
+      // P185 (11O): ordrar huvudleverantörsregeln låser (inget monteringsverk i kategorin) — "locked" i stället för en tyst lucka.
+      const locked = lockedOrders(state, id).length
+      return [locked > 0 ? `${open} open, ${locked} locked` : `${open} open`, `${contractsOf(state, id).yours} yours`, `need ${need}`]
     }
     case 'rivals': {
       const { yours, rivals } = contractsOf(state, id)
