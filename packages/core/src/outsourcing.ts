@@ -57,7 +57,7 @@ export function subcontractRate(product: Product): number {
 
 // Kan något av husets driftsatta monteringsverk bygga produkten? Ett verk utan kategori (migrerat) bygger allt; ett verk med kategori bara den.
 export function canBuildHere(house: Pick<House, 'works'>, product: Pick<Product, 'category'>): boolean {
-  return house.works.some((w) => w.kind === 'assembly' && w.status === 'operating' && (w.category === null || w.category === product.category))
+  return house.works.some((w) => w.kind === 'assembly' && (w.status === 'operating' || w.status === 'strike') && (w.category === null || w.category === product.category))
 }
 
 // Kostnadsfaktorn för vägen en order skulle gå: husets egna linjer (1) eller en underleverantör (subcontractCostFactor) när inget driftsatt verk kan bygga kategorin.

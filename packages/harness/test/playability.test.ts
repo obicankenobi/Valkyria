@@ -32,7 +32,9 @@ const MAX_WIN_PCT = 90
 // P170 (etapp 11) strök undantaget: med två linjer vann `balanced-pwc` bara 45–60 %. P172 (underleverantörer, kategori per verk och en kostnad som inkluderar
 // utläggningen i `yourUnitCost`) gör att en bot som bjuder rationellt mot `playerWinCurve` vinner 93 % igen — orsaken är densamma som förut (den bjuder aldrig förlustaffärer),
 // så undantaget är tillbaka, enligt vaktens egen regel nedan. Se ANDRINGSLOGG.md.
-const KNOWN_ABOVE_CEILING: readonly string[] = ['balanced-pwc']
+// P173 (arbetsstyrkan): lönerna (och löneindexet) tar bort en bråkdel av marginalen och `balanced-pwc` vinner nu exakt 90 % (27/30) — vid taket, inte över det, så
+// vaktens egen regel (strykt när boten ligger under taket) gäller igen och undantaget är struket. Vinner den över 90 % igen sätts den tillbaka, med samma motivering som ovan.
+const KNOWN_ABOVE_CEILING: readonly string[] = []
 
 describe('spelbarhet (RAPPORT3 §4)', () => {
   it(

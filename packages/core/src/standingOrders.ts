@@ -31,6 +31,7 @@ import type {
 import { findLine } from './works.js'
 import { applyWorksChange, validateWorksChange } from './construction.js'
 import { applyOutsourceChange, validateOutsourceChange } from './outsourcing.js'
+import { applyWorkforceChange, validateWorkforceChange } from './workforce.js'
 
 interface Balance {
   planMaxContracts: number
@@ -147,6 +148,8 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       return validateWorksChange(draft, change)
     case 'OUTSOURCE':
       return validateOutsourceChange(draft, change)
+    case 'WORKFORCE':
+      return validateWorkforceChange(draft, change)
     case 'PLAN': {
       const plans = house.standingOrders?.plan ?? {}
       if (change.op === 'CLEAR') return plans[change.lineId] ? { ok: true } : fail('no plan for that line')
@@ -295,6 +298,9 @@ export function applyStandingOrders(ctx: ResolveContext): void {
         break
       case 'OUTSOURCE':
         applyOutsourceChange(ctx, change)
+        break
+      case 'WORKFORCE':
+        applyWorkforceChange(ctx, change)
         break
       case 'PLAN': {
         const plans = (orders.plan ??= {})

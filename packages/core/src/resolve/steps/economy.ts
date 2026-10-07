@@ -21,6 +21,7 @@ import type { ResolveStep } from '../index.js'
 import type { House, Money } from '../../types.js'
 import { allLines } from '../../works.js'
 import { worksUpkeep } from '../../construction.js'
+import { totalWages } from '../../workforce.js'
 
 interface FixedCosts {
   payrollBase: number
@@ -71,6 +72,7 @@ export interface FixedCostsBreakdown {
   stationUpkeep: Money
   rndOverhead: Money
   facilityUpkeep: Money // P170: anläggningarnas fasta kostnader per kvartal (construction.ts)
+  wages: Money // P173: arbetsstyrkans löner per kvartal (workforce.ts) — bemanning × löneindex
 }
 
 // P85 (ETAPP7_TEKNISK_SPEC.md §13, P81-14/15): utbruten ur computeFixedCosts
@@ -100,12 +102,12 @@ export function computeFixedCostsBreakdown(house: House, turn?: number): FixedCo
     house.rnd.reduce((sum, p) => sum + projectOverheadPerTurn(house, p), 0) +
       testingOverheadCount(house, turn) * BALANCE.fixedCosts.rndOverhead * BALANCE.testingOverheadFactor,
   )
-  return { payroll, lineUpkeep, stationUpkeep, rndOverhead, facilityUpkeep: worksUpkeep(house) }
+  return { payroll, lineUpkeep, stationUpkeep, rndOverhead, facilityUpkeep: worksUpkeep(house), wages: totalWages(house) }
 }
 
 // Summan av en uppdelning — EN källa, läst av economy, queries och gränssnittet.
 export function totalFixedCosts(b: FixedCostsBreakdown): Money {
-  return b.payroll + b.lineUpkeep + b.stationUpkeep + b.rndOverhead + b.facilityUpkeep
+  return b.payroll + b.lineUpkeep + b.stationUpkeep + b.rndOverhead + b.facilityUpkeep + b.wages
 }
 
 function computeFixedCosts(house: House, turn: number): Money {

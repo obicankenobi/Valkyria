@@ -19,6 +19,7 @@ import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
 import { advanceConstruction, worksSpeedFactor } from '../../construction.js'
+import { advanceWorkforce, isOnStrike, workforceSpeedFactor } from '../../workforce.js'
 
 interface Balance {
   deliveryDelayMinTurns: number
@@ -47,7 +48,8 @@ function remainingToProduce(contract: Contract, shipments: readonly Shipment[]):
 export function computeLineThroughput(house: House, line: ProductionLine, product: Product): number {
   const lineEfficiency = line.unitsPerTurnAtFull / house.unitsPerLineTurnDefault
   // P170: ett monteringsverk under utbyggnad går på halv fart (construction.ts).
-  return product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency * worksSpeedFactor(house, line.id)
+  // P173: bemanning och skicklighet (en strejk ger noll).
+  return product.unitsPerLineTurn * (line.capacityPct / 100) * lineEfficiency * worksSpeedFactor(house, line.id) * workforceSpeedFactor(house, line.id)
 }
 
 export const production: ResolveStep = (ctx) => {
@@ -60,6 +62,7 @@ export const production: ResolveStep = (ctx) => {
   // räknar exakt som förut.
   // P170: byggraterna betalas först (11H: bygge och inkörning räknas i production).
   advanceConstruction(ctx)
+  advanceWorkforce(ctx) // P173: löneindex, bemanning, skicklighet, stämning och strejker
   settleSupplyAgreements(ctx)
   for (const line of allLines(house)) {
     const order = standingLineOrder(house, line.id, draft.meta.turn)
@@ -136,6 +139,7 @@ export const production: ResolveStep = (ctx) => {
   const claimed = new Set(allLines(house).map((l) => l.assignedContractId).filter((id): id is string => id !== null))
   for (const line of allLines(house)) {
     if (line.status !== 'idle') continue
+    if (isOnStrike(house, line.id)) continue // P173: ett verk i strejk tar inga nya kontrakt
 
     // P100: ett linjeuppdrag med en kategori tar bara kontrakt i den kategorin; "fritt" (null) och en
     // linje utan order behåller den automatiska tilldelningen.
@@ -188,6 +192,12 @@ export const production: ResolveStep = (ctx) => {
   for (const line of allLines(house)) {
     if (!line.assignedContractId) continue
     if (line.status === 'retooling') continue // avsnitt 3.2: "producerar ingenting under omställningen"
+    if (isOnStrike(house, line.id)) {
+      // P173: strejk — linjen behåller sitt kontrakt men står still (och kontraktet väntar).
+      line.status = 'blocked'
+      line.blockedReason = 'strike'
+      continue
+    }
     const contract = draft.market.contracts.find((c) => c.id === line.assignedContractId)
     if (!needsProduction(contract)) continue
 

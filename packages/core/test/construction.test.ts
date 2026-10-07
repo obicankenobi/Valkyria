@@ -203,6 +203,7 @@ describe('WORKS EXPAND — utbyggnad (§4.3)', () => {
   it('höjer nivån när byggtiden gått; under bygget går monteringsverket på halv fart och är i drift', () => {
     let s = fresh('e-1')
     const turns = F.kinds.assembly.buildTurns[1]!
+    s.house.works[0]!.skill = 90 // P173: skicklighet på taket växer inte vidare, så takten är densamma före och efter bygget
     s = turn(s, [{ kind: 'WORKS', op: 'EXPAND', facilityId: 'works-1' }]).state
     const works = s.house.works[0]!
     expect(works.status).toBe('operating')

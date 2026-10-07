@@ -1,3 +1,4 @@
+import { workforceSpeedFactor } from '../../src/workforce.js'
 import { describe, expect, it } from 'vitest'
 import { production } from '../../src/resolve/steps/production.js'
 import { createRng } from '../../src/rng.js'
@@ -217,10 +218,13 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       // vara 1,0 för scenariots default-linjer — premissen testet vilar på.
       expect(line.unitsPerTurnAtFull).toBe(state.house.unitsPerLineTurnDefault)
 
+      state.house.works[0]!.skill = 90 // P173: skicklighet på taket växer inte vidare; takten är produktens × arbetsstyrkans faktor
+      const factor = workforceSpeedFactor(state.house, line.id)
+
       production(makeCtx(state, 'prod-seed').ctx)
 
       const shipment = state.market.shipments.find((s) => s.contractId === contract.id)
-      expect(shipment?.units).toBe(product.unitsPerLineTurn)
+      expect(shipment?.units).toBe(Math.floor(product.unitsPerLineTurn * factor))
     }
   })
 

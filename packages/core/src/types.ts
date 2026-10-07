@@ -241,6 +241,8 @@ export interface House {
   // P172: husets sammanlagda utlagda tillverkningskostnad per kategori — underlaget för att en underleverantör ska växa till en rival. Saknas före P172.
   outsourcedCost?: Partial<Record<TechCategory, Money>>
   plot: Plot // P170: tomten; varje anläggning (även under byggnad) tar en plats
+  // P173 (§5.1): löneindexet (1 = grundnivå), omräknat varje tur ur doomsday. Saknas i ett sparat parti från före P173 — läses som 1.
+  wageIndex?: number
   works: Facility[] // P169: anläggningarna; produktionslinjerna bor i monteringsverken (works.ts: allLines)
   rnd: RndProject[]
   stations: Station[]
@@ -407,6 +409,11 @@ export interface Facility {
   // P170: ett pågående bygge. Ett nytt hus har level 1 och status 'under_construction' tills det är klart; en utbyggnad lämnar statusen 'operating'
   // (monteringsverket går på halv fart, expansionSpeedPct) och höjer nivån till toLevel när det är klart. Kostnaden betalas i lika rater från startTurn.
   build?: { toLevel: 1 | 2 | 3; startTurn: number; turnsTotal: number; turnsLeft: number; costTotal: Money; costPerTurn: Money; forced: boolean }
+  // P173 (ETAPP11 §5.1): stämningen på anläggningen (0–100; saknas = moraleBaseline), ett lönepåslag i procent efter en eftergift i en strejk (saknas = 0) och en pågående strejk
+  // (status 'strike'). Ett sparat parti från före P173 saknar fälten och läses med standardvärdena.
+  morale?: Pct
+  wagePremiumPct?: number
+  strike?: { sinceTurn: number }
 }
 
 // P170 (§4.1): hemmatomten. slots = antal platser (åtta, 11C); en gång kan fler köpas.
@@ -1281,6 +1288,10 @@ export type StandingOrderChange =
   // P172 (ETAPP11 §5.5): lägg ut ett kontrakt (eller en del av det: 25/50/75/100 %) på en underleverantör, eller ta tillbaka det. Kostar ingen handling.
   | { kind: 'OUTSOURCE'; op: 'SET'; contractId: string; sharePct: number }
   | { kind: 'OUTSOURCE'; op: 'CANCEL'; contractId: string }
+  // P173 (ETAPP11 §5.1): bemanningen. SET anställer eller säger upp till ett mål (25/50/75/100 % av full styrka, gäller från nästa kvartal); STRIKE svarar på en pågående
+  // strejk (ge med sig eller bryta den) och gäller direkt. Kostar ingen handling.
+  | { kind: 'WORKFORCE'; op: 'SET'; facilityId: string; staffing: number }
+  | { kind: 'WORKFORCE'; op: 'STRIKE'; facilityId: string; response: 'concede' | 'break' }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1351,6 +1362,8 @@ export interface StandingOrders {
   civil?: Partial<Record<CivilCategory, { sinceTurn: number }>>
   // P171: produktionsplanen per linje — kontrakten linjen bygger, i ordning (gäller från sinceTurn). Saknas i ett sparat parti från före P171 — läses som inga planer.
   plan?: Record<string, { contractIds: string[]; sinceTurn: number }>
+  // P173: väntande bemanningsändringar per anläggning (anställning eller uppsägning till ett mål, 25/50/75/100) — gäller från sinceTurn och tas bort när de genomförts.
+  workforce?: Record<string, { staffing: number; sinceTurn: number }>
 }
 
 export interface TurnSubmission {

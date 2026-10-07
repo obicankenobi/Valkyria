@@ -51,6 +51,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'OUTSOURCE':
       // P172: en utläggning per kontrakt (SET och CANCEL delar nyckel, den senare vinner).
       return `outsource:${change.contractId}`
+    case 'WORKFORCE':
+      // P173: en bemanning per anläggning, och ett strejksvar per anläggning (den senare vinner).
+      return change.op === 'SET' ? `workforce:${change.facilityId}` : `workforce-strike:${change.facilityId}`
     case 'PLAN':
       // P171: en plan per linje (SET och CLEAR delar nyckel, den senare vinner).
       return `plan:${change.lineId}`

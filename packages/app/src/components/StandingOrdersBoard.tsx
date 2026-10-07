@@ -84,6 +84,9 @@ export function describeChange(change: StandingOrderChange): string {
     case 'OUTSOURCE':
       // P172: utläggning på en underleverantör. Planeringstavlan byggs i P180.
       return change.op === 'CANCEL' ? `${change.contractId.toUpperCase()} · BACK TO OWN LINES` : `${change.contractId.toUpperCase()} · ${change.sharePct}% TO A SUBCONTRACTOR`
+    case 'WORKFORCE':
+      // P173: bemanning och strejksvar. Driftspanelen byggs i P179.
+      return change.op === 'SET' ? `${change.facilityId.toUpperCase()} · STAFFING ${change.staffing}%` : `${change.facilityId.toUpperCase()} · STRIKE: ${change.response === 'concede' ? 'GIVE IN' : 'BREAK IT'}`
     case 'PLAN':
       // P171: produktionsplanen. Planeringstavlan byggs i P180.
       return change.op === 'CLEAR' ? `${change.lineId.toUpperCase()} · AUTOMATIC ASSIGNMENT` : `${change.lineId.toUpperCase()} · ${change.contractIds.length === 0 ? 'AUTOMATIC ASSIGNMENT' : change.contractIds.join(' → ')}`

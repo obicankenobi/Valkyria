@@ -66,7 +66,7 @@ function project(state: GameState, waiting: Job[]): Projection {
 
   const sim: SimLine[] = []
   for (const works of house.works) {
-    if (works.kind !== 'assembly' || works.status !== 'operating') continue
+    if (works.kind !== 'assembly' || (works.status !== 'operating' && works.status !== 'strike')) continue
     for (const line of works.lines) {
       let freeAt = turn
       if (line.assignedContractId) {

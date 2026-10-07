@@ -1,5 +1,5 @@
 {
-  "_note": "ETAPP11_FORSLAG.md §4.2 (P169): de sju anläggningarna. maxLevel är 1–3 för alla (§4.2). linesPerLevel: antalet produktionslinjer ett monteringsverk rymmer på nivå 1, 2 och 3 (§4.2: 'Har 2–6 produktionslinjer'). interimStartLevel/interimWorksCount används sedan P170 BARA av migreringen av sparade partier från före etapp 11 (worksFromLines): fyra fristående linjer blir två monteringsverk på nivå 3, så att ett gammalt parti kan fortsätta bygga linjer; ett nytt parti startar med startpaketet (§4.4, state.ts). Se _p170_note för tomten och byggena.",
+  "_note": "ETAPP11_FORSLAG.md \u00a74.2 (P169): de sju anl\u00e4ggningarna. maxLevel \u00e4r 1\u20133 f\u00f6r alla (\u00a74.2). linesPerLevel: antalet produktionslinjer ett monteringsverk rymmer p\u00e5 niv\u00e5 1, 2 och 3 (\u00a74.2: 'Har 2\u20136 produktionslinjer'). interimStartLevel/interimWorksCount anv\u00e4nds sedan P170 BARA av migreringen av sparade partier fr\u00e5n f\u00f6re etapp 11 (worksFromLines): fyra frist\u00e5ende linjer blir tv\u00e5 monteringsverk p\u00e5 niv\u00e5 3, s\u00e5 att ett gammalt parti kan forts\u00e4tta bygga linjer; ett nytt parti startar med startpaketet (\u00a74.4, state.ts). Se _p170_note f\u00f6r tomten och byggena.",
   "maxLevel": 3,
   "interimStartLevel": 3,
   "interimWorksCount": 2,
@@ -27,7 +27,12 @@
         50000,
         70000
       ],
-      "maxCount": 6
+      "maxCount": 6,
+      "wagePerQuarter": [
+        60000,
+        100000,
+        140000
+      ]
     },
     "component": {
       "label": "Component Shop",
@@ -47,7 +52,12 @@
         30000,
         40000
       ],
-      "maxCount": 2
+      "maxCount": 2,
+      "wagePerQuarter": [
+        30000,
+        45000,
+        60000
+      ]
     },
     "laboratory": {
       "label": "Laboratory",
@@ -67,7 +77,12 @@
         40000,
         60000
       ],
-      "maxCount": 6
+      "maxCount": 6,
+      "wagePerQuarter": [
+        0,
+        0,
+        0
+      ]
     },
     "design": {
       "label": "Design Office",
@@ -87,7 +102,12 @@
         30000,
         45000
       ],
-      "maxCount": 1
+      "maxCount": 1,
+      "wagePerQuarter": [
+        0,
+        0,
+        0
+      ]
     },
     "proving": {
       "label": "Proving Ground",
@@ -107,7 +127,12 @@
         30000,
         40000
       ],
-      "maxCount": 1
+      "maxCount": 1,
+      "wagePerQuarter": [
+        0,
+        0,
+        0
+      ]
     },
     "depot": {
       "label": "Depot",
@@ -127,7 +152,12 @@
         25000,
         35000
       ],
-      "maxCount": 1
+      "maxCount": 1,
+      "wagePerQuarter": [
+        15000,
+        20000,
+        25000
+      ]
     },
     "civil": {
       "label": "Civil Works",
@@ -147,10 +177,15 @@
         40000,
         55000
       ],
-      "maxCount": 1
+      "maxCount": 1,
+      "wagePerQuarter": [
+        40000,
+        60000,
+        80000
+      ]
     }
   },
-  "_p170_note": "ETAPP11_FORSLAG.md §4.1, §4.3, §4.4 (P170): tomten, byggen och startpaketet. Alla tal här är PROVISORISKA tills balanspasset (P183). plot.slots 8 (11C); en gång kan landSlots (4) platser till köpas för landCost — 'högt pris', mer än halva grundkapitalet. maxCount: hur många av ett slag huset får ha (ett laboratorium per kategori, ett ritkontor, en provplats, en depå, ett civilt verk, två komponentverkstäder; monteringsverken begränsas bara av tomten). buildCost[n-1] är kostnaden att nå nivå n (en utbyggnad från n-1 till n), buildTurns[n-1] byggtiden i kvartal (§4.3: 2–4), betalat i lika rater per kvartal. fixedCostPerQuarter[n-1] är anläggningens fasta kostnad på nivå n (läggs till lönen och linjernas upphåll, ingen anläggning under byggnad betalar något). forceTimeFactor/forceCostFactor: forcerat bygge är halva tiden mot dubbla priset (§4.3). expansionSpeedPct: ett monteringsverk under utbyggnad går på halv fart (§4.3). sellValuePct: en avvecklad anläggning säljs för så stor del av det som investerats i den. newAssemblyLines: ett nybyggt monteringsverk levereras med så många linjer (startpaketets två); fler fylls på med BUILD_LINE upp till nivåns plats. startingInvested: bokfört värde för startpaketets monteringsverk (laboratoriet är gratis, §4.4).",
+  "_p170_note": "ETAPP11_FORSLAG.md \u00a74.1, \u00a74.3, \u00a74.4 (P170): tomten, byggen och startpaketet. Alla tal h\u00e4r \u00e4r PROVISORISKA tills balanspasset (P183). plot.slots 8 (11C); en g\u00e5ng kan landSlots (4) platser till k\u00f6pas f\u00f6r landCost \u2014 'h\u00f6gt pris', mer \u00e4n halva grundkapitalet. maxCount: hur m\u00e5nga av ett slag huset f\u00e5r ha (ett laboratorium per kategori, ett ritkontor, en provplats, en dep\u00e5, ett civilt verk, tv\u00e5 komponentverkst\u00e4der; monteringsverken begr\u00e4nsas bara av tomten). buildCost[n-1] \u00e4r kostnaden att n\u00e5 niv\u00e5 n (en utbyggnad fr\u00e5n n-1 till n), buildTurns[n-1] byggtiden i kvartal (\u00a74.3: 2\u20134), betalat i lika rater per kvartal. fixedCostPerQuarter[n-1] \u00e4r anl\u00e4ggningens fasta kostnad p\u00e5 niv\u00e5 n (l\u00e4ggs till l\u00f6nen och linjernas upph\u00e5ll, ingen anl\u00e4ggning under byggnad betalar n\u00e5got). forceTimeFactor/forceCostFactor: forcerat bygge \u00e4r halva tiden mot dubbla priset (\u00a74.3). expansionSpeedPct: ett monteringsverk under utbyggnad g\u00e5r p\u00e5 halv fart (\u00a74.3). sellValuePct: en avvecklad anl\u00e4ggning s\u00e4ljs f\u00f6r s\u00e5 stor del av det som investerats i den. newAssemblyLines: ett nybyggt monteringsverk levereras med s\u00e5 m\u00e5nga linjer (startpaketets tv\u00e5); fler fylls p\u00e5 med BUILD_LINE upp till niv\u00e5ns plats. startingInvested: bokf\u00f6rt v\u00e4rde f\u00f6r startpaketets monteringsverk (laboratoriet \u00e4r gratis, \u00a74.4).",
   "plot": {
     "slots": 8,
     "landSlots": 4,
