@@ -25,6 +25,10 @@ import { BLUEPRINT_CATEGORIES, makeBlueprint } from '../scripts/art/blueprints.m
 import { AGENCY, SPECIMEN_PAGES, fitHeadline, makeFrontPage, wrapText } from '../scripts/art/frontpage.mjs'
 // @ts-expect-error — .mjs utan typdeklaration
 import { SFX_NAMES, SFX_RECIPES, buildFilterGraph, findFfmpeg, measure, renderPcm } from '../scripts/art/sfx.mjs'
+// @ts-expect-error — .mjs utan typdeklaration
+import { GROUND_SIZES, SLOT_GEOMETRY as ART_GEOMETRY, WORKS_KINDS, groundHeight as artGroundHeight, makeBuilding, makeEmptyPlot, makeGround, makeSite, slotRect as artSlotRect } from '../scripts/art/works.mjs'
+import { SLOT_GEOMETRY, groundHeight, slotRect } from '../src/worksLayout.js'
+import facilities from '../../core/src/data/facilities.json'
 import rivals from '../../core/src/data/rivals.json'
 import officials from '../../core/src/data/officials.json'
 import successors from '../../core/src/data/successors.json'
@@ -204,6 +208,51 @@ describe('syntetiserade effekter (10N)', () => {
       expect(q.rms, `${name} nivå`).toBeGreaterThan(0.004)
       expect(Math.abs(q.dc), `${name} likspänning`).toBeLessThan(0.02)
       if (SFX_RECIPES[name].duration < 3) expect(Buffer.compare(Buffer.from(first.buffer, first.byteOffset, first.byteLength), Buffer.from((renderPcm(name, ffmpeg) as Float32Array).buffer)), `${name} determinism`).toBe(0)
+    }
+  })
+})
+
+describe('tomtplanen (P178)', () => {
+  const palette = readPalette() as Record<string, string>
+  it('har exakt en byggnad per anläggningsslag i kärnan, och inga extra', () => {
+    expect([...(WORKS_KINDS as string[])].sort()).toEqual(Object.keys(facilities.kinds).sort())
+  })
+  it('byggnaderna är olika, deterministiska, utan text och inom budget; färgerna kommer ur paletten', () => {
+    const allowed = new Set(Object.values(palette).map((c) => c.toLowerCase()))
+    const sprites = [...(WORKS_KINDS as string[]).map((k) => makeBuilding(k, palette) as string), makeEmptyPlot(palette) as string, makeSite(palette) as string]
+    expect(new Set(sprites).size).toBe(sprites.length)
+    expect(sprites).toEqual([...(WORKS_KINDS as string[]).map((k) => makeBuilding(k, palette) as string), makeEmptyPlot(palette), makeSite(palette)])
+    for (const svg of sprites) {
+      expect(svg).not.toMatch(/<text/)
+      expect(svg).toContain('aria-hidden="true"')
+      expect(kB(svg)).toBeLessThan(8)
+      for (const colour of svg.match(/#[0-9a-fA-F]{6}/g) ?? []) expect(allowed.has(colour.toLowerCase()), colour).toBe(true)
+    }
+  })
+  it('markplanen finns för åtta och tolv platser, utan text, och sprites ryms i sina rutor', () => {
+    expect(GROUND_SIZES).toEqual([8, 12])
+    for (const n of GROUND_SIZES as number[]) {
+      const svg = makeGround(n, palette) as string
+      expect(svg).not.toMatch(/<text/)
+      expect(svg).toContain(`viewBox="0 0 ${SLOT_GEOMETRY.plotWidth} ${groundHeight(n)}"`)
+      expect(kB(svg)).toBeLessThan(16)
+    }
+    for (const kind of WORKS_KINDS as string[]) expect(makeBuilding(kind, palette)).toContain(`viewBox="0 0 ${SLOT_GEOMETRY.width} ${SLOT_GEOMETRY.height}"`)
+  })
+  it('geometrin i appen är identisk med fabrikens', () => {
+    expect(SLOT_GEOMETRY).toEqual(ART_GEOMETRY)
+    for (const n of [8, 12]) expect(groundHeight(n)).toBe(artGroundHeight(n))
+    for (let i = 0; i < 12; i++) expect(slotRect(i)).toEqual(artSlotRect(i))
+  })
+  it('markplanens rutor ryms inom tomten och överlappar inte', () => {
+    for (let i = 0; i < 12; i++) {
+      const a = slotRect(i)
+      expect(a.x + a.width).toBeLessThanOrEqual(SLOT_GEOMETRY.plotWidth)
+      for (let j = i + 1; j < 12; j++) {
+        const b = slotRect(j)
+        const overlap = a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+        expect(overlap, `${i}/${j}`).toBe(false)
+      }
     }
   })
 })

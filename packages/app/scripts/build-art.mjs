@@ -8,6 +8,7 @@
 //   public/art/seals/<hus>.svg          rivalhusens sigill (P155, currentColor)
 //   public/art/portraits/<id>.svg       siluettporträtt i profil, platshållare för ägarens porträtt (P155)
 //   public/art/blueprints/<kategori>.svg  blåkopior per materielkategori för ritbordet (P155)
+//   public/art/works/<slag>.svg, empty.svg, site.svg, ground-8|12.svg  tomtplanen i THE COMPANY: en byggnad per anläggningsslag, en tom stakad plats, en byggplats och markplanen (P178)
 //   (förstasidor byggs ur händelsens text av makeFrontPage i art/frontpage.mjs — här bara som specimen i kontaktarket)
 //   docs/ui/art/index.html             kontaktark för självgranskning (rendera med
 //                                      scripts/art/render-sheet.mjs)
@@ -24,6 +25,7 @@ import { SEAL_IDS, makeSeal } from './art/seals.mjs'
 import { PERSON_IDS, makeSilhouette } from './art/silhouettes.mjs'
 import { BLUEPRINT_CATEGORIES, makeBlueprint } from './art/blueprints.mjs'
 import { SPECIMEN_PAGES, makeFrontPage } from './art/frontpage.mjs'
+import { GROUND_SIZES, WORKS_KINDS, makeBuilding, makeEmptyPlot, makeGround, makeSite } from './art/works.mjs'
 
 const APP = fileURLToPath(new URL('..', import.meta.url))
 const REPO = join(APP, '..', '..')
@@ -38,6 +40,10 @@ export function buildArt() {
   for (const id of SEAL_IDS) files[`packages/app/public/art/seals/${id}.svg`] = makeSeal(id)
   for (const id of PERSON_IDS) files[`packages/app/public/art/portraits/${id}.svg`] = makeSilhouette(id, palette)
   for (const category of BLUEPRINT_CATEGORIES) files[`packages/app/public/art/blueprints/${category}.svg`] = makeBlueprint(category, palette)
+  for (const kind of WORKS_KINDS) files[`packages/app/public/art/works/${kind}.svg`] = makeBuilding(kind, palette)
+  files['packages/app/public/art/works/empty.svg'] = makeEmptyPlot(palette)
+  files['packages/app/public/art/works/site.svg'] = makeSite(palette)
+  for (const slots of GROUND_SIZES) files[`packages/app/public/art/works/ground-${slots}.svg`] = makeGround(slots, palette)
   files['docs/ui/art/index.html'] = contactSheet(palette)
   return files
 }
@@ -58,6 +64,9 @@ function contactSheet(p) {
   const sealsSteel = SEAL_IDS.map((id) => `<figure><div class="seal small">${makeSeal(id)}</div><figcaption>${id} · 48 px</figcaption></figure>`).join('')
   const portraits = PERSON_IDS.map((id) => `<figure><div class="portrait">${makeSilhouette(id, p)}</div><figcaption>${id}</figcaption></figure>`).join('')
   const blueprints = BLUEPRINT_CATEGORIES.map((c) => `<figure><div class="plate">${makeBlueprint(c, p)}</div><figcaption>${c}</figcaption></figure>`).join('')
+  const works = WORKS_KINDS.map((k) => `<figure><div class="sprite">${makeBuilding(k, p)}</div><figcaption>${k}</figcaption></figure>`).join('') +
+    `<figure><div class="sprite">${makeEmptyPlot(p)}</div><figcaption>empty</figcaption></figure><figure><div class="sprite">${makeSite(p)}</div><figcaption>site</figcaption></figure>`
+  const grounds = GROUND_SIZES.map((n) => `<figure><div class="ground">${makeGround(n, p)}</div><figcaption>ground-${n}</figcaption></figure>`).join('')
   const pages = SPECIMEN_PAGES.map((spec) => `<figure><div class="page">${makeFrontPage(spec, p)}</div><figcaption>${spec.seed}</figcaption></figure>`).join('')
   return `<!doctype html>
 <html lang="sv"><head><meta charset="utf-8"><title>Tillgångsfabriken — kontaktark</title>
@@ -77,6 +86,7 @@ figcaption{font-size:9px;letter-spacing:.04em;opacity:.75}
 .seal svg{width:96px;height:96px;color:${p.red}}.seal.small svg{width:48px;height:48px;color:${p['steel-ink']}}
 .portrait svg{width:110px;height:110px;display:block}.plate svg{width:300px;height:auto;display:block}
 .page svg{width:320px;height:auto;display:block;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.sprite svg{width:152px;height:128px;display:block;background:${p.bg}}.ground svg{width:336px;height:auto;display:block}
 .wide{display:flex;flex-wrap:wrap;gap:16px}
 </style></head><body>
 <h1>Tillgångsfabriken — kontaktark (genererad av build-art.mjs, ändra inte för hand)</h1>
@@ -86,6 +96,8 @@ ${grid(24, 'paper')}${grid(44, 'paper')}${grid(24, 'steel')}
 <section class="steel"><h2>Sigill på stål · 48 px</h2><div class="wide">${sealsSteel}</div></section>
 <section class="paper"><h2>Siluettporträtt i profil (P155) — tjänstemän, ersättare, ordförande</h2><div class="wide">${portraits}</div></section>
 <section class="paper"><h2>Blåkopior per kategori (P155)</h2><div class="wide">${blueprints}</div></section>
+<section class="paper"><h2>Tomtplanen — byggnader, tom plats och byggplats (P178)</h2><div class="wide">${works}</div></section>
+<section class="paper"><h2>Tomtplanen — markplan för åtta och tolv platser (P178)</h2><div class="wide">${grounds}</div></section>
 <section class="paper"><h2>Förstasidor — specimen (P155, text i inline-SVG)</h2><div class="wide">${pages}</div></section>
 </body></html>
 `
