@@ -18,7 +18,7 @@
 // spelaren faktiskt gör dem. Panelen visar alltid det tidigaste steget som
 // ÄNNU inte är klart, vilket i praktiken leder en spelare som följer tipsen
 // rakt igenom i ordning, utan att straffa en som hoppar runt.
-export type TutorialStepId = 'select-country' | 'place-bid' | 'fill-action-slot' | 'end-quarter' | 'read-news'
+export type TutorialStepId = 'select-country' | 'place-bid' | 'fill-action-slot' | 'end-quarter' | 'read-news' | 'build-works' | 'plan-line' | 'read-alarm'
 
 export interface TutorialStep {
   id: TutorialStepId
@@ -31,6 +31,10 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   { id: 'fill-action-slot', prompt: 'Tap an empty action slot and queue a card.' },
   { id: 'end-quarter', prompt: 'Press End Quarter to resolve the turn.' },
   { id: 'read-news', prompt: "Read NEWS DESK to see what happened." },
+  // P181 (ETAPP11 §8 punkt 8): de tre nya stegen för verken. Samma princip som de fem första — aldrig hårt grindade i ordning.
+  { id: 'build-works', prompt: 'Open THE COMPANY and queue a building on a free plot.' },
+  { id: 'plan-line', prompt: 'On the production board, put a contract on a line.' },
+  { id: 'read-alarm', prompt: 'Open This Quarter and tap an alarm to see what needs you.' },
 ]
 
 export interface TutorialState {

@@ -30,7 +30,7 @@ import { select } from 'd3-selection'
 import { zoom, zoomIdentity } from 'd3-zoom'
 import type { ZoomTransform } from 'd3-zoom'
 import * as topojsonClient from 'topojson-client'
-import { DISPLAY_THRESHOLDS, deriveSectorControl, effectiveDepth, formationDisplay } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, deriveSectorControl, effectiveDepth, facilityCard, foreignSite, foreignWorks, formationDisplay } from '@seventh-front/core'
 import type { Doctrine, FactionId, FormationDisplay, GameState } from '@seventh-front/core'
 import { interpolateFrontGeoPosition, tokenOffset } from '../geoMath.js'
 import { SECTOR_REGIONS } from '../sectorRegions.js'
@@ -899,6 +899,42 @@ export function TheatreMap({
                       {capital.name}
                     </text>
                   )}
+                </g>
+              )
+            })}
+          </g>
+
+          {/* P181 (ETAPP11 §7, §8): verk i ett köparland — en liten byggnad i sin sektor, med lampa. Ett tryck väljer verket och ger dess kort. */}
+          <g className="map-works">
+            {foreignWorks(state.house).map((works) => {
+              const site = works.location ? foreignSite(works.location) : null
+              const region = site ? allRegions.find((r) => r.sectorId === site.sectorId) : undefined
+              const card = facilityCard(state, works.id)
+              if (!site || !region || !card) return null
+              const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
+              const selected = isSelected({ kind: 'works', facilityId: works.id })
+              return (
+                <g
+                  key={works.id}
+                  transform={`translate(${x},${y - 18})`}
+                  className={selected ? 'map-works-marker is-selected' : 'map-works-marker'}
+                  onClick={() => setSelection({ kind: 'works', facilityId: works.id })}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${card.label} in ${site.city}, ${card.lamp}`}
+                  onKeyDown={(event: KeyboardEvent<SVGGElement>) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      setSelection({ kind: 'works', facilityId: works.id })
+                    }
+                  }}
+                  data-testid={`map-works-${works.id}`}
+                >
+                  <circle r={13} className="map-token-tap" />
+                  <rect x={-11} y={-9} width={22} height={18} className="map-works-plate" />
+                  <image href="/art/works/assembly.svg" x={-10} y={-8} width={20} height={17} className="map-works-sprite" />
+                  <rect x={4} y={-12} width={7} height={7} className={`map-works-lamp is-${card.lamp}`} />
+                  {selected && <circle r={15} className="map-selected-ring" />}
                 </g>
               )
             })}

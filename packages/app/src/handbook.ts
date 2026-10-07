@@ -25,7 +25,7 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state'
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -156,6 +156,18 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'A design that won a procurement with a research grant is bound to the buyer\'s bloc: it cannot be offered to the other bloc or to non-aligned buyers. A design of generation 2 or higher is on the export list — if a house of one bloc sells it across the line, it breaches the list: doomsday rises, heat builds in the buyer\'s theatre and a paper trail is left. A neutral house is exempt.',
       'A civil line (tractors from armour, radio sets from electronics, transport helicopters from aviation) needs tech level 5 in the category. It pays a small, steady sum every quarter whatever the war does — it keeps paying through a ceasefire — and feeds a head start back into research. A special project on the drawing board (skunk works) is faster and dearer, but with less oversight the risk of a hidden flaw is higher.',
       'A chief designer is a named person with a trait — fast, careful or frugal — and a focus of their own; hire one on the drawing board (a rival\'s designer can be poached, at twice the fee, and a rival may poach yours). A bid can be customised to the buyer: dearer to build, a better mark in the scoring — and if it wins there is a one-in-five risk of a scandal at the buyer that halves the order. A licence gives a lump sum and a royalty every quarter, but the licensee learns the design. An embargoed state learns twice as fast, and when it has learnt enough it stops paying and builds on its own — a new rival on your markets. Revoke a licence in time if you do not want one.',
+    ],
+  },
+  {
+    id: 'works',
+    title: 'The Works',
+    summary: 'Your plot holds buildings — assembly works, a laboratory, a design office and more. A lamp shows whether each one runs, stands or is being built. Tap a building for its card, a free plot to build.',
+    body: [
+      'THE COMPANY has four drawers: Works (the plot and the production board), Drawing office (the drawing board, type sheets and research), Books (balance sheet, board target and ledger) and Legal (the paper trail).',
+      'The plot has eight places, one building each — a building under construction takes its place at once. More land costs £2,400,000 once and adds four places. Tap a free place to build: choose a kind, a category for assembly works and laboratories, and a pace. A forced build takes half the time and costs double. Building is a standing order: it costs no action, starts next quarter, and the cost is paid in instalments.',
+      'A building\'s card says what it does, its level, condition, staff, fixed cost and what the next level gives. An assembly works holds two production lines on level 1, four on level 2 and six on level 3, and wears with use; maintenance low saves money and wears the machines, high builds the condition back, and a modernisation fits new machine tools. Staffing is 25, 50, 75 or 100 percent of full strength: hiring takes a quarter and dilutes skill, laying off saves wages but costs skill and morale. Below 35 morale a strike can break out — give in, or break it.',
+      'The production board shows one track per line over the next six quarters: the contracts being built, retooling (hatched) and free time. Tap a contract to put it on a line — a planned contract is built first, in the order of the plan — or to give a share of it (25, 50, 75 or 100 percent) to a subcontractor. In the bid folder, "Ready by" shows when an order could be finished with today\'s plan, and which waiting contracts it would push past their deadline.',
+      'An assembly works can be built in a buyer\'s country: lower wages, quicker deliveries and a better score with that buyer, and a counter-purchase pledge becomes real. The works shows on the map in its sector. The risks are the war (a sector that changes sides takes the works with it), nationalisation after a coup, and the country learning what your workers know.',
     ],
   },
 ] as const

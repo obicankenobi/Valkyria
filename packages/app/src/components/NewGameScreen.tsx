@@ -6,18 +6,13 @@
 // för ett fritextfält — regel 2:s anda (aldrig en webbläsarkontroll) gäller
 // även ett namn spelaren annars skulle skrivit i ett `<input type="text">`.
 // founding_capital är INTE ett val (DESIGN.md §3: en fast £4 000 000).
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { createInitialState, kindLabel } from '@seventh-front/core'
 import type { House, StartChoices, TechCategory } from '@seventh-front/core'
+import { MiniSitePlan } from './MiniSitePlan.js'
 import { Button, Card, DsPanel, Segmented } from './designSystem.js'
 
-const HOUSE_NAME_SUGGESTIONS = [
-  'Meridian Arms',
-  'Halcyon Ordnance',
-  'Vantage Defence',
-  'Concordat Systems',
-  'Northwind Armaments',
-  'Ashford & Vale',
-]
+const HOUSE_NAME_SUGGESTIONS = ['Meridian Arms', 'Halcyon Ordnance', 'Vantage Defence', 'Concordat Systems', 'Northwind Armaments', 'Ashford & Vale']
 
 const HOME_STATE_OPTIONS: { value: House['homeState']; label: string }[] = [
   { value: 'neutral', label: 'NEUTRAL' },
@@ -39,22 +34,21 @@ const SPECIALISATION_OPTIONS: { value: TechCategory; label: string }[] = [
   { value: 'infantry', label: 'INF' },
 ]
 
-export function NewGameScreen({
-  onSubmit,
-  onBack,
-}: {
-  onSubmit: (choices: StartChoices) => void
-  onBack: () => void
-}) {
+export function NewGameScreen({ onSubmit, onBack }: { onSubmit: (choices: StartChoices) => void; onBack: () => void }) {
   const [houseName, setHouseName] = useState(HOUSE_NAME_SUGGESTIONS[0]!)
   const [homeState, setHomeState] = useState<House['homeState']>('neutral')
   const [specialisation, setSpecialisation] = useState<TechCategory>('artillery')
+  // P181 (ETAPP11 §8 punkt 7): startpaketet för den valda specialiseringen, läst ur samma state som partiet börjar med — ingen egen lista som kunde glida.
+  const startingWorks = useMemo(() => createInitialState('indochina-slice', 'new-game-preview', { specialisation }).house.works, [specialisation])
+  const startingSummary = startingWorks
+    .map((w) => `${kindLabel(w.kind)}${w.category ? ` (${w.category})` : ''}${w.kind === 'assembly' ? `, ${w.lines.length} production lines` : ''}`)
+    .join(' · ')
 
   return (
     <div className="setup-screen" data-testid="new-game-screen">
       <div className="setup-panel">
         <DsPanel info="Choose a name, a home state and a specialisation. Specialisation makes research in that category cheaper and bids there stronger." title="Found Your House">
-          <p className="cf-hint">1964. Four production lines, one station, a founding capital of £4,000,000.</p>
+          <p className="cf-hint">1964. A site of eight plots with three buildings on it, one station, and a founding capital of £4,000,000.</p>
 
           <div className="cf-field">
             <span className="cf-field-label">HOUSE NAME</span>
@@ -75,13 +69,12 @@ export function NewGameScreen({
 
           <div className="cf-field">
             <span className="cf-field-label">SPECIALISATION</span>
-            <Segmented
-              options={SPECIALISATION_OPTIONS}
-              value={specialisation}
-              onChange={setSpecialisation}
-              testId="newgame-specialisation"
-            />
-            <p className="cf-hint">A head start in this field's R&amp;D.</p>
+            <Segmented options={SPECIALISATION_OPTIONS} value={specialisation} onChange={setSpecialisation} testId="newgame-specialisation" />
+            <p className="cf-hint">A head start in this field's R&amp;D — and the field your first assembly works and laboratory are built for.</p>
+            <MiniSitePlan works={startingWorks} label={`Your starting site: ${startingSummary}`} testId="newgame-site-plan" />
+            <p className="cf-hint" data-testid="newgame-site-summary">
+              Your starting site: {startingSummary}.
+            </p>
           </div>
 
           <div className="setup-actions">

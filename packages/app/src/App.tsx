@@ -396,6 +396,14 @@ export function App() {
     if (view === 'news' && state.meta.turn > 0) setTutorial((t) => completeTutorialStep(t, 'read-news'))
   }, [tutorial.active, view, state.meta.turn])
 
+  // P181 (ETAPP11 §8 punkt 8): att bygga, att planera en linje och att läsa ett larm. De två första är köade stående order i draften (de kostar ingen handling),
+  // det tredje är ett tryck på en rad i This Quarter som hoppar till ett kort (se onNavigate nedan).
+  useEffect(() => {
+    if (!tutorial.active) return
+    if (draft.standingOrders.some((c) => c.kind === 'WORKS' && c.op === 'BUILD')) setTutorial((t) => completeTutorialStep(t, 'build-works'))
+    if (draft.standingOrders.some((c) => c.kind === 'PLAN' && c.op === 'SET')) setTutorial((t) => completeTutorialStep(t, 'plan-line'))
+  }, [tutorial.active, draft.standingOrders])
+
   useEffect(() => {
     if (!tutorial.active) return
     if (tutorialIsDone(tutorial, state.meta.turn)) setTutorial(stopTutorial())
@@ -701,6 +709,7 @@ export function App() {
         onNavigate={(target: ThisQuarterTarget) => {
           if (target.view === 'operations') setSelectedFactionId(target.factionId)
           setFocusCard(target.view === 'company' ? (target.focus ?? null) : null)
+          if (target.view === 'company' && target.focus && tutorial.active) setTutorial((t) => completeTutorialStep(t, 'read-alarm'))
           setView(target.view)
         }}
       />

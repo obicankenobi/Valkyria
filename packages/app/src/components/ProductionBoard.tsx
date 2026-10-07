@@ -33,7 +33,9 @@ function Segment({ seg, turn, horizon }: { seg: BoardSegment; turn: number; hori
       className={cls}
       style={style}
       data-testid={seg.contractId ? `board-seg-${seg.contractId}` : undefined}
-      aria-label={seg.kind === 'contract' ? `Contract ${shortId(seg.contractId ?? '')}${seg.late ? ', late' : ''}` : seg.kind === 'setup' ? 'Retooling' : 'Free'}
+      {...(seg.kind === 'idle'
+        ? { 'aria-hidden': true }
+        : { role: 'img', 'aria-label': seg.kind === 'contract' ? `Contract ${shortId(seg.contractId ?? '')}${seg.late ? ', late' : ''}` : 'Retooling' })}
     >
       {seg.kind === 'contract' && <span className="board-seg-text">{shortId(seg.contractId ?? '')}</span>}
       {seg.kind === 'setup' && width >= 2 && <span className="board-seg-text">SETUP</span>}
@@ -83,7 +85,7 @@ export function ProductionBoard({
     <Panel
       title="Production board"
       info="One track per production line, the next six quarters across. Tap a contract to put it on a line or give part of it to a subcontractor."
-      infoTopic="production"
+      infoTopic="works"
       right={<Tag tone="neutral">next quarter</Tag>}
     >
       <div className={`board${focus ? ' is-focus' : ''}`} data-testid="production-board" ref={boardRef}>

@@ -298,6 +298,47 @@ export async function enterWorksAlarms(page: Page): Promise<void> {
   await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
 }
 
+// P181: ett verk i ett köparland (RVN) syns på teaterkartan — ett riktigt parti har inget förrän ett bygge utomlands gått klart, så samma IndexedDB-injektion.
+export async function enterMapWorks(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.evaluate(async () => {
+    const dbReq = indexedDB.open('seventh-front', 1)
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      dbReq.onsuccess = () => resolve(dbReq.result)
+      dbReq.onerror = () => reject(dbReq.error)
+    })
+    const tx = db.transaction('saves', 'readwrite')
+    const store = tx.objectStore('saves')
+    const getReq = store.get('save:default')
+    type Loose = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any -- injicerar ett fält i en sparad state i webbläsaren
+    const saved = await new Promise<{ state: Loose }>((resolve, reject) => {
+      getReq.onsuccess = () => resolve(getReq.result)
+      getReq.onerror = () => reject(getReq.error)
+    })
+    const state = saved.state
+    state.house.works.push({
+      id: 'works-9', kind: 'assembly', level: 1, category: 'infantry', condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: 1_000_000,
+      location: 'rvn', hostAlignment: state.factions.rvn.alignment, localKnowledge: 0,
+    })
+    await new Promise((resolve, reject) => {
+      const putReq = store.put(saved, 'save:default')
+      putReq.onsuccess = () => resolve(undefined)
+      putReq.onerror = () => reject(putReq.error)
+    })
+  })
+  await page.reload()
+  await page.getByTestId('menu-continue').click()
+  await page.getByTestId('hud').waitFor()
+  await page.getByTestId('map-works-works-9').waitFor()
+}
+
+export async function enterMapWorksCard(page: Page): Promise<void> {
+  await enterMapWorks(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.getByTestId('map-works-works-9').click()
+  await page.getByTestId('map-info-card').waitFor()
+}
+
 export async function enterNews(page: Page): Promise<void> {
   await enterTab(page, 'news')
 }
@@ -774,6 +815,8 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'company', path: '/', setup: enterCompany },
   { name: 'works-facility', path: '/', setup: enterWorksFacility },
   { name: 'works-board', path: '/', setup: enterWorksBoard },
+  { name: 'map-works', path: '/', setup: enterMapWorks },
+  { name: 'map-works-card', path: '/', setup: enterMapWorksCard },
   { name: 'contract-sheet', path: '/', setup: enterContractSheet },
   { name: 'works-alarms', path: '/', setup: enterWorksAlarms },
   { name: 'works-build', path: '/', setup: enterWorksBuild },

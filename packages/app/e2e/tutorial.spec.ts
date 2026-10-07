@@ -47,7 +47,7 @@ async function startGenuinelyFreshGame(page: Page): Promise<void> {
   await expect(page.getByTestId('hud')).toBeVisible()
 }
 
-test('handledningen leder alla fem steg och avslutas av sig själv (P91a klart-när)', async ({ page }) => {
+test('handledningen leder alla åtta steg och avslutas av sig själv (P91a klart-när)', async ({ page }) => {
   await startGenuinelyFreshGame(page)
 
   await expect(page.getByTestId('tutorial-banner')).toBeVisible()
@@ -96,7 +96,21 @@ test('handledningen leder alla fem steg och avslutas av sig själv (P91a klart-n
   await setPriceSlider(page, folder, 'bid-price', Math.round(unitCost * quantity * 1.5))
   await folder.getByRole('button', { name: /Place Bid/ }).click()
 
-  // Alla fem steg klara — handledningen är borta.
+  // P181: efter de fem första kommer tre steg för verken — bygga, planera en linje, läsa ett larm.
+  await expect(page.getByTestId('tutorial-prompt')).toHaveText(/building/i)
+  await page.getByTestId('tab-company').click()
+  await page.locator('.works-slot.is-free').first().click()
+  await page.getByTestId('build-option-depot').click()
+  await page.getByTestId('build-file').click()
+  await expect(page.getByTestId('tutorial-prompt')).toHaveText(/production board/i)
+
+  // Läsa ett larm: tomma linjer är ett larm i This Quarter efter första kvartalet (inget kontrakt vunnet än). Ett tryck hoppar till kortet.
+  await page.getByTestId('quarterband-toggle').click()
+  await page.locator('[data-testid^="quarterband-item-works-"]').first().click()
+  // Planen kräver ett vunnet kontrakt — det finns inte än, så steget står kvar tills handledningen löper ut av sig själv (tre kvartal).
+  await expect(page.getByTestId('tutorial-prompt')).toHaveText(/production board/i)
+  await page.getByTestId('end-quarter-button').click()
+  await page.getByTestId('end-quarter-button').click()
   await expect(page.getByTestId('tutorial-banner')).toBeHidden()
 })
 

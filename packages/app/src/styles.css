@@ -6539,3 +6539,53 @@ summary:focus-visible,
   color: var(--red);
   font-weight: 700;
 }
+
+/* ── P181: verk i köparland på kartan (ETAPP11 §7, §8) ────────────────────────────────────────────── */
+.map-works-marker {
+  cursor: pointer;
+}
+.map-works-plate {
+  fill: var(--panel);
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+.map-works-sprite {
+  pointer-events: none;
+}
+.map-works-lamp {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.map-works-lamp.is-running {
+  fill: var(--green);
+}
+.map-works-lamp.is-standing {
+  fill: var(--ink-faint);
+}
+.map-works-lamp.is-building {
+  fill: var(--amber);
+}
+.map-works-marker:focus-visible .map-works-plate {
+  stroke: var(--amber);
+  stroke-width: 2.5;
+}
+
+/* ── P181: den lilla tomtplanen på Nytt parti ──────────────────────────────────────────────────────── */
+.mini-plan {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  margin: 8px 0 0;
+}
+.mini-plan-ground,
+.mini-plan-building {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+.mini-plan-ground {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}

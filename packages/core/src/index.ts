@@ -18,6 +18,8 @@ export type { BoardContract, BoardLine, BoardSegment, CapacityOutlook, CapacityR
 export { worksAlarms } from './worksAlarms.js'
 export type { WorksAlarm, WorksAlarmKind } from './worksAlarms.js'
 export { standingPlan } from './standingOrders.js'
+export { foreignSite, foreignWorks } from './foreign.js'
+export type { ForeignSite } from './foreign.js'
 export { facilityCard, worksAbroadOptions, worksBuildOptions, worksSite } from './facilityCard.js'
 export type { AbroadOption, BuildOption, FacilityCardData, FacilityLamp } from './facilityCard.js'
 export { MAINTENANCE_LEVELS, maintenanceOf } from './maintenance.js'

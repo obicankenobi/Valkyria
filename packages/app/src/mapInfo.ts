@@ -3,7 +3,7 @@
 // formationDisplay, effectiveDepth, stationOutlook); ingenting hittas på här, och ett föremål som inte finns längre (ett förstört förband) ger inget kort.
 //
 // Alla landmassor går att välja. Bara de som har en spelbar faktion får en väg in i landsakten (`openFile`); övriga är sammanhangsländer och säger det.
-import { DISPLAY_THRESHOLDS, deriveSectorControl, formationDisplay } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, deriveSectorControl, facilityCard, foreignSite, formationDisplay } from '@seventh-front/core'
 import type { Faction, FactionId, Front, GameState } from '@seventh-front/core'
 import { findHandbookEntry } from './handbook.js'
 import type { HandbookTopicId } from './handbook.js'
@@ -36,6 +36,7 @@ export type MapSelection =
   | { kind: 'station'; factionId: FactionId }
   | { kind: 'supply'; lineId: string }
   | { kind: 'heat'; theatreId: string }
+  | { kind: 'works'; facilityId: string } // P181: ett verk i ett köparland
 
 export interface MapInfoRow {
   label: string
@@ -114,9 +115,7 @@ function factionCard(state: GameState, factionId: FactionId, label: string, kick
   const outlook = stationOutlook(state, factionId)
 
   // En motpart utan egen landmassa (NLF) bor i någon annans land — säg var, i stället för att låta den saknas på kartan.
-  const landless = fronts
-    .map((f) => (f.sideA === factionId ? f.sideB : f.sideA))
-    .filter((id) => !Object.values(COUNTRY_TO_FACTION).includes(id))
+  const landless = fronts.map((f) => (f.sideA === factionId ? f.sideB : f.sideA)).filter((id) => !Object.values(COUNTRY_TO_FACTION).includes(id))
   const note = landless.length
     ? `${[...new Set(landless)].map((id) => factionName(state, id)).join(' and ')} has no territory of its own on this map; its forces hold sectors inside ${label}.`
     : null
@@ -145,7 +144,12 @@ function factionCard(state: GameState, factionId: FactionId, label: string, kick
       { label: 'Contracts', value: `${yours} yours, ${rivals} rivals${faction.embargoed ? ' · embargoed' : ''}` },
       {
         label: 'Formations',
-        value: outlook.formationCount === 0 ? 'None here' : outlook.formationsKnown ? `${outlook.formationCount} here, exact strength shown` : `${outlook.formationCount} here, strength unknown`,
+        value:
+          outlook.formationCount === 0
+            ? 'None here'
+            : outlook.formationsKnown
+              ? `${outlook.formationCount} here, exact strength shown`
+              : `${outlook.formationCount} here, strength unknown`,
       },
     ],
     note: hasLandmass ? note : [`${faction.name} holds no land of its own on this map.`, note].filter(Boolean).join(' '),
@@ -201,9 +205,7 @@ function formationInfo(state: GameState, formationId: string): MapInfo | null {
       kicker: 'FORMATION',
       title: d.known ? d.name : 'Unknown formation',
       rows,
-      note: d.known
-        ? null
-        : `You have no intelligence depth in ${factionName(state, d.factionId)}. A station there, at depth 1 or more, names and counts its formations.`,
+      note: d.known ? null : `You have no intelligence depth in ${factionName(state, d.factionId)}. A station there, at depth 1 or more, names and counts its formations.`,
       openFile: null,
       topic: 'fronts',
     }
@@ -226,7 +228,13 @@ function frontlineInfo(state: GameState, frontId: string): MapInfo | null {
       { label: 'Status', value: front.status === 'war' ? 'War' : front.status === 'ceasefire' ? 'Ceasefire' : 'Dormant' },
       { label: 'Sides', value: `${a} vs ${b}` },
       { label: 'Ahead', value: ahead },
-      { label: 'Last quarters', value: front.trace.slice(-3).map((n) => String(Math.round(n))).join(' → ') },
+      {
+        label: 'Last quarters',
+        value: front.trace
+          .slice(-3)
+          .map((n) => String(Math.round(n)))
+          .join(' → '),
+      },
       { label: 'Heat', value: `${Math.round(state.theatres[front.theatreId]?.heat ?? 0)} / 100` },
     ],
     note: ceasefire ? 'There is no fighting and no materiel need on this front while it stays quiet.' : null,
@@ -320,6 +328,28 @@ function heatInfo(state: GameState, theatreId: string): MapInfo | null {
   }
 }
 
+// P181 (ETAPP11 §7, §8): ett verk i ett köparland har en markör i sin sektor. Kortet säger vad det är, hur det går, och det som är verkets egen risk: sektorn kan byta sida.
+function worksInfo(state: GameState, facilityId: string): MapInfo | null {
+  const card = facilityCard(state, facilityId)
+  if (!card || !card.location) return null
+  const site = foreignSite(card.location)
+  const side = site ? deriveSectorControl(state, state.fronts[site.frontId]!).find((c) => c.sectorId === site.sectorId)?.side : undefined
+  const held = side === undefined ? 'Unknown' : side === site?.side ? 'Held by your host' : side === 'contested' ? 'Contested' : 'Held by the other side'
+  return {
+    kicker: 'YOUR WORKS',
+    title: `${card.label} · ${site?.city ?? card.location.toUpperCase()}`,
+    rows: [
+      { label: 'Level', value: `${card.level} of ${card.maxLevel}` },
+      { label: 'Status', value: `${card.lamp === 'running' ? 'Running' : card.lamp === 'building' ? 'Being built' : 'Standing'} — ${card.activity}` },
+      ...(card.staffing ? [{ label: 'Staff', value: `${card.staffing.current}% · skill ${Math.round(card.staffing.skill)} · morale ${Math.round(card.staffing.morale)}` }] : []),
+      { label: 'Sector', value: held },
+    ],
+    note: 'Lost if the sector changes sides, and the country learns what your workers know.',
+    openFile: card.location,
+    topic: 'works',
+  }
+}
+
 export function deriveMapInfo(state: GameState, selection: MapSelection): MapInfo | null {
   switch (selection.kind) {
     case 'country':
@@ -338,5 +368,7 @@ export function deriveMapInfo(state: GameState, selection: MapSelection): MapInf
       return supplyInfo(state, selection.lineId)
     case 'heat':
       return heatInfo(state, selection.theatreId)
+    case 'works':
+      return worksInfo(state, selection.facilityId)
   }
 }

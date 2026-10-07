@@ -40,7 +40,7 @@ describe('tutorial (P91a)', () => {
     expect(currentTutorialStep(t)?.id).toBe('select-country') // ändå det första som visas
   })
 
-  it('currentTutorialStep är null när alla fem steg är klara', () => {
+  it('currentTutorialStep är null när alla steg är klara', () => {
     let t = startTutorial()
     for (const step of TUTORIAL_STEPS) t = completeTutorialStep(t, step.id)
     expect(currentTutorialStep(t)).toBeNull()
@@ -60,6 +60,17 @@ describe('tutorial (P91a)', () => {
 
   it('tutorialIsDone är sant när tutorialen aldrig varit aktiv', () => {
     expect(tutorialIsDone(INITIAL_TUTORIAL_STATE, 0)).toBe(true)
+  })
+
+  it('P181: de tre stegen för verken kommer efter de fem första, i ordningen bygg, planera, läs ett larm', () => {
+    expect(TUTORIAL_STEPS.map((s) => s.id)).toEqual(['select-country', 'place-bid', 'fill-action-slot', 'end-quarter', 'read-news', 'build-works', 'plan-line', 'read-alarm'])
+    let t = startTutorial()
+    for (const id of ['select-country', 'place-bid', 'fill-action-slot', 'end-quarter', 'read-news'] as const) t = completeTutorialStep(t, id)
+    expect(currentTutorialStep(t)?.id).toBe('build-works')
+    t = completeTutorialStep(t, 'read-alarm') // ingen hård ordning: ett larm kan läsas före bygget
+    expect(currentTutorialStep(t)?.id).toBe('build-works')
+    t = completeTutorialStep(completeTutorialStep(t, 'build-works'), 'plan-line')
+    expect(currentTutorialStep(t)).toBeNull()
   })
 
   it('stopTutorial gör active false', () => {

@@ -125,7 +125,7 @@ export function WorksPlan({
     <Panel
       title="The Works"
       info="Your plot: every building you own, with a lamp for whether it runs, stands or is being built. Tap a building for its card, tap an empty plot to build."
-      infoTopic="production"
+      infoTopic="works"
       right={<Tag tone={used >= slots ? 'amber' : 'neutral'}>{`${used}/${slots} plots`}</Tag>}
     >
       <div className="works-plan" style={{ aspectRatio: `${SLOT_GEOMETRY.plotWidth} / ${height}` }} data-testid="works-plan">

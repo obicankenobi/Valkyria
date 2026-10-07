@@ -1070,6 +1070,59 @@ const APP_SCREENS = [
     },
   },
   {
+    // P181: ett verk i ett köparland på teaterkartan, med sitt informationskort.
+    name: 'map-works',
+    path: '/',
+    async afterGoto(page) {
+      await enterOperationsAndPlay(page, 0)
+      await page.evaluate(async () => {
+        const dbReq = indexedDB.open('seventh-front', 1)
+        const db = await new Promise((resolve, reject) => {
+          dbReq.onsuccess = () => resolve(dbReq.result)
+          dbReq.onerror = () => reject(dbReq.error)
+        })
+        const tx = db.transaction('saves', 'readwrite')
+        const store = tx.objectStore('saves')
+        const getReq = store.get('save:default')
+        const saved = await new Promise((resolve, reject) => {
+          getReq.onsuccess = () => resolve(getReq.result)
+          getReq.onerror = () => reject(getReq.error)
+        })
+        saved.state.house.works.push({
+          id: 'works-9', kind: 'assembly', level: 1, category: 'infantry', condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: 1_000_000,
+          location: 'rvn', hostAlignment: saved.state.factions.rvn.alignment, localKnowledge: 0,
+        })
+        await new Promise((resolve, reject) => {
+          const putReq = store.put(saved, 'save:default')
+          putReq.onsuccess = () => resolve(undefined)
+          putReq.onerror = () => reject(putReq.error)
+        })
+      })
+      await page.reload()
+      await page.getByTestId('menu-continue').click()
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('map-works-works-9').click()
+      await page.getByTestId('map-info-card').waitFor()
+    },
+  },
+  {
+    // P181: Nytt parti med startpaketet som en liten tomtplan under valet av specialisering.
+    name: 'new-game-site',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti.
+      }
+      await page.getByTestId('newgame-site-plan').waitFor()
+      await page.getByTestId('newgame-site-plan').scrollIntoViewIfNeeded()
+    },
+  },
+  {
     // P97: styrelsens PM från THE SYNDICATE vid första granskningen (tur 6).
     name: 'board-memo',
     path: '/',
