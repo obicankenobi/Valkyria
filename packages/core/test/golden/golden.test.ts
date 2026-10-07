@@ -512,10 +512,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // läser `bidEstimate`/`playerWinCurve` ur harness-dist, så en gammal dist ger fel hash): med de gamla vikterna och tröskeln 9 är alla tre hashar bit-identiska med steg 2a:s (166faa53ef813e, 9c5ef5451d80b, 7da5dc2999b52) —
   // verifierat, inte antaget. Var och en av de två ändringarna flyttar alla tre hashar för sig. `balance.json`/`balance.frozen.json` fick en anteckning (`_p141_2b_note`). De nya hasharna: passive 16d1011e686455,
   // aggressive 1414ab9753b47a, balanced 12b972dcd29ab1.
+  //
+  // Omfryst i P141 steg 2c (regel, `counterDemandOrders` 0,25 → 1). Attribution (dist ombyggd): med 0,25 tillbaka är alla tre hashar bit-identiska med steg 2b:s (16d1011e686455, 1414ab9753b47a, 12b972dcd29ab1) —
+  // verifierat, inte antaget. Motmedelsefterfrågan slår till när en konstruktion blir stridsbeprövad eller en rivals konstruktion kommer ut (rivalDesignSchedule) — i alla tre partierna. `balance.json`/`balance.frozen.json`
+  // fick en anteckning (`_p141_2c_note`). De nya hasharna: passive 1cea1b12fa001a, aggressive bf7f96360f9e, balanced 9488ed2a06994.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '16d1011e686455' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1414ab9753b47a' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '12b972dcd29ab1' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1cea1b12fa001a' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'bf7f96360f9e' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '9488ed2a06994' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
