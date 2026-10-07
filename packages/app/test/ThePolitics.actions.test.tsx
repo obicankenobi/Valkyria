@@ -119,6 +119,7 @@ describe('ThePolitics — faktionsverben (P86)', () => {
     const target = officialId('rvn', 'procurement')
     state.officials[target]!.relationToPlayer = 90
     state.officials[target]!.integrity = 90
+    state.house.works[0]!.category = null // P185 (11O): en förmedlad affär kräver ett verk i kategorin — ett verk som bygger allt, så att testet gäller tjänstemannens villkor
     const onAddAction = vi.fn()
     render(<ThePolitics state={state} onAddAction={onAddAction} />)
 

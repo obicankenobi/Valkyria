@@ -81,6 +81,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     }
     state.factions['rvn']!.bankrupt = true
     state.factions['nlf']!.embargoed = true
+    state.factions['laos']!.militaryBudget = 50_000_000 // P185 (11R): ett gevärskontrakt är nu 8 000 st (ca 3 Mkr) — Laos normala budget (1,2 Mkr) räcker inte, och testet gäller inte budgeten
     orders(makeCtx(state, 'orders-seed').ctx)
     expect(state.market.openOrders.every((o) => o.buyerId === 'laos')).toBe(true)
     expect(state.market.openOrders.length).toBeGreaterThan(0) // kontroll: genereringen fungerar alls
@@ -135,15 +136,15 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       // kvävt framtida ordrar i den kategorin.
       const state = createInitialState('indochina-slice', 'seed')
       const rvn = state.factions['rvn']!
-      rvn.materielNeed.infantry = 61 // precis över tröskeln (60), långt under m1_rifles min (500)
+      rvn.materielNeed.infantry = 61 // precis över tröskeln (60), långt under m1_rifles min
       state.meta.turn = 0
 
       orders(makeCtx(state, 'orders-seed').ctx)
 
       const order = state.market.openOrders.find((o) => o.buyerId === 'rvn' && o.productId === 'm1_rifle')!
       expect(order).toBeDefined()
-      expect(order.quantity).toBe(500) // clampat upp till orderQuantityMin, inte 61
-      expect(rvn.materielNeed.infantry).toBe(0) // golvat, INTE 61 − 500 = −439
+      expect(order.quantity).toBe(getProduct('m1_rifle').orderQuantityMin) // clampat upp till orderQuantityMin, inte 61
+      expect(rvn.materielNeed.infantry).toBe(0) // golvat, INTE 61 − orderQuantityMin
     })
 
     it('ett behov under orderTriggerThreshold hoppas över — ingen order, behovet orört', () => {
@@ -243,6 +244,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
     const state = createInitialState('indochina-slice', 'seed')
     state.factions['rvn']!.militaryBudget = 0
     state.factions['nlf']!.militaryBudget = 0
+    state.factions['laos']!.militaryBudget = 50_000_000 // P185 (11R): ett gevärskontrakt är nu ca 3 Mkr; Laos normala budget (1,2 Mkr) räcker inte
     for (const factionId of ['rvn', 'nlf', 'laos']) {
       state.factions[factionId]!.materielNeed.infantry = 100 // över tröskeln för alla tre
     }
@@ -337,6 +339,7 @@ describe('orders (isolerat steg, spec avsnitt 4.1, 6)', () => {
       // (officials.json) — neutraliserad, samma motivering som ovan.
       state.officials['official-laos-procurement']!.agenda = 'SELF_ENRICHMENT'
       state.factions['laos']!.materielNeed.infantry = 100
+      state.factions['laos']!.militaryBudget = 50_000_000 // P185 (11R): ett gevärskontrakt är nu ca 3 Mkr
       state.meta.turn = 0
 
       orders(makeCtx(state, 'orders-seed').ctx)

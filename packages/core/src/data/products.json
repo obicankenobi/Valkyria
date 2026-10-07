@@ -10,8 +10,8 @@
     "techRequired": 1,
     "restricted": false,
     "doomsdayOnDelivery": null,
-    "orderQuantityMin": 500,
-    "orderQuantityMax": 6000
+    "orderQuantityMin": 8000,
+    "orderQuantityMax": 16000
   },
   {
     "id": "105mm_field_gun",
@@ -24,8 +24,8 @@
     "techRequired": 2,
     "restricted": false,
     "doomsdayOnDelivery": null,
-    "orderQuantityMin": 20,
-    "orderQuantityMax": 150
+    "orderQuantityMin": 80,
+    "orderQuantityMax": 160
   },
   {
     "id": "m3_apc",
@@ -38,8 +38,8 @@
     "techRequired": 3,
     "restricted": false,
     "doomsdayOnDelivery": null,
-    "orderQuantityMin": 10,
-    "orderQuantityMax": 100
+    "orderQuantityMin": 30,
+    "orderQuantityMax": 60
   },
   {
     "id": "ch3_transport_helicopter",
@@ -52,8 +52,8 @@
     "techRequired": 4,
     "restricted": false,
     "doomsdayOnDelivery": null,
-    "orderQuantityMin": 2,
-    "orderQuantityMax": 20
+    "orderQuantityMin": 6,
+    "orderQuantityMax": 12
   },
   {
     "id": "coastal_patrol_boat",
@@ -66,8 +66,8 @@
     "techRequired": 3,
     "restricted": false,
     "doomsdayOnDelivery": null,
-    "orderQuantityMin": 2,
-    "orderQuantityMax": 20
+    "orderQuantityMin": 8,
+    "orderQuantityMax": 16
   },
   {
     "id": "tac_radio_suite",
@@ -80,8 +80,8 @@
     "techRequired": 3,
     "restricted": false,
     "doomsdayOnDelivery": null,
-    "orderQuantityMin": 20,
-    "orderQuantityMax": 150
+    "orderQuantityMin": 40,
+    "orderQuantityMax": 80
   },
   {
     "id": "mk9_longhand_shell",

@@ -93,7 +93,7 @@ function fail(reason: string): ActionValidation {
 
 // P185 (11O/11P): ett bud i en kategori kräver ett monteringsverk i den. Bud är ingen PlayerAction, så prövningen är en syskonfunktion till validateAction med samma form och samma skäl i klartext
 // ("Requires an Assembly Works for armour"); bidding.ts, budmappen, kartans orderlager, This Quarter och botarna läser den. En okänd order bedöms inte här — bidding.ts avvisar den på sitt eget sätt.
-export function validateBid(_state: Readonly<GameState>, draft: Readonly<GameState>, bid: Pick<Bid, 'orderId'>): ActionValidation {
+export function validateBid(_state: Readonly<GameState>, draft: Readonly<GameState>, bid: Pick<Bid, 'orderId'> & Partial<Bid>): ActionValidation {
   const order = draft.market.openOrders.find((o) => o.id === bid.orderId)
   if (!order) return ok()
   const reason = leadSupplierRejection(draft.house, getProduct(order.productId), order.quantity)

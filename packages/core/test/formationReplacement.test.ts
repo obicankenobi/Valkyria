@@ -36,6 +36,8 @@ function makeFormation(overrides: Partial<Formation> & { id: string; side: 'a' |
 // engagement.test.ts:s "destroyed"-test, fast siktar på mauled i stället.
 function riggedState(seed: string) {
   const state = createInitialState('indochina-slice', seed)
+  // P185 (11R): ett gevärskontrakt fyller nu en linje (8 000 st, flera Mkr) — NLF:s normala startbudget (2,5 Mkr) räcker inte, och testet gäller kedjan strid → order, inte budgeten.
+  state.factions['nlf']!.militaryBudget = 50_000_000
   const front = state.fronts['front-1']!
   front.terrainBonus = 0
   front.supplyStress = { a: 0, b: 0 }
