@@ -10,6 +10,7 @@ import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { categoryReputation, playerBidTerm } from './bidTerms.js'
 import { integrityBidTerm } from './traces.js'
+import { localWorksBidTerm } from './foreign.js'
 import type { Bloc } from './race.js'
 import { BLOCS, blocOfFaction, buyerGeneration, counterBidTerm, designPhasedOutForBloc, effectiveRivalReputation, firstInPlaceBidTerm, frontierGeneration, isFollowerTarget, noveltyFactor } from './race.js'
 import { projectCostPerTurn, projectOverheadPerTurn, researchDuration } from './research.js'
@@ -531,7 +532,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order) + localWorksBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
     raceState: state,
@@ -607,7 +608,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order) + localWorksBidTerm(state, order),
     category: product.category,
     turn: state.meta.turn,
     raceState: state,

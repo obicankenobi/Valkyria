@@ -7,6 +7,7 @@ import facilitiesData from './data/facilities.json' with { type: 'json' }
 import { recordExpense, recordIncome } from './ledger.js'
 import { round } from './money.js'
 import { TECH_CATEGORIES } from './validateAction.js'
+import { FOREIGN_BUILD_COST_FACTOR, FOREIGN_BUILD_EXTRA_TURNS, foreignBuildBlockedReason, homeWorks, hostAlignmentOf } from './foreign.js'
 import { MODERNISATION_MAX, maintenanceCostFactor, maintenanceOf } from './maintenance.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { ActionValidation, Facility, FacilityKind, GameState, House, Money, Plot, ProductionLine, StandingOrderChange } from './types.js'
@@ -40,7 +41,7 @@ export function plotOf(house: Pick<House, 'plot'>): Plot {
 }
 
 export function freePlotSlots(house: Pick<House, 'plot' | 'works'>): number {
-  return Math.max(0, plotOf(house).slots - house.works.length)
+  return Math.max(0, plotOf(house).slots - homeWorks(house).length) // P177: verk utomlands tar ingen plats på hemmatomten
 }
 
 function nextWorksId(house: Pick<House, 'works'>): string {
@@ -53,10 +54,11 @@ function nextLineNumber(house: Pick<House, 'works'>): number {
 }
 
 // Rater: lika stora, resten i den sista. Forcerat: halva tiden (avrundad uppåt, minst ett kvartal) mot dubbla priset.
-function planBuild(kind: FacilityKind, toLevel: 1 | 2 | 3, forced: boolean): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
-  const baseTurns = DATA.kinds[kind].buildTurns[toLevel - 1]!
+function planBuild(kind: FacilityKind, toLevel: 1 | 2 | 3, forced: boolean, abroad = false): { turnsTotal: number; costTotal: Money; costPerTurn: Money } {
+  // P177: ett verk i ett köparland kostar mer och tar längre tid.
+  const baseTurns = DATA.kinds[kind].buildTurns[toLevel - 1]! + (abroad ? FOREIGN_BUILD_EXTRA_TURNS : 0)
   const turnsTotal = forced ? Math.max(1, Math.ceil(baseTurns * DATA.forceTimeFactor)) : baseTurns
-  const costTotal = round(DATA.kinds[kind].buildCost[toLevel - 1]! * (forced ? DATA.forceCostFactor : 1))
+  const costTotal = round(DATA.kinds[kind].buildCost[toLevel - 1]! * (forced ? DATA.forceCostFactor : 1) * (abroad ? FOREIGN_BUILD_COST_FACTOR : 1))
   return { turnsTotal, costTotal, costPerTurn: Math.floor(costTotal / turnsTotal) }
 }
 
@@ -101,7 +103,13 @@ export function validateWorksChange(draft: Readonly<GameState>, change: WorksCha
       if (needsCategory && !change.category) return fail(`${article} ${data.label.toLowerCase()} needs a category`)
       if (!needsCategory && change.category) return fail(`${article} ${data.label.toLowerCase()} has no category`)
       if (change.category && !(TECH_CATEGORIES as readonly string[]).includes(change.category)) return fail('unknown category')
-      if (house.works.length >= plotOf(house).slots) return fail('the plot is full')
+      if (change.abroad) {
+        const reason = foreignBuildBlockedReason(draft, change)
+        if (reason) return fail(reason)
+        if (house.treasury < planBuild(change.facilityKind, 1, change.forced === true, true).costPerTurn) return fail('cannot afford the first instalment')
+        return { ok: true }
+      }
+      if (homeWorks(house).length >= plotOf(house).slots) return fail('the plot is full')
       if (change.facilityKind === 'laboratory' && house.works.some((w) => w.kind === 'laboratory' && w.category === change.category)) {
         return fail('the house already has a laboratory in that category')
       }
@@ -158,7 +166,7 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
   const turn = draft.meta.turn
   switch (change.op) {
     case 'BUILD': {
-      const plan = planBuild(change.facilityKind, 1, change.forced === true)
+      const plan = planBuild(change.facilityKind, 1, change.forced === true, change.abroad !== undefined)
       const facility: Facility = {
         id: nextWorksId(house),
         kind: change.facilityKind,
@@ -171,13 +179,14 @@ export function applyWorksChange(ctx: ResolveContext, change: WorksChange): void
         lines: [],
         invested: 0,
         build: { toLevel: 1, startTurn: turn + 1, turnsTotal: plan.turnsTotal, turnsLeft: plan.turnsTotal, costTotal: plan.costTotal, costPerTurn: plan.costPerTurn, forced: change.forced === true },
+        ...(change.abroad ? { location: change.abroad, hostAlignment: hostAlignmentOf(draft, change.abroad), localKnowledge: 0 } : {}),
       }
       house.plot = { ...plotOf(house) }
       house.works.push(facility)
       emit({
         severity: 'report',
         scope: 'house',
-        headline: `${house.name.toUpperCase()} BREAKS GROUND ON A ${DATA.kinds[change.facilityKind].label.toUpperCase()}${change.category ? ` (${change.category.toUpperCase()})` : ''} — ${plan.turnsTotal} QUARTERS, ${money(plan.costTotal)}${change.forced ? ', FORCED' : ''}`,
+        headline: `${house.name.toUpperCase()} BREAKS GROUND ON A ${DATA.kinds[change.facilityKind].label.toUpperCase()}${change.abroad ? ` IN ${(draft.factions[change.abroad]?.name ?? change.abroad).toUpperCase()}` : ''}${change.category ? ` (${change.category.toUpperCase()})` : ''} — ${plan.turnsTotal} QUARTERS, ${money(plan.costTotal)}${change.forced ? ', FORCED' : ''}`,
         causeId: null,
         delta: {},
         actorIsPlayer: true,

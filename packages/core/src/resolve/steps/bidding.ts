@@ -12,6 +12,7 @@ import { integrityBidTerm, isSuspendedFrom, recordTrace } from '../../traces.js'
 import { recordIncome } from '../../ledger.js'
 import { applyExportViolation, isExportViolation } from '../../exportRules.js'
 import { deliverFromStock } from '../../stock.js'
+import { localWorksBidTerm } from '../../foreign.js'
 import type { ResolveStep } from '../index.js'
 import type { Contract, Grade, Money, Order, RivalContract, RivalId } from '../../types.js'
 
@@ -191,7 +192,7 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + (playerBid.customise ? customiseBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + (playerBid.customise ? customiseBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order) + localWorksBidTerm(draft, order),
           ...(design ? { designId: design.id } : {}),
           ...(playerBid.kit ? { kit: true } : {}),
           ...(playerBid.customise ? { customise: true } : {}),

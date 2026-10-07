@@ -9,6 +9,7 @@
 //
 // P122 mäter deltagarna på sina sanna värden; P123 lägger provet i köparens miljö, prototypfaktorn, mätbruset och protokollet.
 // Slump används inte här (P123 drar mätbruset med ctx.rng). Varje ändring emitterar en WireEvent med causeId (hård regel 4).
+import { counterPurchasePledge } from './foreign.js'
 import { bindDesignToGrantBloc } from './exportRules.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { categoryReputation } from './bidTerms.js'
@@ -645,6 +646,8 @@ function award(ctx: ResolveContext, programme: Programme, houseId: 'player' | st
       advancePct: programme.prize.advancePct,
       advancePaid,
       ...(design ? { designId: design.id } : {}),
+      // P177 (§7): ett motköp är ett löfte om lokal tillverkning — ett verk i köparens land i drift före fristen.
+      ...(entrant?.counterPurchase ? { counterPurchase: counterPurchasePledge(draft.meta.turn) } : {}),
     }
     draft.market.contracts.push(contract)
     // P132 (§8b.1): teknik som tagits fram med ett forskningsanslag binds till köparens block (exklusivitet).

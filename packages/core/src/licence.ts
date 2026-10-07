@@ -98,7 +98,7 @@ export function applyLicenceChange(ctx: ResolveContext, change: Extract<Standing
 
 // Skapar licenstagaren som en ny rival (en gång per faktion). Allt utom kapital och marknadsandel följer av konstruktionen och
 // faktionen; temperamentet är 'patriot' (en stat som tillverkar åt sig själv).
-function spawnLicenseeRival(draft: GameState, factionId: FactionId, category: RivalHouse['specialisation']): RivalHouse {
+export function spawnLicenseeRival(draft: GameState, factionId: FactionId, category: RivalHouse['specialisation']): RivalHouse {
   const faction = draft.factions[factionId]!
   const bloc = blocOfFaction(draft, factionId)
   const relations: Record<FactionId, number> = {}

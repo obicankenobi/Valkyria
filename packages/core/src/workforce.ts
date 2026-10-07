@@ -8,6 +8,7 @@ import facilitiesData from './data/facilities.json' with { type: 'json' }
 import { round } from './money.js'
 import { standingLineOrder } from './standingOrders.js'
 import { recordExpense } from './ledger.js'
+import { foreignWageFactorOf } from './foreign.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { ActionValidation, Facility, FacilityKind, GameState, House, LineShift, Money, StandingOrderChange } from './types.js'
 
@@ -54,10 +55,10 @@ export function hasWorkforce(kind: FacilityKind): boolean {
 }
 
 // Anläggningens lön per kvartal: grundlönen på nivån × bemanningen × löneindexet × ett eventuellt påslag. Ingen lön under bygge eller strejk.
-export function facilityWage(facility: Pick<Facility, 'kind' | 'level' | 'status' | 'staffing' | 'wagePremiumPct'>, index: number, doubleShift = false): Money {
+export function facilityWage(facility: Pick<Facility, 'kind' | 'level' | 'status' | 'staffing' | 'wagePremiumPct' | 'location'>, index: number, doubleShift = false): Money {
   if (facility.status === 'under_construction' || facility.status === 'strike') return 0
   const base = WAGES.kinds[facility.kind].wagePerQuarter[facility.level - 1] ?? 0
-  return round(base * (facility.staffing / 100) * index * (1 + (facility.wagePremiumPct ?? 0) / 100) * (doubleShift ? BALANCE.doubleShiftWageFactor : 1))
+  return round(base * (facility.staffing / 100) * index * (1 + (facility.wagePremiumPct ?? 0) / 100) * (doubleShift ? BALANCE.doubleShiftWageFactor : 1) * foreignWageFactorOf(facility))
 }
 
 // Linjens gällande skift. Två skift kräver full bemanning: under det går linjen på normalt skift (P174).

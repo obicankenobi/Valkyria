@@ -416,6 +416,11 @@ export interface Facility {
   // P173 (ETAPP11 §5.1): stämningen på anläggningen (0–100; saknas = moraleBaseline), ett lönepåslag i procent efter en eftergift i en strejk (saknas = 0) och en pågående strejk
   // (status 'strike'). Ett sparat parti från före P173 saknar fälten och läses med standardvärdena.
   morale?: Pct
+  // P177 (§7): verket ligger i ett köparland (annars på hemmatomten). localKnowledge: det landet lärt sig av arbetsstyrkan (växer per tur, vid tröskeln börjar landet tillverka själv);
+  // hostAlignment: landets alignment när verket byggdes/senast sågs — ett tecken som byter betyder regimskifte.
+  location?: FactionId
+  localKnowledge?: number
+  hostAlignment?: number
   // P174 (§5.3): antal moderniseringar verket fått (varje höjer takten, WORKS MODERNISE). Saknas = 0.
   machineLevel?: number
   wagePremiumPct?: number
@@ -692,6 +697,8 @@ export interface Contract {
   // P109: konstruktionen kontraktet bjöds med (Bid.designId). Styckkostnaden vid signering och produktionen
   // räknas med dess unitCostFactor. Utelämnat = basprodukten.
   designId?: string
+  // P177 (ETAPP11 §7): ett motköp i upphandlingen blev ett löfte om lokal tillverkning — ett verk i köparens land i drift före dueTurn. open → met | breached.
+  counterPurchase?: { dueTurn: number; status: 'open' | 'met' | 'breached' }
   // P172 (ETAPP11 §5.5, 11E): hela kontraktet eller en del av det läggs ut på en underleverantör. sharePct = andel av kvantiteten; built = enheter underleverantören
   // hunnit bygga; auto = huset lade ut det självt för att inget verk kan bygga kategorin; sinceTurn = första turen utläggningen gäller.
   outsource?: { sharePct: number; auto: boolean; sinceTurn: number; built: number }
@@ -1296,7 +1303,7 @@ export type StandingOrderChange =
   | { kind: 'LICENCE'; op: 'REVOKE'; licenceId: string }
   // P170 (ETAPP11 §4.3): bygge, utbyggnad, avveckling och markköp är stående order och kostar ingen handling. Forcerat = halva tiden mot dubbla priset.
   // category krävs för ett monteringsverk och ett laboratorium (ett laboratorium per kategori) och ges inte för övriga slag.
-  | { kind: 'WORKS'; op: 'BUILD'; facilityKind: FacilityKind; category?: TechCategory; forced?: boolean }
+  | { kind: 'WORKS'; op: 'BUILD'; facilityKind: FacilityKind; category?: TechCategory; forced?: boolean; abroad?: FactionId }
   | { kind: 'WORKS'; op: 'EXPAND'; facilityId: string; forced?: boolean }
   // P174 (§5.3): modernisering av ett monteringsverk — en investering med byggtid som återställer skicket och höjer takten.
   | { kind: 'WORKS'; op: 'MODERNISE'; facilityId: string; forced?: boolean }

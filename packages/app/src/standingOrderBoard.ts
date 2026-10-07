@@ -47,7 +47,7 @@ export function standingOrderKey(change: StandingOrderChange): string {
       return change.op === 'GRANT' ? `licence:${change.designId}:${change.factionId}` : `licence-revoke:${change.licenceId}`
     case 'WORKS':
       // P170: ett bygge per slag och kategori, en utbyggnad/avveckling per anläggning, ett markköp — en köad ändring per föremål. Tomtplanen byggs i P179.
-      return change.op === 'BUILD' ? `works-build:${change.facilityKind}:${change.category ?? ''}` : change.op === 'BUY_LAND' ? 'works-land' : `works-${change.op.toLowerCase()}:${change.facilityId}`
+      return change.op === 'BUILD' ? `works-build:${change.facilityKind}:${change.category ?? ''}${change.abroad ? `:${change.abroad}` : ''}` : change.op === 'BUY_LAND' ? 'works-land' : `works-${change.op.toLowerCase()}:${change.facilityId}`
     case 'OUTSOURCE':
       // P172: en utläggning per kontrakt (SET och CANCEL delar nyckel, den senare vinner).
       return `outsource:${change.contractId}`

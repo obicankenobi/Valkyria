@@ -20,6 +20,7 @@ import type { Commodity, Contract, House, Product, ProductionLine, Shipment } fr
 import { allLines } from '../../works.js'
 import { advanceConstruction, worksSpeedFactor } from '../../construction.js'
 import { advanceStock, buildToStock } from '../../stock.js'
+import { advanceForeignWorks, foreignDeliveryTurnsSaved } from '../../foreign.js'
 import { advanceWorkforce, isOnStrike, lineShift, workforceSpeedFactor } from '../../workforce.js'
 import { carryRunIn, runInCostFactor, runInRateFactor, runInScale } from '../../runin.js'
 import { isRobustDesign } from '../../knowledge.js'
@@ -320,7 +321,7 @@ export const production: ResolveStep = (ctx) => {
       line.runIn = (line.runIn ?? 0) + actualUnits // P174: inkörningen växer med byggda enheter
       const penalty = conditionQualityPenalty(house, line.id)
       if (penalty > 0) house.reputation.quality = Math.max(0, house.reputation.quality - penalty) // P174: ett nedslitet verk bygger sämre
-      const arrivalTurn = draft.meta.turn + rng.int(BALANCE.deliveryDelayMinTurns, BALANCE.deliveryDelayMaxTurns)
+      const arrivalTurn = draft.meta.turn + Math.max(1, rng.int(BALANCE.deliveryDelayMinTurns, BALANCE.deliveryDelayMaxTurns) - foreignDeliveryTurnsSaved(house, line.id, contract)) // P177: från ett verk i köparens land går det fortare
       draft.market.shipments.push({
         id: `shipment-${contract.id}-${draft.meta.turn}`,
         contractId: contract.id,
@@ -356,4 +357,7 @@ export const production: ResolveStep = (ctx) => {
 
   // 6) P175: lagret åldras när blocket kliver en generation.
   advanceStock(ctx)
+
+  // 7) P177: verk i köparland — förlorade verk, kunskapsspridning och motköpens frister.
+  advanceForeignWorks(ctx)
 }

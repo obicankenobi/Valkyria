@@ -1,0 +1,15 @@
+{
+  "_note": "P177 (ETAPP11_FORSLAG.md \u00a77): platsen f\u00f6r ett verk i ett k\u00f6parland \u2014 landets front, sektorn verket st\u00e5r i och landets sida av fronten. Fiktiv scenariodata. Ett verk \u00e4r f\u00f6rlorat n\u00e4r sektorn h\u00e5lls av motsidan.",
+  "rvn": {
+    "frontId": "front-1",
+    "sectorId": "hue",
+    "side": "a",
+    "city": "Hue"
+  },
+  "laos": {
+    "frontId": "front-laos",
+    "sectorId": "plain-of-jars",
+    "side": "a",
+    "city": "Plain of Jars"
+  }
+}

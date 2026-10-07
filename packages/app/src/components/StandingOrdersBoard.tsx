@@ -78,7 +78,7 @@ export function describeChange(change: StandingOrderChange): string {
       return change.op === 'REVOKE' ? `REVOKE ${change.licenceId}` : `LICENCE ${change.designId} TO ${change.factionId.toUpperCase()}`
     case 'WORKS':
       // P170: bygge, utbyggnad, avveckling, markköp. Kort för tomten byggs i P179.
-      if (change.op === 'BUILD') return `BUILD ${kindLabel(change.facilityKind).toUpperCase()}${change.category ? ` · ${change.category.toUpperCase()}` : ''}${change.forced ? ' · FORCED' : ''}`
+      if (change.op === 'BUILD') return `BUILD ${kindLabel(change.facilityKind).toUpperCase()}${change.abroad ? ` IN ${change.abroad.toUpperCase()}` : ''}${change.category ? ` · ${change.category.toUpperCase()}` : ''}${change.forced ? ' · FORCED' : ''}`
       if (change.op === 'EXPAND') return `EXPAND ${change.facilityId.toUpperCase()}${change.forced ? ' · FORCED' : ''}`
       if (change.op === 'MODERNISE') return `MODERNISE ${change.facilityId.toUpperCase()}${change.forced ? ' · FORCED' : ''}`
       return change.op === 'SELL' ? `SELL ${change.facilityId.toUpperCase()}` : 'BUY MORE LAND'
