@@ -12,7 +12,8 @@ import { designUnitCostFactor } from '../../design.js'
 import { computeUnitCostNow, getProduct, materialCostPerUnit } from '../../pricing.js'
 import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
-import { settleSupplyAgreements, standingLineOrder } from '../../standingOrders.js'
+import { plannedOnOtherLines, settleSupplyAgreements, standingLineOrder, standingPlan } from '../../standingOrders.js'
+import { SETUP_LABEL, currentTooling, setupChange, setupCost } from '../../tooling.js'
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
@@ -76,11 +77,11 @@ export const production: ResolveStep = (ctx) => {
     line.retoolingUntilTurn = null
   }
 
-  // Fångar varje linjes productId INNAN steg 1 eventuellt nollställer den —
-  // "linjen BYTER productId" (avsnitt 3.2) går annars inte att avgöra, eftersom
+  // Fångar varje linjes uppsättning INNAN steg 1 eventuellt nollställer productId —
+  // "linjen BYTER uppsättning" (avsnitt 3.2, P171) går annars inte att avgöra, eftersom
   // en frigjord linje redan har productId: null när steg 2 tilldelar den på nytt
-  // i SAMMA anrop.
-  const previousProductId = new Map(allLines(house).map((l) => [l.id, l.productId]))
+  // i SAMMA anrop. En linje med `tooling` behåller den även när den står ledig (P171).
+  const previousTooling = new Map(allLines(house).map((l) => [l.id, currentTooling(l, draft.market.contracts)]))
 
   // 1) Frigör linjer vars kontrakt inte längre behöver produktion (fulfilled/
   //    voided, eller redan färdigproducerat och väntar på leverans).
@@ -110,6 +111,25 @@ export const production: ResolveStep = (ctx) => {
     line.blockedReason = null
   }
 
+  // 1b) P171: ett kontrakt som blivit färdigt, annullerat eller redan helt producerat städas ur produktionsplanerna (en rad när något städats).
+  for (const [lineId, plan] of Object.entries(house.standingOrders?.plan ?? {})) {
+    const stale = plan.contractIds.filter((id) => {
+      const contract = draft.market.contracts.find((c) => c.id === id)
+      return !(needsProduction(contract) && remainingToProduce(contract, draft.market.shipments) > 0)
+    })
+    if (stale.length === 0) continue
+    plan.contractIds = plan.contractIds.filter((id) => !stale.includes(id))
+    emit({
+      severity: 'ticker',
+      scope: 'house',
+      headline: `${lineId.toUpperCase()} PLAN: ${stale.join(', ').toUpperCase()} DONE — ${plan.contractIds.length === 0 ? 'THE LINE GOES BACK TO AUTOMATIC ASSIGNMENT' : `${plan.contractIds.length} LEFT IN THE PLAN`}`,
+      causeId: null,
+      delta: {},
+      actorIsPlayer: true,
+      subjectId: null,
+    })
+  }
+
   // 2) Tilldela lediga linjer till obemannade kontrakt som fortfarande behöver
   //    produceras. En kontraktsrad kan bara ha en linje åt gången.
   const claimed = new Set(allLines(house).map((l) => l.assignedContractId).filter((id): id is string => id !== null))
@@ -119,21 +139,22 @@ export const production: ResolveStep = (ctx) => {
     // P100: ett linjeuppdrag med en kategori tar bara kontrakt i den kategorin; "fritt" (null) och en
     // linje utan order behåller den automatiska tilldelningen.
     const wantedCategory = standingLineOrder(house, line.id, draft.meta.turn)?.category ?? null
-    const contract = draft.market.contracts.find(
-      (c) =>
-        needsProduction(c) &&
-        !claimed.has(c.id) &&
-        remainingToProduce(c, draft.market.shipments) > 0 &&
-        (wantedCategory === null || getProduct(c.productId).category === wantedCategory),
-    )
+    // P171: linjens produktionsplan går först, i sin ordning; ett kontrakt som ligger i en ANNAN linjes plan är reserverat åt den linjen.
+    const claimable = (c: Contract | undefined): c is Contract => needsProduction(c) && !claimed.has(c.id) && remainingToProduce(c, draft.market.shipments) > 0
+    const planned = standingPlan(house, line.id, draft.meta.turn) ?? []
+    const reserved = plannedOnOtherLines(house, line.id, draft.meta.turn)
+    const contract =
+      planned.map((id) => draft.market.contracts.find((c) => c.id === id)).find(claimable) ??
+      draft.market.contracts.find(
+        (c) => claimable(c) && !reserved.has(c.id) && (wantedCategory === null || getProduct(c.productId).category === wantedCategory),
+      )
     if (!contract) continue
 
-    // P27, avsnitt 3.2: en linje som BYTER produkt (hade ett annat productId
-    // in i den här funktionen än den nu tilldelas) kostar en omställningstur —
-    // en helt ny/redan tom linje (previous null) straffas inte, den startar
-    // bara upp.
-    const previous = previousProductId.get(line.id) ?? null
-    const isSwitch = previous !== null && previous !== contract.productId
+    // P27, avsnitt 3.2 + P171 (§4.5): en linje som BYTER uppsättning kostar tid och pengar — kort inom samma konstruktionsfamilj, längre för en ny konstruktion,
+    // längst för en annan produkt. En helt ny linje (ingen uppsättning än) straffas inte, den startar bara upp.
+    const change = setupChange(house, previousTooling.get(line.id) ?? null, contract)
+    const setup = setupCost(change)
+    line.tooling = { productId: contract.productId, designId: contract.designId ?? null }
 
     line.assignedContractId = contract.id
     line.productId = contract.productId
@@ -141,15 +162,17 @@ export const production: ResolveStep = (ctx) => {
     line.blockedReason = null
     claimed.add(contract.id)
 
-    if (isSwitch) {
+    if (setup.turns > 0) {
       line.status = 'retooling'
-      line.retoolingUntilTurn = draft.meta.turn + BALANCE.retoolingTurns
+      line.retoolingUntilTurn = draft.meta.turn + setup.turns
+      house.treasury -= setup.cost
+      recordExpense(draft, 'retooling', setup.cost)
       emit({
         severity: 'ticker',
         scope: 'house',
-        headline: `${line.id.toUpperCase()} RETOOLS FOR ${getProduct(contract.productId).name.toUpperCase()} — IDLE THIS TURN`,
+        headline: `${line.id.toUpperCase()} RETOOLS FOR ${getProduct(contract.productId).name.toUpperCase()} (${SETUP_LABEL[change as 'family' | 'design' | 'product']}) — IDLE ${setup.turns} QUARTER${setup.turns === 1 ? '' : 'S'}, −£${setup.cost.toLocaleString('en-GB')}`,
         causeId: null,
-        delta: {},
+        delta: { treasury: -setup.cost },
         actorIsPlayer: true,
         subjectId: null,
       })

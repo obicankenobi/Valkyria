@@ -158,6 +158,7 @@ export interface LedgerEntry {
     lines: Money // INTERNAL/BUILD_LINE
     clawback: Money // krisvalet BACK_DOWN: kvartalets restricted-intäkt tas tillbaka
     works?: Money // P170: byggrater, utbyggnader och markköp — saknas i ett sparat parti från före P170
+    retooling?: Money // P171: omställning av linjer — saknas i ett sparat parti från före P171
   }
   financing: {
     loans: Money // INTERNAL/TAKE_LOAN
@@ -372,6 +373,14 @@ export interface ProductionLine {
   status: 'idle' | 'running' | 'blocked' | 'retooling'
   blockedReason: string | null
   retoolingUntilTurn: number | null
+  // P171 (ETAPP11 §4.5): vad linjen är uppsatt för. Överlever att linjen står ledig (förut nollställdes productId); saknas på en ny linje (den startar
+  // utan omställning) och i ett sparat parti från före P171 (då läses uppsättningen ur productId och det tilldelade kontraktet, se tooling.ts).
+  tooling?: LineTooling | null
+}
+
+export interface LineTooling {
+  productId: ProductId
+  designId: DesignId | null // null = standardprodukten, ingen egen konstruktion
 }
 
 // ── P169 (ETAPP11_FORSLAG.md §4): anläggningarna ─────────────────────────────
@@ -1261,6 +1270,9 @@ export type StandingOrderChange =
   | { kind: 'WORKS'; op: 'EXPAND'; facilityId: string; forced?: boolean }
   | { kind: 'WORKS'; op: 'SELL'; facilityId: string }
   | { kind: 'WORKS'; op: 'BUY_LAND' }
+  // P171 (ETAPP11 §4.5): produktionsplanen — vilken linje som bygger vilka kontrakt, i vilken ordning. Kostar ingen handling. Utan plan fördelar huset själv.
+  | { kind: 'PLAN'; op: 'SET'; lineId: string; contractIds: string[] }
+  | { kind: 'PLAN'; op: 'CLEAR'; lineId: string }
 
 // Det gällande läget (House.standingOrders). sinceTurn = första turen ordern gäller.
 export interface LineStandingOrder {
@@ -1329,6 +1341,8 @@ export interface StandingOrders {
   legal?: { sinceTurn: number }
   // P133: civila linjer per kategori (sinceTurn = första turen de betalar). Saknas i ett sparat parti från före P133 — läses som inga.
   civil?: Partial<Record<CivilCategory, { sinceTurn: number }>>
+  // P171: produktionsplanen per linje — kontrakten linjen bygger, i ordning (gäller från sinceTurn). Saknas i ett sparat parti från före P171 — läses som inga planer.
+  plan?: Record<string, { contractIds: string[]; sinceTurn: number }>
 }
 
 export interface TurnSubmission {

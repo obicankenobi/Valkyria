@@ -48,6 +48,9 @@ export function standingOrderKey(change: StandingOrderChange): string {
     case 'WORKS':
       // P170: ett bygge per slag och kategori, en utbyggnad/avveckling per anläggning, ett markköp — en köad ändring per föremål. Tomtplanen byggs i P179.
       return change.op === 'BUILD' ? `works-build:${change.facilityKind}:${change.category ?? ''}` : change.op === 'BUY_LAND' ? 'works-land' : `works-${change.op.toLowerCase()}:${change.facilityId}`
+    case 'PLAN':
+      // P171: en plan per linje (SET och CLEAR delar nyckel, den senare vinner).
+      return `plan:${change.lineId}`
   }
 }
 

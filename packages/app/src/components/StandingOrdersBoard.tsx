@@ -81,6 +81,9 @@ export function describeChange(change: StandingOrderChange): string {
       if (change.op === 'BUILD') return `BUILD ${kindLabel(change.facilityKind).toUpperCase()}${change.category ? ` · ${change.category.toUpperCase()}` : ''}${change.forced ? ' · FORCED' : ''}`
       if (change.op === 'EXPAND') return `EXPAND ${change.facilityId.toUpperCase()}${change.forced ? ' · FORCED' : ''}`
       return change.op === 'SELL' ? `SELL ${change.facilityId.toUpperCase()}` : 'BUY MORE LAND'
+    case 'PLAN':
+      // P171: produktionsplanen. Planeringstavlan byggs i P180.
+      return change.op === 'CLEAR' ? `${change.lineId.toUpperCase()} · AUTOMATIC ASSIGNMENT` : `${change.lineId.toUpperCase()} · ${change.contractIds.length === 0 ? 'AUTOMATIC ASSIGNMENT' : change.contractIds.join(' → ')}`
   }
 }
 

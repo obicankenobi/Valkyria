@@ -25,6 +25,7 @@ export const EXPENSE_LABELS: Record<keyof LedgerEntry['expenses'], string> = {
   hiring: 'Hiring',
   lines: 'New production lines',
   works: 'Works construction and land',
+  retooling: 'Retooling',
   clawback: 'Revenue clawback',
 }
 

@@ -32,6 +32,7 @@ import { findLine } from './works.js'
 import { applyWorksChange, validateWorksChange } from './construction.js'
 
 interface Balance {
+  planMaxContracts: number
   supplyAgreementMinTurns: number
   supplyAgreementMaxTurns: number
   supplyLossStreakTurns: number
@@ -56,6 +57,20 @@ export function ensureStandingOrders(house: House): StandingOrders {
 export function standingLineOrder(house: House, lineId: string, turn: number): LineStandingOrder | null {
   const order = house.standingOrders?.lines[lineId]
   return order && turn >= order.sinceTurn ? order : null
+}
+
+// P171: linjens gällande produktionsplan (null = ingen eller ännu inte i kraft), och de kontrakt som är reserverade av ANDRA linjers gällande planer.
+export function standingPlan(house: House, lineId: string, turn: number): string[] | null {
+  const plan = house.standingOrders?.plan?.[lineId]
+  return plan && turn >= plan.sinceTurn ? plan.contractIds : null
+}
+
+export function plannedOnOtherLines(house: House, lineId: string, turn: number): Set<string> {
+  const reserved = new Set<string>()
+  for (const [id, plan] of Object.entries(house.standingOrders?.plan ?? {})) {
+    if (id !== lineId && turn >= plan.sinceTurn) for (const c of plan.contractIds) reserved.add(c)
+  }
+  return reserved
 }
 
 // Stationens gällande läge — 'normal' om ingen order gäller.
@@ -129,6 +144,23 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
       return validateDesignerChange(draft, change)
     case 'WORKS':
       return validateWorksChange(draft, change)
+    case 'PLAN': {
+      const plans = house.standingOrders?.plan ?? {}
+      if (change.op === 'CLEAR') return plans[change.lineId] ? { ok: true } : fail('no plan for that line')
+      if (!findLine(house, change.lineId)) return fail('unknown line')
+      if (change.contractIds.length > BALANCE.planMaxContracts) return fail(`a plan holds at most ${BALANCE.planMaxContracts} contracts`)
+      if (new Set(change.contractIds).size !== change.contractIds.length) return fail('a contract can only be planned once')
+      for (const id of change.contractIds) {
+        const contract = draft.market.contracts.find((c) => c.id === id)
+        if (!contract) return fail('unknown contract')
+        const inTransit = draft.market.shipments.filter((s) => s.contractId === id).reduce((sum, s) => sum + s.units, 0)
+        if ((contract.status !== 'active' && contract.status !== 'late') || contract.quantity - contract.unitsDelivered - inTransit <= 0) {
+          return fail('that contract needs no more production')
+        }
+        if (Object.entries(plans).some(([lineId, p]) => lineId !== change.lineId && p.contractIds.includes(id))) return fail('that contract is already planned on another line')
+      }
+      return { ok: true }
+    }
     case 'INVESTIGATION': {
       const reason = validateInvestigationChoice(house, change)
       return reason ? fail(reason) : { ok: true }
@@ -258,6 +290,25 @@ export function applyStandingOrders(ctx: ResolveContext): void {
       case 'WORKS':
         applyWorksChange(ctx, change)
         break
+      case 'PLAN': {
+        const plans = (orders.plan ??= {})
+        if (change.op === 'CLEAR') {
+          delete plans[change.lineId]
+          emit({ severity: 'ticker', scope: 'house', headline: `STANDING ORDER: ${change.lineId.toUpperCase()} GOES BACK TO AUTOMATIC ASSIGNMENT (FROM NEXT QUARTER)`, causeId: null, delta: {}, actorIsPlayer: true, subjectId: null })
+        } else {
+          plans[change.lineId] = { contractIds: [...change.contractIds], sinceTurn: from }
+          emit({
+            severity: 'ticker',
+            scope: 'house',
+            headline: `STANDING ORDER: ${change.lineId.toUpperCase()} BUILDS ${change.contractIds.length === 0 ? 'ON AUTOMATIC ASSIGNMENT' : change.contractIds.join(', ').toUpperCase()}, IN THAT ORDER (FROM NEXT QUARTER)`,
+            causeId: null,
+            delta: {},
+            actorIsPlayer: true,
+            subjectId: null,
+          })
+        }
+        break
+      }
       case 'TESTING': {
         // P110: provning i egen regi. SET byter miljö och börjar om räkningen (från nästa tur); CANCEL avbryter.
         const testing = (orders.testing ??= {})

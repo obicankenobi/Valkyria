@@ -224,7 +224,7 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
   })
 
   describe('P27: linjeomställning kostar (avsnitt 3.2)', () => {
-    it('(P27 klart-når) en linje som byter productId producerar INGET under omställningsturen, och återupptas exakt en tur senare', () => {
+    it('(P27 klart-når, P171) en linje som byter produkt producerar INGET under omställningen, och återupptas exakt när den är klar', () => {
       const state = createInitialState('indochina-slice', 'seed')
       state.meta.turn = 3
       const line = allLines(state.house)[0]!
@@ -244,12 +244,20 @@ describe('production (isolerat steg, spec avsnitt 5 "Produktion")', () => {
       expect(line.assignedContractId).toBe(newContract.id) // tog det enda tillgängliga kontraktet
       expect(line.productId).toBe('ch3_transport_helicopter')
       expect(line.status).toBe('retooling')
-      expect(line.retoolingUntilTurn).toBe(3 + 1) // retoolingTurns (balance.json) = 1
+      expect(line.retoolingUntilTurn).toBe(3 + 3) // P171: ett produktbyte tar retoolingTurnsProduct (balance.json) = 3 kvartal (var 1 före P171)
       expect(state.market.shipments.find((s) => s.contractId === newContract.id)).toBeUndefined() // inget producerat
       expect(emitted.some((e) => e.headline.includes('RETOOLS'))).toBe(true)
 
-      // Nästa tur: omställningen är klar, linjen producerar normalt.
-      state.meta.turn = 4
+      // Under omställningen (tur 4 och 5) producerar linjen ingenting.
+      for (const turn of [4, 5]) {
+        state.meta.turn = turn
+        production(makeCtx(state, `retool-seed-${turn}`).ctx)
+        expect(line.status).toBe('retooling')
+        expect(state.market.shipments.find((s) => s.contractId === newContract.id)).toBeUndefined()
+      }
+
+      // Tur 6: omställningen är klar, linjen producerar normalt.
+      state.meta.turn = 6
       production(makeCtx(state, 'retool-seed-2').ctx)
 
       expect(line.status).toBe('running')

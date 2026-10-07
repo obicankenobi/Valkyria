@@ -235,6 +235,7 @@ describe('huvudbokens balans — fuzz över alla penningflyttande verb', () => {
         'expenses.hiring',
         'expenses.lines',
         'expenses.works',
+        'expenses.retooling',
         'financing.loans',
         'financing.repayments',
       ]
