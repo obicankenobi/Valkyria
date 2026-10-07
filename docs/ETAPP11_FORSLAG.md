@@ -333,6 +333,8 @@ fulla samtidigt, vilket är den siffra P172 (kapaciteten räknas om) ska flytta.
 > för `human`. **Att bygga lönar sig alltså inte med reglerna som de är; det behövs en regel (utläggningstak, större orders mot linjetakten, finansiering av bygget
 > eller ryktet som kostnad), inte ett tal — ägarens beslut efter P184.** Vakterna (spelbarhetstestet och `capacity`-referensen) håller utan revidering. Se
 > `docs/ANDRINGSLOGG.md` (P182, P183) och `docs/SPELTEST_ETAPP11.md`.
+>
+> **Efter P185–P186 (2026-10-07):** se utfallstabellen i §9b — fem av de fetstilta raderna nås (`human` 48 %, +41 pp mot `human-static`, `human-broad` 86 %, `human-builder` konkurs 27 %, inkörningens andel 17 %); utnyttjande, `human-specialist`, driftsbeslut och tomten full nås inte.
 
 Spelbarhetstestets golv och tak och capacity-referensen ska hålla, eller revideras uttryckligen av ägaren.
 Etappen flyttar hela ekonomin, så en revidering är trolig och ska beslutas, inte ske tyst.
@@ -406,6 +408,42 @@ Startpaketet prövas mot regeln: räcker ett verk med två linjer i en kategori 
 fyra kvartalen? Om inte justeras startkapital, startverkets nivå eller de fasta kostnaderna, i den
 ordningen. Spelbarhetstestets gränser och `capacity`-referensen får revideras bara efter ägarens beslut;
 behövs det, stanna och redovisa vad som krävs.
+
+> **Utfall P185 (2026-10-07; 100 partier per bot, samma frön).**
+> **Spärren (11P):** den hårda varianten gav `human` 0,25 biddbara ordrar per kvartal i snitt de fyra första kvartalen (av 1,01 ordrar totalt) — under gränsen på två — och alla botar slutade i
+> 100 % `BUYOUT`. **Den mjuka valdes** (`leadSupplierMode` `soft`: utan verk tas ordrar upp till `leadSupplierSoftMaxLineTurns` 1 linjetur, helt utlagda, med påslag 1,15). Regel 1 isolerad:
+> `off` human 53 / static 51 / builder 1 / outsource 48 / specialist 12 / broad 0; `soft` human 28 / static 41 / builder 0 / outsource 22 / specialist 14 / broad 0. Gapet `human`–`static` blev alltså
+> *negativt* av regel 1 ensam — spärren straffar den som bjuder brett utan verk, men ger ingen belöning för att bygga så länge ordrarna är små.
+> **Byggnadslånet (11Q)** bokförs under `financing`, ligger utanför `creditLimit` och tas av anläggningen vid utebliven betalning; ensamt gjorde det byggen *oftare* (human 28 → 12 %) utan att höja intäkten.
+> **Orderstorlekarna (11R):** min/max sattes till 2×/4× `unitsPerLineTurn`; antalet ordrar föll 42 → 18 per parti och det ordinarie marknadsvärdet *steg* ~3,4× (≈ 2,7 Mkr/kvartal) i stället för att vara oförändrat.
+> Att skala tröskelvärdena upp så att värdet höll sig oförändrat (specens ordalydelse) fällde varje bot till 0 % vinst — **klausulen "marknadens värde ungefär oförändrat" gick därför inte att hålla**;
+> `boardTarget.threshold` höjdes i stället för att tröskeln följde med (2,9 → 2,45, sedan 3,4 i P186).
+>
+> **Utfall P186 (2026-10-07; 100 partier per bot).** Premissfel hittat: stora ordrar var *per konstruktion sena* — produktion (två linjekvartal) plus leveransfördröjning (1–3) översteg
+> `requiredDeliveryTurns` (4), så "ready by"-grinden stängde varje stor order. Åtgärd: `requiredDeliveryFor` ger en frist som växer med antalet linjekvartal (`orderDeliveryTurnsPerLineQuarter` 1). Därefter lönar
+> det sig att bygga. Balanstal: `buildCost` ×2 (tillbaka till P170-värdena), `boardTarget.threshold` 3,4, byggnadslånet 90 % / 8 % / 12 kvartal. Golden omfryst i egen commit för varje regel och för P186.
+>
+> | Rad (§9) | Mål | Före (P183) | Efter (P186) | |
+> |---|---|---|---|---|
+> | `human`, `SCENARIO_COMPLETE` | 40–70 % | 53 % | **48 %** (18 % konkurs) | **nådd** |
+> | `human` mot `human-static`, vinst | ≥ 25 pp | +2 pp | **+41 pp** (48 mot 7 %) | **nådd** |
+> | `human-specialist`, vinst | ≥ 35 % | 12 % | 1 % | inte nådd |
+> | `human-broad`, vinst | ≥ 35 % | 0 % | **86 %** | nådd (men nära taket 90 %) |
+> | `human-builder`, konkurs | 10–30 % | 90 % | **27 %** | **nådd** |
+> | `human-outsource`, vinst | 20–50 % | 48 % | 10 % | inte nådd |
+> | Utnyttjande, `human` | 70–90 % | 14 % | 18–25 % | inte nådd |
+> | Byggda anläggningar per parti | 3–6 | 0,4 | 0,1–1,0 | inte nådd |
+> | Kvartal med driftsbeslut | ≥ 60 % | 22 % | 24–29 % | inte nådd |
+> | Sena leveranser per parti | 1–4 | 0,7 | 0,8 | strax under |
+> | Tomten full | 30–60 % | 0 % | 0 % | inte nådd |
+> | Inkörningens andel av styckkostnadens fall (8 kvartal) | 15–30 % | ej mätt | **17 %** (`human`; `broad` 24, `static` 12) | **nådd** |
+>
+> **Mätningen av inkörningsandelen** är ny (`runInShare.ts`, kolumnerna `runInSeries`/`runInSharePct`): en serie är en linje med samma uppsättning i minst åtta kvartal (tomgång tillåten).
+> **Startpaketet** prövat mot regeln: ett verk med två linjer räcker för de första fyra kvartalen (ingen bot slutar före kvartal 5; lägsta kassa £1,7–2,0 Mkr för `static`/`classic`, £0,4 Mkr för byggarna) men är tunt,
+> eftersom infanteriordrar är låsta utan verk i kategorin — ingen startparameter ändrades. **Orsak till de ej nådda raderna:** marknaden är budgetbunden (≈ 2,2 Mkr/kvartal, köparnas budget är 8 % av deras kassa)
+> och innehåller bara infanteri- och artilleriordrar (köparnas tekniknivå 2/1/1); kapacitetsbehovet är ~1–1,5 linjekvartal per kvartal mot två linjer, så utnyttjandet kan inte nå 70 % och tomten fylls inte med tal.
+> Att fördubbla de fasta kostnaderna fäller även startpaketet; längre byggtider bryter ett test (2–4 kvartal). **Det kräver en regel eller en efterfrågeändring (fler kategorier i marknaden, lägre linjetakt), inte ett tal.**
+> Spelbarhetstestets golv och tak och `capacity`-referensen är **oförändrade och höll**; `human-broad` ligger dock på 86–89 % mot taket 90 (vakten kör 30 partier). Se `docs/ANDRINGSLOGG.md` (P185, P186) och `docs/SPELTEST_ETAPP11.md`.
 
 ### P184 efter P186
 
