@@ -685,13 +685,17 @@ const APP_SCREENS = [
       await page.getByTestId('newgame-submit').click()
       await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
+      // P185/P141: bara en order som inte är låst av huvudleverantörsregeln (stämpeln "Locked") går att bjuda på, och kvartalsuppspelningen täcker mapparna tills den stängs.
+      const unlocked = page.getByTestId('order-folder').filter({ hasNot: page.getByTestId('order-locked-stamp') })
       for (let i = 0; i < 10; i++) {
         await page.getByTestId('tab-contracts').click()
-        const quoteCount = await page.getByRole('button', { name: 'quote' }).count()
+        const quoteCount = await unlocked.getByRole('button', { name: 'quote' }).count()
         if (quoteCount > 0) break
         await page.getByTestId('end-quarter-button').click()
+        await page.waitForTimeout(150)
+        if (await page.getByTestId('quarter-replay').isVisible().catch(() => false)) await page.getByTestId('replay-skip').click()
       }
-      await page.getByRole('button', { name: 'quote' }).first().click()
+      await unlocked.getByRole('button', { name: 'quote' }).first().click()
       await page.getByTestId('bid-form').waitFor()
     },
   },

@@ -489,7 +489,8 @@ export async function enterContractsBidOpen(page: Page): Promise<void> {
     if ((await biddableFolders(page).getByRole('button', { name: 'quote' }).count()) > 0) break
     await page.getByTestId('end-quarter-button').click()
     await page.waitForTimeout(150)
-    if (await page.getByTestId('board-memo').isVisible().catch(() => false)) await page.getByTestId('replay-skip').click()
+    // Kvartalsuppspelningen (med eller utan styrelsens PM) täcker mapparna tills den stängs.
+    if (await page.getByTestId('quarter-replay').isVisible().catch(() => false)) await page.getByTestId('replay-skip').click()
   }
   await biddableFolders(page).getByRole('button', { name: 'quote' }).first().click()
   await page.getByTestId('bid-form').waitFor()
