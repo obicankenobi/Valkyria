@@ -13,9 +13,9 @@
       "label": "Assembly Works",
       "does": "Builds materiel in a category. Holds 2 to 6 production lines.",
       "buildCost": [
-        600000,
-        550000,
-        700000
+        1200000,
+        1100000,
+        1400000
       ],
       "buildTurns": [
         3,
@@ -38,9 +38,9 @@
       "label": "Component Shop",
       "does": "Makes parts for the works: lower unit cost, half the raw-material swing. Serves at most two works.",
       "buildCost": [
-        450000,
-        500000,
-        600000
+        900000,
+        1000000,
+        1200000
       ],
       "buildTurns": [
         2,
@@ -63,9 +63,9 @@
       "label": "Laboratory",
       "does": "Does research in one category. Its level caps the tech level and the number of projects at once.",
       "buildCost": [
-        400000,
-        500000,
-        700000
+        800000,
+        1000000,
+        1400000
       ],
       "buildTurns": [
         2,
@@ -88,9 +88,9 @@
       "label": "Design Office",
       "does": "Holds design projects, one per desk. The chief designer sits here.",
       "buildCost": [
-        300000,
-        400000,
-        500000
+        600000,
+        800000,
+        1000000
       ],
       "buildTurns": [
         2,
@@ -113,9 +113,9 @@
       "label": "Proving Ground",
       "does": "Holds testing. A climate chamber unlocks environment tests and finds environment flaws before delivery.",
       "buildCost": [
-        350000,
-        450000,
-        550000
+        700000,
+        900000,
+        1100000
       ],
       "buildTurns": [
         2,
@@ -138,9 +138,9 @@
       "label": "Depot",
       "does": "Stores finished materiel and spares. Allows building to stock and kits off the shelf.",
       "buildCost": [
-        300000,
-        400000,
-        500000
+        600000,
+        800000,
+        1000000
       ],
       "buildTurns": [
         2,
@@ -168,9 +168,9 @@
       "label": "Civil Works",
       "does": "The civil branch as a building. Can be converted to an assembly works and back.",
       "buildCost": [
-        500000,
-        550000,
-        650000
+        1000000,
+        1100000,
+        1300000
       ],
       "buildTurns": [
         3,
@@ -206,5 +206,6 @@
     "laboratory": 0,
     "design": 600000
   },
-  "_p183_note": "ETAPP11_FORSLAG.md \u00a79 (P183, balanspasset): buildCost halverades mot P170 (assembly 1,2 Mkr \u2192 0,6 Mkr osv.). P182:s m\u00e4tning visade att huset i dalen mellan kvartal 6 och 9 har kassan nere vid noll f\u00f6r varje bot, s\u00e5 ett bygge p\u00e5 0,6\u20131,2 Mkr f\u00e4llde huset (human 40 % konkurs); med halva priset \u00e4r human-konkursen 5 %. Bara byggande botar ber\u00f6rs \u2014 de fyra golden-botarna bygger aldrig. Alla tal PROVISORISKA; se ANDRINGSLOGG (P183) f\u00f6r vad som inte n\u00e5ddes."
+  "_p183_note": "ETAPP11_FORSLAG.md \u00a79 (P183, balanspasset): buildCost halverades mot P170 (assembly 1,2 Mkr \u2192 0,6 Mkr osv.). P182:s m\u00e4tning visade att huset i dalen mellan kvartal 6 och 9 har kassan nere vid noll f\u00f6r varje bot, s\u00e5 ett bygge p\u00e5 0,6\u20131,2 Mkr f\u00e4llde huset (human 40 % konkurs); med halva priset \u00e4r human-konkursen 5 %. Bara byggande botar ber\u00f6rs \u2014 de fyra golden-botarna bygger aldrig. Alla tal PROVISORISKA; se ANDRINGSLOGG (P183) f\u00f6r vad som inte n\u00e5ddes.",
+  "_p186_note": "ETAPP11_FORSLAG.md \u00a79 (P186, balanspasset efter P185): buildCost \u00e4r tillbaka p\u00e5 P170:s v\u00e4rden (P183 hade halverat dem). Med st\u00f6rre linjefyllande ordrar (P185) och leveranstider som v\u00e4xer med orderstorleken (orders.ts, orderDeliveryTurnsPerLineQuarter) \u00e4r ett nytt monteringsverk i en ny kategori det som l\u00e5ser upp efterfr\u00e5gan (huset kan inte bjuda p\u00e5 en gev\u00e4rsorder utan ett infanteriverk): att bygga tidigt l\u00f6nar sig kraftigt, och med P183:s halverade pris vann `human-broad` \u00f6ver 95 % (\u00f6ver taket 90 i spelbarhetstestet). Dubbla priset h\u00e5ller ner den, och ger `human-builder` en verklig risk."
 }

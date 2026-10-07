@@ -43,6 +43,7 @@ interface Balance {
   orderQuantityMin: number
   orderQuantityMax: number
   orderDeliverySlackTurns: number
+  orderDeliveryTurnsPerLineQuarter: number // P186
   orderBiddingWindowTurns: number
   statedBudgetMinFactor: number
   statedBudgetMaxFactor: number

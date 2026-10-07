@@ -27,7 +27,7 @@
       "label": "Doubling",
       "dueTurn": 20,
       "metric": "revenue",
-      "threshold": 2.45,
+      "threshold": 3.4,
       "reviewTurns": [6, 10, 14, 18]
     }
   },

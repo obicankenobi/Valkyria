@@ -35,6 +35,7 @@ import { createInitialState, DESIGN_SPREAD, deriveSectorControl, freePlotSlots, 
 import type { GameState, TurnResult } from '@seventh-front/core'
 import type { Policy } from './policies.js'
 import { allLines } from '@seventh-front/core'
+import { RunInTracker } from './runInShare.js'
 
 export interface GameMetrics {
   policy: string
@@ -132,6 +133,9 @@ export interface GameMetrics {
   foreignWorksLost: number // verk utomlands som funnits men inte längre finns vid slutet (förlorade i kriget, förstatligade, sålda)
   operatingDecisionPct: number // andel spelade turer där policyn lade minst en driftsorder (verk, bemanning, underhåll, plan, utläggning, lager, ny linje) — en övre gräns för "driftsbeslut som ändrar utfallet"
   plotFull: number // 1 om hemmatomten var full efter någon tur före partiets slut, annars 0
+  // P186: serier på minst åtta kvartal (en linje, samma produkt) och inkörningens andel av styckkostnadens fall i dem (runInShare.ts); 0 utan serier.
+  runInSeries: number
+  runInSharePct: number
 }
 
 // P140 (ETAPP10 §5 punkt 1, premiss 0.14): bara rubriken från traces.ts ("<HUS> IS SUSPENDED FROM TENDERING TO <KÖPARE> UNTIL TURN <n>")
@@ -212,6 +216,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
   let breakdowns = 0
   let operatingDecisionTurns = 0
   let plotFull = 0
+  const runInTracker = new RunInTracker()
   const foreignSeen = new Set<string>()
   // Kontrakt med en konstruktion: konstruktionens ålder (i turer) vid tecknandet, exakt — Contract har inget signeringsfält.
   const designContractAge = new Map<string, number>()
@@ -241,6 +246,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     if (submission.standingOrders.some((c) => OPERATING_KINDS.includes(c.kind)) || submission.actions.some((a) => a.type === 'INTERNAL' && a.op === 'BUILD_LINE')) operatingDecisionTurns++
     for (const w of state.house.works) if (w.location !== undefined) foreignSeen.add(w.id)
     if (state.status.kind !== 'ended' && freePlotSlots(state.house) === 0) plotFull = 1
+    runInTracker.observe(state)
 
     // P75 — jämför prevState (före denna resolveTurn) mot state (efter).
     // Fronter/förband matchas på id; en front eller ett förband som bara
@@ -374,6 +380,7 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     allRivalContracts.filter((c) => c.status === 'voided').length
   const stationsBurned = state.house.stations.filter((s) => s.status === 'burned').length
 
+  const runInResult = runInTracker.finish()
   return {
     policy: policyName,
     seed,
@@ -450,6 +457,8 @@ export function runGame(scenarioId: string, seed: string, policyName: string, po
     foreignWorksLost: [...foreignSeen].filter((id) => !state.house.works.some((w) => w.id === id)).length,
     operatingDecisionPct: turnsPlayed > 0 ? (100 * operatingDecisionTurns) / turnsPlayed : 0,
     plotFull,
+    runInSeries: runInResult.series,
+    runInSharePct: runInResult.sharePct,
     civilSharePct: ledgerIncome.total > 0 ? ((state.ledger ?? []).reduce((sum, e) => sum + (e.income.civil ?? 0), 0) / ledgerIncome.total) * 100 : 0,
   }
 }

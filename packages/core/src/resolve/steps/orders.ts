@@ -84,6 +84,13 @@ interface NewOrderParams {
   racePremium?: { pricePct: number; advancePts: number; budgetPct?: number }
 }
 
+// P186 (ETAPP11 §9b punkt 3): en order som tar flera linjekvartal att tillverka ger tid för det — produktens minDelivery och slacken räcker för en order som en linje gör på ett kvartal, och varje
+// ytterligare linjekvartal lägger till orderDeliveryTurnsPerLineQuarter. Annars vore varje order som fyller en linje sen redan när den utlyses (tillverkning plus leveransfördröjning över kravet).
+function requiredDeliveryFor(product: Product, quantity: number): number {
+  const lineQuarters = Math.max(1, Math.ceil(quantity / product.unitsPerLineTurn))
+  return product.minDelivery + BALANCE.orderDeliverySlackTurns + (lineQuarters - 1) * BALANCE.orderDeliveryTurnsPerLineQuarter
+}
+
 function buildOrder(p: NewOrderParams): Order {
   const baseReferencePrice = computeReferencePrice(p.product, p.quantity, p.heat, p.supplyCostIndex)
   // P119: en gap-chock lägger ett överpris på referenspriset (budgetarna följer, slumpen oförändrad); utan chock är det bitvis
@@ -278,7 +285,7 @@ export const orders: ResolveStep = (ctx) => {
         buyerId: scripted.buyerId,
         product,
         quantity: scripted.quantity,
-        requiredDeliveryTurns: product.minDelivery + BALANCE.orderDeliverySlackTurns,
+        requiredDeliveryTurns: requiredDeliveryFor(product, scripted.quantity),
         currentTurn: draft.meta.turn,
         competingRivals: allRivalIds,
         heat,
@@ -451,7 +458,7 @@ function tryIssueOrder(
     buyerId: factionId,
     product,
     quantity,
-    requiredDeliveryTurns: product.minDelivery + BALANCE.orderDeliverySlackTurns,
+    requiredDeliveryTurns: requiredDeliveryFor(product, quantity),
     currentTurn: draft.meta.turn,
     competingRivals: Object.keys(draft.rivals),
     heat,
