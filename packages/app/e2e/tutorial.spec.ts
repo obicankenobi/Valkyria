@@ -6,6 +6,7 @@
 // banderollen SYNS — samma disciplin som operations-intel.spec.ts.
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { biddableFolders } from './screens'
 
 function parseMoney(text: string): number {
   return Number(text.replace(/[£,−-]/g, '').trim())
@@ -89,7 +90,7 @@ test('handledningen leder alla åtta steg och avslutas av sig själv (P91a klart
 
   // Steg 2: lägg ett bud på en av kvartal 1:s nya ordrar.
   await page.getByTestId('tab-contracts').click()
-  const folder = page.getByTestId('order-folder').first()
+  const folder = biddableFolders(page).first()
   await folder.getByRole('button', { name: 'quote' }).click()
   const quantity = Number((await folder.getByTestId('order-quantity').innerText()).replace('×', '').trim())
   const unitCost = parseMoney(await folder.getByTestId('your-unit-cost').innerText())

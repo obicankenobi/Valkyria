@@ -195,6 +195,7 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
       const folder = page.getByTestId('order-folder').nth(i)
       const quoteButton = folder.getByRole('button', { name: 'quote' })
       if ((await quoteButton.count()) === 0) continue // redan bjudet (t.ex. en tidigare tur)
+      if ((await folder.getByTestId('order-locked-stamp').count()) > 0) continue // P185: låst av huvudleverantörsregeln
       await quoteButton.click()
       const quantity = Number((await folder.getByTestId('order-quantity').innerText()).replace('×', '').trim())
       const unitCost = parseMoney(await folder.getByTestId('your-unit-cost').innerText())

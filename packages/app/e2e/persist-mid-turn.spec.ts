@@ -7,6 +7,7 @@
 // oskickade budet i draften överlevde IndexedDB-tur-och-retur.
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { biddableFolders } from './screens'
 
 // P84 (ETAPP7_TEKNISK_SPEC.md §7.5, regel 2): pris och muta är nu DsSlider,
 // inte <input type="number"> — Playwrights .fill()/.toHaveValue() gäller bara
@@ -51,9 +52,11 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   let hasOrder = false
   for (let i = 0; i < 10; i++) {
     await page.getByTestId('tab-contracts').click()
-    hasOrder = (await page.getByRole('button', { name: 'quote' }).count()) > 0
+    hasOrder = (await biddableFolders(page).getByRole('button', { name: 'quote' }).count()) > 0
     if (hasOrder) break
     await page.getByTestId('end-quarter-button').click()
+    // P185: fler turer behövs nu innan en icke-låst order finns — kvartalsuppspelningen ska stängas, annars täcker den budmappen.
+    await page.getByTestId('replay-skip').click({ timeout: 3000 }).catch(() => {})
   }
   expect(hasOrder).toBe(true)
 
@@ -61,7 +64,7 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
 
   // Mitt i en tur: lägg ett bud (skickar det till draften), men avsluta ALDRIG
   // turen — resolveTurn har alltså inte körts, precis som "mitt i en tur" kräver.
-  await page.getByRole('button', { name: 'quote' }).first().click()
+  await biddableFolders(page).getByRole('button', { name: 'quote' }).first().click()
   const setPrice = await setSlider(page, 'bid-price', 1_234_567)
   const setBribe = await setSlider(page, 'bid-bribe', 999)
   await page
@@ -90,7 +93,7 @@ test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async
   // (inte "Place Bid"), med samma pris och muta som reglagen landade på före
   // omladdningen.
   await page.getByTestId('tab-contracts').click()
-  await page.getByRole('button', { name: 'quote' }).first().click()
+  await biddableFolders(page).getByRole('button', { name: 'quote' }).first().click()
   expect(await readSlider(page, 'bid-price')).toBe(setPrice)
   expect(await readSlider(page, 'bid-bribe')).toBe(setBribe)
   await expect(page.getByRole('button', { name: /Update Bid/ })).toBeVisible()

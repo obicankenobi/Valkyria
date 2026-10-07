@@ -475,17 +475,23 @@ export async function enterBoardMemo(page: Page): Promise<void> {
 // inte här (samma seed-oberoende väntloop som scripts/shots.mjs:s contracts-bid-open), så spelas
 // högst tio kvartal fram tills en order finns. Reducerad rörelse: kvartalsuppspelningen omedelbar
 // — utom en granskningstur (tur 6), där PM:et kvitteras med Continue.
+// P185: en order som huvudleverantörsregeln låser för huset har en "Locked"-stämpel och ett avstängt Place Bid — testerna som lägger bud
+// väljer därför bland mapparna utan stämpeln.
+export function biddableFolders(page: Page) {
+  return page.getByTestId('order-folder').filter({ hasNot: page.getByTestId('order-locked-stamp') })
+}
+
 export async function enterContractsBidOpen(page: Page): Promise<void> {
   await enterOperations(page)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   for (let i = 0; i < 10; i++) {
     await page.getByTestId('tab-contracts').click()
-    if ((await page.getByRole('button', { name: 'quote' }).count()) > 0) break
+    if ((await biddableFolders(page).getByRole('button', { name: 'quote' }).count()) > 0) break
     await page.getByTestId('end-quarter-button').click()
     await page.waitForTimeout(150)
     if (await page.getByTestId('board-memo').isVisible().catch(() => false)) await page.getByTestId('replay-skip').click()
   }
-  await page.getByRole('button', { name: 'quote' }).first().click()
+  await biddableFolders(page).getByRole('button', { name: 'quote' }).first().click()
   await page.getByTestId('bid-form').waitFor()
 }
 

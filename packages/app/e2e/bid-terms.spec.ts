@@ -5,7 +5,7 @@
 // inom den — det vill säga att spelaren ser hela avvägningen utan att skrolla.
 import { expect, test } from '@playwright/test'
 
-import { FORMATS, enterContractsBidOpen } from './screens'
+import { FORMATS, biddableFolders, enterContractsBidOpen } from './screens'
 
 for (const format of FORMATS) {
   test(`förskottsstämpel, kreditstämpel och kassatalen syns utan att mappen skrollas — ${format.name} (${format.width}×${format.height})`, async ({
@@ -15,7 +15,7 @@ for (const format of FORMATS) {
     await page.goto('/')
     await enterContractsBidOpen(page)
 
-    const folder = page.getByTestId('order-folder').first()
+    const folder = biddableFolders(page).first()
     // Mappens topp i överkanten av innehållsytan: ingen del av mappen får behöva skrollas in.
     await folder.evaluate((el) => el.scrollIntoView({ block: 'start' }))
     const content = (await page.locator('.ds-shell-content').boundingBox())!
