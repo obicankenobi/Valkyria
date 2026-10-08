@@ -28,12 +28,12 @@ Se `docs/ETAPP10_FORSLAG.md` §7 (utfallsblocken för P142–P144), `docs/ANDRIN
 |---|---|---|---|
 | Gap-chocker per parti | 1–3 | 2,7 | nådd |
 | Andel spår som kommer fram | 30–60 % | ca 32 % | nådd |
-| `human-clean` / `human-dirty`, vinst | båda ≥ 35 % | 45 / 35 | nådd (dirty på gränsen) |
-| Intäkt från unga konstruktioner | 30–60 % | ca 31 % | nådd |
-| Olycksfåglar | 10–25 % av partierna | 11–15 % | nådd |
+| `human-clean` / `human-dirty`, vinst | båda ≥ 35 % | 64 / 57 | nådd |
+| Intäkt från unga konstruktioner | 30–60 % | 22 % för `human` (31–37 för tre varianter) | delvis |
+| Olycksfåglar | 10–25 % av partierna | 7 % (`human`), 17–32 % (varianterna) | delvis |
 | Först på plats i botspel | förekommer | 0–7 % | **inte nådd** — rivalernas konstruktioner kommer före husets |
 | Hävda kontrakt | förekommer | ca 0,03 per parti | sant men svagt |
-| `human`, `SCENARIO_COMPLETE` | 40–70 % | 43–48 % | nådd |
+| `human`, `SCENARIO_COMPLETE` | 40–70 % | 59 % (efter historiens steg och tröskeln 9,5) | nådd |
 
 ## Det du behöver känna efter
 
