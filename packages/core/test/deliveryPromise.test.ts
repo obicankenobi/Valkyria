@@ -21,6 +21,14 @@ function orderFor(state: GameState, over: Partial<Order> = {}): Order {
 }
 
 describe('deliveryPromiseTerm (P189)', () => {
+  it('P191 (11AG): med faktorn 0 är termen noll vid varje löfte, och ett kortare löfte ger samma kurva', () => {
+    if (B.deliveryPromiseFactor !== 0) return
+    expect(deliveryPromiseTerm(W, 1, 9)).toBe(0)
+    const state = createInitialState('indochina-slice', 'dp-off')
+    const order = orderFor(state)
+    expect(playerWinCurve(state, order, 'A', undefined, false, false, 3)).toEqual(playerWinCurve(state, order, 'A', undefined, false, false, order.requiredDeliveryTurns))
+  })
+
   it('är faktor × leveransvikt × leveransterminens vikt × kvartal under kravet, och noll vid eller över kravet', () => {
     const per = B.deliveryPromiseFactor * W.delivery * B.deliveryTermWeight
     expect(deliveryPromiseTerm(W, 5, 5)).toBe(0)
@@ -41,7 +49,8 @@ describe('deliveryPromiseTerm (P189)', () => {
 })
 
 describe('playerWinCurve och avgörandet ser samma term', () => {
-  it('ett kortare löfte ger högre vinstchans i kurvan (samma priser)', () => {
+  // P191 (11AG): termen är avstängd (faktor 0) till speltestet; då är den noll och ett kortare löfte ändrar ingenting. Reglerna ovan gäller formen och återtas när faktorn slås på igen.
+  it.skipIf(B.deliveryPromiseFactor === 0)('ett kortare löfte ger högre vinstchans i kurvan (samma priser)', () => {
     const state = createInitialState('indochina-slice', 'dp-curve')
     const order = orderFor(state)
     const slow = playerWinCurve(state, order, 'A', undefined, false, false, order.requiredDeliveryTurns)

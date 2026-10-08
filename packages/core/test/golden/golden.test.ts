@@ -547,10 +547,12 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // och `boardTarget.threshold` 9,0 → 7,5 (data i samma regeländring: rivalerna lovar i regel snabbare än kravet, så termen sänker alla botar). Attribution (dist ombyggd): med `deliveryPromiseFactor` 0 och tröskeln 9,0 är alla tre hashar
   // bit-identiska med förra raden (8043621c952e, 124d9ae3c35771, 8f30f586b617b) — verifierat, inte antaget. Med faktorn på och 9,0: passive 12698bd3d66f66, aggressive 4bc425a27ff6f, balanced oförändrad. Med tröskeln 7,5 också:
   // passive 1b7ff048d49520, aggressive 1dca6cc3a2bbbc, balanced 11b0799a5f9b6e.
+  // Omfryst i P191 (data, beslut 11AG): `deliveryPromiseFactor` 0.3 → 0 och `boardTarget.threshold` 7,5 → 9,0 — leveranstermen av till speltestet. Attribution (dist ombyggd): hasharna är bit-identiska med raden efter P188
+  // (8043621c952e, 124d9ae3c35771, 8f30f586b617b) — verifierat, inte antaget; P189:s hasharna (1b7ff048d49520, 1dca6cc3a2bbbc, 11b0799a5f9b6e) gällde bara med termen på.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1b7ff048d49520' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1dca6cc3a2bbbc' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '11b0799a5f9b6e' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '8043621c952e' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '124d9ae3c35771' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '8f30f586b617b' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
