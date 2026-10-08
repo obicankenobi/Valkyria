@@ -94,6 +94,8 @@ export interface GameState {
   race: RaceState
   // P122 (ETAPP9 §8.1): utvecklingsupphandlingar (anbudsinfordringar). Utelämnas tills den första infordran. Skrivs bara av programme.ts.
   programmes?: Programme[]
+  // P149 (ETAPP10 §9.2): vilka historiska händelser som inträffat (och senare vad spelaren svarade). Utelämnas tills den första. Skrivs bara av history.ts.
+  history?: HistoryState
   // P124 (ETAPP9 §8.3): pappersspåren — ett per korrupt handling. Utelämnas tills det första. Skrivs bara av traces.ts.
   traces?: PaperTrace[]
   // P134 (§8b.3): vem som anställer en namngiven chefskonstruktör just nu, när det avviker från datan (designers.json). Utelämnat tills den första anställningen.
@@ -188,6 +190,7 @@ export type ChronicleKind =
   | 'ceasefire'
   | 'casualty' // P113: en rapport från fältet om en konstruktion (utredning öppnas) eller ett avslöjat förnekande
   | 'scandal' // P125: ett spår har kommit fram (husets eget eller en rivals) eller ett avslöjat täckelse
+  | 'history' // P149: en verklig, daterad händelse (history.ts) — känns igen på causeId-prefixet 'history:'
 
 export interface ChronicleEntry {
   turn: number
@@ -1044,6 +1047,11 @@ export interface GapShock {
 }
 
 // holder = 'player' eller en rivals id; spec = (prestanda + tillförlitlighet) / 2 för konstruktionen som levererades.
+// P149 (ETAPP10 §9.2): vilka historiska händelser som inträffat, med turen — epilogens tidslinje och efterordet läser den. response sätts av beslutskorten (P150).
+export interface HistoryState {
+  occurred: Record<string, { turn: number; response?: string }>
+}
+
 export interface FirstInPlace {
   generation: number
   holder: string

@@ -153,6 +153,9 @@ export {
   scheduledGeneration,
 } from './race.js'
 export type { Bloc, RequirementCard, RivalDesignDisplay } from './race.js'
+// P149 (ETAPP10 §9): verkliga, daterade händelser. Presentationen läser datan och känner igen en rubrik på causeId-prefixet.
+export { HISTORY_AFTERWORD, HISTORY_CAUSE_PREFIX, HISTORY_EVENTS, HISTORY_PROLOGUE, historyEventOf, quarterKey, quarterOfDate } from './history.js'
+export type { HistoryEvent, HistoryKind } from './history.js'
 export {
   advanceProgrammes,
   applyProcurement,

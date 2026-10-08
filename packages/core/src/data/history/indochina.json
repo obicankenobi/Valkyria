@@ -1,0 +1,507 @@
+{
+  "scenario": "indochina-slice",
+  "events": [
+    {
+      "id": "laos-coup",
+      "kind": "frontPage",
+      "date": "1964-04-19",
+      "quarter": "1964-Q2",
+      "headline": "COUP IN LAOS: OFFICERS SEIZE VIENTIANE",
+      "body": "Rightist army officers seize key points in Vientiane in the night of 18–19 April 1964. Laotian politics stall for the quarter.",
+      "source": "en.wikipedia.org/wiki/1964_Laotian_coups",
+      "condition": "always",
+      "effects": [
+        {
+          "kind": "holdOrders",
+          "factions": [
+            "laos"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "china-bomb",
+      "kind": "frontPage",
+      "date": "1964-10-16",
+      "quarter": "1964-Q4",
+      "headline": "CHINA EXPLODES ITS FIRST ATOMIC BOMB",
+      "body": "On 16 October 1964 China tests a nuclear device at Lop Nur and becomes the fifth nuclear power.",
+      "source": "en.wikipedia.org/wiki/Project_596",
+      "condition": "always",
+      "effects": [
+        {
+          "kind": "doomsday",
+          "key": "chinaTestDoomsday"
+        }
+      ]
+    },
+    {
+      "id": "rolling-thunder",
+      "kind": "frontPage",
+      "date": "1965-03-02",
+      "quarter": "1965-Q1",
+      "headline": "ROLLING THUNDER: SUSTAINED BOMBING OF THE NORTH BEGINS",
+      "body": "On 2 March 1965 the United States opens a sustained air campaign against North Vietnam. On 8 March US Marines come ashore at Da Nang.",
+      "source": "en.wikipedia.org/wiki/Operation_Rolling_Thunder",
+      "condition": "always",
+      "effects": [
+        {
+          "kind": "need",
+          "key": "rollingThunderNeedOrders",
+          "factions": [
+            "rvn",
+            "nlf"
+          ]
+        },
+        {
+          "kind": "heat",
+          "key": "rollingThunderHeat",
+          "theatre": "indochina"
+        }
+      ]
+    },
+    {
+      "id": "thieu-ky",
+      "kind": "frontPage",
+      "date": "1965-06-19",
+      "quarter": "1965-Q2",
+      "headline": "GENERALS TAKE POWER IN SAIGON",
+      "body": "On 19 June 1965 a military government under Nguyễn Văn Thiệu and Nguyễn Cao Kỳ takes over in South Vietnam. Kỳ becomes prime minister.",
+      "source": "en.wikipedia.org/wiki/Nguyễn_Cao_Kỳ",
+      "condition": "no-player-coup:rvn",
+      "effects": [
+        {
+          "kind": "officialsRelation",
+          "key": "thieuKyRelationLoss",
+          "factionId": "rvn"
+        }
+      ]
+    },
+    {
+      "id": "indo-pak-war",
+      "kind": "frontPage",
+      "date": "1965-08-05",
+      "quarter": "1965-Q3",
+      "headline": "INDIA AND PAKISTAN AT WAR; ARMS STOPPED TO BOTH",
+      "body": "A war between India and Pakistan runs from 5 August to 23 September 1965. In September the United States and Britain suspend arms deliveries to both sides.",
+      "source": "en.wikipedia.org/wiki/Indo-Pakistani_war_of_1965",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "fulbright-hearings",
+      "kind": "frontPage",
+      "date": "1966-02-04",
+      "quarter": "1966-Q1",
+      "headline": "THE SENATE HEARS THE WAR ON TELEVISION",
+      "body": "The Senate Foreign Relations Committee, chaired by J. William Fulbright, holds televised hearings on Vietnam from 4 to 18 February 1966.",
+      "source": "senate.gov/artandhistory/history/minute/Vietnam_Hearings.htm",
+      "condition": "always",
+      "effects": [
+        {
+          "kind": "support",
+          "key": "fulbrightSupport",
+          "bloc": "west"
+        }
+      ]
+    },
+    {
+      "id": "buddhist-uprising",
+      "kind": "frontPage",
+      "date": "1966-06-08",
+      "quarter": "1966-Q2",
+      "headline": "BUDDHIST UPRISING SHAKES SOUTH VIETNAM",
+      "body": "From 26 March to 8 June 1966 Buddhist-led protests challenge the military government in Huế, Da Nang and Saigon until the unrest is put down.",
+      "source": "en.wikipedia.org/wiki/Buddhist_Uprising",
+      "condition": "faction-stands:rvn",
+      "effects": [
+        {
+          "kind": "delayShipments",
+          "factions": [
+            "rvn"
+          ]
+        },
+        {
+          "kind": "support",
+          "key": "buddhistSupport",
+          "factions": [
+            "rvn"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scientists-petition",
+      "kind": "frontPage",
+      "date": "1967-02-14",
+      "quarter": "1967-Q1",
+      "headline": "SCIENTISTS PETITION THE PRESIDENT ON HERBICIDES",
+      "body": "On 14 February 1967 a group of scientists sends President Johnson a petition against the use of herbicides in Vietnam.",
+      "source": "meselsonarchive.hsites.harvard.edu/petition-president-johnson",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "sterling-devalued",
+      "kind": "frontPage",
+      "date": "1967-11-18",
+      "quarter": "1967-Q4",
+      "headline": "STERLING DEVALUED: 2.80 DOLLARS BECOMES 2.40",
+      "body": "On 18 November 1967 Britain devalues the pound from 2.80 to 2.40 dollars.",
+      "source": "en.wikipedia.org/wiki/1967_sterling_devaluation",
+      "condition": "always",
+      "effects": [
+        {
+          "kind": "commodities",
+          "key": "poundCommodityPct"
+        }
+      ]
+    },
+    {
+      "id": "czechoslovakia",
+      "kind": "frontPage",
+      "date": "1968-08-21",
+      "quarter": "1968-Q3",
+      "headline": "WARSAW PACT TROOPS ENTER CZECHOSLOVAKIA",
+      "body": "In the night of 20–21 August 1968 Soviet and other Warsaw Pact forces invade Czechoslovakia and end the Prague Spring.",
+      "source": "en.wikipedia.org/wiki/Warsaw_Pact_invasion_of_Czechoslovakia",
+      "condition": "always",
+      "effects": [
+        {
+          "kind": "doomsday",
+          "key": "czechoslovakiaDoomsday"
+        }
+      ]
+    },
+    {
+      "id": "bombing-halt",
+      "kind": "frontPage",
+      "date": "1968-11-01",
+      "quarter": "1968-Q4",
+      "headline": "JOHNSON HALTS THE BOMBING OF NORTH VIETNAM",
+      "body": "President Johnson announces on 31 October 1968 that the bombing of North Vietnam stops. The halt takes effect on 1 November.",
+      "source": "presidency.ucsb.edu",
+      "condition": "front-war",
+      "effects": [
+        {
+          "kind": "heat",
+          "key": "bombingHaltHeat",
+          "theatre": "indochina"
+        }
+      ]
+    },
+    {
+      "id": "khrushchev-removed",
+      "kind": "telex",
+      "date": "1964-10-14",
+      "quarter": "1964-Q4",
+      "headline": "KHRUSHCHEV REMOVED",
+      "body": "On 14 October 1964 the Soviet leadership removes Nikita Khrushchev. Leonid Brezhnev becomes first secretary.",
+      "source": "en.wikipedia.org/wiki/Nikita_Khrushchev",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "south-africa-embargo",
+      "kind": "telex",
+      "date": "1964-11-17",
+      "quarter": "1964-Q4",
+      "headline": "BRITAIN ANNOUNCES A BAN ON NEW ARMS FOR SOUTH AFRICA",
+      "body": "On 17 November 1964 the new British government announces that it will sell no new arms to South Africa.",
+      "source": "en.wikipedia.org/wiki/United_Kingdom_and_South_Africa",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "barrel-roll",
+      "kind": "telex",
+      "date": "1964-12-14",
+      "quarter": "1964-Q4",
+      "headline": "AMERICAN AIRCRAFT BEGIN SECRET STRIKES OVER LAOS",
+      "body": "On 14 December 1964 Operation Barrel Roll begins: US aircraft attack targets in Laos along the infiltration routes. It is not announced.",
+      "source": "en.wikipedia.org/wiki/Operation_Barrel_Roll",
+      "condition": "station:laos",
+      "effects": []
+    },
+    {
+      "id": "bonn-israel-arms",
+      "kind": "telex",
+      "date": "1965-02",
+      "quarter": "1965-Q1",
+      "headline": "BONN HALTS ARMS TO ISRAEL",
+      "body": "In February 1965 West Germany stops arms deliveries to Israel after reports of earlier shipments become public.",
+      "source": "en.wikipedia.org/wiki/Israel–West_Germany_relations",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "dominican-republic",
+      "kind": "telex",
+      "date": "1965-04-28",
+      "quarter": "1965-Q2",
+      "headline": "US TROOPS LAND IN THE DOMINICAN REPUBLIC",
+      "body": "Fighting breaks out in Santo Domingo in April 1965. US Marines land on 28 April.",
+      "source": "en.wikipedia.org/wiki/United_States_occupation_of_the_Dominican_Republic_(1965–1966)",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "indonesia-30-sept",
+      "kind": "telex",
+      "date": "1965-09-30",
+      "quarter": "1965-Q3",
+      "headline": "OFFICERS KILL SIX GENERALS IN JAKARTA",
+      "body": "In the night of 30 September–1 October 1965 a group of officers kills six army generals. General Suharto takes control within days.",
+      "source": "en.wikipedia.org/wiki/30_September_Movement",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "rhodesia-udi",
+      "kind": "telex",
+      "date": "1965-11-11",
+      "quarter": "1965-Q4",
+      "headline": "RHODESIA DECLARES INDEPENDENCE",
+      "body": "On 11 November 1965 the government of Ian Smith declares Rhodesia independent of Britain.",
+      "source": "en.wikipedia.org/wiki/Unilateral_Declaration_of_Independence_(Rhodesia)",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "saudi-air-deal",
+      "kind": "telex",
+      "date": "1965-12",
+      "quarter": "1965-Q4",
+      "headline": "SAUDI ARABIA AGREES A LARGE AIR DEFENCE ORDER",
+      "body": "In December 1965 Saudi Arabia agrees an air defence order with British industry, after American offers compete for it.",
+      "source": "en.wikipedia.org/wiki/Saudi_Arabia–United_Kingdom_relations",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "france-nato",
+      "kind": "telex",
+      "date": "1966-03-07",
+      "quarter": "1966-Q1",
+      "headline": "FRANCE TO LEAVE NATO'S MILITARY COMMAND",
+      "body": "On 7 March 1966 President de Gaulle informs President Johnson that France will leave the integrated military command of NATO.",
+      "source": "en.wikipedia.org/wiki/France_and_NATO",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "cultural-revolution",
+      "kind": "telex",
+      "date": "1966-05-16",
+      "quarter": "1966-Q2",
+      "headline": "CULTURAL REVOLUTION OPENED IN CHINA",
+      "body": "On 16 May 1966 the Chinese Communist Party issues the circular that opens the Cultural Revolution.",
+      "source": "en.wikipedia.org/wiki/Cultural_Revolution",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "un-resolution-232",
+      "kind": "telex",
+      "date": "1966-12-16",
+      "quarter": "1966-Q4",
+      "headline": "UN VOTES ITS FIRST MANDATORY SANCTIONS, ON RHODESIA",
+      "body": "On 16 December 1966 the Security Council adopts resolution 232, its first mandatory sanctions, including an arms embargo on Rhodesia.",
+      "source": "en.wikipedia.org/wiki/United_Nations_Security_Council_Resolution_232",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "outer-space-treaty",
+      "kind": "telex",
+      "date": "1967-01-27",
+      "quarter": "1967-Q1",
+      "headline": "OUTER SPACE TREATY OPENED FOR SIGNATURE",
+      "body": "On 27 January 1967 the treaty banning nuclear weapons in orbit is signed in Washington, London and Moscow.",
+      "source": "en.wikipedia.org/wiki/Outer_Space_Treaty",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "greek-coup",
+      "kind": "telex",
+      "date": "1967-04-21",
+      "quarter": "1967-Q2",
+      "headline": "ARMY OFFICERS SEIZE POWER IN GREECE",
+      "body": "On 21 April 1967 a group of army officers takes over in Athens.",
+      "source": "en.wikipedia.org/wiki/1967_Greek_coup_d%27état",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "glassboro",
+      "kind": "telex",
+      "date": "1967-06-23",
+      "quarter": "1967-Q2",
+      "headline": "JOHNSON AND KOSYGIN MEET AT GLASSBORO",
+      "body": "The two leaders hold talks at Glassboro, New Jersey, on 23–25 June 1967. No arms agreement results.",
+      "source": "en.wikipedia.org/wiki/Glassboro_Summit_Conference",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "biafra-war",
+      "kind": "telex",
+      "date": "1967-07-06",
+      "quarter": "1967-Q3",
+      "headline": "FIGHTING BEGINS IN BIAFRA",
+      "body": "On 6 July 1967 Nigerian federal forces move into the breakaway region of Biafra.",
+      "source": "en.wikipedia.org/wiki/Nigerian_Civil_War",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "mcnamara-leaves",
+      "kind": "telex",
+      "date": "1967-11-29",
+      "quarter": "1967-Q4",
+      "headline": "MCNAMARA TO LEAVE THE PENTAGON",
+      "body": "On 29 November 1967 it is announced that Robert McNamara will leave the Defense Department to head the World Bank.",
+      "source": "en.wikipedia.org/wiki/Robert_McNamara",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "f111k-cancelled",
+      "kind": "telex",
+      "date": "1968-01-16",
+      "quarter": "1968-Q1",
+      "headline": "BRITAIN CANCELS THE F-111K",
+      "body": "On 16 January 1968 the British government announces that the F-111K order is cancelled.",
+      "source": "en.wikipedia.org/wiki/General_Dynamics_F-111K",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "pueblo",
+      "kind": "telex",
+      "date": "1968-01-23",
+      "quarter": "1968-Q1",
+      "headline": "NORTH KOREA SEIZES THE USS PUEBLO",
+      "body": "On 23 January 1968 North Korean forces capture the US Navy intelligence ship Pueblo off the coast.",
+      "source": "en.wikipedia.org/wiki/USS_Pueblo_(AGER-2)",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "johnson-not-running",
+      "kind": "telex",
+      "date": "1968-03-31",
+      "quarter": "1968-Q1",
+      "headline": "JOHNSON WILL NOT SEEK RE-ELECTION",
+      "body": "On 31 March 1968 President Johnson announces that he will not run again.",
+      "source": "en.wikipedia.org/wiki/Lyndon_B._Johnson",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "npt-opened",
+      "kind": "telex",
+      "date": "1968-07-01",
+      "quarter": "1968-Q3",
+      "headline": "NON-PROLIFERATION TREATY OPENED FOR SIGNATURE",
+      "body": "On 1 July 1968 the treaty is opened for signature in Washington, London and Moscow.",
+      "source": "en.wikipedia.org/wiki/Treaty_on_the_Non-Proliferation_of_Nuclear_Weapons",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "foreign-military-sales-act",
+      "kind": "telex",
+      "date": "1968-10-22",
+      "quarter": "1968-Q4",
+      "headline": "CONGRESS PASSES THE FOREIGN MILITARY SALES ACT",
+      "body": "On 22 October 1968 the Foreign Military Sales Act becomes law and puts government arms sales under a new framework.",
+      "source": "en.wikipedia.org/wiki/Arms_Export_Control_Act",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "nixon-elected",
+      "kind": "telex",
+      "date": "1968-11-05",
+      "quarter": "1968-Q4",
+      "headline": "NIXON ELECTED PRESIDENT",
+      "body": "On 5 November 1968 Richard Nixon wins the US presidential election.",
+      "source": "en.wikipedia.org/wiki/1968_United_States_presidential_election",
+      "condition": "always",
+      "effects": []
+    },
+    {
+      "id": "c5a-testimony",
+      "kind": "telex",
+      "date": "1968-11-13",
+      "quarter": "1968-Q4",
+      "headline": "C-5A COST OVERRUN REACHES CONGRESS",
+      "body": "On 13 November 1968 Pentagon cost analyst A. Ernest Fitzgerald testifies to Congress on the cost overruns of the C-5A transport.",
+      "source": "en.wikipedia.org/wiki/A._Ernest_Fitzgerald",
+      "condition": "always",
+      "effects": []
+    }
+  ],
+  "prologue": [
+    {
+      "id": "bay-of-pigs",
+      "kind": "prologue",
+      "date": "1961-04-17",
+      "headline": "CUBAN EXILES LAND AT THE BAY OF PIGS",
+      "body": "Exiles trained by the CIA land in Cuba on 17 April 1961. The invasion is defeated within three days.",
+      "source": "en.wikipedia.org/wiki/Bay_of_Pigs_Invasion"
+    },
+    {
+      "id": "cuban-missile-crisis",
+      "kind": "prologue",
+      "date": "1962-10-16",
+      "headline": "THE WORLD STANDS AT THE EDGE OVER CUBA",
+      "body": "From 16 to 28 October 1962 the United States and the Soviet Union face each other over missiles in Cuba.",
+      "source": "en.wikipedia.org/wiki/Cuban_Missile_Crisis"
+    },
+    {
+      "id": "test-ban-treaty",
+      "kind": "prologue",
+      "date": "1963-08-05",
+      "headline": "TEST BAN SIGNED IN MOSCOW",
+      "body": "On 5 August 1963 the United States, Britain and the Soviet Union sign a treaty banning nuclear tests in the atmosphere, in space and under water.",
+      "source": "en.wikipedia.org/wiki/Partial_Nuclear_Test_Ban_Treaty"
+    },
+    {
+      "id": "diem-coup",
+      "kind": "prologue",
+      "date": "1963-11-01",
+      "headline": "GENERALS OVERTHROW DIEM",
+      "body": "On 1–2 November 1963 South Vietnamese generals overthrow President Ngô Đình Diệm, who is killed.",
+      "source": "en.wikipedia.org/wiki/1963_South_Vietnamese_coup_d'état"
+    },
+    {
+      "id": "kennedy-assassination",
+      "kind": "prologue",
+      "date": "1963-11-22",
+      "headline": "KENNEDY SHOT IN DALLAS",
+      "body": "On 22 November 1963 President John F. Kennedy is assassinated in Dallas. Lyndon Johnson takes the oath of office.",
+      "source": "en.wikipedia.org/wiki/Assassination_of_John_F._Kennedy"
+    }
+  ],
+  "afterword": [
+    {
+      "id": "ussuri-clashes",
+      "kind": "afterword",
+      "date": "1969-03-02",
+      "headline": "SOVIET AND CHINESE TROOPS CLASH ON THE USSURI",
+      "body": "On 2 and 15 March 1969 Soviet and Chinese forces fight on Zhenbao (Damansky) Island in the Ussuri River.",
+      "source": "en.wikipedia.org/wiki/Sino-Soviet_border_conflict"
+    },
+    {
+      "id": "my-lai",
+      "kind": "afterword",
+      "date": "1968-03-16",
+      "headline": "MY LAI",
+      "body": "On 16 March 1968 US soldiers killed hundreds of unarmed civilians at My Lai. It happened during the years you have just played, and it became known to the public only on 13 November 1969.",
+      "source": "en.wikipedia.org/wiki/My_Lai_massacre"
+    }
+  ]
+}

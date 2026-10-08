@@ -25,6 +25,7 @@ import type {
   WireEvent,
 } from '../types.js'
 import { applyActions } from './steps/applyActions.js'
+import { history } from './steps/history.js'
 import { production } from './steps/production.js'
 import { deliveries } from './steps/deliveries.js'
 import { fronts } from './steps/fronts.js'
@@ -61,6 +62,8 @@ export interface ResolveContext {
 // Ordningen är spelregler. Ändra den aldrig av bekvämlighet (CLAUDE.md hård regel 7).
 const PIPELINE: ResolveStep[] = [
   applyActions, // spelarens handlingar, i inskickad ordning
+  // P149 (ETAPP10 §9.2, beslut 10E): nytt steg direkt efter applyActions — kvartalets verkliga händelser verkar på samma kvartals fronter, heat och ordrar.
+  history, // förstasidor och telex ur data/history, villkor och effekter
   production, // linjer producerar mot kontrakt; styckkostnad bokförs HÄR
   deliveries, // leveranser anländer, betalning, materiel in på front
   fronts, // frontresolve + attribution

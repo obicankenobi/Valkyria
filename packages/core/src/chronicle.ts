@@ -16,6 +16,7 @@
 // styra kärnan, men kärnan får mycket väl läsa sin egen redan emitterade
 // text.
 import type { ChronicleEntry, ChronicleKind, WireEvent } from './types.js'
+import { historyEventOf } from './history.js'
 
 const KIND_PATTERNS: { kind: ChronicleKind; patterns: RegExp[] }[] = [
   { kind: 'coup', patterns: [/FUNDS A SUCCESSFUL COUP IN/] },
@@ -71,6 +72,11 @@ export function classifyChronicleEntries(events: readonly WireEvent[]): Chronicl
   const entries: ChronicleEntry[] = []
 
   for (const event of events) {
+    // P149: en förstasida ur historien (rubrikhändelsen, inte effekterna eller telexraderna) — känns igen på deltat history.<id>.
+    if (event.severity === 'headline' && event.causeId?.startsWith('history:') && historyEventOf(event.causeId, event.delta)?.kind === 'frontPage' && Object.keys(event.delta).some((k) => k.startsWith('history.'))) {
+      entries.push({ turn: event.turn, kind: 'history', headline: event.headline, actorIsPlayer: false, causeHeadlines: [], doomsdayDelta: 0 })
+      continue
+    }
     if (event.headline.startsWith('DELIVERED ') && findCausedDoomsdayDelta(events, event.id) !== 0) {
       entries.push({
         turn: event.turn,
