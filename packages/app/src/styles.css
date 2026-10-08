@@ -6753,3 +6753,17 @@ summary:focus-visible,
   font-size: 13px;
   line-height: 1.35;
 }
+
+/* P149: förstasidan (och ett PM) i kvartalsuppspelningen gjorde panelen högre än sin ram, och Continue/Skip hamnade utanför skärmen. Panelen scrollar nu inuti sig själv och knappen sitter fast i nederkanten. */
+.replay-panel {
+  overflow-y: auto;
+}
+.replay-panel .front-page {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.replay-panel .replay-skip {
+  position: sticky;
+  bottom: 0;
+  flex: 0 0 auto;
+}

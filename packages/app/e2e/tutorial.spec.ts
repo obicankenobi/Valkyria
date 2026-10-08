@@ -112,7 +112,8 @@ test('handledningen leder alla åtta steg och avslutas av sig själv (P91a klart
   await expect(page.getByTestId('tutorial-prompt')).toHaveText(/production board/i)
   await page.getByTestId('end-quarter-button').click()
   await page.getByTestId('end-quarter-button').click()
-  await expect(page.getByTestId('tutorial-banner')).toBeHidden()
+  // P146: de åtta första stegen löper ut vid tur 3; då tar de sena stegen (etapp 9:s system) över — här det första, att rita en konstruktion.
+  await expect(page.getByTestId('tutorial-prompt')).toHaveText(/Drawing office/i)
 })
 
 test('Dismiss stänger av handledningen för resten av partiet, och Restart Tutorial i Settings startar om den (P91a klart-när)', async ({
