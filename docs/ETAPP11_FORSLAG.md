@@ -588,6 +588,30 @@ behövs det, stanna och redovisa vad som krävs.
 - `docs/SPELTEST_ETAPP10A.md` uppdateras så att den frågar efter det besluten nu hänger på: om verken
   känns som något man måste sköta (11AH), och om egna konstruktioner känns värda priset (10AA).
 
+> **Utfall P191 (2026-10-08; data, golden tillbaka på P188:s hashar i egen commit; 100 partier per bot).**
+> **Byggt:** `deliveryPromiseFactor` 0 och `boardTarget.threshold` 9,0. **Golden:** med de två talen är alla tre hashar bit-identiska med raden efter P188 — passive `8043621c952e`, aggressive `124d9ae3c35771`, balanced `8f30f586b617b` — verifierat med ombyggd dist, inte antaget; raden omfryst i egen commit med attribution i `golden.test.ts`. Koden för termen
+> står kvar bakom talet (`deliveryPromiseTerm`, `rivalDeliveryPromiseTerm`, `deliveryTurns` i `bidEstimate`/`playerWinCurve`). Budmappen visar ingen leveransterm när den är noll (`BidForm.tsx`, `promiseActive`); testet `BidForm.promise.test.tsx` binder det. `stockDesignAsFamily` förblir av; P187 och 11AE:s reviderade rader står kvar.
+> **Mätt (100 partier per bot):**
+>
+> | Rad | Mål | P189 (termen på) | P191 (termen av) | |
+> |---|---|---|---|---|
+> | `human`, vinst | 40–70 % | 65 | **64** | nådd |
+> | `human-noresearch`, vinst | ≥ 30 % | 33 | **36** | nådd |
+> | Ingen variant över 90 % | – | 83 | **81** (`human-tracks`; `human-broad` 78) | nådd |
+> | `human` mot `human-static`, vinst | ≥ 25 pp (11AE) | +62 | **+64** (64 mot 0) | nådd |
+> | Utnyttjande, `human` | mäts (11AE) | 27 | 26 | mäts |
+> | Nya verk (+ utbyggnader) | ≥ 1,5 (11AE) | 1,4 (+1,7) | 1,2 (+2,1) | 3,3 totalt; nya verk under |
+> | Tomten full | nåbar | 0 % | 0 % | nåbar i test |
+> | Driftsbeslut | ≥ 40 % (11AE) | 45 | 48 | nådd |
+> | Sena kontrakt per parti | 1–4 | 1,9 | 1,9 | nådd |
+> | `human-builder`, konkurs | 10–30 % (11AE) | 3 | 0 (vinst 42) | inte nådd |
+> | `human`, kärnvapenutbyte | ≤ 10 % | 5 | 8 | nådd |
+> | Kassadalen, median kvartal 4/5 (Mkr) | – | −0,42 / −0,45 | −0,41 / −0,43 | **fortfarande djupare än P188 (0,83 / 0,42)** |
+>
+> Övriga botar: `human-hawk` 61, `human-outsource` 67, `human-nopromise` 62, `balanced` 40, `balanced-pwc` 52, `passive` 0, `aggressive` 0, `capacity` 0 % vinst och 94 % BUYOUT (referensen 96,7 ± 10 håller). Spelbarhetstestet och `capacity`-referensen gröna utan revidering.
+> **Fynd (inte åtgärdat, inga andra tal än de två):** kassadalen blev inte tillbaka på P188:s nivå trots att termen är av. Orsaken är inte termen utan `human`s eget beteende: boten lovar fortfarande den kortaste leveranstid "ready by" tillåter (`promise`, standard på), och utan termen ger ett kortare löfte
+> bara en tidigare förfallodag. `human-nopromise` har kvartal 4-medianen +0,82 Mkr. Raden i tabellen är alltså en botinställning, inte en regel; att låta löftet följa faktorn (av när faktorn är 0) är en harness-ändring jag inte gjorde eftersom uppdraget var "inga andra tal". Speltestet avgör: en spelare har ingen sådan bot.
+
 ### P184 efter P189 och P190
 
 Speltestet görs efter P189 och P190 (etapp 10) och före P150 (11AF).

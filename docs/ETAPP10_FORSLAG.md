@@ -443,7 +443,7 @@ Omställningen till en ny konstruktion gör "ready by" längre och kostar bud.
    (en uppgradering, `upgradeOf`) kostar hälften av tiden och pengarna.
 3. Stanna och redovisa om ingen av dem når målet med vakterna orörda.
 
-**Mål:** `human` (med konstruktioner) högst 5 procentenheter under varianten med bara forskningsspår, och
+**Mål:** ~~`human` (med konstruktioner) högst 5 procentenheter under varianten med bara forskningsspår~~ (struken i P191, beslut 10AA), och
 ingen variant över taket 90 %. `human-noresearch` minst 30 %. `human` 40–70 %.
 
 **mk-9 (10Ä), i samma prompt:** budmappen visar doomsday-tillägget per leverans innan budet läggs;
@@ -464,7 +464,7 @@ Golden får frysas om en gång per regeländring, i egen commit (10D).
 >
 > | Rad | Mål | Före (P188) | Efter (P190) | |
 > |---|---|---|---|---|
-> | `human` / `human-tracks` (vinst) | `human` högst 5 pp under | 67 / 87 (−20) | 66 / 78 (−12; gemensamma frön 59–63 / 84) | **inte nådd** |
+> | `human` / `human-tracks` (vinst) | ~~`human` högst 5 pp under~~ (struken, 10AA) | 67 / 87 (−20) | 66 / 78 (−12; gemensamma frön 59–63 / 84) | **struken** — ett val med pris |
 > | `human`, vinst | 40–70 % | 67 | 66 | nådd |
 > | `human-noresearch`, vinst | ≥ 30 % | 32 | 33–39 | nådd |
 > | Ingen variant över 90 % | – | 87 | 83 (`human-broad`) | nådd |
@@ -474,6 +474,10 @@ Golden får frysas om en gång per regeländring, i egen commit (10D).
 
 **Del F.** `human-civil` går i konkurs i 59 av 200 partier, och exportbrott inträffar aldrig i botspel.
 Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
+
+> **Utfall P191 (2026-10-08; data, beslut 10AA).** Raden "`human` högst 5 pp under bara forskningsspår" är struken; konstruktionerna är ett val med ett pris, och speltestet avgör om de känns värda det. P190:s botändring (`netRetool`) står kvar; `stockDesignAsFamily` är av. Mätt med leveranstermen av (100 partier per bot):
+> `human` **64**, `human-tracks` **81**, `human-noresearch` **36**, `human-broad` 78, `human-static` 0, `human-builder` 42, `human-outsource` 67, `human-hawk` 61, `balanced` 40, `balanced-pwc` 52, `passive` 0, `aggressive` 0, `capacity` 0 % (94 % BUYOUT). `human`, kärnvapenutbyte 8 % (≤ 10), `human-hawk` 8 %. Mål: `human` 40–70 (nådd), `human-noresearch` ≥ 30 (nådd), ingen variant över 90 (nådd, högst 81). Gapet mot `human-tracks` är 17 pp, nu utan mål.
+> Hela utfallet finns i `docs/ETAPP11_FORSLAG.md` §9b "Utfall P191".
 
 ## 8. Gränssnittet i 10A
 
