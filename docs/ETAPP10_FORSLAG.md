@@ -447,6 +447,26 @@ ingen variant över taket 90 %. `human-noresearch` minst 30 %. `human` 40–70 %
 
 Golden får frysas om en gång per regeländring, i egen commit (10D).
 
+> **Utfall P190 (2026-10-08; golden-hasharna oförändrade; 150 partier per bot).**
+> **mk-9 (10Ä) — byggt och nått.** Budmappen visar "Each delivery adds 14–25 to doomsday (now N). At 100 the world ends." innan budet läggs (`bid-doomsday`). `human` avstår från en order på mk-9 när doomsday är 60 eller högre (`HUMAN_MK9_DOOMSDAY_MAX`); ny variant `human-hawk` säljer det alltid.
+> Mätt (200 partier): `human` kärnvapenutbyte **5 %** (mål ≤ 10; var 6–7 %), `human-hawk` **12–13 %** med 47–48 % vinst (priset för att sälja kärnvapenskalet utan avstående), `human-tracks` 2 %.
+> **Konstruktionerna (10Ö) — målet nåddes inte; stannar enligt punkt 3.** Steg 1: `human` bjuder med en konstruktion bara när vinsten *efter linjens omställning* är högre (`netRetool`: den billigaste linjens omställningskostnad dras av, viktad med vinstchansen) — `human` 49–53 → 63–66 % (`human-grossbid` är det gamla beteendet).
+> Det räcker inte: `human-tracks` (bara forskningsspår) ligger på 78–80 %, alltså 14–17 pp över `human` — målet var högst 5. Delat i gemensamma frön: spår 84, spår + konstruktioner 59 (63 med nettoregeln), upphandlingar neutrala (81 utan konstruktioner). Med konstruktionernas budtermer nollade (`designBidWeight`, nyhet, bevisad,
+> fältprov = 0) ligger `human` på 68: konstruktionerna kostar ca 16 pp bara genom att finnas (forskningsprojekt, omställning 0,31 Mkr mot 0, fältprovets satser, 2,2 färre vunna kontrakt) och ca 9 pp genom sina bud.
+> **Premissfynd (specen, inte en bugg):** (a) *"ställer om en ledig linje för en färdig konstruktion i förväg"* går inte: omställning sker bara när en linje tilldelas ett kontrakt (`production.ts`), det finns ingen handling eller stående order som ställer om en tom linje. (b) *Steg 2 (omställning i samma familj kostar hälften)* ger
+> ingenting som skrivet: familjeomställningen är redan den billigaste nivån (`retoolingTurns` 1 kvartal, £40 000) och ett kvartal går inte att halvera; det som kostar är bytet mellan standardprodukten och en konstruktion av samma produkt, som räknas som en *ny konstruktion* (2 kvartal, £120 000) och som sker varje gång en linje växlar. Det senare är ett mätt förslag,
+> byggt men **av** (`stockDesignAsFamily` 0 i `balance.json`, `tooling.ts`): på blir bytet "samma familj" och `human` går 59 → 61 % — alltså inte heller det löser det. Ingen av vägarna når målet med vakterna orörda, så jag stannar här och redovisar. Se `docs/SPELTEST_ETAPP10A.md` för beslutet.
+>
+> | Rad | Mål | Före (P188) | Efter (P190) | |
+> |---|---|---|---|---|
+> | `human` / `human-tracks` (vinst) | `human` högst 5 pp under | 67 / 87 (−20) | 66 / 78 (−12; gemensamma frön 59–63 / 84) | **inte nådd** |
+> | `human`, vinst | 40–70 % | 67 | 66 | nådd |
+> | `human-noresearch`, vinst | ≥ 30 % | 32 | 33–39 | nådd |
+> | Ingen variant över 90 % | – | 87 | 83 (`human-broad`) | nådd |
+> | `human`, kärnvapenutbyte | ≤ 10 % | 6–7 | 5 | nådd |
+> | `human-hawk`, kärnvapenutbyte / vinst | mäts | – | 12–13 % / 47–48 % | redovisad |
+> | Först på plats (mäts om efter P188, 10V) | – | 0 / 4 % | 0 / 2 % | oförändrad |
+
 **Del F.** `human-civil` går i konkurs i 59 av 200 partier, och exportbrott inträffar aldrig i botspel.
 Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
 

@@ -1,10 +1,10 @@
-# Gemensamt speltest: 10A (P148) och etapp 11 (P184), efter P187–P188 — checklista för ägaren
+# Gemensamt speltest: 10A (P148) och etapp 11 (P184), efter P187–P190 — checklista för ägaren
 
 P148 och P184 är speltest utan kod och görs tillsammans (beslut 11AC, efter P187–P188 och före P150). De kan inte göras av en kodsession: frågan är om slipningen i 10A (P141–P147) gjorde spelet begripligare och mer levande, om verken i etapp 11
 gör produktionen till något som måste skötas, och om forskningen nu lönar sig — och det avgörs av någon som spelar. **Etapp 11:s egen checklista (åtta saker att känna efter, kassadalen, de regelkandidater som återstår) står kvar i `docs/SPELTEST_ETAPP11.md`
 och gäller oförändrad; läs den tillsammans med den här.**
 Det här dokumentet är det en kodsession kan leverera i stället: vad som ändrats sedan förra speltestet, vad härnessen visar, och vad du behöver känna efter själv.
-Det ersätter inte att spela. (Skrivet 2026-10-08 efter P141–P147 och P149, uppdaterat efter P187–P188; P149 hör egentligen till 10B men ingår här eftersom den är det du ser först: förstasidor och telex.)
+Det ersätter inte att spela. (Skrivet 2026-10-08 efter P141–P147 och P149, uppdaterat efter P187–P190; P149 hör egentligen till 10B men ingår här eftersom den är det du ser först: förstasidor och telex.)
 
 ## Hur du spelar
 
@@ -28,6 +28,9 @@ Fyra partier på telefon (390×844, installerad som helskärms-PWA):
 - **Forskningen lönar sig (P188).** En standardprodukt har en generation som följer din tekniknivå i kategorin; när köparens block är mer än en generation före kan den inte bjudas, och budmappen visar ordern som LOCKED med skälet. Ett forskningsspår
   (THE COMPANY) eller en nyare konstruktion håller kategorin öppen. Artilleri och flyg träffas tur 17, marin tur 13. Forskningen till nivå 8 öppnar kärnvapenskalet mk-9 (krav 8) — se beslutet nedan. Styrelsens tröskel är 9,0 (var 9,5).
 
+- **Leveranstid köper poäng (P189).** Ett bud som lovar kortare leveranstid än köparens krav får poäng (upp till två kvartal), och rivalerna får samma poäng. Under leveranstiden i budmappen står vad ett kortare löfte ger. Ett löfte som inte hålls är en sen leverans som förut. Styrelsens tröskel är 7,5 (var 9,0).
+- **Kärnvapenskalet mk-9 (P190).** Budmappen visar "Each delivery adds 14–25 to doomsday (now N)" innan du lägger budet. Botarna avstår vid doomsday 60 eller högre; varianten `human-hawk` säljer alltid.
+
 ## Det härnessen visar
 
 Se `docs/ETAPP10_FORSLAG.md` §7 (utfallsblocken för P142–P144), `docs/ANDRINGSLOGG.md` (en rad per prompt) och `docs/BALANSTAL_10A.md` (P147: vilka tal som spelar roll).
@@ -41,12 +44,15 @@ Se `docs/ETAPP10_FORSLAG.md` §7 (utfallsblocken för P142–P144), `docs/ANDRIN
 | Olycksfåglar | 10–25 % av partierna | 7 % (`human`), 17–32 % (varianterna) | delvis |
 | Först på plats i botspel | förekommer | 0–7 % | **inte nådd** — rivalernas konstruktioner kommer före husets |
 | Hävda kontrakt | förekommer | ca 0,03 per parti | sant men svagt |
-| `human`, `SCENARIO_COMPLETE` | 40–70 % | 67 % (efter P188 och tröskeln 9,0) | nådd |
-| `human-noresearch`, vinst (P188) | ≥ 30 %, och `human` ≥ +10 pp över | 32 % (`human` +35 pp) | nådd |
-| Utnyttjande, `human` (P187, etapp 11 §9) | 70–90 % | 28 % | **inte nådd** — kapaciteten binder inte |
+| `human`, `SCENARIO_COMPLETE` | 40–70 % | 66 % (efter P189 och tröskeln 7,5) | nådd |
+| `human-noresearch`, vinst (P188) | ≥ 30 %, och `human` ≥ +10 pp över | 33 % (`human` +33 pp) | nådd |
+| Utnyttjande, `human` (P187, P189) | 11AE: "mäts, ingen gräns" | 27 % | kapaciteten binder inte; leveranstermen flyttade det inte |
 | Byggda anläggningar, full tomt, driftsbeslut (P187) | 3–6 / 30–60 % / ≥ 60 % | 1,8 (+1,9 utbyggnader) / 0 % / 43 % | **inte nådda** |
 | Kassadalen kvartal 5–8 (P187) | – | median 0,66 / 1,74 / 0,02 / 0,17 Mkr, oförändrad | finns kvar |
-| `human` kärnvapenutbyte (P188) | 0 % förväntas | 6–7 % (forskning till nivå 8 öppnar mk-9) | **ny bieffekt** |
+| `human` kärnvapenutbyte (P188, P190) | ≤ 10 % | 5 % (avstår vid doomsday 60+) | nådd |
+| `human-hawk`, kärnvapenutbyte / vinst (P190) | mäts | 12–13 % / 47–48 % | priset för att alltid sälja mk-9 |
+| `human` mot `human-tracks` (bara forskningsspår), vinst (P190) | högst 5 pp under | 66 mot 78 (−12) | **inte nådd** — konstruktionerna är fortfarande en kostnad |
+| Kassadalen kvartal 4–5, median (P189) | – | −0,42 / −0,45 Mkr (var 0,83 / 0,42) | djupare — rivalerna tar de tidiga kontrakten |
 
 ## Det du behöver känna efter
 
@@ -76,11 +82,11 @@ Se `docs/ETAPP10_FORSLAG.md` §7 (utfallsblocken för P142–P144), `docs/ANDRIN
 
 ## Beslut som behövs från ägaren
 
-- **Kärnvapenskalet (P188).** Forskningen till nivå 8 öppnar mk-9, och varje leverans lägger 14–23 på doomsday; `human` slutar i kärnvapenutbyte i 6–7 % av partierna. Vill du behålla det som ett pris för forskning (pelare 1), höja kravet till 9 så att det kräver
-  mer än den forskning som håller standardprodukten aktuell, eller låta boten avstå?
+- **Kärnvapenskalet (P188, besvarat i 10Ä).** Behålls som forskningens pris; budmappen visar tillägget och `human` avstår vid 60 — kvar att känna efter: räcker visningen? Forskningen till nivå 8 öppnar mk-9, och varje leverans lägger 14–25 på doomsday.
 - **Kapaciteten (P187).** Fyra rader nås inte (utnyttjande, byggda anläggningar, full tomt, driftsbeslut). Spaken som återstår är efterfrågan per linje (större eller fler ordrar, eller en marknad formad efter husets specialisering), inte kontraktets
   exklusivitet. Välj en regel, eller sänk raderna till det en bot som bygger efter behov faktiskt gör.
-- **Konstruktioner som kostnad.** Ska boten bjuda med konstruktion bara när den vinner tydligt, eller ska omställningen för en konstruktion bli billigare? (Idag: bara spår 87 %, `human` 67 %, konstruktioner utan spår 43 %.)
+- **Konstruktioner som kostnad (P190 stannade här).** Med boten som bjuder efter omställningen ligger `human` på 66 mot 78 för bara forskningsspår. Specens två vägar höll inte: (a) en linje kan inte ställas om i förväg (omställning sker bara vid tilldelning), (b) familjeomställningen är redan 1 kvartal/£40 000 och går inte att halvera. Det som kostar är att byta mellan standardprodukten och en konstruktion (räknas som en ny konstruktion, 2 kvartal/£120 000); som "samma familj" ger det bara +2 pp (`stockDesignAsFamily`, byggd men av). Konstruktionerna kostar ca 16 pp genom att finnas och ca 9 pp genom sina bud. Välj: (1) en handling eller stående order som ställer om en tom linje i förväg, (2) en billigare/enklare kostnadsbild för att äga en konstruktion (forskningsprojekt, fältprov, omställning), eller (3) godta att konstruktioner är ett val med pris — rad "högst 5 pp under" stryks.
+- **Leveranstermen (P189).** Rivalerna lovar nästan alltid 1–3 kvartal under kravet och tar poängen, medan huset sällan hinner; tröskeln sänktes 9,0 → 7,5 för att hålla `human` 40–70. Ska rivalerna bara få termen när de är under 50 % av sin kapacitet (strängare än "inte fullbelagd")? Och kassadalen i kvartal 4–5 blev djupare — ska förskottet vara större de första kvartalen?
 - **Först på plats:** ska raden strykas, eller ska rivalernas konstruktionstidtabell (`rivalDesignSchedule`) skjutas så att huset hinner före? En senare tidtabell prövades och kostade `human` ca 6 procentenheter utan att öppna fönstret för de andra botarna.
 - **Hävda kontrakt:** en riktig åtgärd är en regel (fler spår kopplas till ett kontrakt, eller ett avslöjat spår kan häva en redan levererad order).
 - **Tonen i händelsetexterna** (spec §16 punkt 4), särskilt My Lai-efterordet.

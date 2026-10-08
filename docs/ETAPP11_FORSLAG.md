@@ -550,6 +550,31 @@ behövs det, stanna och redovisa vad som krävs.
   (spaken är styrelsens tröskel). Når utnyttjandet inte 40 % gäller 11AE.
 - Golden får frysas om en gång, i egen commit (11I).
 
+> **Utfall P189 (2026-10-08; regel, golden omfryst i egen commit; 100 partier per bot, före = grenens läge efter P188).**
+> **Byggt:** `deliveryPromiseTerm` (`bidTerms.ts`, efter `computeScore`): `deliveryPromiseFactor` 0,3 × köparens leveransvikt × `deliveryTermWeight` × kvartal ett bud lovar under kravet, högst `deliveryPromiseCapTurns` 2. Samma term i `bidding.ts` (avgörandet),
+> `bidEstimate` och `playerWinCurve` (nytt valfritt `deliveryTurns`, standard kravet), och rivalerna får den med sina egna leveranstider — en fullbelagd rival (`rivalCapacityContracts` aktiva kontrakt) får ingen (`rivalDeliveryPromiseTerm`). Ett löfte som
+> inte hålls är en sen leverans som förut. Budmappen visar poängen under leveranstiden ("Promising 1 quarter early adds N points …"). `human` lovar den kortaste tid "ready by" säger att huset hinner med (`promiseTurns`, `worksPolicy.ts`) och lättar löftet mot
+> kravet när de bud som redan lagts den turen tagit linjerna; `human-nopromise` är `human` utan det. `boardTarget.threshold` 9,0 → 7,5 (regelns data). Inget nytt `GameState`-fält. **Golden** attribuerad: faktorn 0 och tröskeln 9,0 är bit-identiska med förra raden.
+> **Premissfynd:** rivalernas leveranstider ligger i regel 1–3 kvartal under kravet (köparens krav är minsta leveranstid + marginal), så rivalerna tjänar termen nästan alltid medan huset bara tjänar den när linjerna räcker — termen sänker alla botar och tröskeln fick sänkas för att hålla `human` inom 40–70.
+>
+> | Rad | Mål | Före (P188) | Efter (P189) | |
+> |---|---|---|---|---|
+> | `human`, vinst | 40–70 % | 67 | **65** | nådd (tröskel 7,5) |
+> | `human-nopromise` (utan löftet) | – | – | 61 | löftet ger ca +4 pp, inom felet |
+> | Utnyttjande, `human` | 40 % (11AE: 70–90 ej längre mål) | 28 | **27** | **inte 40 → 11AE gäller** |
+> | Nya verk per parti (+ utbyggnader) | ≥ 1,5 (11AE) | 1,6 (+2,0) | 1,4 (+1,7) | 3,1 totalt; nya verk strax under |
+> | Tomten full | "nåbar" (11AE) | 0 % | 0 % | nåbar i test, aldrig i botspel |
+> | Driftsbeslut | ≥ 40 % (11AE) | 44 % | **45 %** | nådd |
+> | Sena kontrakt per parti | 1–4 | 1,4 | 1,9 | nådd, men upp (kortare löften) |
+> | Kassadalen, median kvartal 4/5/6/7/8 (Mkr) | – | 0,83 / 0,42 / 1,53 / −0,07 / 0,09 | −0,42 / −0,45 / 0,78 / −0,19 / −0,03 | **djupare** |
+> | `human` mot `human-static`, vinst | ≥ 25 pp (11AE) | +67 (67 mot 0) | +62 (65 mot 3) | nådd |
+> | `human-builder`, konkurs | 10–30 % (11AE) | 0 % | 3 % | **inte nådd** (för lågt, inte för högt) |
+>
+> Övriga botar före → efter: `human-noresearch` 32 → 33, `human-broad` 74 → 83, `balanced` 40 → 60, `balanced-pwc` 52 → 67, `aggressive` 0, `passive` 0, `capacity` 0 % vinst och 94 → 99 % BUYOUT (referensen 96,7 ± 10 håller). Spelbarhetstestet och `capacity`-referensen
+> gröna utan revidering. **Läsning:** utnyttjandet nås inte (27 %, mål 40 %), för att huset sällan kan lova mer än kravet: med två till tre linjer hinner det inte snabbare, så kapacitet köper inte leveranstid i botspel — det som binder är fortfarande efterfrågan per linje
+> (61 % av linjeturerna står lediga). Ytterligare en bieffekt är att den djupare kassadalen i kvartal 4–5 kommer av att rivalerna tar de tidiga kontrakten. **11AE tillämpad:** raderna är nu utnyttjande "mäts, ingen gräns", full tomt "nåbar", nya anläggningar ≥ 1,5 per parti
+> (1,4 nya verk + 1,7 utbyggnader), driftsbeslut ≥ 40 % (45 %); avsikten mäts av `human` +62 pp över `human-static` (nådd) och `human-builder` i konkurs 10–30 % (3 % — inte nådd, och i fel riktning mot vad raden fruktade). Om verken känns som något man måste sköta avgör speltestet.
+
 ### P184 efter P189 och P190
 
 Speltestet görs efter P189 och P190 (etapp 10) och före P150 (11AF).
