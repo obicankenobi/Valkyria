@@ -1,5 +1,7 @@
 # Speltest av etapp 11 (P184) — checklista för ägaren
 
+> **2026-10-08 (beslut 11AC):** speltestet görs tillsammans med P148, efter P187 och P188 och före P150. Det gemensamma underlaget, med vad P187 (ett kontrakt på flera linjer) och P188 (forskningen lönar sig) ändrade och mätte, står i `docs/SPELTEST_ETAPP10A.md`. Den här listan gäller oförändrad för verken och driften.
+
 P184 är ett speltest utan kod. Det kan inte göras av en kodsession: frågan är om verken gör produktionen till något som måste skötas — och
 det avgörs av någon som spelar. Det här dokumentet är det en kodsession kan leverera i stället: vad härnessen redan visar (efter P185–P186,
 100 partier per bot, `indochina-slice`) och vad du behöver känna efter själv. **Läs först avsnittet "Det härnessen visar" — det ändrar

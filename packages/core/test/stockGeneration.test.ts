@@ -38,14 +38,11 @@ describe('stockGeneration — standardprodukternas generation (P188)', () => {
   it('en standardprodukt som ligger mer än en generation efter köparens block kan inte bjudas', () => {
     const state = createInitialState('indochina-slice', 'sg-2')
     const order = orderFor(state, '105mm_field_gun')
-    const buyer = order.buyerId
-    const bloc = state.factions[buyer]!.alignment === 'east' ? 'east' : 'west'
     state.race.generation.west.artillery = 2
     state.race.generation.east.artillery = 2
     expect(stockBidRejection(state, order)).toBeNull() // en generation efter är tillåtet
     state.race.generation.west.artillery = 3
     state.race.generation.east.artillery = 3
-    expect(bloc === 'east' || bloc === 'west').toBe(true)
     expect(stockBidRejection(state, order)).toMatch(/generation behind/)
     state.house.techLevel.artillery += 1 // forskning: generation 2, en efter
     expect(stockBidRejection(state, order)).toBeNull()

@@ -387,6 +387,36 @@ mer än de ger i botspel.
 minst 30 %, så att det är en sämre väg och inte en omöjlig. `human` 40–70 %. Först på plats mäts om
 (10V). Golden får frysas om en gång per regeländring, i egen commit (10D).
 
+> **Utfall P188 (2026-10-08; regel, golden omfryst i egen commit).**
+> **1. Mätning (ingen regel ändrad; `human` mot `human-noresearch`, 100 partier, gemensamma frön 150).** Forskningen kostar litet och ger ingenting: R&D- och konstruktionsöverhead 0,99 Mkr per parti (`fixedCosts.rndOverhead`), politiska utlägg
+> 0,37 mot 0,20 (upphandlingarna), omställning 0,13 — ca 0,5 Mkr av ca 30. Intäkten är i stället *lägre* för `human` (22,5 + 7,0 mot 23,7 + 7,7 Mkr; 13,9 kontrakt mot 16,0). Nyttan: **tekniktermen är redan tak** (`techMarginWeight` × min(2, nivå − krav):
+> husets nivåer 7 och 4 mot produktkrav 1–4 ger maxbonus utan forskning), **tekniknivåns grind stänger 3,0 av 51 ordrar per parti för båda**, och köparnas nivå når högst 4 vid tur 20, så inget efterfrågar mer teknik än huset har. `human`s forskningsspår
+> startade aldrig (`researchStandingOrders` krävde överskott över grundkapitalet och räknade ett designprojekt som ett spår): tekniknivåerna är oförändrade i alla partier. Delat i gemensamma frön (tröskel 9,5): `human` 69, `human-noresearch` 77,
+> bara spår 77, konstruktioner utan upphandlingar 67, upphandlingar utan konstruktioner 79 — **konstruktionerna kostar 8–10 procentenheter** (1,1 konstruktionsbud per parti, 0,9 vunna, men 24,3 bud mot 26,0: omställningen för en konstruktion
+> förlänger "ready by" och släpper igenom färre bud), upphandlingarna är neutrala.
+> **2. Talen (i angiven ordning).** Forskningens kostnad: ca 1 Mkr per parti, flyttar ingenting. `designBidWeight` 40 → 60/90/140: `human` 70/71/74 mot 77 — gapet förblir negativt. `techMarginWeight` 3/4/6/8: `human` 67/82/85/85 och
+> `human-noresearch` 79/68/77/84 — icke-monotont och olika för varje värde (partiet ligger vid styrelsetröskeln), alltså ingen stabil spak. Talen räcker inte.
+> **3. Regeln.** En standardprodukt (utan konstruktion) har generation 1 + tekniknivån över startnivån (`stockGeneration`, `stockGenerationTechBase` 4, `stockGenerationSpecialisedBase` 7 — bundna till scenariots `techLevelDefault` och bonus av
+> `stockGeneration.test.ts`) och får inte bjudas när den ligger mer än en generation efter köparens block (`stockBidRejection`, samma gräns som en konstruktion: `designPhaseOutKeep`). Den sitter i `bidDesignRejection` (ett bud utan konstruktion),
+> `validateBid` (ordern är låst när standardprodukten är utfasad och ingen konstruktion kan bjudas) och `bidding.ts` (rubrik: *… PRODUCT IS A GENERATION BEHIND THE BUYER'S BLOC*); budmappen låser ordern med skälet och döljer STANDARD. Blockens tredje
+> generation kommer tur 17 i artilleri och flyg och tur 13 i marin, så regeln träffer den som inte forskat sist i partiet (artilleri är ca hälften av intäkten). `human` sätter nu forskningsspåret i artilleri från start (ett projekt, nivå 7 → 8 = generation 2)
+> och bjuder inte med en utfasad standardprodukt. `boardTarget.threshold` 9,5 → 9,0 (regelns data: den sänker alla botar). `stockGenerationEnabled` 0 stänger regeln.
+>
+> | Rad | Mål | Före | Efter | |
+> |---|---|---|---|---|
+> | `human`, `SCENARIO_COMPLETE` | 40–70 % | 59 | **67** (gemensamma frön 69) | nådd |
+> | `human-noresearch` | ≥ 30 % | 70 | **32** (33) | nådd |
+> | `human` mot `human-noresearch` | ≥ +10 pp | −11 | **+35** | nådd |
+> | Övriga: `-robust` / `-advanced` / `-bothsides` / `-clean` / `-dirty` | – | 40 / 86 / 58 / 64 / 57 | 66 / 79 / 67 / 72 / 71 | |
+> | `balanced` / `balanced-pwc` / `aggressive` / `passive` / `capacity` | – | 37 / 40 / 0 / 0 / 0 | 40 / 52 / 0 / 0 / 0 | |
+> | `capacity`, BUYOUT | 96,7 ± 10 | 94 | 94 | referensen håller |
+> | Först på plats, `human` / `human-advanced` | förekommer (10V) | 0 / 11 % | 0 / 4 % | oförändrad: nåbar i test, ingen frekvensgräns i botspel |
+>
+> **Vakterna orörda:** spelbarhetstestet (ingen bot över 90 %, bästa ≥ 30 %) och `capacity`-referensen gröna utan revidering. **Bieffekt (ägarbeslut):** forskningen till nivå 8 öppnar `mk9_longhand_shell` (krav 8), och varje leverans lägger
+> 14–23 på doomsday — `human` får `NUCLEAR_EXCHANGE` i 6–7 % av partierna (var 0 %) och doomsday-toppen stiger 40 → 61; utan spåren (bara konstruktioner) 0 %, bara spår 1 %. Det är pelare 1:s fråga i ett nytt ljus, inte ett fel: forskning
+> är vägen till kärnvapenskalet. **Konstruktionerna** förblir en kostnad i botspel (bara spår 87 % mot `human` 67 %, konstruktioner utan spår 43 %); det kräver en egen åtgärd om det ska rättas (bristrisk, omställning eller att boten bjuder med
+> konstruktion bara när den vinner tydligt). Se ANDRINGSLOGG och `docs/SPELTEST_ETAPP10A.md`.
+
 **Del F.** `human-civil` går i konkurs i 59 av 200 partier, och exportbrott inträffar aldrig i botspel.
 Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
 

@@ -503,6 +503,36 @@ behövs det, stanna och redovisa vad som krävs.
   Spaken för det är styrelsens tröskel.
 - Golden får frysas om en gång, i egen commit (11I).
 
+> **Utfall P187 (2026-10-08; regel, golden-hasharna oförändrade; 100 partier per bot, före = grenens läge efter P149).**
+> **Byggt:** en linje i en annan linjes plan får ta samma kontrakt (`PLAN SET` avvisar inte längre "redan planerad på en annan linje"). I `production.ts` går en ledig linje med på ett kontrakt som ligger i *dess* plan så länge kontraktet
+> har mer kvar än de linjer som redan har det hinner med den här turen (`coveredThisTurn`, golvade enheter) — en linje går alltså inte med i onödan. Varje linje ställs om för sig (P171, samma kod som förut) och inkörningen räknas per linje
+> (`line.runIn`); skeppnings-id får linjens id som suffix när två linjer levererar samma tur. `ownRemaining` delar redan enheterna (försändelserna bokförs direkt). **"Ready by"** (`capacity.ts`): ett kontrakt i flera linjers planer räknas på
+> alla; en NY order räknas på de linjer som är lediga nu, och de övriga börjar `multiLineJoinLagTurns` (1) tur senare (planen läggs tidigast nästa kvartal) — `CapacityOutlook.lines` och `BoardContract.lines` är nya. `estimateLineCompletionTurn`
+> summerar takten över linjerna som har kontraktet. Utläggningstaket (50 %) gäller hela kontraktet som förut (ingen kod rörd). **Bot:** `spreadOrders` (`worksPolicy.ts`) lägger en ledig, redan uppsatt linje på ett kontrakt som har mer kvar än
+> dess linjer hinner med; varianten `human-singleline` är `human` utan regeln. **Gränssnitt:** en brytare per linje i kontraktskortet på produktionstavlan (en linje som redan bygger visas som BUILDING), "L1 + L2" på kontraktsraden och spåret
+> på båda linjerna, och en rad i budmappens "Ready by" när flera linjer räknas. Handbokens *works*-uppslag omskrivet. Engelsk text; regel 18 hålls (`npm run shots`, e2e). **Fält:** inget nytt i `GameState`, `Facility` eller `LinePlan`; ett nytt
+> balanstal (`multiLineJoinLagTurns`, okänsligt) och nya härledda fält i `CapacityOutlook`/`BoardContract`.
+>
+> | Rad (§9) | Mål | Före | Efter P187 | |
+> |---|---|---|---|---|
+> | `human`, `SCENARIO_COMPLETE` | 40–70 % | 59 (300 partier) | 57 (100) / 59 (300) | oförändrad |
+> | `human-singleline` (utan regeln), vinst | – | – | 69 (100) / 61 (300) | samma som `human` inom felet |
+> | Utnyttjande, `human` | 70–90 % | 28 % | 28 % | **inte nådd** |
+> | Byggda anläggningar per parti | 3–6 | 1,7 (+1,9 utbyggnader) | 1,8 (+1,9) | inte nådd för nya verk |
+> | Tomten full | 30–60 % | 0 % | 0 % | inte nådd |
+> | Kvartal med driftsbeslut | ≥ 60 % | 43 % | 43 % | inte nådd |
+> | Sena kontrakt per parti | 1–4 | 1,2 | 1,1 | nådd |
+> | Kassadalen, median kvartal 5/6/7/8 (Mkr) | – | 0,66 / 1,74 / 0,02 / 0,17 | identisk | oförändrad |
+> | `human-builder` konkurs | 10–30 % | 20 % | 3 % | (brus: 88 → 100 % av partierna når slutet) |
+>
+> **Diagnos (verifierat, inte gissat):** spridningen används men räcker inte för att flytta något. I 38 av 60 partier ligger något kontrakt på mer än en linje, men bara 1,6 kontrakt-turer per parti; 61 % av linjeturerna står lediga,
+> och 44 linjeturer per parti står lediga *medan ett kontrakt väntar* — de lediga linjerna kan inte ta det (fel kategori, fel uppsättning). Utnyttjandet bestäms av hur mycket efterfrågan det finns per linje, inte av att ett kontrakt bara kan stå på en
+> linje: snabbare tillverkning gör kontrakten klara tidigare, så linjerna står lediga tidigare. Att ställa om en linje för att hjälpa ett sent kontrakt prövades i boten och sänkte vinsten (53 mot 57 %; inkörningen delas på fler linjer och
+> omställningen kostar). **Premissfynd:** `computeScore`s leveranstermin straffar bara en lovad tid *efter* kravet (`max(0, bud − krav)`), så en kortare utlovad leveranstid än kravet ger ingen poäng — "lovar kortare leveranstid" blir i praktiken
+> att `fitsCapacity` släpper igenom bud som annars var för sena, inte en poängspak (och `computeScore` rörs inte). **Golden:** verifierat bit-identisk (golden-botarna använder inga planer); bara `balance.frozen.json` fick den nya nyckeln.
+> **Läsning:** de fyra raderna (utnyttjande, byggda anläggningar, full tomt, driftsbeslut) nås inte med den här regeln. Spaken som återstår är efterfrågan per linje (större eller fler ordrar), inte kontraktets exklusivitet — ägarbeslut,
+> se `docs/SPELTEST_ETAPP10A.md`.
+
 ### P184 efter P187 och P188
 
 Speltestet görs när P187 och P188 (etapp 10) är klara, före P150 (11AC, ändrar 11Z och 11T). Det görs
