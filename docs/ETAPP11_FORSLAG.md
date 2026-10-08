@@ -114,6 +114,9 @@ Följd: i dag finns inget beslut om produktion som spelaren måste fatta. Etappe
 | **11AA** | Utnyttjande 28 %, full tomt 0 %, driftsbeslut 44 % efter P141 (2026-10-08) | **Ny regel, P187: ett kontrakt kan tillverkas på flera linjer samtidigt.** Orsaken är att ett kontrakt i dag går på en linje i taget, så fler linjer bara hjälper med fler parallella kontrakt. Med regeln köper kapacitet snabbare leverans, som redan ger poäng i budet och tidigare betalning. |
 | **11AB** | `human-specialist` 1 % | **Raden stryks.** Huvudleverantörsregeln (11O) gör en ren enkategorispecialist svag med avsikt: huset måste bygga för att växa. Specialiseringen vid start ger fortfarande labbet och budbonusen i startkategorin. `human-broad` och `human` mäter de två sätten att bygga. |
 | **11AC** | Speltestet P184 | **Görs efter P187 och P188, före P150**, tillsammans med P148 (`docs/SPELTEST_ETAPP10A.md`). Ändrar 11Z. Ägaren har inte spelat sedan 2026-10-06, och hela etapp 11 och P141–P149 har byggts sedan dess. |
+| **11AD** | P187 flyttade ingenting (2026-10-08) | **Premissfel i P187, designsessionens.** Specen antog att en kortare utlovad leveranstid ger poäng i budet. Det gör den inte: `computeScore` straffar bara en leveranstid som är längre än kravet. Kapacitet köper alltså ingen fördel. **Ny regel, P189:** en leveransterm efter `computeScore` (i `bidTerms.ts`, som `techTerm`) ger poäng för varje kvartal ett bud lovar under kravet, upp till ett tak. Rivalerna får samma term. |
+| **11AE** | Kapacitetsraderna om P189 inte flyttar dem | **Förhandsbeslutat, ingen ny fråga:** når P189 inte utnyttjande 40 %, revideras raderna till utnyttjande "mäts, ingen gräns", full tomt "nåbar", nya anläggningar ≥ 1,5 per parti och driftsbeslut ≥ 40 %. Avsikten mäts då av raderna som redan nås: `human` minst 25 procentenheter över `human-static` och `human-builder` i konkurs i 10–30 %. Om verken känns som något man måste sköta avgör speltestet. |
+| **11AF** | Speltestet P184 | **Efter P189 och P190, före P150.** Ändrar 11AC. |
 
 ---
 
@@ -533,7 +536,25 @@ behövs det, stanna och redovisa vad som krävs.
 > **Läsning:** de fyra raderna (utnyttjande, byggda anläggningar, full tomt, driftsbeslut) nås inte med den här regeln. Spaken som återstår är efterfrågan per linje (större eller fler ordrar), inte kontraktets exklusivitet — ägarbeslut,
 > se `docs/SPELTEST_ETAPP10A.md`.
 
-### P184 efter P187 och P188
+### P189 — kapacitet köper leveranstid (regel, beslut 11AD)
+
+- En leveransterm läggs efter `computeScore` i `bidTerms.ts` och delas av `bidding.ts`, `bidEstimate` och
+  `playerWinCurve` (en formel, en källa). Den ger poäng per kvartal som budet lovar under köparens krav,
+  med ett tak. Talen i `balance.json`, provisoriska. `computeScore` rörs inte.
+- Rivalerna får termen på samma villkor, begränsade av sin kapacitet (11L).
+- Ett löfte som inte hålls behandlas som i dag: sen leverans.
+- Budmappen visar termen bredvid leveranstiden, och "Ready by" visar vad lediga linjer gör möjligt.
+- Botarna i `worksPolicy.ts` lovar kortare leveranstid när lediga linjer räcker, och lägger då linjer på
+  kontraktet enligt P187.
+- Mät mot §9: utnyttjande, nya anläggningar, full tomt, driftsbeslut, kassadalen, och `human` 40–70 %
+  (spaken är styrelsens tröskel). Når utnyttjandet inte 40 % gäller 11AE.
+- Golden får frysas om en gång, i egen commit (11I).
+
+### P184 efter P189 och P190
+
+Speltestet görs efter P189 och P190 (etapp 10) och före P150 (11AF).
+
+### P184 efter P187 och P188 (ersatt av 11AF)
 
 Speltestet görs när P187 och P188 (etapp 10) är klara, före P150 (11AC, ändrar 11Z och 11T). Det görs
 tillsammans med speltestet av 10A (P148, `docs/SPELTEST_ETAPP10A.md`). `docs/SPELTEST_ETAPP11.md` uppdateras då
@@ -586,7 +607,8 @@ inte i P186. Orsaken är marknadens bredd, inte verken (11V). De förs över som
 | **Kapaciteten** | P185 | Huvudleverantörsregeln, byggnadslån och ordrar som fyller en linje (§9b) | regel |
 | | P186 | Balanspass mot §9 efter P185 | regel |
 | | P187 | Ett kontrakt på flera linjer (11AA) | regel |
-| | P184 | Speltest, efter P187 och P188, före P150 (11AC) | ingen kod |
+| | P189 | Kapacitet köper leveranstid (11AD) | regel |
+| | P184 | Speltest, efter P189 och P190, före P150 (11AF) | ingen kod |
 
 **Kapningsordning:** P177 (utlandet) först, sedan P175 (depån), sedan strejkerna i P173. Anläggningarna,
 byggtiden, omställningen, kapaciteten och inkörningen kapas inte.

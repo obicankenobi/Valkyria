@@ -173,6 +173,14 @@ säger det inte; `infantry` saknas bland specialiseringarna i `NewGameScreen.tsx
   som hände, med datum och källa, utan värdeord. My Lai-efterordet godkänns som det står. Texterna för Tet
   och marschen mot Pentagon granskas när P150 är skriven.
 - **10Z — `historyEffects`** är provisoriska till P160, som specen redan säger. Ingen åtgärd nu.
+- **10Ä — Kärnvapenskalet mk-9 (2026-10-08, efter P188).** Behålls som det pris forskningen har, och
+  kravet stannar på tekniknivå 8. Det är pelare 1: att forska fram ett vapen som för världen närmare
+  kriget. Två villkor: budmappen ska visa doomsday-tillägget per leverans tydligt innan budet läggs, och
+  `human` avstår från mk-9 när doomsday ligger på 60 eller högre, som en försiktig spelare. Mål:
+  `human` slutar i kärnvapenutbyte i högst 10 % av partierna. En variant `human-hawk` som alltid säljer
+  mk-9 mäter priset.
+- **10Ö — Konstruktionerna ska löna sig.** `human` med konstruktioner vinner 67 %, med bara
+  forskningsspår 87 %. Orsaken är omställningen, som gör "ready by" längre. Det rättas i **P190**, se §7.
 - **10Å — Ordning.** P187 (etapp 11) och P188 körs nu. Därefter speltestar ägaren (P148 och P184
   tillsammans), och först sedan körs P150.
 
@@ -416,6 +424,28 @@ minst 30 %, så att det är en sämre väg och inte en omöjlig. `human` 40–70
 > 14–23 på doomsday — `human` får `NUCLEAR_EXCHANGE` i 6–7 % av partierna (var 0 %) och doomsday-toppen stiger 40 → 61; utan spåren (bara konstruktioner) 0 %, bara spår 1 %. Det är pelare 1:s fråga i ett nytt ljus, inte ett fel: forskning
 > är vägen till kärnvapenskalet. **Konstruktionerna** förblir en kostnad i botspel (bara spår 87 % mot `human` 67 %, konstruktioner utan spår 43 %); det kräver en egen åtgärd om det ska rättas (bristrisk, omställning eller att boten bjuder med
 > konstruktion bara när den vinner tydligt). Se ANDRINGSLOGG och `docs/SPELTEST_ETAPP10A.md`.
+
+### P190 — konstruktionerna ska löna sig (regel, beslut 10Ö och 10Ä)
+
+**Fyndet (P188):** forskningen lönar sig nu (`human` +35 pp över `human-noresearch`), men egna
+konstruktioner gör det inte: bara forskningsspår 87 %, `human` 67 %, konstruktioner utan spår 43 %.
+Omställningen till en ny konstruktion gör "ready by" längre och kostar bud.
+
+1. **Boten först, ingen regel ändras.** En spelare ställer om en ledig linje *innan* den bjuder med en ny
+   konstruktion; med P187 och P189 finns det lediga linjer. `human` ställer om en ledig linje för en färdig
+   konstruktion i förväg och bjuder med konstruktionen bara när budpoängen netto blir högre. Mät.
+2. **Räcker inte det: en regel.** Omställning till en konstruktion i samma familj som linjen redan kör
+   (en uppgradering, `upgradeOf`) kostar hälften av tiden och pengarna.
+3. Stanna och redovisa om ingen av dem når målet med vakterna orörda.
+
+**Mål:** `human` (med konstruktioner) högst 5 procentenheter under varianten med bara forskningsspår, och
+ingen variant över taket 90 %. `human-noresearch` minst 30 %. `human` 40–70 %.
+
+**mk-9 (10Ä), i samma prompt:** budmappen visar doomsday-tillägget per leverans innan budet läggs;
+`human` avstår från mk-9 vid doomsday 60 eller högre; ny variant `human-hawk` som alltid säljer det. Mål:
+`human` i kärnvapenutbyte i högst 10 % av partierna. Mät och redovisa `human-hawk`.
+
+Golden får frysas om en gång per regeländring, i egen commit (10D).
 
 **Del F.** `human-civil` går i konkurs i 59 av 200 partier, och exportbrott inträffar aldrig i botspel.
 Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
@@ -713,10 +743,12 @@ Spelbarhetstestets golv och tak och capacity-referensen ska hålla efter varje p
 | | P166 | Kartlager med tal | UI |
 | | P167 | Stationens täckning växer med djupet; vilande station kan öppnas igen | regel |
 | **Efter P147** | P188 | Forskningen ska löna sig (10X) | regel |
+| | P190 | Konstruktionerna ska löna sig; mk-9 (10Ö, 10Ä) | regel |
 
 **Körordning (beslut 10P, 2026-10-06).** Klart: premisskontrollen, P139, P140, mätningen i P141, P155, P162–P167, P158, etapp 11 och **P141 (körd 2026-10-07, se utfallet i §6)**.
 Därefter: P142–P144, P146–P148 → P149–P154, P156, P157, P159–P161. P145 utgår (10S).
 **Ändrad 2026-10-08 (10Å):** P142–P149 är körda. Nästa: P187 (etapp 11) och P188 → ägarens speltest (P148 och P184) → P150–P154, P156, P157, P159–P161.
+**Ändrad igen 2026-10-08:** P187 och P188 är körda. Nästa: P189 (etapp 11) och P190 → ägarens speltest → P150.
 
 **Kapningsordning** om etappen blir för stor: priskriget och sabotaget i P153 först, sedan telexraderna.
 De åtta besluten, motvikten och kartuppspelningen (P158, beslut 10R) kapas inte.
