@@ -6,11 +6,12 @@ import { useEffect, useRef, useState } from 'react'
 import { OUTSOURCE_SHARES, getProduct, productionBoard, validateStandingOrderChange } from '@seventh-front/core'
 import type { BoardContract, BoardLine, BoardSegment, GameState, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { standingOrderKey } from '../standingOrderBoard.js'
-import { BottomSheet, Button, Segmented } from './designSystem.js'
+import { BottomSheet, Button, DsToggle, Segmented } from './designSystem.js'
 import { Panel, Tag } from './ui.js'
 
 const CATEGORY_SHORT: Record<string, string> = { infantry: 'INF', artillery: 'ART', armour: 'ARM', aviation: 'AVI', naval: 'NAV', electronics: 'ELE' }
 
+const lineName = (id: string): string => id.replace('line-', 'L').toUpperCase() // P187: L1, L2 ...
 const shortId = (id: string): string => `#${id.match(/(\d+)$/)?.[1] ?? id}`
 const reasonOf = (v: { ok: true } | { ok: false; reason: string }): string | null => (v.ok ? null : v.reason)
 
@@ -129,8 +130,9 @@ export function ProductionBoard({
 
 function whereText(c: BoardContract): string {
   if (c.subcontracted && c.sharePct >= 100) return 'All with a subcontractor'
-  if (c.onLine) return `On ${c.line?.toUpperCase()}${c.sharePct > 0 ? `, ${c.sharePct}% outsourced` : ''}`
-  if (c.line) return `Queued for ${c.line.toUpperCase()}${c.plannedOn ? ' (planned)' : ''}`
+  const names = c.lines.map(lineName).join(' + ')
+  if (c.onLine) return `On ${names}${c.sharePct > 0 ? `, ${c.sharePct}% outsourced` : ''}`
+  if (c.line) return `Queued for ${names}${c.plannedOn ? ' (planned)' : ''}`
   return 'Waiting for a line'
 }
 
@@ -168,8 +170,10 @@ function ContractSheet({
   onDone: () => void
 }) {
   const id = contract.contractId
-  const currentLine = board.find((l) => effectivePlan(state, draft, l.lineId).includes(id))?.lineId ?? 'auto'
-  const [lineChoice, setLineChoice] = useState<string>(currentLine)
+  // P187 (11AA): ett kontrakt kan byggas på flera linjer — en brytare per linje. Linjer som redan tillverkar kontraktet visas som BUILDING; övriga har sin plan.
+  const building = new Set(contract.onLine ? contract.lines : [])
+  const [chosen, setChosen] = useState<Set<string>>(() => new Set(board.filter((l) => effectivePlan(state, draft, l.lineId).includes(id)).map((l) => l.lineId)))
+  const toggleLine = (lineId: string, on: boolean): void => setChosen((prev) => (on ? new Set([...prev, lineId]) : new Set([...prev].filter((x) => x !== lineId))))
   const [share, setShare] = useState<string>(String(contract.sharePct))
   const pending = draft.standingOrders.filter(
     (c) =>
@@ -177,24 +181,24 @@ function ContractSheet({
       (c.kind === 'OUTSOURCE' && c.contractId === id),
   )
 
-  // Kontraktet dras till en linje: det tas ur andra linjers planer och läggs sist i den valda linjens plan. "Auto" tar bort det ur alla planer.
+  // Varje linjes plan får kontraktet tillagt eller borttaget; ett kontrakt får ligga i flera planer (de tillverkar det då tillsammans). Ingen vald linje = AUTO: huset väljer själv.
   const planChanges = (): StandingOrderChange[] => {
-    const removals: StandingOrderChange[] = []
-    const additions: StandingOrderChange[] = []
+    const changes: StandingOrderChange[] = []
     for (const l of board) {
+      if (building.has(l.lineId)) continue
       const plan = effectivePlan(state, draft, l.lineId)
-      const without = plan.filter((x) => x !== id)
-      if (l.lineId === lineChoice) {
-        if (!plan.includes(id)) additions.push({ kind: 'PLAN', op: 'SET', lineId: l.lineId, contractIds: [...without, id] })
-      } else if (plan.includes(id)) {
-        removals.push(without.length === 0 ? { kind: 'PLAN', op: 'CLEAR', lineId: l.lineId } : { kind: 'PLAN', op: 'SET', lineId: l.lineId, contractIds: without })
+      const has = plan.includes(id)
+      const want = chosen.has(l.lineId)
+      if (want && !has) changes.push({ kind: 'PLAN', op: 'SET', lineId: l.lineId, contractIds: [...plan, id] })
+      else if (!want && has) {
+        const without = plan.filter((x) => x !== id)
+        changes.push(without.length === 0 ? { kind: 'PLAN', op: 'CLEAR', lineId: l.lineId } : { kind: 'PLAN', op: 'SET', lineId: l.lineId, contractIds: without })
       }
     }
-    // Borttagningarna först: ett kontrakt kan bara ligga i en plan, så den nya linjens SET godkänns först när det lämnat den gamla.
-    return [...removals, ...additions]
+    return changes
   }
   const planList = planChanges()
-  // Ändringarna avgörs i ordning (flytten tar först bort kontraktet ur den gamla planen): kontrollera dem i samma ordning mot ett läge där de föregående redan gäller.
+  // Ändringarna kontrolleras i ordning mot ett läge där de föregående redan gäller.
   let sim = state
   let planReason: string | null = null
   for (const c of planList) {
@@ -267,13 +271,18 @@ function ContractSheet({
 
       <div className="cf-field">
         <span className="cf-field-label">BUILD ON</span>
-        <Segmented
-          options={[{ value: 'auto', label: 'AUTO' }, ...board.map((l) => ({ value: l.lineId, label: l.lineId.replace('line-', 'L').toUpperCase() }))]}
-          value={lineChoice}
-          onChange={setLineChoice}
-          testId="contract-line"
-        />
-        <p className="cf-hint">AUTO lets the house choose. A planned contract is built first on its line, in the order of the plan.</p>
+        <div className="board-line-switches" data-testid="contract-line">
+          {board.map((l) =>
+            building.has(l.lineId) ? (
+              <Tag key={l.lineId} tone="green">
+                {lineName(l.lineId)} · BUILDING
+              </Tag>
+            ) : (
+              <DsToggle key={l.lineId} label={lineName(l.lineId)} checked={chosen.has(l.lineId)} onChange={(on) => toggleLine(l.lineId, on)} testId={`contract-line-${l.lineId}`} />
+            ),
+          )}
+        </div>
+        <p className="cf-hint">None switched on lets the house choose. Several lines build the contract together; each is retooled for it on its own.</p>
         <Button
           variant="primary"
           disabled={!planChanged || planReason !== null}

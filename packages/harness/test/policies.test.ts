@@ -286,6 +286,7 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
       'human-outsource',
       'human-plain',
       'human-robust',
+      'human-singleline',
       'human-skunk',
       'human-specialist',
       'human-static',

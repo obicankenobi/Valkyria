@@ -1117,6 +1117,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-outsource': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, style: 'static', gate: 'none', outsource: true } }),
   'human-specialist': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, expandAlways: true } }),
   'human-broad': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, categories: 'broad' } }),
+  'human-singleline': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, multiLine: false } }), // P187: som `human` före regeln — en linje per kontrakt
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,
 }

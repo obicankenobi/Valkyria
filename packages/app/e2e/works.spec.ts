@@ -45,7 +45,7 @@ test('ett kontrakt dras till en linje på produktionstavlan: planen köas utan h
   await injectWorksState(page)
   await page.getByTestId('board-contract-contract-order-11').scrollIntoViewIfNeeded()
   await page.getByTestId('board-contract-contract-order-11').click()
-  await page.getByTestId('contract-line').getByRole('radio', { name: 'L1' }).click()
+  await page.getByTestId('contract-line').getByRole('switch', { name: 'L1' }).click()
   await page.getByTestId('contract-plan-file').click()
   await page.getByTestId('board-contract-contract-order-11').click()
   await expect(page.getByTestId('contract-queued')).toContainText('plan #11')

@@ -173,7 +173,7 @@ export function validateStandingOrderChange(_state: Readonly<GameState>, draft: 
         if ((contract.status !== 'active' && contract.status !== 'late') || contract.quantity - contract.unitsDelivered - inTransit <= 0) {
           return fail('that contract needs no more production')
         }
-        if (Object.entries(plans).some(([lineId, p]) => lineId !== change.lineId && p.contractIds.includes(id))) return fail('that contract is already planned on another line')
+        // P187 (11AA): ett kontrakt får ligga i flera linjers planer — det tillverkas då på dem samtidigt.
       }
       return { ok: true }
     }

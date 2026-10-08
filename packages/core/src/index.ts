@@ -13,6 +13,7 @@ export { createInitialState, cloneState } from './state.js'
 // P171/P172: uppsättning, omställning, planen, underleverantörer och "ready by".
 export { SETUP_LABEL, designRoot, setupChange, setupCost } from './tooling.js'
 export { OUTSOURCE_SHARES, canBuildHere, lineMayBuild, outsourceTarget, ownRemaining, subcontractRate } from './outsourcing.js'
+export { computeLineThroughput } from './resolve/steps/production.js'
 export { capacityOutlook, productionBoard } from './capacity.js'
 export type { BoardContract, BoardLine, BoardSegment, CapacityOutlook, CapacityRequest, ProductionBoard } from './capacity.js'
 export { worksAlarms } from './worksAlarms.js'

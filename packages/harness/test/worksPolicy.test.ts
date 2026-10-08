@@ -156,6 +156,36 @@ describe('plan och utläggning', () => {
     expect(worksStandingOrders(state, DEFAULT_WORKS).filter((c) => c.kind === 'PLAN')).toEqual([])
   })
 
+  describe('flera linjer på ett kontrakt (P187)', () => {
+    function busy(quantity: number, tooled: boolean): GameState {
+      const state = fresh('works-multi')
+      state.house.works[0]!.category = null
+      const [l1, l2] = allLines(state.house)
+      state.market.contracts = [contract({ quantity })]
+      l1!.assignedContractId = 'contract-order-1'
+      l1!.productId = '105mm_field_gun'
+      l1!.tooling = { productId: '105mm_field_gun' as never, designId: null }
+      l1!.status = 'running'
+      if (tooled) l2!.tooling = { productId: '105mm_field_gun' as never, designId: null }
+      return state
+    }
+
+    it('en ledig, uppsatt linje läggs på ett kontrakt som har mer kvar än linjen hinner med', () => {
+      const orders = worksStandingOrders(busy(1000, true), DEFAULT_WORKS)
+      expect(orders).toContainEqual({ kind: 'PLAN', op: 'SET', lineId: 'line-2', contractIds: ['contract-order-1'] })
+    })
+
+    it('inte när en linje hinner med resten, inte utan uppsättning, och inte i varianten utan flera linjer', () => {
+      expect(worksStandingOrders(busy(5, true), DEFAULT_WORKS).some((c) => c.kind === 'PLAN')).toBe(false)
+      expect(worksStandingOrders(busy(1000, false), DEFAULT_WORKS).some((c) => c.kind === 'PLAN')).toBe(false)
+      expect(worksStandingOrders(busy(1000, true), { ...DEFAULT_WORKS, multiLine: false }).some((c) => c.kind === 'PLAN')).toBe(false)
+    })
+
+    it('human-singleline är human utan den regeln', () => {
+      expect(POLICIES['human-singleline']).toBeDefined()
+    })
+  })
+
   it('outsource-varianten lägger ut 50 % av ett väntande kontrakt i stället för att planera', () => {
     const state = fresh()
     state.market.contracts = [contract()]

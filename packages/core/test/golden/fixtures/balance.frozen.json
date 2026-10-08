@@ -415,6 +415,8 @@
   "retoolingCostProduct": 250000,
   "planMaxContracts": 6,
   "subcontractUnitsFactor": 0.6,
+  "multiLineJoinLagTurns": 1,
+  "_p187_note": "ETAPP11_FORSLAG.md §9b, beslut 11AA (P187): ett kontrakt kan tillverkas på flera linjer samtidigt när det ligger i flera linjers planer. multiLineJoinLagTurns (1) är de kvartal en ny order väntar innan en andra och tredje linje går med — planen läggs tidigast nästa kvartal — och det 'ready by' i budmappen räknar med. Inget annat tal.",
   "subcontractCostFactor": 1.25,
   "subcontractDelayChancePct": 5,
   "subcontractQualityPenalty": 1,

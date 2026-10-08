@@ -330,7 +330,15 @@ export function BidForm({
 // "Ready by": tidigast färdigtillverkad och leveransfönstret, linjen eller underleverantören, omställningen, kön framför, och vilka väntande kontrakt ordern skulle skjuta förbi sin
 // förfallodag om den ställdes först. Det är en uppskattning av tillverkningen, inte ett löfte — leveransen tar några kvartal till och slumpen (haveri, sen underleverantör) ingår inte.
 function CapacityNote({ outlook, deliveryTurns, turn }: { outlook: ReturnType<typeof capacityOutlook>; deliveryTurns: number; turn: number }) {
-  const where = outlook.route === 'subcontractor' ? 'with a subcontractor' : outlook.line ? `on ${outlook.line.toUpperCase()}` : 'on no line'
+  const many = outlook.lines.length > 1 // P187: de lediga linjerna tillsammans
+  const where =
+    outlook.route === 'subcontractor'
+      ? 'with a subcontractor'
+      : many
+        ? `on ${outlook.lines.map((l) => l.replace('line-', 'L').toUpperCase()).join(' + ')} together`
+        : outlook.line
+          ? `on ${outlook.line.toUpperCase()}`
+          : 'on no line'
   return (
     <div className={`bid-capacity${outlook.late ? ' is-late' : ''}`} data-testid="bid-capacity">
       <span className="bid-capacity-title">Ready by</span>
@@ -339,6 +347,11 @@ function CapacityNote({ outlook, deliveryTurns, turn }: { outlook: ReturnType<ty
           ? 'No line can build this.'
           : `Built by T${outlook.readyTurn} ${where}${outlook.setupTurns > 0 ? `, after ${outlook.setupTurns} quarter${outlook.setupTurns === 1 ? '' : 's'} of retooling` : ''}.`}
       </p>
+      {many && (
+        <p className="bid-capacity-line" data-testid="bid-many-lines">
+          Put the contract on each line in the production plan once you win it; the extra lines start a quarter later.
+        </p>
+      )}
       {outlook.deliveredBetween && (
         <p className="bid-capacity-line" data-testid="bid-delivered">
           Delivered T{outlook.deliveredBetween[0]}–T{outlook.deliveredBetween[1]}; the buyer wants it by T{turn + deliveryTurns}.

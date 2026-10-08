@@ -68,6 +68,14 @@ export function computeLineThroughput(house: House, line: ProductionLine, produc
   )
 }
 
+// P187: hur många enheter linjerna som redan har kontraktet hinner med en tur (golvade, som produktionen själv räknar). En linje i omställning räknas — den börjar tillverka när den är klar.
+function coveredThisTurn(house: House, contract: Contract): number {
+  const product = getProduct(contract.productId)
+  return allLines(house)
+    .filter((l) => l.assignedContractId === contract.id)
+    .reduce((sum, l) => sum + Math.floor(computeLineThroughput(house, l, product)), 0)
+}
+
 export const production: ResolveStep = (ctx) => {
   const { draft, rng, emit } = ctx
   const house = draft.house
@@ -175,10 +183,13 @@ export const production: ResolveStep = (ctx) => {
     // P172: en linje i ett monteringsverk med en kategori bygger bara den kategorin (ett verk utan kategori bygger allt).
     const claimable = (c: Contract | undefined): c is Contract =>
       needsProduction(c) && !claimed.has(c.id) && remainingToProduce(c, draft.market.shipments) > 0 && lineMayBuild(house, line.id, getProduct(c.productId))
+    // P187 (11AA): ett kontrakt i FLERA linjers planer får tillverkas på alla av dem samtidigt — en linje går med så länge det återstår mer än de linjer som redan har kontraktet hinner med den här turen.
+    const joinable = (c: Contract | undefined): c is Contract =>
+      needsProduction(c) && claimed.has(c.id) && lineMayBuild(house, line.id, getProduct(c.productId)) && remainingToProduce(c, draft.market.shipments) > coveredThisTurn(house, c)
     const planned = standingPlan(house, line.id, draft.meta.turn) ?? []
     const reserved = plannedOnOtherLines(house, line.id, draft.meta.turn)
     const contract =
-      planned.map((id) => draft.market.contracts.find((c) => c.id === id)).find(claimable) ??
+      planned.map((id) => draft.market.contracts.find((c) => c.id === id)).find((c) => claimable(c) || joinable(c)) ??
       draft.market.contracts.find(
         (c) => claimable(c) && !reserved.has(c.id) && (wantedCategory === null || getProduct(c.productId).category === wantedCategory),
       )
@@ -322,8 +333,9 @@ export const production: ResolveStep = (ctx) => {
       const penalty = conditionQualityPenalty(house, line.id)
       if (penalty > 0) house.reputation.quality = Math.max(0, house.reputation.quality - penalty) // P174: ett nedslitet verk bygger sämre
       const arrivalTurn = draft.meta.turn + Math.max(1, rng.int(BALANCE.deliveryDelayMinTurns, BALANCE.deliveryDelayMaxTurns) - foreignDeliveryTurnsSaved(house, line.id, contract)) // P177: från ett verk i köparens land går det fortare
+      const baseId = `shipment-${contract.id}-${draft.meta.turn}`
       draft.market.shipments.push({
-        id: `shipment-${contract.id}-${draft.meta.turn}`,
+        id: draft.market.shipments.some((sh) => sh.id === baseId) ? `${baseId}-${line.id}` : baseId, // P187: flera linjer på samma kontrakt samma tur
         contractId: contract.id,
         units: actualUnits,
         arrivalTurn,

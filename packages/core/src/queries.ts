@@ -40,6 +40,7 @@ import { advanceFactors, deliveryPayment, settleFavourMargin } from './resolve/a
 import { computeFixedCostsBreakdown, computeQuarterlyInterest, totalFixedCosts as totalFixedCostsOf } from './resolve/steps/economy.js'
 import type { FixedCostsBreakdown } from './resolve/steps/economy.js'
 import { computeLineThroughput } from './resolve/steps/production.js'
+import { allLines } from './works.js'
 import { round } from './money.js'
 import type {
   BidEstimate,
@@ -817,7 +818,12 @@ export function estimateLineCompletionTurn(state: GameState, line: ProductionLin
   if (remaining <= 0) return state.meta.turn
 
   const product = getProduct(contract.productId)
-  const rate = computeLineThroughput(state.house, line, product)
+  // P187: ett kontrakt på flera linjer blir klart när linjerna tillsammans hunnit — takten är summan av dem som har kontraktet.
+  const rate =
+    computeLineThroughput(state.house, line, product) +
+    allLines(state.house)
+      .filter((l) => l.id !== line.id && l.assignedContractId === contract.id)
+      .reduce((sum, l) => sum + computeLineThroughput(state.house, l, product), 0)
   if (rate <= 0) return null
 
   return state.meta.turn + Math.ceil(remaining / rate)

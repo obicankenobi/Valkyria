@@ -64,28 +64,60 @@ describe('produktionstavlan (P180)', () => {
     const { onSet } = setup(s)
     fireEvent.click(screen.getByTestId('board-contract-contract-order-1'))
     expect(screen.getByTestId('contract-card')).toBeTruthy()
-    fireEvent.click(within(screen.getByTestId('contract-line')).getByRole('radio', { name: 'L2' }))
+    fireEvent.click(within(screen.getByTestId('contract-line')).getByRole('switch', { name: 'L2' }))
     fireEvent.click(screen.getByTestId('contract-plan-file'))
     expect(onSet).toHaveBeenCalledWith({ kind: 'PLAN', op: 'SET', lineId: 'line-2', contractIds: ['contract-order-1'] })
   })
 
-  it('att flytta ett planerat kontrakt tar det ur den gamla linjens plan', () => {
+  it('att lägga till en andra linje behåller kontraktet i den första planen (P187: flera linjer)', () => {
     const s = withContracts(contract(), contract({ id: 'contract-order-2' }))
     s.house.standingOrders.plan = { 'line-1': { contractIds: ['contract-order-1', 'contract-order-2'], sinceTurn: 0 } }
     const { onSet } = setup(s)
     fireEvent.click(screen.getByTestId('board-contract-contract-order-1'))
-    fireEvent.click(within(screen.getByTestId('contract-line')).getByRole('radio', { name: 'L2' }))
+    fireEvent.click(within(screen.getByTestId('contract-line')).getByRole('switch', { name: 'L2' }))
     fireEvent.click(screen.getByTestId('contract-plan-file'))
-    expect(onSet).toHaveBeenCalledWith({ kind: 'PLAN', op: 'SET', lineId: 'line-1', contractIds: ['contract-order-2'] })
+    expect(onSet).toHaveBeenCalledTimes(1)
     expect(onSet).toHaveBeenCalledWith({ kind: 'PLAN', op: 'SET', lineId: 'line-2', contractIds: ['contract-order-1'] })
   })
 
-  it('AUTO tar bort kontraktet ur planen (och tömmer planen med CLEAR)', () => {
+  it('ett kontrakt i två linjers planer visas på båda spåren och som "L1 + L2" på raden', () => {
+    const s = withContracts(contract({ quantity: 200 }))
+    s.house.standingOrders.plan = { 'line-1': { contractIds: ['contract-order-1'], sinceTurn: 0 }, 'line-2': { contractIds: ['contract-order-1'], sinceTurn: 0 } }
+    setup(s)
+    expect(screen.getByTestId('board-contract-contract-order-1').textContent).toContain('L1 + L2')
+    expect(within(screen.getByTestId('board-row-line-1')).getByTestId('board-seg-contract-order-1')).toBeTruthy()
+    expect(within(screen.getByTestId('board-row-line-2')).getByTestId('board-seg-contract-order-1')).toBeTruthy()
+  })
+
+  it('att stänga av en linje tar kontraktet ur just den linjens plan', () => {
+    const s = withContracts(contract(), contract({ id: 'contract-order-2' }))
+    s.house.standingOrders.plan = { 'line-1': { contractIds: ['contract-order-1', 'contract-order-2'], sinceTurn: 0 }, 'line-2': { contractIds: ['contract-order-1'], sinceTurn: 0 } }
+    const { onSet } = setup(s)
+    fireEvent.click(screen.getByTestId('board-contract-contract-order-1'))
+    expect(screen.getByTestId('contract-line-line-1').getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByTestId('contract-line-line-2').getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(screen.getByTestId('contract-line-line-1'))
+    fireEvent.click(screen.getByTestId('contract-plan-file'))
+    expect(onSet).toHaveBeenCalledWith({ kind: 'PLAN', op: 'SET', lineId: 'line-1', contractIds: ['contract-order-2'] })
+  })
+
+  it('en linje som redan tillverkar kontraktet visas som BUILDING och kan inte stängas av', () => {
+    const s = withContracts(contract())
+    const l1 = s.house.works[0]!.lines[0]!
+    l1.assignedContractId = 'contract-order-1'
+    l1.status = 'running'
+    setup(s)
+    fireEvent.click(screen.getByTestId('board-contract-contract-order-1'))
+    expect(screen.getByTestId('contract-line').textContent).toContain('L1 · BUILDING')
+    expect(screen.queryByTestId('contract-line-line-1')).toBeNull()
+  })
+
+  it('att stänga av alla linjer (AUTO) tar bort kontraktet ur planen och tömmer planen med CLEAR', () => {
     const s = withContracts(contract())
     s.house.standingOrders.plan = { 'line-1': { contractIds: ['contract-order-1'], sinceTurn: 0 } }
     const { onSet } = setup(s)
     fireEvent.click(screen.getByTestId('board-contract-contract-order-1'))
-    fireEvent.click(within(screen.getByTestId('contract-line')).getByRole('radio', { name: 'AUTO' }))
+    fireEvent.click(screen.getByTestId('contract-line-line-1'))
     fireEvent.click(screen.getByTestId('contract-plan-file'))
     expect(onSet).toHaveBeenCalledWith({ kind: 'PLAN', op: 'CLEAR', lineId: 'line-1' })
   })

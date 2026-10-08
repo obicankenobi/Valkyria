@@ -4,12 +4,13 @@
 import { describe, expect, it } from 'vitest'
 import balance from '../src/data/balance.json' with { type: 'json' }
 import { createInitialState } from '../src/state.js'
-import { capacityOutlook } from '../src/capacity.js'
+import { capacityOutlook, productionBoard } from '../src/capacity.js'
 import { getProduct } from '../src/pricing.js'
 import { allLines } from '../src/works.js'
 import { computeLineThroughput } from '../src/resolve/steps/production.js'
 import type { Contract, GameState } from '../src/types.js'
 
+const B_JOIN_LAG = (balance as unknown as { multiLineJoinLagTurns: number }).multiLineJoinLagTurns
 const B = balance as unknown as { retoolingTurnsProduct: number; retoolingTurnsDesign: number; deliveryDelayMinTurns: number; deliveryDelayMaxTurns: number; subcontractUnitsFactor: number }
 
 function contract(overrides: Partial<Contract> = {}): Contract {
@@ -25,11 +26,41 @@ const rate = (s: GameState, productId = '105mm_field_gun') => computeLineThrough
 describe('capacityOutlook — när en order kan vara klar', () => {
   it('med en ledig linje i rätt kategori: starten är nu och tiden är kvantitet ÷ takt', () => {
     const s = fresh('cap-1')
-    const o = capacityOutlook(s, { productId: '105mm_field_gun', quantity: 100 })
+    const o = capacityOutlook(s, { productId: '105mm_field_gun', quantity: 100, spread: false })
     expect(o.route).toBe('own')
     expect(o.setupTurns).toBe(0) // en ny linje startar utan omställning
     expect(o.readyTurn).toBe(s.meta.turn + Math.ceil(100 / rate(s)))
     expect(o.deliveredBetween).toEqual([o.readyTurn! + B.deliveryDelayMinTurns, o.readyTurn! + B.deliveryDelayMaxTurns])
+  })
+
+  it('P187: med flera lediga linjer räknar "ready by" med dem alla (de övriga går med en tur senare)', () => {
+    const s = fresh('cap-1b')
+    const one = capacityOutlook(s, { productId: '105mm_field_gun', quantity: 100, spread: false })
+    const many = capacityOutlook(s, { productId: '105mm_field_gun', quantity: 100 })
+    expect(many.lines).toHaveLength(2)
+    expect(many.readyTurn!).toBeLessThan(one.readyTurn!)
+    // linje 1 från start, linje 2 en tur senare: summan av tillverkade enheter hinner upp kvantiteten vid readyTurn
+    const r = rate(s)
+    const t = many.readyTurn! - s.meta.turn
+    expect(r * t + r * (t - B_JOIN_LAG)).toBeGreaterThanOrEqual(100)
+    expect(r * (t - 1) + r * (t - 1 - B_JOIN_LAG)).toBeLessThan(100)
+  })
+
+  it('P187: ett litet kontrakt som en linje hinner med går inte på flera linjer', () => {
+    const s = fresh('cap-1c')
+    const o = capacityOutlook(s, { productId: '105mm_field_gun', quantity: 5 })
+    expect(o.lines).toHaveLength(1)
+  })
+
+  it('P187: ett väntande kontrakt som ligger i två linjers planer räknas på båda', () => {
+    const s = fresh('cap-1d')
+    s.market.contracts = [contract({ id: 'w', quantity: 100 })]
+    s.house.standingOrders = { ...(s.house.standingOrders ?? { lines: {}, supply: {}, stations: {} }), plan: { 'line-1': { contractIds: ['w'], sinceTurn: 1 }, 'line-2': { contractIds: ['w'], sinceTurn: 1 } } } as never
+    const board = productionBoard(s)
+    const c = board.contracts.find((x) => x.contractId === 'w')!
+    expect(c.lines).toEqual(['line-1', 'line-2'])
+    expect(c.readyTurn).toBe(s.meta.turn + Math.ceil(100 / (2 * rate(s))))
+    expect(board.lines.every((l) => l.segments.some((seg) => seg.contractId === 'w'))).toBe(true)
   })
 
   it('upptagna linjer: ordern ställs sist i kön och blir klar när en linje blivit fri, plus eventuell omställning', () => {

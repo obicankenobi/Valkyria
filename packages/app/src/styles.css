@@ -6474,6 +6474,12 @@ summary:focus-visible,
   gap: 6px;
   margin-top: 12px;
 }
+.board-line-switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 .board-contract {
   display: flex;
   flex-direction: column;

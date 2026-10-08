@@ -3,6 +3,7 @@
 //   - drift: underhåll höjs när skicket sjunker, strejker besvaras, bemanningen hålls på full styrka;
 //   - bygge: utbyggnad när kapaciteten är trång, nya monteringsverk i fler kategorier (breda varianter), linjer fylls på med BUILD_LINE;
 //   - plan: ett väntande kontrakt läggs på en linje som redan är uppsatt för produkten (så att omställningen slipper);
+//   - flera linjer (P187): en ledig linje som är uppsatt för produkten läggs på ett kontrakt som har mer kvar än dess linjer hinner med (ingen omställning);
 //   - utläggning: bara varianten `outsource`, som lägger ut i stället för att bygga.
 // Allt är stående order (ingen handling) utom BUILD_LINE. Ren härness — ingen core-ändring.
 import {
@@ -16,6 +17,7 @@ import {
   lineMayBuild,
   maintenanceOf,
   planBuild,
+  computeLineThroughput,
   productionBoard,
   projectedQuarter,
   totalFixedCosts,
@@ -34,9 +36,10 @@ export interface WorksOptions {
   gate: 'outlook' | 'none' // bud grindas av "ready by" — eller inte alls (utläggningsvarianten tar sena bud och lägger ut)
   outsource: boolean // lägger ut väntande kontrakt (50 %) i stället för att bygga
   expandAlways: boolean // specialisten: bygger ut verket så fort kassan tillåter, tryck eller ej
+  multiLine: boolean // P187: lediga linjer läggs på ett kontrakt som ligger efter (eller som en uppsatt linje kan ta utan omställning)
 }
 
-export const DEFAULT_WORKS: WorksOptions = { style: 'steady', categories: 'start', gate: 'outlook', outsource: false, expandAlways: false }
+export const DEFAULT_WORKS: WorksOptions = { style: 'steady', categories: 'start', gate: 'outlook', outsource: false, expandAlways: false, multiLine: true }
 
 const CONDITION_RAISE_BELOW = 70 // skicket under detta: höjt underhåll
 const CONDITION_RELAX_FROM = 90 // skicket från detta: tillbaka till normalt
@@ -47,6 +50,7 @@ const EAGER_FIXED_COST_QUARTERS = 1 // eager: bara ett kvartals fasta kostnader 
 const EAGER_RESERVE_SHARE = 0.1 // eager: ingen reserv — att bygga för mycket ska kunna fälla huset
 const STRIKE_CONCEDE_SHARE = 0.5 // ge med sig i en strejk bara om kassan är över så här stor andel av grundkapitalet, annars bryt den
 const PLAN_MAX_PER_TURN = 2
+const SPREAD_MAX_PER_TURN = 3
 const OUTSOURCE_SHARE_PCT = 50
 const BROAD_CATEGORIES = 3
 
@@ -233,6 +237,36 @@ function planOrders(state: GameState): StandingOrderChange[] {
   return out
 }
 
+// P187 (11AA): ett kontrakt som har mer kvar än linjerna som har det (eller har det i sin plan) hinner med en tur får fler lediga linjer som redan är uppsatta för produkten (ingen omställning).
+function spreadOrders(state: GameState): StandingOrderChange[] {
+  const house = state.house
+  const board = productionBoard(state)
+  const lines = allLines(house)
+  const taken = new Set<string>() // linjer som fått en plan den här turen
+  const out: StandingOrderChange[] = []
+  for (const c of board.contracts) {
+    if (out.length >= SPREAD_MAX_PER_TURN) break
+    if (c.subcontracted || c.remaining <= 0) continue
+    const product = getProduct(c.productId)
+    const working = new Set<string>([...c.lines])
+    for (const b of board.lines) if (b.plan.includes(c.contractId)) working.add(b.lineId)
+    if (working.size === 0) continue // inget väntande kontrakt får flera linjer förrän det har en
+    let covered = [...working].reduce((sum, id) => sum + Math.floor(computeLineThroughput(house, lines.find((l) => l.id === id)!, product)), 0)
+    for (const line of lines) {
+      if (covered >= c.remaining || out.length >= SPREAD_MAX_PER_TURN) break
+      if (line.status !== 'idle' || working.has(line.id) || taken.has(line.id) || !lineMayBuild(house, line.id, product)) continue
+      if (board.lines.find((b) => b.lineId === line.id)?.plan.length) continue
+      if (line.tooling?.productId !== c.productId) continue // bara en linje som slipper omställning: att ställa om för att hjälpa ett sent kontrakt prövades och sänkte vinsten (P187, 53 mot 57 %)
+      const change: StandingOrderChange = { kind: 'PLAN', op: 'SET', lineId: line.id, contractIds: [c.contractId] }
+      if (!valid(state, change)) continue
+      out.push(change)
+      taken.add(line.id)
+      covered += Math.floor(computeLineThroughput(house, line, product))
+    }
+  }
+  return out
+}
+
 function outsourceOrders(state: GameState): StandingOrderChange[] {
   const out: StandingOrderChange[] = []
   for (const c of productionBoard(state).contracts) {
@@ -244,7 +278,7 @@ function outsourceOrders(state: GameState): StandingOrderChange[] {
 }
 
 export function worksStandingOrders(state: GameState, opts: WorksOptions): StandingOrderChange[] {
-  return [...driftOrders(state), ...buildOrders(state, opts), ...(opts.outsource ? outsourceOrders(state) : planOrders(state))]
+  return [...driftOrders(state), ...buildOrders(state, opts), ...(opts.outsource ? outsourceOrders(state) : [...planOrders(state), ...(opts.multiLine ? spreadOrders(state) : [])])]
 }
 
 // En ny linje i ett verk med ledig plats — den enda handlingen i verksskötseln (kostar en handlingspoäng). Bara när kassan tål det.

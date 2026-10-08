@@ -217,7 +217,7 @@ describe('produktionsplanen (§4.5) — PLAN SET/CLEAR', () => {
     finish(s, 'c')
     expect(v(s, { kind: 'PLAN', op: 'SET', lineId: 'line-1', contractIds: ['c'] })).toEqual({ ok: false, reason: 'that contract needs no more production' })
     s.house.standingOrders.plan = { 'line-2': { contractIds: ['a'], sinceTurn: 1 } }
-    expect(v(s, { kind: 'PLAN', op: 'SET', lineId: 'line-1', contractIds: ['a'] })).toEqual({ ok: false, reason: 'that contract is already planned on another line' })
+    expect(v(s, { kind: 'PLAN', op: 'SET', lineId: 'line-1', contractIds: ['a'] })).toEqual({ ok: true }) // P187: ett kontrakt får ligga i flera linjers planer
     expect(v(s, { kind: 'PLAN', op: 'SET', lineId: 'line-2', contractIds: ['a', 'b'] })).toEqual({ ok: true }) // samma linje får skriva om sin plan
     expect(v(s, { kind: 'PLAN', op: 'CLEAR', lineId: 'line-1' })).toEqual({ ok: false, reason: 'no plan for that line' })
     expect(v(s, { kind: 'PLAN', op: 'CLEAR', lineId: 'line-2' })).toEqual({ ok: true })
