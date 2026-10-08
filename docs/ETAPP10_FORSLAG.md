@@ -162,6 +162,19 @@ säger det inte; `infantry` saknas bland specialiseringarna i `NewGameScreen.tsx
 - **10T — P141:s mätning görs om** efter etapp 11, innan omläggningen bestäms.
 - **10U — P141 utökas efter etapp 11 (2026-10-07).** Prompten bär också de rader i etapp 11:s måltabell
   som P186 inte nådde, och stoppregeln i §6 punkt 0 byts ut. Se "Tillägg efter etapp 11" i §6.
+- **10V — Först på plats (2026-10-08).** Rivalernas konstruktionstidtabell skjuts inte. Raden blir "nåbar
+  i test, ingen frekvensgräns i botspel" och mäts om efter P188, där forskningen ska börja löna sig.
+- **10W — Hävda kontrakt.** Ingen ny regel. Fusket har redan en verklig risk (32 % av spåren kommer fram,
+  `human-clean` vinner mer än `human-dirty`). Raden revideras till "`human-dirty` får fler följder av
+  spår än `human-clean`".
+- **10X — Forskningen ska löna sig.** `human-noresearch` vinner 70 % mot `human` 59 %, så etapp 9:s system
+  är en kostnad utan vinst i botspel. Det rättas i en egen prompt, **P188**, se §7.
+- **10Y — Tonen i händelsetexterna.** P149:s texter är granskade (2026-10-08) och godkända: de säger vad
+  som hände, med datum och källa, utan värdeord. My Lai-efterordet godkänns som det står. Texterna för Tet
+  och marschen mot Pentagon granskas när P150 är skriven.
+- **10Z — `historyEffects`** är provisoriska till P160, som specen redan säger. Ingen åtgärd nu.
+- **10Å — Ordning.** P187 (etapp 11) och P188 körs nu. Därefter speltestar ägaren (P148 och P184
+  tillsammans), och först sedan körs P150.
 
 ### Begriplighetspaketet (P162–P164)
 
@@ -354,6 +367,25 @@ inträffar i 0,09 fall per parti.
 - Linjeomställning vid byte till ny konstruktion (premissfyndet i P112) avgörs: byggs eller stryks ur specen.
 
 > **Utfall P144 (2026-10-08).** Unga konstruktioners intäkt ca 31 % (nådd), olycksfåglar i 11–15 % av partierna (nådd), linjeomställning redan byggd i P171 (stryks), civila boten lagad (laboratoriet), exportbrott 0 i botspel (raden reviderad: nåbar i test, ingen frekvensgräns), epilogens civila rad byggd. Se ANDRINGSLOGG.
+
+### P188 — forskningen ska löna sig (regel, beslut 10X)
+
+**Fyndet (P147):** `human-noresearch` vinner 70 %, `human` 59 %. Forskning och egna konstruktioner kostar
+mer än de ger i botspel.
+
+1. **Mätning först, ingen regel ändras.** Vad kostar forskningen per parti (spår, labb, ritkontor,
+   provning) och vad ger den (bud som vinns tack vare `techTerm`, `designBidTerm`, specialiseringen och
+   tekniknivåns grind; kategorier som öppnas när köparnas tekniknivå stiger)? Redovisa var kostnaden
+   och nyttan sitter, per kvartal.
+2. **Tal**, i den här ordningen: forskningens kostnad, `techMarginWeight`, `designBidWeight`.
+3. **Om talen inte räcker: en regel.** Köparens tekniska golv följer blockets generation, så att en produkt
+   eller konstruktion som ligger mer än en generation efter köparens block inte kan bjudas. Det gör
+   utfasningen verklig för den som inte forskar.
+4. Stanna och redovisa om varken talen eller regeln når målet med vakterna orörda.
+
+**Mål:** `human` minst 10 procentenheter över `human-noresearch`. `human-noresearch` ska fortfarande vinna
+minst 30 %, så att det är en sämre väg och inte en omöjlig. `human` 40–70 %. Först på plats mäts om
+(10V). Golden får frysas om en gång per regeländring, i egen commit (10D).
 
 **Del F.** `human-civil` går i konkurs i 59 av 200 partier, och exportbrott inträffar aldrig i botspel.
 Båda avvägs. Epilogens utlovade slut för det civila huset byggs eller stryks.
@@ -650,9 +682,11 @@ Spelbarhetstestets golv och tak och capacity-referensen ska hålla efter varje p
 | | P165 | Informationskort på kartan; alla länder tryckbara | UI |
 | | P166 | Kartlager med tal | UI |
 | | P167 | Stationens täckning växer med djupet; vilande station kan öppnas igen | regel |
+| **Efter P147** | P188 | Forskningen ska löna sig (10X) | regel |
 
 **Körordning (beslut 10P, 2026-10-06).** Klart: premisskontrollen, P139, P140, mätningen i P141, P155, P162–P167, P158, etapp 11 och **P141 (körd 2026-10-07, se utfallet i §6)**.
 Därefter: P142–P144, P146–P148 → P149–P154, P156, P157, P159–P161. P145 utgår (10S).
+**Ändrad 2026-10-08 (10Å):** P142–P149 är körda. Nästa: P187 (etapp 11) och P188 → ägarens speltest (P148 och P184) → P150–P154, P156, P157, P159–P161.
 
 **Kapningsordning** om etappen blir för stor: priskriget och sabotaget i P153 först, sedan telexraderna.
 De åtta besluten, motvikten och kartuppspelningen (P158, beslut 10R) kapas inte.

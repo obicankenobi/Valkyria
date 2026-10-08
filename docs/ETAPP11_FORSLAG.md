@@ -111,6 +111,9 @@ Följd: i dag finns inget beslut om produktion som spelaren måste fatta. Etappe
 | **11X** | NLF:s och Laos budgetar | **Ändras inte nu.** En höjning bröt `capacity`-referensen. Ses över i P141. |
 | **11Y** | Fältprovets sats, som växte med 11R | **Återställs** till storleken före P185 genom att andelen sänks. Görs i P141. |
 | **11Z** | Speltestet P184 | **Flyttas till efter P141.** Ändrar 11T. Med dagens marknad får den som väljer en annan kategori än infanteri eller artilleri ett verk utan beställningar. |
+| **11AA** | Utnyttjande 28 %, full tomt 0 %, driftsbeslut 44 % efter P141 (2026-10-08) | **Ny regel, P187: ett kontrakt kan tillverkas på flera linjer samtidigt.** Orsaken är att ett kontrakt i dag går på en linje i taget, så fler linjer bara hjälper med fler parallella kontrakt. Med regeln köper kapacitet snabbare leverans, som redan ger poäng i budet och tidigare betalning. |
+| **11AB** | `human-specialist` 1 % | **Raden stryks.** Huvudleverantörsregeln (11O) gör en ren enkategorispecialist svag med avsikt: huset måste bygga för att växa. Specialiseringen vid start ger fortfarande labbet och budbonusen i startkategorin. `human-broad` och `human` mäter de två sätten att bygga. |
+| **11AC** | Speltestet P184 | **Görs efter P187 och P188, före P150**, tillsammans med P148 (`docs/SPELTEST_ETAPP10A.md`). Ändrar 11Z. Ägaren har inte spelat sedan 2026-10-06, och hela etapp 11 och P141–P149 har byggts sedan dess. |
 
 ---
 
@@ -479,9 +482,31 @@ behövs det, stanna och redovisa vad som krävs.
 > Att fördubbla de fasta kostnaderna fäller även startpaketet; längre byggtider bryter ett test (2–4 kvartal). **Det kräver en regel eller en efterfrågeändring (fler kategorier i marknaden, lägre linjetakt), inte ett tal.**
 > Spelbarhetstestets golv och tak och `capacity`-referensen är **oförändrade och höll**; `human-broad` ligger dock på 86–89 % mot taket 90 (vakten kör 30 partier). Se `docs/ANDRINGSLOGG.md` (P185, P186) och `docs/SPELTEST_ETAPP11.md`.
 
-### P184 efter P141
+### P187 — ett kontrakt på flera linjer (regel, beslut 11AA)
 
-Speltestet görs när P141 i etapp 10 är klart (11Z, ändrar 11T). `docs/SPELTEST_ETAPP11.md` uppdateras då
+- Produktionsplanen (`PLAN`) kan lägga ett kontrakt på flera linjer samtidigt, i samma verk eller i flera
+  verk av kontraktets kategori. Enheterna fördelas på linjerna; kontraktets leveranser går ut när enheterna
+  är klara.
+- Varje linje som tar kontraktet ställs om för produkten enligt reglerna i P171. Att sprida ett kontrakt
+  kostar alltså omställning per linje. Inkörningen räknas per linje.
+- "Ready by" (`capacity.ts`) räknar med alla linjer kontraktet kan få. Budmappen visar den tidigaste
+  leveranstiden huset kan lova med de linjer som är lediga.
+- Kortare utlovad leveranstid ger redan poäng i budet och tidigare betalning. Ingen ny poängterm läggs
+  till, och `computeScore` rörs inte.
+- Utläggningen (högst hälften, 11O) räknas på hela kontraktet som förut.
+- Botarna i `worksPolicy.ts` lägger lediga linjer på kontrakt som ligger efter, och lovar kortare
+  leveranstid när de har lediga linjer.
+- Gränssnitt: produktionstavlan visar ett kontrakt över flera linjer, och planen kan lägga till eller ta
+  bort en linje från ett kontrakt. Engelsk text, `npm run shots`, regel 18.
+- Mål: §9:s rader för utnyttjande, byggda anläggningar, full tomt och driftsbeslut. Kassadalen kvartal 5–8
+  mäts före och efter, eftersom snabbare leverans ger tidigare betalning. `human` ska ligga på 40–70 %.
+  Spaken för det är styrelsens tröskel.
+- Golden får frysas om en gång, i egen commit (11I).
+
+### P184 efter P187 och P188
+
+Speltestet görs när P187 och P188 (etapp 10) är klara, före P150 (11AC, ändrar 11Z och 11T). Det görs
+tillsammans med speltestet av 10A (P148, `docs/SPELTEST_ETAPP10A.md`). `docs/SPELTEST_ETAPP11.md` uppdateras då
 med det nya utfallet.
 
 ### Raderna som återstår efter P186
@@ -530,7 +555,8 @@ inte i P186. Orsaken är marknadens bredd, inte verken (11V). De förs över som
 | | P183 | Balanspass; vakterna revideras om ägaren beslutar det | regel |
 | **Kapaciteten** | P185 | Huvudleverantörsregeln, byggnadslån och ordrar som fyller en linje (§9b) | regel |
 | | P186 | Balanspass mot §9 efter P185 | regel |
-| | P184 | Speltest, efter P141 i etapp 10 (11Z) | ingen kod |
+| | P187 | Ett kontrakt på flera linjer (11AA) | regel |
+| | P184 | Speltest, efter P187 och P188, före P150 (11AC) | ingen kod |
 
 **Kapningsordning:** P177 (utlandet) först, sedan P175 (depån), sedan strejkerna i P173. Anläggningarna,
 byggtiden, omställningen, kapaciteten och inkörningen kapas inte.
