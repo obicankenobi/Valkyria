@@ -117,6 +117,8 @@ Följd: i dag finns inget beslut om produktion som spelaren måste fatta. Etappe
 | **11AD** | P187 flyttade ingenting (2026-10-08) | **Premissfel i P187, designsessionens.** Specen antog att en kortare utlovad leveranstid ger poäng i budet. Det gör den inte: `computeScore` straffar bara en leveranstid som är längre än kravet. Kapacitet köper alltså ingen fördel. **Ny regel, P189:** en leveransterm efter `computeScore` (i `bidTerms.ts`, som `techTerm`) ger poäng för varje kvartal ett bud lovar under kravet, upp till ett tak. Rivalerna får samma term. |
 | **11AE** | Kapacitetsraderna om P189 inte flyttar dem | **Förhandsbeslutat, ingen ny fråga:** når P189 inte utnyttjande 40 %, revideras raderna till utnyttjande "mäts, ingen gräns", full tomt "nåbar", nya anläggningar ≥ 1,5 per parti och driftsbeslut ≥ 40 %. Avsikten mäts då av raderna som redan nås: `human` minst 25 procentenheter över `human-static` och `human-builder` i konkurs i 10–30 %. Om verken känns som något man måste sköta avgör speltestet. |
 | **11AF** | Speltestet P184 | **Efter P189 och P190, före P150.** Ändrar 11AC. |
+| **11AG** | Leveranstermen efter P189 (2026-10-08) | **Stängs av till speltestet: `deliveryPromiseFactor` 0 och `boardTarget.threshold` tillbaka till 9,0**, det tillstånd som P189 verifierade som bit-identiskt med P188. Termen flyttade inte utnyttjandet (27 %), gav fler sena kontrakt (1,4 → 1,9) och gjorde kassadalen djupare (median −0,4 Mkr i kvartal 4–5), eftersom rivalerna nästan alltid tar den. Koden står kvar bakom talet. Ett undantag från "på eller bort" (10A) som gäller till speltestet; därefter slås den på med en rivalspärr eller tas bort. Förskottet ändras inte. P187 (flera linjer) och 11AE:s reviderade rader står kvar. |
+| **11AH** | Kapaciteten | **Avgörs i speltestet**: känns verken som något man måste sköta? Inga fler regler för kapaciteten före det. |
 
 ---
 
@@ -575,6 +577,17 @@ behövs det, stanna och redovisa vad som krävs.
 > (61 % av linjeturerna står lediga). Ytterligare en bieffekt är att den djupare kassadalen i kvartal 4–5 kommer av att rivalerna tar de tidiga kontrakten. **11AE tillämpad:** raderna är nu utnyttjande "mäts, ingen gräns", full tomt "nåbar", nya anläggningar ≥ 1,5 per parti
 > (1,4 nya verk + 1,7 utbyggnader), driftsbeslut ≥ 40 % (45 %); avsikten mäts av `human` +62 pp över `human-static` (nådd) och `human-builder` i konkurs 10–30 % (3 % — inte nådd, och i fel riktning mot vad raden fruktade). Om verken känns som något man måste sköta avgör speltestet.
 
+### P191 — leveranstermen av och raderna i ordning (data, beslut 11AG och 10AA)
+
+- `deliveryPromiseFactor` 0 och `boardTarget.threshold` 9,0. Verifiera att golden-hasharna blir desamma som
+  efter P188, och frys om i egen commit. Bli de inte det: stanna och redovisa.
+- Mät `human`-familjen (100 partier per bot) och redovisa raderna i §9 och etapp 10 §7 mot det. Vakterna
+  ska hålla.
+- Budmappen ska inte visa en leveransterm som är noll.
+- Raden "`human` högst 5 pp under bara forskningsspår" i etapp 10 §7 stryks (10AA).
+- `docs/SPELTEST_ETAPP10A.md` uppdateras så att den frågar efter det besluten nu hänger på: om verken
+  känns som något man måste sköta (11AH), och om egna konstruktioner känns värda priset (10AA).
+
 ### P184 efter P189 och P190
 
 Speltestet görs efter P189 och P190 (etapp 10) och före P150 (11AF).
@@ -633,7 +646,8 @@ inte i P186. Orsaken är marknadens bredd, inte verken (11V). De förs över som
 | | P186 | Balanspass mot §9 efter P185 | regel |
 | | P187 | Ett kontrakt på flera linjer (11AA) | regel |
 | | P189 | Kapacitet köper leveranstid (11AD) | regel |
-| | P184 | Speltest, efter P189 och P190, före P150 (11AF) | ingen kod |
+| | P191 | Leveranstermen av, raderna i ordning (11AG, 10AA) | data |
+| | P184 | Speltest, efter P191, före P150 | ingen kod |
 
 **Kapningsordning:** P177 (utlandet) först, sedan P175 (depån), sedan strejkerna i P173. Anläggningarna,
 byggtiden, omställningen, kapaciteten och inkörningen kapas inte.

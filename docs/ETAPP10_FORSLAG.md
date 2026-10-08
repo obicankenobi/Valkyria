@@ -181,6 +181,11 @@ säger det inte; `infantry` saknas bland specialiseringarna i `NewGameScreen.tsx
   mk-9 mäter priset.
 - **10Ö — Konstruktionerna ska löna sig.** `human` med konstruktioner vinner 67 %, med bara
   forskningsspår 87 %. Orsaken är omställningen, som gör "ready by" längre. Det rättas i **P190**, se §7.
+- **10AA — Konstruktionerna efter P190 (2026-10-08).** Ett val med ett pris. Raden "`human` högst 5
+  procentenheter under bara forskningsspår" stryks. P190:s botändring (bjud bara när poängen netto blir
+  högre) står kvar; `stockDesignAsFamily` förblir avstängd. Ingen ny regel före speltestet, som får avgöra
+  om konstruktionerna känns värda priset. Fyra pass har prövat talen (P130, P144, P188, P190) utan att
+  gapet stängts, och en bot är ett sämre mått på det än en spelare.
 - **10Å — Ordning.** P187 (etapp 11) och P188 körs nu. Därefter speltestar ägaren (P148 och P184
   tillsammans), och först sedan körs P150.
 
@@ -769,6 +774,7 @@ Spelbarhetstestets golv och tak och capacity-referensen ska hålla efter varje p
 Därefter: P142–P144, P146–P148 → P149–P154, P156, P157, P159–P161. P145 utgår (10S).
 **Ändrad 2026-10-08 (10Å):** P142–P149 är körda. Nästa: P187 (etapp 11) och P188 → ägarens speltest (P148 och P184) → P150–P154, P156, P157, P159–P161.
 **Ändrad igen 2026-10-08:** P187 och P188 är körda. Nästa: P189 (etapp 11) och P190 → ägarens speltest → P150.
+**Och igen 2026-10-08:** P189 och P190 är körda. Nästa: P191 (data, etapp 11 §9b) → ägarens speltest → P150.
 
 **Kapningsordning** om etappen blir för stor: priskriget och sabotaget i P153 först, sedan telexraderna.
 De åtta besluten, motvikten och kartuppspelningen (P158, beslut 10R) kapas inte.
