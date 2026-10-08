@@ -52,6 +52,9 @@ interface Balance {
   raceStepDoomsday: number
   gapShockDoomsday: number
   bothSidesDoomsday: number
+  stockGenerationEnabled: number
+  stockGenerationTechBase: number
+  stockGenerationSpecialisedBase: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -115,6 +118,22 @@ export function designPhasedOutForBloc(state: Pick<GameState, 'race'>, design: P
 
 export function designPhasedOutForBuyer(state: Pick<GameState, 'race' | 'factions'>, design: Pick<Design, 'generation' | 'category'>, buyerId: FactionId): boolean {
   return designPhasedOutForGeneration(design, buyerGeneration(state, buyerId, design.category))
+}
+
+// P188 (ETAPP10_FORSLAG.md §7, beslut 10X): en standardprodukts (utan konstruktion) generation hos huset. Den följer tekniknivån: startnivån i kategorin är generation 1 och varje nivå över den en generation
+// till — så forskning i en kategori håller dess standardprodukter aktuella. Startnivån är scenariots (techLevelDefault, och specialiseringens bonus i den egna kategorin; talen i balance.json är
+// bundna till scenariot av ett test).
+export function stockGeneration(house: Pick<House, 'techLevel' | 'specialisation'>, category: TechCategory): number {
+  const base = house.specialisation === category ? BALANCE.stockGenerationSpecialisedBase : BALANCE.stockGenerationTechBase
+  return 1 + Math.max(0, house.techLevel[category] - base)
+}
+
+// Köparens tekniska golv: en standardprodukt som ligger mer än designPhaseOutKeep − 1 generationer efter köparens block kan inte bjudas (samma gräns som för en konstruktion). null = får bjudas.
+export function stockBidRejection(state: Pick<GameState, 'house' | 'race' | 'factions'>, order: Pick<Order, 'buyerId' | 'productId'>): string | null {
+  if (BALANCE.stockGenerationEnabled !== 1) return null
+  const category = getProduct(order.productId).category
+  if (!designPhasedOutForGeneration({ generation: stockGeneration(state.house, category) }, buyerGeneration(state, order.buyerId, category))) return null
+  return `${category} stock products are a generation behind this buyer's bloc — research the category or offer a newer design`
 }
 
 // Nyhetsvärdet: 1 vid introduktionen, avtar linjärt till 0 efter noveltyLifeTurns.

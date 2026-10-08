@@ -152,6 +152,8 @@ export {
   yardstickAgainstPlayer,
   rivalDesignDisplay,
   scheduledGeneration,
+  stockBidRejection,
+  stockGeneration,
 } from './race.js'
 export type { Bloc, RequirementCard, RivalDesignDisplay } from './race.js'
 // P149 (ETAPP10 §9): verkliga, daterade händelser. Presentationen läser datan och känner igen en rubrik på causeId-prefixet.

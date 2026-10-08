@@ -96,7 +96,11 @@ export function BidForm({
   // bjuda på visas (samma prövning som bidding.ts, bidDesignRejection). Vinstchansen räknas om direkt eftersom bidEstimate/playerWinCurve tar
   // designId (en formel, en källa).
   const eligibleDesigns = useMemo(() => (state.house.designs ?? []).filter((d) => bidDesignRejection(state, { designId: d.id, price: 0 }, order) === null), [state, order])
-  const [designChoice, setDesignChoice] = useState<string>(existingBid?.designId && eligibleDesigns.some((d) => d.id === existingBid.designId) ? existingBid.designId : 'standard')
+  // P188 (10X): köparens tekniska golv — standardprodukten kan vara en generation för gammal. Då är STANDARD inte ett val; finns ingen konstruktion som passar är ordern låst.
+  const stockReason = useMemo(() => bidDesignRejection(state, { price: 0 }, order), [state, order])
+  const [designChoice, setDesignChoice] = useState<string>(
+    existingBid?.designId && eligibleDesigns.some((d) => d.id === existingBid.designId) ? existingBid.designId : stockReason !== null && eligibleDesigns[0] ? eligibleDesigns[0].id : 'standard',
+  )
   const designId = designChoice === 'standard' ? undefined : designChoice
   const chosenDesign = designId ? eligibleDesigns.find((d) => d.id === designId) : undefined
   const [kit, setKit] = useState<boolean>(existingBid?.kit ?? false)
@@ -130,7 +134,8 @@ export function BidForm({
   )
   const advanceCash = advanceAmount(price, order.advancePct)
   // P185 (11O): huvudleverantörsregeln — samma prövning som avgörandet (validateBid), skälet i klartext.
-  const lockReason = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
+  const supplierLock = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
+  const lockReason = supplierLock ?? (stockReason !== null && eligibleDesigns.length === 0 ? stockReason : null)
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
   // (spec 4.1, CLAUDE.md hård regel 10) — kostnadssidan måste därför skalas med
@@ -151,7 +156,9 @@ export function BidForm({
           <p className="bid-locked-reason" data-testid="bid-locked-reason">
             {lockReason}
           </p>
-          <p className="bid-locked-hint">Build one in The Company, under Works. A works that is ready within a quarter counts.</p>
+          <p className="bid-locked-hint">
+            {supplierLock !== null ? 'Build one in The Company, under Works. A works that is ready within a quarter counts.' : 'Set a research track in this category in The Company, or draw a design in it.'}
+          </p>
         </div>
       )}
       <div className="cf-field">
@@ -163,7 +170,7 @@ export function BidForm({
         <div className="cf-field" data-testid="bid-design-field">
           <span className="cf-field-label">OFFER</span>
           <Segmented
-            options={[{ value: 'standard', label: 'STANDARD' }, ...eligibleDesigns.map((d, i) => ({ value: d.id, label: `#${i + 1}` }))]}
+            options={[...(stockReason === null ? [{ value: 'standard', label: 'STANDARD' }] : []), ...eligibleDesigns.map((d, i) => ({ value: d.id, label: `#${i + 1}` }))]}
             value={designChoice}
             onChange={(v) => {
               setDesignChoice(v)

@@ -50,6 +50,26 @@ describe('BidForm — låst bud (P185)', () => {
   })
 })
 
+describe('BidForm — standardprodukten en generation efter (P188, 10X)', () => {
+  it('en order där standardprodukten är utfasad och huset saknar konstruktion är låst, med skälet i klartext', () => {
+    const state = createInitialState('indochina-slice', 'bid-stock-seed')
+    state.race.generation.west.artillery = 3
+    state.race.generation.east.artillery = 3
+    render(<BidForm state={state} order={makeOrder(state, { productId: '105mm_field_gun', quantity: 80 })} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
+    expect(screen.getByTestId('bid-locked-reason').textContent).toMatch(/generation behind this buyer's bloc/)
+    expect((screen.getByTestId('bid-submit') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('forskning i kategorin (en tekniknivå mer) öppnar låset', () => {
+    const state = createInitialState('indochina-slice', 'bid-stock-seed-2')
+    state.race.generation.west.artillery = 3
+    state.race.generation.east.artillery = 3
+    state.house.techLevel.artillery += 1
+    render(<BidForm state={state} order={makeOrder(state, { productId: '105mm_field_gun', quantity: 80 })} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
+    expect(screen.queryByTestId('bid-locked')).toBeNull()
+  })
+})
+
 describe('TheFloor — LOCKED-stämpeln på mappen (P185)', () => {
   it('en låst order har stämpeln, en öppen har den inte', () => {
     const state = createInitialState('indochina-slice', 'floor-locked-seed')

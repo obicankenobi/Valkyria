@@ -173,7 +173,7 @@ export const bidding: ResolveStep = (ctx) => {
         emit({
           severity: 'ticker',
           scope: 'market',
-          headline: `BID ON ${order.id} DISQUALIFIED: ${draft.house.name.toUpperCase()}'S DESIGN CANNOT BE OFFERED HERE`,
+          headline: `BID ON ${order.id} DISQUALIFIED: ${playerBid.designId === undefined ? `${draft.house.name.toUpperCase()}'S ${product.category.toUpperCase()} PRODUCT IS A GENERATION BEHIND THE BUYER'S BLOC` : `${draft.house.name.toUpperCase()}'S DESIGN CANNOT BE OFFERED HERE`}`,
           causeId: null,
           delta: {},
           actorIsPlayer: true,

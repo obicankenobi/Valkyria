@@ -11,7 +11,7 @@ import { TYPE_NAME, designDesignation, initialsOf } from './designNaming.js'
 import { designerCostFactor, designerFlawReductionPct, designerQualityBonus, designerTurnsSaved } from './designer.js'
 import { exclusivityRejection } from './exportRules.js'
 import { allProducts, computeUnitCostNow, getProduct } from './pricing.js'
-import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus, yardstickAgainstPlayer } from './race.js'
+import { buyerGeneration, designPhasedOutForBuyer, noveltyBonus, stockBidRejection, yardstickAgainstPlayer } from './race.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import type { Rng } from './rng.js'
 import type {
@@ -519,7 +519,7 @@ export function bidDesignRejection(
   bid: { designId?: string; kit?: boolean; price: number },
   order: Pick<Order, 'buyerId' | 'productId' | 'referencePrice'>,
 ): string | null {
-  if (bid.designId === undefined) return bid.kit ? 'an upgrade kit needs an upgraded design' : null
+  if (bid.designId === undefined) return bid.kit ? 'an upgrade kit needs an upgraded design' : stockBidRejection(state, order) // P188: standardprodukten måste vara aktuell hos köparens block
   const rejection = designBidRejection(state.house, bid.designId, order.productId)
   if (rejection) return rejection
   // P117 (§6.3): en konstruktion vars generation fasats ut för köparens block kan inte längre bjudas.

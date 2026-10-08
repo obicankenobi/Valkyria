@@ -40,13 +40,13 @@
 import { laboratoryFor, researchBlockedReason } from './knowledge.js'
 import balanceData from './data/balance.json' with { type: 'json' }
 import { capturedSystem } from './capture.js'
-import { fieldTrialBatch } from './design.js'
+import { bidDesignRejection, fieldTrialBatch } from './design.js'
 import { leadSupplierRejection } from './leadSupplier.js'
 import { round } from './money.js'
 import { allProducts, getProduct } from './pricing.js'
 import { findOfficial } from './officials.js'
 import { validateProcurement, validProgrammeTarget } from './programme.js'
-import { parseAssessmentTarget } from './race.js'
+import { parseAssessmentTarget, stockBidRejection } from './race.js'
 import type { ActionValidation, Bid, Commodity, GameState, PlayerAction, TechCategory } from './types.js'
 import { allLines, assemblyWorks, freeLineSlots } from './works.js'
 
@@ -97,7 +97,15 @@ export function validateBid(_state: Readonly<GameState>, draft: Readonly<GameSta
   const order = draft.market.openOrders.find((o) => o.id === bid.orderId)
   if (!order) return ok()
   const reason = leadSupplierRejection(draft.house, getProduct(order.productId), order.quantity)
-  return reason === null ? ok() : fail(reason)
+  if (reason !== null) return fail(reason)
+  // P188 (10X): standardprodukten måste vara aktuell hos köparens block — eller så måste huset ha en konstruktion som kan bjudas på ordern.
+  if (bid.designId !== undefined) {
+    const designReason = bidDesignRejection(draft, { designId: bid.designId, kit: bid.kit, price: bid.price ?? 0 }, order)
+    return designReason === null ? ok() : fail(designReason)
+  }
+  const stock = stockBidRejection(draft, order)
+  if (stock !== null && !draft.house.designs.some((d) => bidDesignRejection(draft, { designId: d.id, price: 0 }, order) === null)) return fail(stock)
+  return ok()
 }
 
 export function validateAction(state: Readonly<GameState>, draft: Readonly<GameState>, action: PlayerAction): ActionValidation {

@@ -347,7 +347,7 @@ function researchStandingOrders(state: GameState, fromSurplusOnly: boolean): Sta
   const hasTrack = state.house.standingOrders?.research?.artillery !== undefined
   // Ett pågående projekt räknas in: spåret startar nästa projekt i samma tur som det förra blir klart, så en
   // uppsägning som väntar tills nivån FAKTISKT nått 8 kommer en tur för sent och lämnar ett onödigt andra projekt.
-  const queued = state.house.rnd.filter((p) => p.category === 'artillery').length
+  const queued = state.house.rnd.filter((p) => p.category === 'artillery' && !p.design).length // P188: ett designprojekt är inget forskningsspår (startTrackedResearch skiljer på dem)
   if (state.house.techLevel.artillery + queued >= 8) {
     return hasTrack ? [{ kind: 'RESEARCH', op: 'CANCEL', category: 'artillery' }] : []
   }
@@ -624,7 +624,8 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
     if (!validateBid(state, state, { orderId: order.id }).ok) continue // P185 (11O): huvudleverantörsregeln — inga bud där huset saknar ett monteringsverk (eller ett som blir klart i tid)
     const grade = chooseGrade(state, order)
     // P129: standardbudet, och ett bud per konstruktion som går att bjuda på — den med störst förväntad vinst vinner.
-    const options: { designId: string | undefined; kit: boolean }[] = [{ designId: undefined, kit: false }]
+    const options: { designId: string | undefined; kit: boolean }[] = []
+    if (bidDesignRejection(state, { price: 0 }, order) === null) options.push({ designId: undefined, kit: false }) // P188: standardprodukten måste vara aktuell hos köparens block
     if (opts.designs) {
       for (const d of state.house.designs ?? []) {
         if (bidDesignRejection(state, { designId: d.id, price: 0 }, order) !== null) continue
@@ -1069,7 +1070,7 @@ export function makeHuman(opts: HumanOptions): Policy {
     ].slice(0, state.house.actionPoints)
     const standing: StandingOrderChange[] = [...humanStandingOrders(state)]
     if (opts.works) standing.push(...worksStandingOrders(state, opts.works))
-    if (opts.research) standing.push(...researchStandingOrders(state, true))
+    if (opts.research) standing.push(...researchStandingOrders(state, false)) // P188: forskningen i artilleri startar direkt — den är billig (ett projekt) och håller standardprodukten aktuell
     if (opts.designs) standing.push(...designStandingOrders(state, opts))
     if (opts.programmes) standing.push(...programmeStandingOrders(state, opts))
     standing.push(...inquiryStandingOrders(state, opts))

@@ -566,6 +566,9 @@
     "worksAlarmStrikeRiskMargin",
     "worksAlarmUnderstaffedBelowPct",
     "yardstickScale",
-    "multiLineJoinLagTurns"
+    "multiLineJoinLagTurns",
+    "stockGenerationEnabled",
+    "stockGenerationTechBase",
+    "stockGenerationSpecialisedBase"
   ]
 }
