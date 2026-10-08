@@ -468,6 +468,8 @@ icke-spridningsavtalet (1 juli 1968) · lagen om statlig vapenförsäljning (22 
   Efterordet säger det rakt ut: det hände under partiet, och ingen visste.
 - Epilogen får också en **tidslinje**: partiets krönika bredvid historiens, kvartal för kvartal.
 
+> **Utfall P149 (2026-10-08).** Byggt: steget `history` (direkt efter `applyActions`, beslut 10E), datafilen `core/src/data/history/indochina.json` (elva förstasidor, 23 telexrader, fem prologsidor, två efterord, alla med datum, källa och kvartal), `GameState.history`, krönikaslaget `history`, brytaren `historyEnabled`, äkthetstestet (`history.data.test.ts`), `FrontPageCard` i uppspelningen och på NEWS DESK, avdelningen *World*, prologen i genomgången, efterordet och tidslinjen i epilogen. **Inte byggt (P150/P151):** de åtta besluten, `HISTORY`-stående order, förvarning genom underrättelse, vapenvila mot spelarens vilja. Avvikelser: Nam Bac (14 januari 1968) ströks ur telexen — 1968 Q1 har annars fyra rader mot taket tre (10O); två förstasidor (indisk-pakistanska kriget, forskaruppropet) är ren text — spelet saknar de krokar effekten kräver. Se ANDRINGSLOGG.
+
 ### 9.7 Äkthetskravet
 
 - Ett test underkänner en händelse som saknar `date` eller `source`, eller vars `quarter` inte stämmer
@@ -568,6 +570,12 @@ Rivalerna får sex drag. Alla är spegelbilder av verb spelaren redan har, så i
 | Intäkt från konstruktioner yngre än fyra kvartal | 30–60 % | |
 | Verb som ingen bot använder | 0 | |
 | `human`, `SCENARIO_COMPLETE` | 40–70 % | **ja** |
+
+> **Utfall P147 (2026-10-08, 100 partier per bot).** Måltabell 10A: *Mekaniker avstängda* 0 — nådd (`blocTechLevelStep` på sedan P141; de tre talen som är 0 är naturliga nollor). *Öppna provisoriska tal* 11 (< 30) — nådd, se `docs/BALANSTAL_10A.md`. *`human`* 59 % — nådd. *clean/dirty* 64/57 — nådd. *Gap-chocker* 2,7 — nådd. *Spår som kommer fram* 30 % (`human`) — nådd. *Unga intäkter* 22 % för `human` (31–37 för tre varianter) — delvis. *Verb som ingen bot använder* — inte mätt i den här prompten (kvarstår för P159). *`dirty` vinner fler upphandlingar och får fler hävda kontrakt än `clean`* — sant (0,46 mot 0,16; 0,03 mot 0), svagt.
+>
+> **Etapp 9:s fjorton målrader har ett öde:** nådda — robust/advanced ≥ 40 (40/86), gap-chocker 1–3 (2,7), upphandlingar per parti 1–3 (3), clean/dirty ≥ 35 (64/57), dirty vinner fler upphandlingar men får fler hävda kontrakt (sant, svagt), `human` 40–70 (59). Reviderade — *unga intäkter 30–60* (nådd för `bothsides` 31, `clean` 33, `dirty` 37, `civil` 31; `human` 22), *olycksfåglar 10–25 %* (nådd för `robust` 32, `underhand` 20, `dirty` 17; `human` 7), *spår som kommer fram 30–60 %* (30 för `human`, 13 för `dirty` som har juridisk rådgivning), *`bothsides` mot `human` ≥ +10 doomsday* (båda beväpnar båda sidor — raden gäller per tillfälle, där `bothSidesDoomsday` är 10). Strukna — *fältryktekvartilen* (ingen mätkolumn byggd), *`human` mot `noresearch` ≥ +15 pp* (utfall −11: forskning och konstruktioner kostar och lönar sig inte i botspel — ägarbeslut om raden ska ersättas av en regel), *först-på-plats-vinnaren ≤ 80 %* (inga tillfällen i botspel), *civilt hus överlever vapenvila > 30 %* (2 av 200 partier har en vapenvila).
+>
+> **Tröskeln:** efter historiens steg (P149) låg `human` på 30–38 %; `boardTarget.threshold` 11 → 9,5. Se ANDRINGSLOGG.
 
 **Måltabell 10B** (balanspasset P160):
 
