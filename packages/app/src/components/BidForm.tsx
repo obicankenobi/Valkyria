@@ -138,6 +138,8 @@ export function BidForm({
   const advanceCash = advanceAmount(price, order.advancePct)
   const promiseEarly = Math.min(BOT_BALANCE.deliveryPromiseCapTurns, Math.max(0, order.requiredDeliveryTurns - deliveryTurns))
   const promiseBonus = deliveryPromiseTerm(order.weights, deliveryTurns, order.requiredDeliveryTurns)
+  // P191 (11AG): termen är avstängd när faktorn är 0 — då visas ingen rad (en term som alltid är noll är bara brus).
+  const promiseActive = deliveryPromiseTerm({ delivery: 1 }, 1, 1 + BOT_BALANCE.deliveryPromiseCapTurns) > 0
   // P185 (11O): huvudleverantörsregeln — samma prövning som avgörandet (validateBid), skälet i klartext.
   const product = getProduct(order.productId)
   const supplierLock = leadSupplierRejection(state.house, product, order.quantity)
@@ -281,11 +283,13 @@ export function BidForm({
           format={(v) => `${v}t`}
           testId="bid-delivery"
         />
-        <p className="cf-hint" data-testid="bid-promise-term">
-          {promiseEarly > 0
-            ? `Promising ${promiseEarly} quarter${promiseEarly === 1 ? '' : 's'} early adds ${promiseBonus.toFixed(1)} points to the bid (it counts up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters). A promise the works misses is a late delivery.`
-            : `Promise less than the buyer's ${order.requiredDeliveryTurns} quarters to earn points — up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters count. Only if the works can deliver it.`}
-        </p>
+        {promiseActive && (
+          <p className="cf-hint" data-testid="bid-promise-term">
+            {promiseEarly > 0
+              ? `Promising ${promiseEarly} quarter${promiseEarly === 1 ? '' : 's'} early adds ${promiseBonus.toFixed(1)} points to the bid (it counts up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters). A promise the works misses is a late delivery.`
+              : `Promise less than the buyer's ${order.requiredDeliveryTurns} quarters to earn points — up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters count. Only if the works can deliver it.`}
+          </p>
+        )}
       </div>
 
       {product.restricted && product.doomsdayOnDelivery && (

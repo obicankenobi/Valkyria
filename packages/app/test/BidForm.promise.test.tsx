@@ -17,12 +17,12 @@ function makeOrder(state: GameState): Order {
   }
 }
 
-describe('BidForm — leveransterminen (P189)', () => {
-  it('på kravet står en uppmaning; ett kortare löfte visar poängen termen ger', () => {
+describe('BidForm — leveransterminen (P189, avstängd i P191)', () => {
+  it('med faktorn 0 (11AG) visas ingen leveransterm, varken på kravet eller vid ett kortare löfte', () => {
     const state = createInitialState('indochina-slice', 'bid-promise-seed')
     render(<BidForm state={state} order={makeOrder(state)} existingBid={undefined} onSubmit={() => {}} onRemove={() => {}} />)
-    expect(screen.getByTestId('bid-promise-term').textContent).toMatch(/Promise less than the buyer's 5 quarters/)
+    expect(screen.queryByTestId('bid-promise-term')).toBeNull()
     fireEvent.click(within(screen.getByTestId('bid-delivery')).getByRole('button', { name: /decrease|−|-/i }))
-    expect(screen.getByTestId('bid-promise-term').textContent).toMatch(/Promising 1 quarter early adds [0-9.]+ points/)
+    expect(screen.queryByTestId('bid-promise-term')).toBeNull()
   })
 })
