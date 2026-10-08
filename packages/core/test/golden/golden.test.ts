@@ -531,10 +531,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // Omfryst i P149 (regel, steget `history`: kvartalets verkliga förstasidor och telex, deras effekter och en post i GameState.history). Attribution (dist ombyggd): med brytaren `historyEnabled` 0 är alla tre hashar
   // bit-identiska med P143:s (1bf6e17b97b37d, 7127c6f45e90d, 157f3bbd4a5fbf) — verifierat, inte antaget. Med steget på flyttas alla tre (rubrikerna och effekterna kommer in i varje parti).
   // De nya hasharna: passive 83c27cefe8a5a, aggressive dca86095e29dd, balanced f39a34f5910e1.
+  //
+  // Omfryst i P149 (regel, andra ändringen i samma prompt: `boardTarget.threshold` 11 → 9,5 i `indochina-slice.json`). Skälet: historiens steg flyttade `human` från 50 till 30–38 % (Laoskuppen nollar Laos behov ett kvartal och
+  // buddhistupproret försenar RVN:s leveranser — de enda effekterna med kraft), och tröskeln kalibrerades om så att `human` ligger inom 40–70 % igen. Attribution (dist ombyggd): med 11 tillbaka är alla tre hashar bit-identiska med
+  // förra raden (83c27cefe8a5a, dca86095e29dd, f39a34f5910e1) — verifierat, inte antaget. De nya hasharna: passive cbdfe29be89d6, aggressive 2eece8d6bd921, balanced a5fc6bc1f0323.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '83c27cefe8a5a' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'dca86095e29dd' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'f39a34f5910e1' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'cbdfe29be89d6' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2eece8d6bd921' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'a5fc6bc1f0323' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
