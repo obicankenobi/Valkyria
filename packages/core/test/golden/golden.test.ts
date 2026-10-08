@@ -543,10 +543,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // regeländring). Skälet: botarna i golden bjuder bara med standardprodukter, så artilleriordrarna efter blockets tredje generation (tur 17) avvisas — det är regelns avsikt. Attribution (dist ombyggd): med `stockGenerationEnabled` 0
   // och tröskeln 9,5 är alla tre hashar bit-identiska med förra raden (1bece4592d28ca, 1e9c69329d716a, 4f6c49b63f164) — verifierat, inte antaget. Med regeln på och 9,5: passive 127910cfc5a5a8. Med tröskeln 9,0 också:
   // passive 8043621c952e, aggressive 124d9ae3c35771, balanced 8f30f586b617b.
+  // Omfryst i P189 (regel, kapacitet köper leveranstid, beslut 11AD): en leveransterm efter computeScore (`deliveryPromiseTerm`, faktor 0,3, tak 2 kvartal) för spelaren och — på samma villkor, begränsad av kapaciteten — för rivalerna,
+  // och `boardTarget.threshold` 9,0 → 7,5 (data i samma regeländring: rivalerna lovar i regel snabbare än kravet, så termen sänker alla botar). Attribution (dist ombyggd): med `deliveryPromiseFactor` 0 och tröskeln 9,0 är alla tre hashar
+  // bit-identiska med förra raden (8043621c952e, 124d9ae3c35771, 8f30f586b617b) — verifierat, inte antaget. Med faktorn på och 9,0: passive 12698bd3d66f66, aggressive 4bc425a27ff6f, balanced oförändrad. Med tröskeln 7,5 också:
+  // passive 1b7ff048d49520, aggressive 1dca6cc3a2bbbc, balanced 11b0799a5f9b6e.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '8043621c952e' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '124d9ae3c35771' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '8f30f586b617b' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1b7ff048d49520' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1dca6cc3a2bbbc' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '11b0799a5f9b6e' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
