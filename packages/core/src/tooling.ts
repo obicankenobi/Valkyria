@@ -11,6 +11,7 @@ const BALANCE = balanceData as unknown as {
   retoolingCostFamily: number
   retoolingCostDesign: number
   retoolingCostProduct: number
+  stockDesignAsFamily: number
 }
 
 // fresh = ingen uppsättning än (en ny linje startar utan omställning); none = samma produkt och konstruktion.
@@ -38,6 +39,8 @@ export function setupChange(
   if (tooling.productId !== contract.productId) return 'product'
   const wanted = contract.designId ?? null
   if (tooling.designId === wanted) return 'none'
+  // P190 (förslag, av som standard): byte mellan standardprodukten och en konstruktion av samma produkt räknas som samma familj (en kort omställning), inte som en ny konstruktion.
+  if (BALANCE.stockDesignAsFamily === 1 && (tooling.designId === null || wanted === null)) return 'family'
   if (tooling.designId !== null && wanted !== null && designRoot(house, tooling.designId) === designRoot(house, wanted)) return 'family'
   return 'design'
 }

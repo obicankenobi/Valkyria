@@ -415,6 +415,7 @@
   "retoolingTurnsDesign": 2,
   "retoolingTurnsProduct": 3,
   "retoolingCostFamily": 40000,
+  "stockDesignAsFamily": 0,
   "retoolingCostDesign": 120000,
   "retoolingCostProduct": 250000,
   "planMaxContracts": 6,

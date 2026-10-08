@@ -139,7 +139,8 @@ export function BidForm({
   const promiseEarly = Math.min(BOT_BALANCE.deliveryPromiseCapTurns, Math.max(0, order.requiredDeliveryTurns - deliveryTurns))
   const promiseBonus = deliveryPromiseTerm(order.weights, deliveryTurns, order.requiredDeliveryTurns)
   // P185 (11O): huvudleverantörsregeln — samma prövning som avgörandet (validateBid), skälet i klartext.
-  const supplierLock = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
+  const product = getProduct(order.productId)
+  const supplierLock = leadSupplierRejection(state.house, product, order.quantity)
   const lockReason = supplierLock ?? (stockReason !== null && eligibleDesigns.length === 0 ? stockReason : null)
 
   // price är HELA kontraktets pris, yourUnitCost är kostnaden för EN enhet
@@ -286,6 +287,12 @@ export function BidForm({
             : `Promise less than the buyer's ${order.requiredDeliveryTurns} quarters to earn points — up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters count. Only if the works can deliver it.`}
         </p>
       </div>
+
+      {product.restricted && product.doomsdayOnDelivery && (
+        <p className="bid-doomsday" role="note" data-testid="bid-doomsday">
+          Each delivery adds {product.doomsdayOnDelivery[0]}–{product.doomsdayOnDelivery[1]} to doomsday (now {Math.round(state.doomsday)}). At 100 the world ends.
+        </p>
+      )}
 
       <CapacityNote outlook={capacity} deliveryTurns={deliveryTurns} turn={state.meta.turn} />
 

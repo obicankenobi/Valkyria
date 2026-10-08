@@ -47,7 +47,7 @@ import type {
   TechCategory,
   TurnSubmission,
 } from '@seventh-front/core'
-import { allLines } from '@seventh-front/core'
+import { allLines, setupChange, setupCost } from '@seventh-front/core'
 import { DEFAULT_WORKS, buildLineAction, fitsCapacity, promiseTurns, worksStandingOrders } from './worksPolicy.js'
 import type { WorksOptions } from './worksPolicy.js'
 
@@ -609,7 +609,15 @@ const HUMAN_BACK_CHANNEL_FROM_TURN = 4
 const HUMAN_BACK_CHANNEL_SPEND = 25_000
 const HUMAN_OVERTIME_DUE_WITHIN_TURNS = 2
 const HUMAN_LOAN_CASH_SHARE = 0.1 // lånar först när kassan understiger 10 % av grundkapitalet
+const HUMAN_MK9_DOOMSDAY_MAX = 60 // en försiktig spelare säljer inte mk-9 (14–25 doomsday per leverans) när doomsday redan är så här hög
 const HUMAN_LOAN_SHARE = 0.3 // ... och då 30 % av grundkapitalet
+
+// P190: vad det kostar att ställa om huset billigaste linje för produkten (och konstruktionen). 0 om en linje redan står uppsatt för den.
+function retoolCost(state: GameState, productId: string, designId: string | undefined): number {
+  const lines = allLines(state.house).filter((l) => l.status === 'idle' || l.status === 'running')
+  if (lines.length === 0) return 0
+  return Math.min(...lines.map((l) => setupCost(setupChange(state.house, l.tooling ?? null, { productId: productId as never, designId: designId ?? null })).cost))
+}
 
 function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] {
   const lowCash = state.house.treasury < state.house.foundingCapital * HUMAN_LOW_CASH_SHARE
@@ -621,7 +629,9 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
   )
 
   for (const order of state.market.openOrders) {
-    if (!validateBid(state, state, { orderId: order.id }).ok) continue // P185 (11O): huvudleverantörsregeln — inga bud där huset saknar ett monteringsverk (eller ett som blir klart i tid)
+    if (!validateBid(state, state, { orderId: order.id }).ok) continue
+    const orderProduct = getProduct(order.productId)
+    if (!opts.hawk && orderProduct.restricted && orderProduct.doomsdayOnDelivery && state.doomsday >= HUMAN_MK9_DOOMSDAY_MAX) continue // P190 (10Ä) // P185 (11O): huvudleverantörsregeln — inga bud där huset saknar ett monteringsverk (eller ett som blir klart i tid)
     const grade = chooseGrade(state, order)
     // P129: standardbudet, och ett bud per konstruktion som går att bjuda på — den med störst förväntad vinst vinner.
     const options: { designId: string | undefined; kit: boolean }[] = []
@@ -654,7 +664,7 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
         for (const point of curve) {
           if (point.confidence < HUMAN_MIN_CONFIDENCE || marginAt(point.price, totalCost) < minMargin) continue
           if (kit && bidDesignRejection(state, { designId, kit: true, price: point.price }, order) !== null) continue // över satsens pristak
-          const value = (point.price - totalCost) * (point.confidence / 100) * risk
+          const value = (point.price - totalCost) * (point.confidence / 100) * risk - (opts.netRetool ? retoolCost(state, order.productId, designId) * (point.confidence / 100) : 0) // P190 (10Ö): omställningen för en konstruktion dras av — bara när poängen netto blir högre
           if (value > bestValue) {
             best = point
             bestPromise = promise
@@ -776,6 +786,10 @@ export interface HumanOptions {
   reportRival?: boolean // anmäler (PROGRAMME REPORT) en rival i en upphandling där huset deltar och har underrättelse
   // P182 (ETAPP11 §9): hur verken sköts (worksPolicy.ts). Utan det beter sig boten som före etapp 11 (bud grindade av lediga linjer, inga byggen) — `human-classic`/`human-plain`.
   works?: WorksOptions
+  // P190 (10Ä): kärnvapenskalet mk-9. human avstår vid doomsday HUMAN_MK9_DOOMSDAY_MAX eller högre; hawk säljer det alltid.
+  hawk?: boolean
+  // P190 (10Ö): konstruktionen bjuds bara när vinsten efter linjens omställning (billigaste lediga uppsättningen) är högre än standardbudets.
+  netRetool?: boolean
 }
 
 const CLASSIC_HUMAN: HumanOptions = {
@@ -784,7 +798,7 @@ const CLASSIC_HUMAN: HumanOptions = {
 // `human` = P129:s spelare + P140:s fältprov och uppgraderingar. `PLAIN_HUMAN` är den oförändrade P129–P137-spelaren (variant `human-plain`),
 // kvar som referens så att före/efter-jämförelsen går att köra om.
 const PLAIN_HUMAN: HumanOptions = { ...CLASSIC_HUMAN, designs: true, programmes: true, inquiry: 'settle' }
-export const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true, works: DEFAULT_WORKS }
+export const BASE_HUMAN: HumanOptions = { ...PLAIN_HUMAN, fieldTrial: true, upgrade: true, works: DEFAULT_WORKS, netRetool: true }
 
 const HUMAN_DESIGN_CASH_SHARE = 0.6 // en ny konstruktion startas bara när kassan är minst så här stor andel av grundkapitalet
 const HUMAN_SETTLE_RESERVE_SHARE = 0.25 // en förlikning betalas bara om kassan efteråt är över så här stor andel av grundkapitalet
@@ -1129,6 +1143,9 @@ export const POLICIES: Record<string, Policy> = {
   'human-specialist': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, expandAlways: true } }),
   'human-broad': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, categories: 'broad' } }),
   'human-nopromise': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, promise: false } }), // P189: som `human` före regeln — lovar alltid kravet
+  'human-tracks': makeHuman({ ...BASE_HUMAN, designs: false, programmes: false }), // P190: bara forskningsspår — jämförelsen konstruktionerna ska komma upp mot
+  'human-grossbid': makeHuman({ ...BASE_HUMAN, netRetool: false }), // P190: som human före nettoregeln — konstruktionen bjuds utan att omställningen räknas
+  'human-hawk': makeHuman({ ...BASE_HUMAN, hawk: true }), // P190 (10Ä): säljer mk-9 alltid — mäter forskningens pris
   'human-singleline': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, multiLine: false } }), // P187: som `human` före regeln — en linje per kontrakt
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,

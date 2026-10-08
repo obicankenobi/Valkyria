@@ -265,3 +265,11 @@ describe('produktionsplanen (§4.5) — PLAN SET/CLEAR', () => {
     expect(s.house.standingOrders.plan?.['line-1']).toBeUndefined()
   })
 })
+
+describe('stockDesignAsFamily (P190, förslag — av som standard)', () => {
+  const house = { designs: [design('d-1')] }
+  it('av: byte mellan standardprodukten och en konstruktion är en ny konstruktion (2 kvartal)', () => {
+    expect(setupChange(house, { productId: 'm3_apc' as never, designId: null }, { productId: 'm3_apc', designId: 'd-1' })).toBe('design')
+    expect(setupChange(house, { productId: 'm3_apc' as never, designId: 'd-1' }, { productId: 'm3_apc', designId: null })).toBe('design')
+  })
+})

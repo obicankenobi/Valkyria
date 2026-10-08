@@ -6612,6 +6612,14 @@ summary:focus-visible,
    Ett låst bud: en röd fettkritsram med en stämpel och skälet i klartext — i budmappen (BidForm), på
    mappens flik (.order-stamp.is-locked) och i listorna (This Quarter, kartans orderlager). Byggnadslånet:
    ett registerkortsblock på anläggningskortet och i Books. Inga glödeffekter (regel 8), bara tryckt papper. */
+.bid-doomsday {
+  margin: 4px 0;
+  padding: 6px 8px;
+  border: 1px solid var(--ink-red, #8b1a1a);
+  color: var(--ink-red, #8b1a1a);
+  font-size: 13px;
+  font-weight: 700;
+}
 .bid-locked {
   grid-column: 1 / -1;
   display: flex;

@@ -281,6 +281,8 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
       'human-designer',
       'human-dirty',
       'human-engineer',
+      'human-grossbid',
+      'human-hawk',
       'human-licence',
       'human-nopromise',
       'human-noresearch',
@@ -291,6 +293,7 @@ describe('POLICIES (spec avsnitt 7.3, ETAPP1_5_TEKNISK_SPEC.md 10.2)', () => {
       'human-skunk',
       'human-specialist',
       'human-static',
+      'human-tracks',
       'human-underhand',
       'passive',
     ])
