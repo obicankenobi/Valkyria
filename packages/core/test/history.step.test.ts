@@ -147,6 +147,14 @@ describe('steget history (P149)', () => {
     expect((balance as unknown as { historyEnabled: number }).historyEnabled).toBe(1)
   })
 
+  it('causeId history:<id> överlever beskärningen av state.wire (annars skulle NEWS DESK aldrig känna igen en historisk rad)', () => {
+    let state = createInitialState('indochina-slice', 'history-seed')
+    for (let i = 0; i < 4; i++) state = resolveTurn(state, EMPTY).state
+    const rows = state.wire.filter((e) => e.causeId === 'history:china-bomb')
+    expect(rows.length).toBeGreaterThanOrEqual(2) // rubriken och doomsday-effekten
+    expect(state.wire.some((e) => e.headline.includes('CHINA EXPLODES') && e.causeId === 'history:china-bomb')).toBe(true)
+  })
+
   it('historyEventOf känner igen en rubrik på deltat och på causeId-prefixet', () => {
     expect(historyEventOf('history:china-bomb', {})?.id).toBe('china-bomb')
     expect(historyEventOf(null, { 'history.laos-coup': 1 })?.id).toBe('laos-coup')

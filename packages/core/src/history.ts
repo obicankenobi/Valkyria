@@ -16,6 +16,7 @@
 import historyData from './data/history/indochina.json' with { type: 'json' }
 import balanceData from './data/balance.json' with { type: 'json' }
 import { addDoomsday } from './resolve/doomsdayGate.js'
+import { HISTORY_CAUSE_PREFIX } from './wire.js'
 import { blocOfFaction } from './race.js'
 import { effectiveDepth } from './queries.js'
 import { TECH_CATEGORIES } from './validateAction.js'
@@ -64,7 +65,7 @@ export const HISTORY_EVENTS: readonly HistoryEvent[] = DATA.events
 export const HISTORY_PROLOGUE: readonly HistoryEvent[] = DATA.prologue
 export const HISTORY_AFTERWORD: readonly HistoryEvent[] = DATA.afterword
 
-export const HISTORY_CAUSE_PREFIX = 'history:'
+export { HISTORY_CAUSE_PREFIX } from './wire.js'
 
 export const quarterKey = (year: number, quarter: number): string => `${year}-Q${quarter}`
 

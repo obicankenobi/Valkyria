@@ -8,6 +8,9 @@
 //    ser för spelaren ut som att spelet döljer något, när det bara har glömt.
 import type { WireEvent } from './types.js'
 
+// P149: en historisk händelses causeId ("history:<id>") är en SYNTETISK referens, inte ett WireEvent-id — den får aldrig nollas av beskärningen nedan. Definieras här (och återexporteras av history.ts) för att undvika en importcykel.
+export const HISTORY_CAUSE_PREFIX = 'history:'
+
 // Arkitekturkonstanter för wire-systemet, fastställda i spec avsnitt 2.6. Inte
 // balansdata (jämför CLAUDE.md hård regel 5) — de styr hur mycket historik som
 // hålls, inte en spelregel P10:s balanspass någonsin skruvar på.
@@ -67,5 +70,5 @@ export function pruneWire(wire: readonly WireEvent[], turn: number): WireEvent[]
   // Set/Map-iterationsordning.
   return wire
     .filter((e) => keep.has(e.id))
-    .map((e) => (e.causeId !== null && !keep.has(e.causeId) ? { ...e, causeId: null } : e))
+    .map((e) => (e.causeId !== null && !keep.has(e.causeId) && !e.causeId.startsWith(HISTORY_CAUSE_PREFIX) ? { ...e, causeId: null } : e))
 }

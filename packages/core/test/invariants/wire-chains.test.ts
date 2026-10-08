@@ -9,7 +9,8 @@ const EMPTY_SUBMISSION: TurnSubmission = { standingOrders: [], bids: [], actions
 function assertNoDanglingCauseId(wire: readonly WireEvent[]): void {
   const ids = new Set(wire.map((e) => e.id))
   for (const event of wire) {
-    if (event.causeId !== null) {
+    // P149: ett history:<id>-causeId är en syntetisk referens till en historisk händelse (data/history), inget WireEvent-id — det är avsiktligt och får inte nollas av beskärningen.
+    if (event.causeId !== null && !event.causeId.startsWith('history:')) {
       expect(ids.has(event.causeId)).toBe(true)
     }
   }
