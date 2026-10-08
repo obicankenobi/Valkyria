@@ -429,6 +429,30 @@ const APP_SCREENS = [
     },
   },
   {
+    // P149: NEWS DESK med en förstasida ur historien (Laoskuppen, 1964 Q2) och telexraden under World — efter två kvartal. Reducerad rörelse som ovan.
+    name: 'news-desk-front-page',
+    path: '/',
+    async afterGoto(page) {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti.
+      }
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
+      await page.getByTestId('hud').waitFor()
+      for (let i = 0; i < 2; i++) {
+        await page.getByTestId('end-quarter-button').click()
+        await page.locator('[data-testid="tab-news"][aria-current="page"]').waitFor()
+      }
+      await page.getByTestId('news-history-front-page').waitFor()
+    },
+  },
+  {
     // P81a: teckenförklaringen, öppnad över OPERATIONS (ingen egen
     // referensskiss — samma linje som quarter-replay ovan).
     name: 'map-legend',

@@ -24,7 +24,8 @@
 import { useEffect, useState } from 'react'
 import type { BoardMemo as BoardMemoData, GameState, WireEvent } from '@seventh-front/core'
 import { anchorLabel, wireAnchor } from '../wireAnchor.js'
-import { isFlashEvent } from '../newsClassification.js'
+import { historyFrontPage, isFlashEvent } from '../newsClassification.js'
+import { FrontPageCard } from './FrontPageCard.js'
 import { BoardMemo } from './BoardMemo.js'
 import { DsToggle } from './designSystem.js'
 import { Tag } from './ui.js'
@@ -59,6 +60,8 @@ export function QuarterReplay({
   onDone: () => void
 }) {
   const events = fullReplay ? wire : wire.filter((e) => e.severity === 'headline')
+  // P149: kvartalets förstasida ur historien (om den inträffade) visas som en tidningssida överst i uppspelningen.
+  const frontPage = wire.map(historyFrontPage).find((e) => e !== null) ?? null
   const reduced = prefersReducedMotion()
   const hasMemo = memo !== null
   const nothingToAnimate = reduced || events.length === 0
@@ -121,6 +124,7 @@ export function QuarterReplay({
             testId="replay-full-toggle"
           />
         </div>
+        {frontPage && <FrontPageCard event={frontPage} testId="replay-front-page" />}
         <ol className="replay-list" data-testid="replay-list" tabIndex={0} aria-label="Quarter events">
           {visible.map((event) => {
             const anchor = wireAnchor(state, event)

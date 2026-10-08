@@ -6,7 +6,8 @@
 // som BriefingScreen (P88) redan etablerade, inte en modal ovanpå OPERATIONS.
 // Läser bara scenarioVerdict(state) — ren härledning, ingen egen state.
 import { useState } from 'react'
-import { scenarioVerdict, type GameState } from '@seventh-front/core'
+import { HISTORY_AFTERWORD, HISTORY_EVENTS, scenarioVerdict, type GameState } from '@seventh-front/core'
+import { historyDateLabel, quarterLabelOfTurn } from '../historyText.js'
 import { formatMoney } from './ui.js'
 import { wearClass } from '../stampWear.js'
 import { Button, BottomSheet, DsPanel } from './designSystem.js'
@@ -23,6 +24,8 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
   const [historyOpen, setHistoryOpen] = useState(false)
   const verdict = scenarioVerdict(state)
   const ending = verdict.ending
+  // P149: tidslinjen — partiets krönika bredvid historiens, kvartal för kvartal. Bara det som faktiskt inträffade (GameState.history) och husets egna krönikeposter.
+  const timeline = buildTimeline(state)
 
   return (
     <div className="setup-screen" data-testid="epilogue-screen">
@@ -119,6 +122,20 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
             </div>
           )}
 
+          {/* P149 (ETAPP10 §9.6): efterordet — det som hände under partiet och det som kom efter. Texten säger det rakt ut. */}
+          <div className="cf-field" data-testid="epilogue-afterword">
+            <span className="cf-field-label">AFTERWORD</span>
+            <ul className="prologue-list">
+              {HISTORY_AFTERWORD.map((page) => (
+                <li key={page.id} className="prologue-item" data-testid={`afterword-${page.id}`}>
+                  <span className="prologue-date">{historyDateLabel(page.date)}</span>
+                  <span className="prologue-headline">{page.headline}</span>
+                  <span className="prologue-body">{page.body}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="setup-actions">
             <Button variant="ghost" onClick={() => setHistoryOpen(true)} testId="epilogue-history-button">
               FULL CHRONICLE
@@ -137,6 +154,22 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
         onClose={() => setHistoryOpen(false)}
         testId="epilogue-history-sheet"
       >
+        {timeline.length > 0 && (
+          <div data-testid="epilogue-timeline">
+            <span className="cf-field-label">TIMELINE — THE HOUSE BESIDE HISTORY</span>
+            <ul className="replay-list">
+              {timeline.map((row) => (
+                <li key={row.quarter} className="replay-item" data-testid={`timeline-${row.quarter}`}>
+                  <span className="replay-anchor">{row.quarter}</span>
+                  <span className="replay-text">
+                    {row.history.map((h) => `${historyDateLabel(h.date)}: ${h.headline}`).join(' · ')}
+                    {row.house.length > 0 && ` — YOU: ${row.house.join(' · ')}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {state.chronicle.length === 0 ? (
           <p className="cf-hint">Nothing notable happened.</p>
         ) : (
@@ -152,4 +185,32 @@ export function EpilogueScreen({ state, onTitleScreen }: { state: GameState; onT
       </BottomSheet>
     </div>
   )
+}
+
+
+interface TimelineRow {
+  quarter: string
+  history: { date: string; headline: string }[]
+  house: string[]
+}
+
+// Historiens händelser (de som inträffade) och husets egna krönikeposter, grupperade per kvartal i tidsordning. Ren; exporteras för test.
+export function buildTimeline(state: Pick<GameState, 'history' | 'chronicle'>): TimelineRow[] {
+  const rows = new Map<string, TimelineRow>()
+  const row = (quarter: string): TimelineRow => {
+    const existing = rows.get(quarter)
+    if (existing) return existing
+    const created: TimelineRow = { quarter, history: [], house: [] }
+    rows.set(quarter, created)
+    return created
+  }
+  for (const event of HISTORY_EVENTS) {
+    if (event.kind !== 'frontPage' || !state.history?.occurred[event.id]) continue
+    row(event.quarter!.replace('-', ' ')).history.push({ date: event.date, headline: event.headline })
+  }
+  for (const entry of state.chronicle) {
+    if (!entry.actorIsPlayer) continue
+    row(quarterLabelOfTurn(entry.turn)).house.push(entry.headline)
+  }
+  return [...rows.values()].sort((a, b) => a.quarter.localeCompare(b.quarter))
 }

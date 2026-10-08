@@ -2,7 +2,8 @@
 // "Allt är presentation: vilken händelsetyp som hör till vilken nivå och
 // avdelning är en tabell i packages/app" — ren, testbar, rör aldrig
 // packages/core eller WireEvent självt.
-import type { GameState, WireEvent } from '@seventh-front/core'
+import { HISTORY_CAUSE_PREFIX, historyEventOf } from '@seventh-front/core'
+import type { GameState, HistoryEvent, WireEvent } from '@seventh-front/core'
 import { wireAnchor } from './wireAnchor.js'
 
 // P81-blockquoten, ordagrant: "front byter status, sektor byter sida, kupp,
@@ -61,8 +62,16 @@ const FLASH_PATTERNS: RegExp[] = [
   /: SCENARIO COMPLETE$/,
 ]
 
+// P149: förstasidan en rubrik hör till (annars null) — rubrikhändelsen bär deltat history.<id>, effekterna gör det inte.
+export function historyFrontPage(event: WireEvent): HistoryEvent | null {
+  if (!Object.keys(event.delta).some((k) => k.startsWith('history.'))) return null
+  const found = historyEventOf(event.causeId, event.delta)
+  return found?.kind === 'frontPage' ? found : null
+}
+
 export function isFlashEvent(event: WireEvent): boolean {
   if (event.severity !== 'headline') return false
+  if (historyFrontPage(event) !== null) return true // P149: en förstasida ur historien är alltid en blixt
   return FLASH_PATTERNS.some((pattern) => pattern.test(event.headline))
 }
 
@@ -74,16 +83,19 @@ export function isFlashEvent(event: WireEvent): boolean {
 // redan strukturerad, konsekvent markering för just handelshändelser
 // (bidding.ts/orders.ts/deliveries.ts/rivals.ts:s marknadsgrenar, verifierat
 // mot koden). Allt annat riktat mot ett land är politik/underrättelse.
-export type NewsDepartment = 'business' | 'front' | 'politics' | 'market'
+export type NewsDepartment = 'business' | 'front' | 'politics' | 'market' | 'world'
 
 export const NEWS_DEPARTMENTS: { id: NewsDepartment; label: string }[] = [
   { id: 'business', label: 'Your Business' },
   { id: 'front', label: 'The Front' },
   { id: 'politics', label: 'Politics' },
   { id: 'market', label: 'The Market' },
+  // P149 (ETAPP10 §9.5): verkliga, daterade händelser ur data/history — känns igen på causeId-prefixet history:, aldrig på texten.
+  { id: 'world', label: 'World' },
 ]
 
 export function newsDepartment(state: GameState, event: WireEvent): NewsDepartment {
+  if (event.causeId?.startsWith(HISTORY_CAUSE_PREFIX)) return 'world'
   const anchor = wireAnchor(state, event)
   if (anchor.kind === 'sector') return 'front'
   if (anchor.kind === 'hud') return 'business'

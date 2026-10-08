@@ -419,6 +419,17 @@ export async function enterNews(page: Page): Promise<void> {
   await enterTab(page, 'news')
 }
 
+// P149: NEWS DESK efter två kvartal — Laoskuppen (1964 Q2) är då kvartalets förstasida, med datum, text och källa, och telex står under World. Reducerad rörelse gör uppspelningen omedelbar.
+export async function enterNewsFrontPage(page: Page): Promise<void> {
+  await enterOperations(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (let i = 0; i < 2; i++) {
+    await page.getByTestId('end-quarter-button').click()
+    await page.locator('[data-testid="tab-news"][aria-current="page"]').waitFor()
+  }
+  await page.getByTestId('news-history-front-page').waitFor()
+}
+
 export async function enterCountryFile(page: Page): Promise<void> {
   await enterOperations(page)
   await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
@@ -910,6 +921,7 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'books-loans', path: '/', setup: enterBooksLoans },
   { name: 'quarter-locked', path: '/', setup: enterQuarterLocked },
   { name: 'news', path: '/', setup: enterNews },
+  { name: 'news-front-page', path: '/', setup: enterNewsFrontPage },
   { name: 'contacts', path: '/', setup: enterContacts },
   { name: 'crisis', path: '/', setup: enterCrisis },
   { name: 'epilogue', path: '/', setup: enterEpilogue },

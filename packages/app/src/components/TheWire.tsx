@@ -22,19 +22,22 @@
 // uttryckligen att en utebliven CRISIS-handling bara ger automatiskt
 // BACK_DOWN, inte ett fel.
 import { useEffect, useState } from 'react'
-import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
+import { DISPLAY_THRESHOLDS, historyEventOf } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
 import { causeChain } from '../wireChain.js'
 import { anchorLabel, wireAnchor } from '../wireAnchor.js'
 import { DoomsdayGauge } from './Shell.js'
 import {
   groupTickers,
+  historyFrontPage,
   isFlashEvent,
   newsDepartment,
   NEWS_DEPARTMENTS,
 } from '../newsClassification.js'
 import type { NewsDepartment, TickerGroup } from '../newsClassification.js'
 import { Tag } from './ui.js'
+import { FrontPageCard } from './FrontPageCard.js'
+import { historyDateLabel } from '../historyText.js'
 import { wearClass } from '../stampWear.js'
 import { DsPanel, DsToggle, Segmented } from './designSystem.js'
 import { YourActions } from './YourActions.js'
@@ -96,6 +99,8 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
   const chain = causeChain(wire, event)
   const deltas = Object.entries(event.delta)
   const anchor = anchorLabel(state, wireAnchor(state, event))
+  // P149: en historisk händelse (förstasida eller telex) bär sitt verkliga datum; effekterna under den gör det inte.
+  const historyAnnouncement = Object.keys(event.delta).some((k) => k.startsWith('history.')) ? historyEventOf(event.causeId, event.delta) : null
 
   const classes = ['wire-item']
   if (event.actorIsPlayer) classes.push('is-player')
@@ -110,6 +115,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
       <div className="wire-row">
         <span className={`wire-stamp ${wearClass(event.id)}`}>T{String(event.turn).padStart(2, '0')}</span>
         <span className={`wire-glyph is-${event.severity}`} aria-hidden="true" />
+        {historyAnnouncement && <span className="wire-date" data-testid="wire-history-date">{historyDateLabel(historyAnnouncement.date)}</span>}
         <span className="wire-text">{event.headline}</span>
         {anchor && <span className="wire-anchor">{anchor}</span>}
         {event.actorIsPlayer && <Tag tone="amber">YOU</Tag>}
@@ -374,7 +380,7 @@ export function TheWire({
   // stor ruta ovanför telexlistan — en riktig förstasida har en huvudrubrik,
   // inte bara en löpande lista. `visible` (inte `sorted`) så hjälten aldrig
   // spoilar en händelse som reveal-sekvensen inte hunnit visa än.
-  const heroEvent = visible.find((e) => e.severity === 'headline') ?? null
+  const heroEvent = visible.find((e) => e.severity === 'headline' && historyFrontPage(e) === null) ?? null
   const heroAnchor = heroEvent ? anchorLabel(state, wireAnchor(state, heroEvent)) : null
 
   // P81d: "Förstasidan: kvartalets rubriker" — bara den SENASTE turens
@@ -388,6 +394,10 @@ export function TheWire({
   const thisQuarterHeadlines = visible.filter(
     (e) => e.severity === 'headline' && e.turn === latestTurn && e.id !== heroEvent?.id,
   )
+  // P149 (ETAPP10 §9.1/§9.5): kvartalets förstasida ur historien visas som en tidningssida överst, och avdelningen World listar kvartalets historiska rader — också telexraderna,
+  // som är ticker-händelser och annars aldrig skulle nå förstasidan.
+  const historyOfLatest = visible.filter((e) => e.turn === latestTurn && Object.keys(e.delta).some((k) => k.startsWith('history.')))
+  const frontPageEvent = historyOfLatest.map(historyFrontPage).find((e) => e !== null) ?? null
 
   function openDepartment(dept: NewsDepartment) {
     setDepartment(dept)
@@ -398,6 +408,7 @@ export function TheWire({
     <>
       <h2 className="view-title">News Desk</h2>
       {state.pendingCrisis && !crisisChosen && <CrisisModal state={state} onChoose={onChooseCrisis} />}
+      {frontPageEvent && <FrontPageCard event={frontPageEvent} testId="news-history-front-page" />}
       {heroEvent && (
         <div className="news-hero" data-testid="news-hero">
           <span className="news-hero-kicker">Today&apos;s Headline · T{String(heroEvent.turn).padStart(2, '0')}</span>
@@ -426,7 +437,7 @@ export function TheWire({
               <DepartmentSection
                 key={dept.id}
                 department={dept}
-                events={thisQuarterHeadlines.filter((e) => newsDepartment(state, e) === dept.id)}
+                events={dept.id === 'world' ? historyOfLatest : thisQuarterHeadlines.filter((e) => newsDepartment(state, e) === dept.id)}
                 wire={wire}
                 state={state}
                 onMore={() => openDepartment(dept.id)}

@@ -5,10 +5,13 @@
 // självt visar, bara utan land-klick inkopplat (onSelectCountry utelämnad,
 // redan säkert no-op, se TheatreMap.tsx) — "en karta", inte en egen,
 // förenklad kopia.
+import { useState } from 'react'
 import { formatMoney } from './ui.js'
 import { wearClass } from '../stampWear.js'
 import { Button, DsPanel } from './designSystem.js'
 import { TheatreMap } from './TheatreMap.js'
+import { HISTORY_PROLOGUE } from '@seventh-front/core'
+import { historyDateLabel } from '../historyText.js'
 import type { GameState } from '@seventh-front/core'
 
 const HOME_STATE_LABEL: Record<GameState['house']['homeState'], string> = {
@@ -20,6 +23,8 @@ const HOME_STATE_LABEL: Record<GameState['house']['homeState'], string> = {
 export function BriefingScreen({ state, onBegin, onBack }: { state: GameState; onBegin: () => void; onBack: () => void }) {
   const house = state.house
   const target = house.boardTarget
+  // P149: prologen ligger bakom en knapp (regel 7: det som inte är ett par rader hör hemma bakom "More") så att BEGIN OPERATIONS syns utan att bläddra.
+  const [prologueOpen, setPrologueOpen] = useState(false)
 
   return (
     <div className="setup-screen" data-testid="briefing-screen">
@@ -58,6 +63,24 @@ export function BriefingScreen({ state, onBegin, onBack }: { state: GameState; o
             <div className="briefing-map">
               <TheatreMap state={state} />
             </div>
+          </div>
+
+          {/* P149 (ETAPP10 §9.6): prologen — fem förstasidor som ger läget när huset öppnar. */}
+          <div className="cf-field" data-testid="briefing-prologue">
+            <Button variant="secondary" onClick={() => setPrologueOpen((o) => !o)} testId="briefing-prologue-toggle">
+              {prologueOpen ? 'HIDE THE WORLD SO FAR' : 'THE WORLD SO FAR — 5 FRONT PAGES'}
+            </Button>
+            {prologueOpen && (
+              <ul className="prologue-list">
+                {HISTORY_PROLOGUE.map((page) => (
+                  <li key={page.id} className="prologue-item" data-testid={`prologue-${page.id}`}>
+                    <span className="prologue-date">{historyDateLabel(page.date)}</span>
+                    <span className="prologue-headline">{page.headline}</span>
+                    <span className="prologue-body">{page.body}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="setup-actions">
