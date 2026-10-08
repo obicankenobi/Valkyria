@@ -7,7 +7,9 @@
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
 import { useEffect, useMemo, useState } from 'react'
 import {
+  BOT_BALANCE,
   CUSTOMISE_TERMS,
+  deliveryPromiseTerm,
   advanceAmount,
   bidDesignRejection,
   bidEstimate,
@@ -107,11 +109,13 @@ export function BidForm({
   const useKit = kit && chosenDesign !== undefined && chosenDesign.lineage !== null
   const [customise, setCustomise] = useState<boolean>(existingBid?.customise ?? false)
 
+  const [deliveryTurns, setDeliveryTurns] = useState<number>(existingBid?.deliveryTurns ?? order.requiredDeliveryTurns)
+
   // bidEstimate/playerWinCurve drar aldrig ur huvud-Rng:n (hash-seedade, se
   // queries.ts) — säkert att räkna om vid varje grade-byte utan att röra
   // rngCursor.
-  const estimate = useMemo(() => bidEstimate(state, order, grade, designId, useKit, customise), [state, order, grade, designId, useKit, customise])
-  const winCurve = useMemo(() => playerWinCurve(state, order, grade, designId, useKit, customise), [state, order, grade, designId, useKit, customise])
+  const estimate = useMemo(() => bidEstimate(state, order, grade, designId, useKit, customise, deliveryTurns), [state, order, grade, designId, useKit, customise, deliveryTurns])
+  const winCurve = useMemo(() => playerWinCurve(state, order, grade, designId, useKit, customise, deliveryTurns), [state, order, grade, designId, useKit, customise, deliveryTurns])
   const priceMin = winCurve[0]?.price ?? 0
   const priceMax = winCurve[winCurve.length - 1]?.price ?? priceMin
 
@@ -120,7 +124,6 @@ export function BidForm({
   useEffect(() => {
     setPrice((p) => Math.min(Math.max(p, priceMin), priceMax))
   }, [priceMin, priceMax])
-  const [deliveryTurns, setDeliveryTurns] = useState<number>(existingBid?.deliveryTurns ?? order.requiredDeliveryTurns)
   const [bribe, setBribe] = useState<number>(existingBid?.bribe ?? 0)
 
   const stamps = chosenDesign ? designBidStamps(state, chosenDesign, order) : null
@@ -133,6 +136,8 @@ export function BidForm({
     [state, order, designId, deliveryTurns],
   )
   const advanceCash = advanceAmount(price, order.advancePct)
+  const promiseEarly = Math.min(BOT_BALANCE.deliveryPromiseCapTurns, Math.max(0, order.requiredDeliveryTurns - deliveryTurns))
+  const promiseBonus = deliveryPromiseTerm(order.weights, deliveryTurns, order.requiredDeliveryTurns)
   // P185 (11O): huvudleverantörsregeln — samma prövning som avgörandet (validateBid), skälet i klartext.
   const supplierLock = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
   const lockReason = supplierLock ?? (stockReason !== null && eligibleDesigns.length === 0 ? stockReason : null)
@@ -275,6 +280,11 @@ export function BidForm({
           format={(v) => `${v}t`}
           testId="bid-delivery"
         />
+        <p className="cf-hint" data-testid="bid-promise-term">
+          {promiseEarly > 0
+            ? `Promising ${promiseEarly} quarter${promiseEarly === 1 ? '' : 's'} early adds ${promiseBonus.toFixed(1)} points to the bid (it counts up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters). A promise the works misses is a late delivery.`
+            : `Promise less than the buyer's ${order.requiredDeliveryTurns} quarters to earn points — up to ${BOT_BALANCE.deliveryPromiseCapTurns} quarters count. Only if the works can deliver it.`}
+        </p>
       </div>
 
       <CapacityNote outlook={capacity} deliveryTurns={deliveryTurns} turn={state.meta.turn} />

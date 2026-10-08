@@ -1,7 +1,7 @@
 // bidding — avgör anbud som löper ut denna tur. Se ETAPP1_TEKNISK_SPEC.md avsnitt
 // 4.2, 4.4.
 import { BALANCE, alignmentPenalty, computeRivalBid, computeScore, computeUnitCostNow, getProduct, rivalBlocTerm } from '../../pricing.js'
-import { categoryReputation, playerBidTerm } from '../../bidTerms.js'
+import { categoryReputation, deliveryPromiseTerm, playerBidTerm, rivalDeliveryPromiseTerm } from '../../bidTerms.js'
 import { CUSTOMISE_TERMS, KIT_UNIT_COST_FACTOR, bidDesignRejection, customiseBidTerm, designBidTerm, kitBidTerm } from '../../design.js'
 import { round } from '../../money.js'
 import { counterBidTerm, effectiveRivalReputation, firstInPlaceBidTerm } from '../../race.js'
@@ -207,7 +207,7 @@ export const bidding: ResolveStep = (ctx) => {
           // P106: teknik- och specialiseringstermen läggs EFTER computeScore (skyddsräcke 1) och delas med
           // bidEstimate/playerWinCurve via playerBidTerm (skyddsräcke 3).
           // P109: konstruktionens term, också EFTER computeScore och delad med bidEstimate/playerWinCurve (designBidTerm).
-          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + (playerBid.customise ? customiseBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order) + localWorksBidTerm(draft, order),
+          score: score + preferredBonus('player') + playerBidTerm(draft.house, product) + (design ? designBidTerm(draft, design, order) : 0) + (playerBid.kit ? kitBidTerm() : 0) + (playerBid.customise ? customiseBidTerm() : 0) + counterBidTerm(draft, order) + firstInPlaceBidTerm(draft, order) + integrityBidTerm(draft, order) + localWorksBidTerm(draft, order) + deliveryPromiseTerm(order.weights, playerBid.deliveryTurns, order.requiredDeliveryTurns),
           ...(design ? { designId: design.id } : {}),
           ...(playerBid.kit ? { kit: true } : {}),
           ...(playerBid.customise ? { customise: true } : {}),
@@ -265,7 +265,7 @@ export const bidding: ResolveStep = (ctx) => {
         deliveryTurns: rivalBid.deliveryTurns,
         grade: 'A',
         bribe: 0,
-        score: score + preferredBonus(rivalId),
+        score: score + preferredBonus(rivalId) + rivalDeliveryPromiseTerm(rival.contracts.filter((c) => c.status === 'active').length, order.weights, rivalBid.deliveryTurns, order.requiredDeliveryTurns), // P189: samma term, begränsad av rivalens kapacitet
       })
     }
 

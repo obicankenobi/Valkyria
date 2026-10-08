@@ -13,6 +13,10 @@ interface Balance {
   flagshipQualityBonus: number
   techMarginWeight: number
   specialisationBidBonusPct: number
+  deliveryPromiseFactor: number
+  deliveryPromiseCapTurns: number
+  deliveryTermWeight: number
+  rivalCapacityContracts: number
 }
 const BALANCE = balanceData as unknown as Balance
 
@@ -45,4 +49,16 @@ export function categoryReputation(
   const flagship = flagshipDesign({ designs: house.designs ?? [] }) !== null ? BALANCE.flagshipQualityBonus : 0
   const quality = Math.max(0, Math.min(100, house.reputation.quality + (house.categoryQuality?.[category] ?? 0) + flagship))
   return { reliability: house.reputation.reliability, quality }
+}
+
+// P189 (ETAPP11_FORSLAG.md §9b, beslut 11AD): kapacitet köper leveranstid. computeScore straffar bara en lovad tid LÄNGRE än kravet; det här är den speglade sidan, lagd efter computeScore (som techTerm): poäng
+// per kvartal ett bud lovar under köparens krav, upp till deliveryPromiseCapTurns, skalat med köparens leveransvikt. Ett löfte som inte hålls är en sen leverans som förut (kontraktets förfallodag är den lovade tiden).
+export function deliveryPromiseTerm(weights: { delivery: number }, bidTurns: number, requiredTurns: number): number {
+  const early = Math.min(BALANCE.deliveryPromiseCapTurns, Math.max(0, requiredTurns - Math.max(1, bidTurns)))
+  return BALANCE.deliveryPromiseFactor * weights.delivery * BALANCE.deliveryTermWeight * early
+}
+
+// Rivalen får termen på samma villkor, men en fullbelagd rival (rivalCapacityContracts aktiva kontrakt, 11L) kan inte lova snabbare och får ingen.
+export function rivalDeliveryPromiseTerm(activeContracts: number, weights: { delivery: number }, bidTurns: number, requiredTurns: number): number {
+  return activeContracts >= BALANCE.rivalCapacityContracts ? 0 : deliveryPromiseTerm(weights, bidTurns, requiredTurns)
 }

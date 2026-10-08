@@ -48,7 +48,7 @@ import type {
   TurnSubmission,
 } from '@seventh-front/core'
 import { allLines } from '@seventh-front/core'
-import { DEFAULT_WORKS, buildLineAction, fitsCapacity, worksStandingOrders } from './worksPolicy.js'
+import { DEFAULT_WORKS, buildLineAction, fitsCapacity, promiseTurns, worksStandingOrders } from './worksPolicy.js'
 import type { WorksOptions } from './worksPolicy.js'
 
 export type Policy = (state: GameState) => TurnSubmission
@@ -637,13 +637,16 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
       }
     }
     let best: { price: number; confidence: number } | null = null
+    let bestPromise = order.requiredDeliveryTurns
     let bestValue = 0
     let bestDesign: string | undefined
     let bestCustomise = false
     let bestKit = false
     for (const { designId, kit } of options) {
       for (const custom of opts.customise ? [false, true] : [false]) {
-        const curve = playerWinCurve(state, order, grade, designId, kit, custom)
+        // P189 (11AD): med verksskötsel lovar boten den kortaste leveranstid "ready by" säger att huset hinner med (högst termens tak under kravet) — kapacitet köper leveranstid.
+        const promise = opts.works && opts.works.promise ? (promiseTurns(state, [], order, designId) ?? order.requiredDeliveryTurns) : order.requiredDeliveryTurns
+        const curve = playerWinCurve(state, order, grade, designId, kit, custom, promise)
         const totalCost = curve[0]!.price // kurvans golv ÄR egen självkostnad (P84)
         const minMargin = opts.bothSides ? 0 : HUMAN_MIN_MARGIN
         // En kundanpassning kan halvera ordern vid en skandal: det förväntade värdet minskas med den förväntade förlusten.
@@ -654,6 +657,7 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
           const value = (point.price - totalCost) * (point.confidence / 100) * risk
           if (value > bestValue) {
             best = point
+            bestPromise = promise
             bestValue = value
             bestDesign = designId
             bestCustomise = custom
@@ -666,7 +670,7 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
     const bloc = blocOfFaction(state, order.buyerId)
     const unserved = opts.bothSides && bloc !== null && !servedBlocs.has(bloc)
     candidates.push({
-      bid: { orderId: order.id, price: best.price, deliveryTurns: order.requiredDeliveryTurns, grade, bribe: 0, ...(bestDesign ? { designId: bestDesign } : {}), ...(bestCustomise ? { customise: true } : {}), ...(bestKit ? { kit: true } : {}) },
+      bid: { orderId: order.id, price: best.price, deliveryTurns: bestPromise, grade, bribe: 0, ...(bestDesign ? { designId: bestDesign } : {}), ...(bestCustomise ? { customise: true } : {}), ...(bestKit ? { kit: true } : {}) },
       value: unserved ? bestValue * 1000 : bestValue,
       advancePct: order.advancePct,
       lines: linesNeededFor(order),
@@ -678,7 +682,13 @@ function humanBids(state: GameState, opts: HumanOptions = CLASSIC_HUMAN): Bid[] 
   // P182: med verksskötsel grindas buden av "ready by" (kapaciteten i dag och buden redan lagda den här turen), inte av antalet lediga linjer.
   if (opts.works) {
     for (const c of candidates) {
-      if (opts.works.gate === 'outlook' && !fitsCapacity(state, bids, c.bid)) continue
+      if (opts.works.gate === 'outlook' && !fitsCapacity(state, bids, c.bid)) {
+        // P189: de bud som redan lagts den här turen kan ha tagit linjerna — löftet lättas upp mot kravet innan ordern släpps.
+        const order = state.market.openOrders.find((o) => o.id === c.bid.orderId)
+        const relaxed = order && opts.works.promise ? promiseTurns(state, bids, order, c.bid.designId, c.bid.deliveryTurns + 1) : null
+        if (relaxed === null) continue
+        c.bid = { ...c.bid, deliveryTurns: relaxed }
+      }
       bids.push(c.bid)
     }
     return bids
@@ -1118,6 +1128,7 @@ export const POLICIES: Record<string, Policy> = {
   'human-outsource': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, style: 'static', gate: 'none', outsource: true } }),
   'human-specialist': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, expandAlways: true } }),
   'human-broad': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, categories: 'broad' } }),
+  'human-nopromise': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, promise: false } }), // P189: som `human` före regeln — lovar alltid kravet
   'human-singleline': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, multiLine: false } }), // P187: som `human` före regeln — en linje per kontrakt
   'balanced-pwc': balancedPwc,
   'capacity-pwc': capacityPwc,

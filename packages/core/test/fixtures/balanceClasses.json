@@ -12,7 +12,8 @@
     "orderTriggerThreshold",
     "policyDecisionStandingThreshold",
     "rivalDesignSchedule",
-    "supplyIndexMax"
+    "supplyIndexMax",
+    "deliveryPromiseFactor"
   ],
   "open": [
     "advanceUrgencyFullAt",
@@ -569,6 +570,7 @@
     "multiLineJoinLagTurns",
     "stockGenerationEnabled",
     "stockGenerationTechBase",
-    "stockGenerationSpecialisedBase"
+    "stockGenerationSpecialisedBase",
+    "deliveryPromiseCapTurns"
   ]
 }

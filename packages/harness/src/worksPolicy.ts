@@ -7,6 +7,7 @@
 //   - utläggning: bara varianten `outsource`, som lägger ut i stället för att bygga.
 // Allt är stående order (ingen handling) utom BUILD_LINE. Ren härness — ingen core-ändring.
 import {
+  BOT_BALANCE,
   TECH_CATEGORIES,
   allLines,
   assemblyWorks,
@@ -25,7 +26,7 @@ import {
   validateBid,
   validateStandingOrderChange,
 } from '@seventh-front/core'
-import type { Bid, Contract, GameState, MaintenanceLevel, PlayerAction, StandingOrderChange, TechCategory } from '@seventh-front/core'
+import type { Bid, Contract, GameState, MaintenanceLevel, Order, PlayerAction, StandingOrderChange, TechCategory } from '@seventh-front/core'
 
 export type WorksStyle = 'static' | 'steady' | 'eager'
 export type WorksCategories = 'start' | 'broad'
@@ -36,10 +37,11 @@ export interface WorksOptions {
   gate: 'outlook' | 'none' // bud grindas av "ready by" — eller inte alls (utläggningsvarianten tar sena bud och lägger ut)
   outsource: boolean // lägger ut väntande kontrakt (50 %) i stället för att bygga
   expandAlways: boolean // specialisten: bygger ut verket så fort kassan tillåter, tryck eller ej
+  promise: boolean // P189: lovar kortare leveranstid när kapaciteten räcker
   multiLine: boolean // P187: lediga linjer läggs på ett kontrakt som ligger efter (eller som en uppsatt linje kan ta utan omställning)
 }
 
-export const DEFAULT_WORKS: WorksOptions = { style: 'steady', categories: 'start', gate: 'outlook', outsource: false, expandAlways: false, multiLine: true }
+export const DEFAULT_WORKS: WorksOptions = { style: 'steady', categories: 'start', gate: 'outlook', outsource: false, expandAlways: false, multiLine: true, promise: true }
 
 const CONDITION_RAISE_BELOW = 70 // skicket under detta: höjt underhåll
 const CONDITION_RELAX_FROM = 90 // skicket från detta: tillbaka till normalt
@@ -79,6 +81,18 @@ export function fitsCapacity(state: GameState, accepted: Bid[], bid: Bid): boole
   if (!order) return false
   const outlook = capacityOutlook(withPendingBids(state, accepted), { productId: order.productId, quantity: order.quantity, designId: bid.designId ?? null, deliveryTurns: bid.deliveryTurns })
   return outlook.late !== true && outlook.readyTurn !== null
+}
+
+// P189 (11AD): löftet. Den kortaste leveranstid (högst deliveryPromiseCapTurns under kravet) som "ready by" säger att huset hinner med, med de bud som redan lagts den här turen inräknade. null = inte ens kravet hinns.
+export function promiseTurns(state: GameState, accepted: Bid[], order: Order, designId: string | undefined, from?: number): number | null {
+  const required = order.requiredDeliveryTurns
+  const cap = BOT_BALANCE.deliveryPromiseCapTurns
+  const pending = withPendingBids(state, accepted)
+  for (let t = Math.max(1, from ?? required - cap); t <= required; t++) {
+    const outlook = capacityOutlook(pending, { productId: order.productId, quantity: order.quantity, designId: designId ?? null, deliveryTurns: t })
+    if (outlook.late !== true && outlook.readyTurn !== null) return t
+  }
+  return null
 }
 
 function pressure(state: GameState): boolean {

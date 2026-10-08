@@ -8,7 +8,7 @@
 import balanceData from './data/balance.json' with { type: 'json' }
 import { createRng } from './rng.js'
 import type { Rng } from './rng.js'
-import { categoryReputation, playerBidTerm } from './bidTerms.js'
+import { categoryReputation, deliveryPromiseTerm, playerBidTerm, rivalDeliveryPromiseTerm } from './bidTerms.js'
 import { integrityBidTerm } from './traces.js'
 import { localWorksBidTerm } from './foreign.js'
 import type { Bloc } from './race.js'
@@ -300,6 +300,7 @@ interface BotTuningBalance {
   officialRelationGraceTurns: number
   officialRelationDecayPerTurn: number
   favourRelationCostPerPoint: number
+  deliveryPromiseCapTurns: number
 }
 const BOT_TUNING_BALANCE = balanceData as unknown as BotTuningBalance
 
@@ -329,6 +330,8 @@ export const BOT_BALANCE = {
   officialRelationGraceTurns: BOT_TUNING_BALANCE.officialRelationGraceTurns,
   officialRelationDecayPerTurn: BOT_TUNING_BALANCE.officialRelationDecayPerTurn,
   favourRelationCostPerPoint: BOT_TUNING_BALANCE.favourRelationCostPerPoint,
+  // P189: taket på leveranstermen — en bot lovar aldrig fler kvartal under kravet än så (mer ger ingen poäng).
+  deliveryPromiseCapTurns: BOT_TUNING_BALANCE.deliveryPromiseCapTurns,
 } as const
 
 // Prisintervallet, spec 4.3: hur brett bandet kring lägsta rivalbud visas, per
@@ -480,7 +483,7 @@ function usableDesign(state: GameState, order: Order, designId: string | undefin
   return { design, kit: kitOk }
 }
 
-export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string, kit = false, customise = false): BidEstimate {
+export function bidEstimate(state: GameState, order: Order, grade: Grade, designId?: string, kit = false, customise = false, deliveryTurns: number = order.requiredDeliveryTurns): BidEstimate {
   const product = getProduct(order.productId)
   const { design, kit: useKit } = usableDesign(state, order, designId, kit)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}`, 0)
@@ -535,7 +538,7 @@ export function bidEstimate(state: GameState, order: Order, grade: Grade, design
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order) + localWorksBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order) + localWorksBidTerm(state, order) + deliveryPromiseTerm(order.weights, deliveryTurns, order.requiredDeliveryTurns), // P189
     category: product.category,
     turn: state.meta.turn,
     raceState: state,
@@ -564,7 +567,7 @@ export interface PlayerWinCurvePoint {
   confidence: Pct
 }
 
-export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string, kit = false, customise = false): PlayerWinCurvePoint[] {
+export function playerWinCurve(state: GameState, order: Order, grade: Grade, designId?: string, kit = false, customise = false, deliveryTurns: number = order.requiredDeliveryTurns): PlayerWinCurvePoint[] {
   const product = getProduct(order.productId)
   const { design, kit: useKit } = usableDesign(state, order, designId, kit)
   const hashRng = createRng(`${state.meta.seed}:${order.id}:${grade}:playerWinCurve`, 0)
@@ -611,7 +614,7 @@ export function playerWinCurve(state: GameState, order: Order, grade: Grade, des
     factionAlignment: faction ? faction.alignment : 0,
     integrity,
     blocMultiplier,
-    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order) + localWorksBidTerm(state, order),
+    playerBidTerm: playerBidTerm(state.house, product) + (design ? designBidTerm(state, design, order) : 0) + (useKit ? kitBidTerm() : 0) + (customise ? customiseBidTerm() : 0) + counterBidTerm(state, order) + firstInPlaceBidTerm(state, order) + integrityBidTerm(state, order) + localWorksBidTerm(state, order) + deliveryPromiseTerm(order.weights, deliveryTurns, order.requiredDeliveryTurns), // P189
     category: product.category,
     turn: state.meta.turn,
     raceState: state,
@@ -707,7 +710,7 @@ function computeWinAtPrice(hashRng: Rng, p: WinBandInputs, price: Money): Pct {
         relationToPlayer: rival.relations[p.order.buyerId] ?? 0,
         reputation: effectiveRivalReputation(rival, p.category, p.turn, { state: p.raceState, buyerId: p.order.buyerId }), // P117/P119: samma som bidding.ts
         blocTerm: rivalBlocTerm(rival, p.factionAlignment) * p.blocMultiplier,
-      })
+      }) + rivalDeliveryPromiseTerm(rival.contracts.filter((c) => c.status === 'active').length, p.order.weights, sampledBid.deliveryTurns, p.order.requiredDeliveryTurns) // P189: samma som bidding.ts
       if (rivalScore >= playerScore) beatsAllRivals = false
     }
 
