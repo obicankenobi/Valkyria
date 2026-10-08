@@ -527,10 +527,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   //
   // Omfryst i P143 (regel, fuskets risk: `traceBaseChancePct` 0,4 → 2 och `traceAgeChancePerTurn` 0,08 → 0,3). Attribution (dist ombyggd): med de gamla talen tillbaka är alla tre hashar bit-identiska med P142:s — verifierat, inte antaget.
   // Bara `balanced` flyttas (dess FAVOUR-spår kommer nu fram); passive och aggressive lämnar inga spår. De nya hasharna: passive 1bf6e17b97b37d, aggressive 7127c6f45e90d, balanced 157f3bbd4a5fbf.
+  //
+  // Omfryst i P149 (regel, steget `history`: kvartalets verkliga förstasidor och telex, deras effekter och en post i GameState.history). Attribution (dist ombyggd): med brytaren `historyEnabled` 0 är alla tre hashar
+  // bit-identiska med P143:s (1bf6e17b97b37d, 7127c6f45e90d, 157f3bbd4a5fbf) — verifierat, inte antaget. Med steget på flyttas alla tre (rubrikerna och effekterna kommer in i varje parti).
+  // De nya hasharna: passive 83c27cefe8a5a, aggressive dca86095e29dd, balanced f39a34f5910e1.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1bf6e17b97b37d' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '7127c6f45e90d' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '157f3bbd4a5fbf' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '83c27cefe8a5a' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'dca86095e29dd' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'f39a34f5910e1' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
