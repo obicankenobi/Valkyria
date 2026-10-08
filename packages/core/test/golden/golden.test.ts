@@ -535,10 +535,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // Omfryst i P149 (regel, andra ändringen i samma prompt: `boardTarget.threshold` 11 → 9,5 i `indochina-slice.json`). Skälet: historiens steg flyttade `human` från 50 till 30–38 % (Laoskuppen nollar Laos behov ett kvartal och
   // buddhistupproret försenar RVN:s leveranser — de enda effekterna med kraft), och tröskeln kalibrerades om så att `human` ligger inom 40–70 % igen. Attribution (dist ombyggd): med 11 tillbaka är alla tre hashar bit-identiska med
   // förra raden (83c27cefe8a5a, dca86095e29dd, f39a34f5910e1) — verifierat, inte antaget. De nya hasharna: passive cbdfe29be89d6, aggressive 2eece8d6bd921, balanced a5fc6bc1f0323.
+  //
+  // Omfryst i P149 (regel, tredje ändringen: `pruneWire` nollar inte längre ett `history:`-causeId). Skälet: det syntetiska causeId som en historisk händelse bär ("history:<id>") är inget WireEvent-id, så beskärningen nollade det i
+  // state.wire och NEWS DESK kunde aldrig känna igen en historisk rad (fångat på en skärmdump). Attribution (dist ombyggd): med den gamla raden i wire.ts är alla tre hashar bit-identiska med förra raden (cbdfe29be89d6, 2eece8d6bd921,
+  // a5fc6bc1f0323) — verifierat, inte antaget. De nya hasharna: passive 1bece4592d28ca, aggressive 1e9c69329d716a, balanced 4f6c49b63f164.
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'cbdfe29be89d6' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '2eece8d6bd921' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: 'a5fc6bc1f0323' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '1bece4592d28ca' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '1e9c69329d716a' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '4f6c49b63f164' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {
