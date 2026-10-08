@@ -7,7 +7,7 @@
 import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
 import { useState } from 'react'
-import { buyerPreferenceDisplay, getProduct, leadSupplierRejection, orderTerms } from '@seventh-front/core'
+import { buyerPreferenceDisplay, getProduct, orderTerms, validateBid } from '@seventh-front/core'
 import type { Bid, GameState, Order, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
@@ -39,7 +39,9 @@ function OrderFolder({
   const frontLabel = order.frontId ?? 'No front'
   const deadlineLabel = turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`
   // P185 (11O): en order huset inte får bjuda på (inget monteringsverk i kategorin) har en LOCKED-stämpel; skälet står i mappen.
-  const lockReason = leadSupplierRejection(state.house, getProduct(order.productId), order.quantity)
+  // P188 (10X): också en standardprodukt som ligger en generation för långt efter köparens block (validateBid är den enda källan).
+  const lockValidation = validateBid(state, state, { orderId: order.id })
+  const lockReason = lockValidation.ok ? null : lockValidation.reason
 
   return (
     <div className="order-folder" data-testid="order-folder">
