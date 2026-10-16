@@ -17,7 +17,6 @@ förklarande — den säger vad som är förbjudet, inte varför.
 
 ## Läget just nu
 
-Etapp 1 är inte påbörjad. Nästa steg är **P0** i specens avsnitt 10.
 
 Etapp 1 är en vertikal skiva: scenariot `INDOCHINA` avkortat till 20 turer, 1 front, 3 köpare,
 3 rivalhus, 4 produktionslinjer, 1 underrättelsestation. Frågan skivan ska besvara står i
