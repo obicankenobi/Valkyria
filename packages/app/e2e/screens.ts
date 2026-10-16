@@ -1,5 +1,5 @@
-// screens.ts — delad skärmlista för de e2e-test som går igenom VARJE skärm i båda
-// formaten: text-overflow.spec.ts (regel 11 och 18) och accessibility.spec.ts
+// screens.ts — delad skärmlista för de e2e-test som går igenom VARJE skärm i
+// skrivbordsformatet: text-overflow.spec.ts (regel 11 och 18) och accessibility.spec.ts
 // (axe, P94). Flyttad hit ur text-overflow.spec.ts i P94 så att en ny skärm bara
 // behöver läggas till på ett ställe och automatiskt får båda kontrollerna.
 // Varje Playwright-test får en egen, tom browserkontext, så `setup` klickar
@@ -7,8 +7,9 @@
 // över ett sparat parti.
 import type { Page } from '@playwright/test'
 
+// P192 (ETAPP12, beslut 12A): PC-widescreen först — telefonformatet (390×844) är borttaget och mobilversionen på is.
+// Listan har kvar sin form (och loopar i testerna) så att ett framtida andra format, t.ex. 1920×1080, bara läggs till här.
 export const FORMATS: { name: string; width: number; height: number }[] = [
-  { name: 'phone', width: 390, height: 844 },
   { name: 'desktop', width: 1440, height: 900 },
 ]
 

@@ -940,13 +940,14 @@ Kapningsordning: P177, sedan P175, sedan strejkerna i P173.
 **Ägarbeslut 2026-10-08 efter P189–P190 (10AA, 11AG, 11AH): P191 är nästa, sedan ägarens speltest, sedan P150.** **P191 (data, `docs/ETAPP11_FORSLAG.md` §9b):** leveranstermen stängs av till speltestet (`deliveryPromiseFactor` 0, `boardTarget.threshold` 9,0 — verifierat bit-identiskt med P188) eftersom den inte flyttade utnyttjandet men gjorde kassadalen djupare; koden står kvar. Konstruktionerna är ett val med pris, raden "högst 5 pp under" struken (10AA). Kapaciteten och konstruktionernas värde avgörs i speltestet, inga fler regler före det (11AH). mk-9 nådde målet (P190).
 **P191 KÖRD 2026-10-08 (data, golden tillbaka på P188:s hashar i egen commit).** Leveranstermen av (`deliveryPromiseFactor` 0, `boardTarget.threshold` 9,0; koden kvar, budmappen döljer en nolla); hasharna bit-identiska med P188 (verifierat). Konstruktionsraden "högst 5 pp under" struken (10AA). Mätt (100 per bot): `human` 64, `human-noresearch` 36, `human-tracks` 81, ingen över 90, `capacity` 94 % BUYOUT, `human` kärnvapenutbyte 8 %. Kassadalen kvartal 4–5 fortfarande djup (−0,4 Mkr) — boten lovar kortast möjligt även utan term. Se `docs/ETAPP11_FORSLAG.md` §9b. **Nästa: ägarens gemensamma speltest (`docs/SPELTEST_ETAPP10A.md`, P148 + P184 — frågar nu om verken och konstruktionerna), sedan P150.**
 **Dokumentgenomgång och Etapp 12 mottagen 2026-10-16 (ingen kod, golden orörd).** `docs/ETAPP12_FORSLAG.md` ("Krigsrummet", P192–P198, skriven av Gemini för ägaren) lades in i repot: PC-widescreen i stället för mobil först, ett skrivbord med permanent karta till vänster och mappar till höger, röda karttrådar, en rik militärkarta, kvartalsuppspelning på kartan och ett stämpelverktyg. **Förslaget är mottaget men INTE antaget:** besluten 12A–12F loggas först när etappen körs (P192), och regel 10 och 13 i "Spelgränssnitt — regler" ovan gäller tills dess. Premisskontrollen mot koden höll (se filens statusruta); paketen G1–G5 ligger ännu inte i repot och inget ska byggas före ägarens besked. README.md, `docs/DESIGN.md` §18/§20/§21 och statusraderna i `docs/ETAPP8_FORSLAG.md`, `SPELTEST_SAMLAT.md`, `SPELTEST_ETAPP9.md` och `ETAPP7_STARTPROMPT.md` var utdaterade och är rättade. **Läget: ägarens gemensamma speltest, sedan P150 (etapp 10B); ordningen mot etapp 12 är ett ägarbeslut.**
+**P192 KÖRD 2026-10-16 (ägarens order "Kör P192"; ingen UI-kod, golden och `packages/core` orörda).** Etapp 12 (`docs/ETAPP12_FORSLAG.md`, Krigsrummet) är därmed **ANTAGEN** och besluten 12A–12F är loggade i `docs/ANDRINGSLOGG.md`. Regel 10 (nu PC Widescreen först, 1440×900), 13 (nu: hovring spänner en röd karttråd, byggs i P193) och 17 (`npm run shots` bara i skrivbordsformatet) i "Spelgränssnitt — regler" är omskrivna. Telefonformatet (390×844) är borttaget ur `e2e/screens.ts` (`FORMATS`), `play-20-turns`, `performance`, `bid-terms`, `ledger`, `shots.mjs` och de 62 `*-phone.png` i `docs/ui/current/`; pekskärmstestet i `hover.spec.ts` är borttaget. Kvar oförändrade: regel 1, 2, 11, 12 och 16 samt PWA:n (specen nämner dem inte; telefonen är på is, inte borttagen i koden). **Nästa: P193 kräver att ägaren först lägger in G1+G2** (`DeskWorkspace.tsx`, `desk-war-room.css`, `DeskYarn.tsx`, `deskYarnContext.ts`); inget av P193–P198 är påbörjat. Ägarens gemensamma speltest och P150 ligger kvar; ordningen mot etapp 12 avgörs av ägaren.
 **Läs specens egna avsnitt för den prompt du kör innan du börjar** — den är skriven för att
 följas ordagrant, inte för att tolkas.
 
 ## Spelgränssnitt — regler (etapp 7)
 
 Gäller varje UI-prompt i etapp 7 (`docs/ETAPP7_TEKNISK_SPEC.md` §3), så att de inte behöver
-upprepas i varje prompt.
+upprepas i varje prompt. Regel 10, 13 och 17 är omskrivna av etapp 12 (P192); övriga regler gäller oförändrade.
 
 1. Sidan scrollar aldrig. Appen fyller 100dvh. Paneler scrollar inuti sig själva, med stylad rullist.
 2. Inga webbläsarkontroller syns. Aldrig `<select>`, `input[type=number]`, checkbox eller radio.
@@ -964,14 +965,14 @@ upprepas i varje prompt.
    Etiketter: Dymo-tejp. Nyheter: telexpapper. Inga glödeffekter, inga gradienter i neonfärg,
    ingen glasmorfism, inget som ser ut som en skärm från framtiden.
 9. Valt föremål på kartan har en tydlig kontur. (Skrivbord: markörer för grepp och pekare.)
-10. Mobil först. Varje skärm byggs för 390×844 i stående läge och skalas sedan upp, aldrig tvärtom.
+10. PC Widescreen först (etapp 12, beslut 12A). Varje skärm byggs för 1440×900 (och skalas upp till 1920×1080) som ett sammanhängande krigsbord där kartan alltid ligger synlig till vänster och arbetsmapparna till höger. Mobilversionen (390×844) ligger på is och testas inte.
 11. Träffytor minst 44×44 px. Primära handlingar i nedre tredjedelen av skärmen.
 12. Respektera säkra områden: `env(safe-area-inset-*)` runt HUD och bottendocka.
-13. Ingen information bara vid hovring. Allt som visas vid hovring på skrivbord nås med tryck på mobil.
+13. Hovring på skrivbordet spänner en röd karttråd (`DeskYarn`) till berörd plats eller förband på kartan; ett klick låser markeringen (etapp 12, beslut 12C; tråden byggs i P193).
 14. Brödtext minst 13 px. Etiketter i versaler med kondenserat typsnitt minst 11 px. Tal i HUD minst 15 px.
 15. `prefers-reduced-motion` stänger av all rörelse utom tillståndsbyten.
 16. Kortkommandon (skrivbord): 1–5 för skärmarna, Enter för End Quarter, Esc för paus.
-17. Varje UI-prompt avslutas med `npm run shots` i båda formaten och en jämförelse mot `docs/ui/reference/`.
+17. Varje UI-prompt avslutas med `npm run shots` i skrivbordsformatet (1440×900) och en jämförelse mot `docs/ui/reference/` (skisserna är ritade i 390×844 och är facit för register och innehåll, inte för layout).
 18. Ingen text får överlappa annan text eller klippas av sin ruta. Kontrolleras automatiskt:
     ett Playwright-test går igenom varje textelement på varje skärm i båda formaten och underkänner
     om `scrollWidth > clientWidth`, och ett test över kartan underkänner om två etiketters eller

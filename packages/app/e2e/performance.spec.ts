@@ -9,7 +9,6 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 const FORMATS = [
-  { name: 'phone', viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
   { name: 'desktop', viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false },
 ]
 

@@ -46,7 +46,7 @@ async function memoCount(page: Page): Promise<number> {
 }
 
 test('styrelsens PM visas vid VARJE granskningstur (T6 och T10) och stänger aldrig av sig självt', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
   await enterOperations(page)
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -93,6 +93,12 @@ test('utan reducerad rörelse spelas listan först och PM:et kommer efter, med C
       const skip = page.getByTestId('replay-skip')
       // Uppspelningen kan stänga sig själv mellan count() och click() — då finns knappen inte längre och ett klick utan tidsgräns hängde i hela testtiden.
       if (await skip.count()) await skip.click({ timeout: 2000 }).catch(() => {})
+      // P192: ett uteblivet Skip-klick (uppspelningen byter ruta mitt i klicket) lämnade överlägget kvar och nästa End Quarter hängde i 280 s.
+      // Stäng tills överlägget är borta innan nästa kvartal.
+      for (let tries = 0; tries < 6 && (await page.getByTestId('quarter-replay').count()) > 0; tries++) {
+        await page.getByTestId('replay-skip').click({ timeout: 2000 }).catch(() => {})
+        await page.waitForTimeout(250)
+      }
     }
   }
   throw new Error('inget PM inom nio kvartal')

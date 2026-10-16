@@ -105,19 +105,5 @@ test.describe('skrivbord: hovring ändrar utseendet (regel 3)', () => {
   }
 })
 
-test.describe('pekskärm: hovring lämnar inget kvar (regel 13)', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
-
-  test('hovertillstånden är avstängda när enheten inte kan hovra', async ({ page }) => {
-    await enterGame(page)
-    // Förutsättningen: den emulerade telefonen svarar att den inte kan hovra.
-    expect(await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)).toBe(false)
-
-    for (const target of TARGETS.filter((t) => !t.open)) {
-      const element = target.locator(page).first()
-      const idle = await look(element)
-      await element.hover({ force: true })
-      expect(await look(element), `${target.name}: fastnade i hovertillstånd på en pekskärm`).toBe(idle)
-    }
-  })
-})
+// P192 (ETAPP12, 12A): pekskärmstestet (390×844, hovring får inte fastna, gamla regel 13) är borttaget tillsammans med telefonformatet;
+// regel 13 är omskriven till att hovring spänner en karttråd (DeskYarn, P193).

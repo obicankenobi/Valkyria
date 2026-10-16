@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // shots.mjs — "Claude Code ser det den bygger" (ETAPP7_TEKNISK_SPEC.md §11.3
 // arbetssätt 2). Startar appens devserver + en enkel statisk server för
-// docs/ui/reference/, renderar varje registrerad skärm i telefon- (390×844,
-// pekskärm emulerad) och skrivbordsformat (1440×900) till docs/ui/current/,
-// och renderar de tre godkända referensskisserna till PNG i telefonformat så
-// att bygge och facit kan jämföras sida vid sida. Ett dev-verktyg, inte ett
+// docs/ui/reference/, renderar varje registrerad skärm i skrivbordsformatet
+// (1440×900, P192/12A — telefonformatet är borttaget) till docs/ui/current/,
+// och renderar de tre godkända referensskisserna (ritade i 390×844) till PNG
+// så att bygge och facit kan jämföras sida vid sida. Ett dev-verktyg, inte ett
 // CI-test — se e2e/text-overflow.spec.ts för regel 18:s automatiska kontroll.
 //
 // Skärmlistan växer i takt med att fler skärmar i etapp 7 färdigställs, samma
@@ -1453,13 +1453,8 @@ async function main() {
       existsSync(SANDBOX_CHROMIUM) ? { executablePath: SANDBOX_CHROMIUM } : {},
     )
 
-    for (const format of ['phone', 'desktop']) {
-      const viewport = format === 'phone' ? PHONE : DESKTOP
-      const context = await browser.newContext({
-        viewport,
-        hasTouch: format === 'phone',
-        isMobile: format === 'phone',
-      })
+    for (const format of ['desktop']) {
+      const context = await browser.newContext({ viewport: DESKTOP })
       const page = await context.newPage()
 
       for (const screen of APP_SCREENS) {
@@ -1472,18 +1467,20 @@ async function main() {
         console.log(`  ${outPath}`)
       }
 
-      if (format === 'phone') {
-        for (const file of REFERENCE_FILES) {
-          await page.goto(`http://localhost:${REFERENCE_PORT}/${file}`)
-          await page.waitForTimeout(300)
-          const outPath = join(OUT_DIR, `reference-${file.replace('.html', '')}.png`)
-          await page.screenshot({ path: outPath })
-          console.log(`  ${outPath}`)
-        }
-      }
-
       await context.close()
     }
+
+    // Referensskisserna är ritade för 390×844 och renderas därför i just det formatet, oberoende av appens format.
+    const referenceContext = await browser.newContext({ viewport: PHONE, hasTouch: true, isMobile: true })
+    const referencePage = await referenceContext.newPage()
+    for (const file of REFERENCE_FILES) {
+      await referencePage.goto(`http://localhost:${REFERENCE_PORT}/${file}`)
+      await referencePage.waitForTimeout(300)
+      const outPath = join(OUT_DIR, `reference-${file.replace('.html', '')}.png`)
+      await referencePage.screenshot({ path: outPath })
+      console.log(`  ${outPath}`)
+    }
+    await referenceContext.close()
 
     await browser.close()
     console.log(`Klart. Skärmdumpar i ${OUT_DIR}`)

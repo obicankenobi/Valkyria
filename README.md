@@ -14,7 +14,7 @@ npm test               # vitest, alla paket (ca 2 400 tester)
 npm run lint
 npm run typecheck
 npm run test:e2e       # Playwright mot en Vite-devserver på port 4174 (ca 400 tester, ca 12 min)
-npm run shots          # skärmdumpar av varje skärm till docs/ui/current/
+npm run shots          # skärmdumpar av varje skärm (1440×900) till docs/ui/current/
 npm run harness -- --runs 100 --policy human,balanced    # botpartier och mätkolumner
 ```
 
@@ -42,7 +42,7 @@ för den etapp du ska arbeta i. Varje etapp har en spec eller ett förslag; allt
 | `docs/ETAPP8_FORSLAG.md`, `ETAPP9_FORSLAG.md` | Etapp 8 (kassaboken, förskott, stående order) och 9 (ritbordet, konstruktion, kapplöpning, upphandling) | Byggda |
 | [`docs/ETAPP10_FORSLAG.md`](docs/ETAPP10_FORSLAG.md) | Etapp 10, världen svarar: 10A (slipningen) är körd t.o.m. P149 och P187–P191, 10B (P150–P161: historiska beslut, rivaler som motspelare) väntar | **Aktiv** |
 | [`docs/ETAPP11_FORSLAG.md`](docs/ETAPP11_FORSLAG.md) | Etapp 11, verken (anläggningar, kapacitet, arbetsstyrka, lager, utlandsverk) | Byggd (P168–P191); utfall i §9b |
-| [`docs/ETAPP12_FORSLAG.md`](docs/ETAPP12_FORSLAG.md) | Etapp 12, krigsrummet (PC-widescreen, skrivbord, levande karta; Gemini + Claude Code) | Mottagen 2026-10-16, ej antagen |
+| [`docs/ETAPP12_FORSLAG.md`](docs/ETAPP12_FORSLAG.md) | Etapp 12, krigsrummet (PC-widescreen, skrivbord, levande karta; Gemini + Claude Code) | Antagen 2026-10-16; P192 körd (regler och testrigg), P193–P198 väntar på Geminis moduler G1–G5 |
 | [`docs/SPELTEST_ETAPP10A.md`](docs/SPELTEST_ETAPP10A.md), [`SPELTEST_ETAPP11.md`](docs/SPELTEST_ETAPP11.md) | Checklistor för ägarens gemensamma speltest (P148 + P184) | **Nästa steg** |
 | `docs/SPELTEST_ETAPP9.md`, `SPELTEST_SAMLAT.md` | Äldre speltestunderlag | Ersatta av ovan |
 | `docs/RAPPORT1…4_*.md`, `docs/BALANS*.md` | Externa granskningar och balansmätningar | Referens |
@@ -59,7 +59,7 @@ förstasidor och telex samt förskott och huvudbok finns i spelet. Balansen mät
 (ca 64 % vinst i 100 partier) och hålls av två vakter: ingen bot över 90 % vinst och `capacity` som fast referens.
 
 **Nästa steg är ägarens gemensamma speltest** (`docs/SPELTEST_ETAPP10A.md`), därefter etapp 10B från P150. Etapp 12
-(`docs/ETAPP12_FORSLAG.md`) är ett mottaget förslag som inte är antaget.
+(`docs/ETAPP12_FORSLAG.md`) är antagen och P192 körd: skrivbordsformatet 1440×900 är nu enda testade format (telefonen på is).
 
 ## Språkkonvention
 

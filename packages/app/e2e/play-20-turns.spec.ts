@@ -262,11 +262,10 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
 
 // P94 (§12 punkt 6, ordagrant): "spelar fortsatt 20 turer utan konsolfel" — och
 // (P94:s egen rad) "e2e omskrivet till kartflödet i BÅDA formaten". Samma
-// genomspelning på en telefon (390×844, pekskärm) och ett skrivbord (1440×900).
+// genomspelning på ett skrivbord (1440×900); telefonformatet (390×844) är borttaget i P192 (ETAPP12, 12A).
 // Tidigare kördes den bara i Playwrights standardvy, ett ofrivilligt tredje
 // format som ingen spelare har.
 const FORMATS = [
-  { name: 'phone', viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
   { name: 'desktop', viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false },
 ]
 

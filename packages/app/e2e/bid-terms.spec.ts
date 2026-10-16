@@ -1,5 +1,5 @@
 // bid-terms.spec.ts — P99 (ETAPP8_FORSLAG.md §4.2). Klart-när, ordagrant: "alla tre syns utan att
-// mappen scrollas på 390×844". Alla tre = förskottsstämpeln, kreditstämpeln och talet för pengar i
+// mappen scrollas på 1440×900 (P192: skrivbordsformatet, 12A)". Alla tre = förskottsstämpeln, kreditstämpeln och talet för pengar i
 // kassan nästa kvartal (plus vinstchans och marginal, som sitter i samma remsa). Testet öppnar en
 // riktig ordermapp, ställer mappens topp i överkant av innehållsytan och kräver att allt ligger
 // inom den — det vill säga att spelaren ser hela avvägningen utan att skrolla.
@@ -39,7 +39,7 @@ for (const format of FORMATS) {
 }
 
 test('kassatalet följer prisreglaget: högsta priset ger mer förskott än lägsta', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
   await enterContractsBidOpen(page)
   const cash = page.getByTestId('readout-cash')

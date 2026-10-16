@@ -1,6 +1,6 @@
 # Etapp 12 — Krigsrummet (PC widescreen och levande karta)
 
-**THE SEVENTH FRONT** · **MOTTAGEN 2026-10-16, EJ ANTAGEN** · skriven av Gemini (visuell arkitekt) för ägaren, mot grenen efter P191
+**THE SEVENTH FRONT** · **ANTAGEN 2026-10-16 (ägaren körde P192)** · skriven av Gemini (visuell arkitekt) för ägaren, mot grenen efter P191
 
 > **Status:** förslaget lades in i repot 2026-10-16 på ägarens begäran, ordagrant utom att Geminis
 > källhänvisningsmarkörer (`[cite: 1]`) är borttagna. **Inget är byggt och inget av besluten 12A–12F är loggat**:
