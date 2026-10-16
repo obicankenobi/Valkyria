@@ -3,7 +3,6 @@
 Turbaserad kallakrigssimulator om ett privat vapenhus 1947–1991. Textbaserad, byggd som PWA.
 Du säljer, läcker, embargerar, mutar och iscensätter. Du befaller aldrig en enda soldat.
 
-Repot innehåller i nuläget **bara planeringsdokument**. Ingen kod är skriven än.
 
 ## Dokument
 
