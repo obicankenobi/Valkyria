@@ -1,5 +1,7 @@
 # Samlat speltest (P139) — för ägaren
 
+> **Historiskt dokument (markerat 2026-10-16).** Ersatt av `docs/SPELTEST_ETAPP10A.md` och `docs/SPELTEST_ETAPP11.md`, som gäller efter P191 och är det gemensamma speltestet. Telefonformatet nedan gäller inte nödvändigtvis längre om etapp 12 antas.
+
 Det här ersätter de tre speltesten som är ogjorda: P95 (etapp 7), P105 (etapp 8) och P138 (etapp 9).
 Ingen människa har spelat sedan P81. Du behöver inte kunna något om koden — spela och skriv ner vad du
 tyckte. Mer detaljer finns i `docs/SPELTEST_ETAPP9.md`.

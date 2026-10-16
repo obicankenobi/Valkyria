@@ -580,34 +580,41 @@ tak.
 
 ## 18. UI
 
-Fyra vyer, inga fler i etapp 1.
+> **Uppdaterat 2026-10-16 (stale-genomgång efter P191).** Avsnittet beskrev etapp 1:s fyra textvyer och en mörk palett.
+> Det nuvarande gränssnittet är etapp 7:s spelbord, byggt i P73–P94 och utbyggt i etapp 8–11. Den ursprungliga
+> beskrivningen finns kvar längre ner som historik. Etapp 12 (`docs/ETAPP12_FORSLAG.md`, ej antagen) föreslår en
+> PC-widescreen-version med permanent karta och skrivbordsmappar; tills den antas gäller det som står här.
+
+Fem flikar (på telefon en flikrad i botten, på skrivbord en vänstermeny), alla inom ett fast 100dvh-skal utan sidscroll:
 
 ```
-THE WIRE     startvyn varje tur. Nyheter med utfällbar kausalkedja.
-THE FLOOR    orders, anbud, kontrakt, leveranser. Här spenderas mest tid.
-THE HOUSE    produktionslinjer, R&D, kassa, kredit, styrelsemål, personal.
-THE WORLD    fronter, faktioner, heat, DOOMSDAY, stationer.
+OPERATIONS   den geografiska teaterkartan (Natural Earth, d3-geo/d3-zoom): sektorer, förbandsbrickor, fronten, stationer,
+             försörjningslinjer, fem kartlager och landsmappar (CountryFile) med underrättelseverben
+CONTRACTS    orderböcker som stämplade mappar, budmappen (BidForm), kapplöpningstavlan, upphandlingsmappen
+THE COMPANY  fyra lådor: Works (tomtplan, anläggningar, produktionstavla), Drawing office (ritbord, typblad, forskning),
+             Books (huvudbok, lån, stående order), Legal (pappersspår, utredningskort)
+CONTACTS     tjänstemän, faktioner, rivalhus och de politiska verben
+NEWS DESK    blixtar, förstasida, telexarkiv, kvartalsuppspelning, historiska förstasidor
 ```
 
-Estetik: **lägesrummet under lampan** — mörk yta, telexgult för spelarens egna spår, monospace med
-tabellsiffror för allt räknebart. Registret är fortfarande papper, skrivmaskin och telexremsa, men
-utfört som ett spelgränssnitt: paneler, mätare och staplar där ett tal har en skala att läsas mot.
-Sparsamma övergångar, aldrig dekorativ rörelse, alltid avstängda vid `prefers-reduced-motion`.
-Sektortavlan — en schematisk regiontavla (SVG-noder + linjer mellan namngivna sektorer, se
-ETAPP6_TEKNISK_SPEC.md §4) i stället för en rent typografisk panellista. Fortfarande INTE en
-geografiskt korrekt karta och INTE ett taktiskt lager — sektorernas inbördes placering är fast,
-handgjord layoutdata, inte härledd geografi, och en sektor är fortfarande bara en grupperingsnyckel
-för `Formation.sectorId`, aldrig en yta trupper rör sig fritt över.
+Kringliggande skärmar: huvudmeny, nytt parti och genomgång, paus och inställningar, handledning, handbok, kriskort och
+epilog. All text i gränssnittet är på engelska (`uiLanguage.test.ts` fäller svensk text).
 
-> Omprövat av ägaren igen 2026-09-18 (se `docs/ANDRINGSLOGG.md`). Raden löd tidigare: "Ingen karta i
-> etapp 1 — fronten visas som en linje med en position, vilket är allt simuleringen faktiskt
-> modellerar. Att rita en karta som är mer detaljerad än modellen är ett löfte spelet inte kan
-> hålla." Invändningen höll fram till etapp 3B; sedan `Formation.sectorId` fick verkliga
-> platsnamn håller den inte längre.
+Estetik: **det fysiska krigsrummet 1965** — papperskarta med acetat och fettkrita, manillamappar, skrivmaskinstext,
+bakelitknappar, Dymo-etiketter och telexpapper; paletten är krämvitt papper, ockra och fettkrita (inte den mörka
+telexgula från etapp 6). Reglerna står i `CLAUDE.md` ("Spelgränssnitt — regler") och `docs/ETAPP7_TEKNISK_SPEC.md` §3.
+Rörelse är sparsam och avstängd av `prefers-reduced-motion`. Sektortavlan från etapp 6 finns kvar som sektorernas
+logik (`deriveSectorControl`), men visas nu som förband och färgade sektorer på den geografiska kartan.
 
-> Omprövat av ägaren efter P12 (se `docs/ANDRINGSLOGG.md`). Raden löd tidigare "papper,
-> skrivmaskin, telexremsa. Monospace för siffror. Ingen animation." — P11/P12 byggdes ordagrant
-> efter den och resultatet läste som ett dokument, inte som ett spel.
+<details>
+<summary>Historik: etapp 1:s ursprungliga UI-avsnitt</summary>
+
+Fyra vyer, inga fler i etapp 1: `THE WIRE`, `THE FLOOR`, `THE HOUSE`, `THE WORLD`. Estetik: lägesrummet under lampan —
+mörk yta, telexgult, monospace. Omprövat av ägaren efter P12 (raden "papper, skrivmaskin, telexremsa … Ingen animation"
+gav ett dokument, inte ett spel), omprövat igen 2026-09-18 ("Ingen karta" revs; en schematisk sektortavla infördes
+i etapp 6) och slutligen ersatt av en riktig geografisk karta i P76. Se `docs/ANDRINGSLOGG.md`.
+
+</details>
 
 `THE HOUSE` ska visa **marginal per aktivt kontrakt**, inte bara kassa. Spelaren kan inte fatta
 prisbeslut på en siffra som bara rör sig.
@@ -653,9 +660,14 @@ affärssimulatorn och inte av designpelare 1. Om svaret på första ledet är ne
 dokumentet ingen roll. Om svaret på andra ledet är nej är det avgränsningen som är fel, inte
 spelet.
 
-**Etapp 2 — bredd.** Andra fronten, kupper, `ASSASSINATE`, råvarumarknad, `SUEZ` och `OCTOBER`.
-
-**Etapp 3 — djup.** Karaktärer med relationer, fördragssystem, avkolonisering, `WINDS`, `THE LONG WAR`.
+**Så blev det (uppdaterat 2026-10-16).** Etapp 1 byggdes som ovan. Planen för etapp 2–3 (bredd, djup) ersattes av
+en längre följd, alla byggda: etapp 2 motståndet (rivalhus, kapacitet, styrelsen), 3 kriget som marknad (behovsdriven
+efterfrågan, förband), 4 två krig och råvarumarknaden, 5 köparnas tjänstemän och länder som aktörer (kupper,
+`ASSASSINATE`), 6 kartan och menyn, 7 spelbordet (hela gränssnittet), 8 kassaboken (förskott, huvudbok, stående order),
+9 ritbordet (konstruktion, forskning, kapplöpning, upphandling), 10A slipningen och 11 verken (produktion som ska skötas).
+Aktuell status finns i `CLAUDE.md` och `README.md`. Kvar: etapp 10B (historiska beslut, rivaler som motspelare), etapp 12
+(förslag, ej antaget) och de scenarier i §16 som inte byggts (`SUEZ`, `OCTOBER`, `WINDS`, `THE LONG WAR`; bara
+`INDOCHINA_SLICE` finns).
 
 ---
 
@@ -673,5 +685,5 @@ Så att det inte smyger tillbaka in.
 - Verkliga företagsnamn
 - Lönnmord på verkliga personer
 - Poängsumma och highscore
-- Grafik utöver typografi
+- ~~Grafik utöver typografi~~ (omprövat: etapp 6–7 gav karta, brickor, stämplar och porträtt; se §18)
 - Handlingstak på anbud (ersatt av kapacitetsknapphet, se avsnitt 4)

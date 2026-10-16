@@ -1,5 +1,7 @@
 # Startprompt för etapp 7
 
+> **Historiskt (markerat 2026-10-16).** Engångsprompten som startade etapp 7; etappen är byggd (P73–P94). Använd den inte igen.
+
 Klistra in texten nedan i Claude Code-sessionen efter att filerna laddats upp och sessionen hämtat dem.
 
 ---

@@ -1,5 +1,7 @@
 # Speltest av etapp 9 (P131) — checklista för ägaren
 
+> **Historiskt dokument (markerat 2026-10-16).** Ersatt av `docs/SPELTEST_ETAPP10A.md` och `docs/SPELTEST_ETAPP11.md`, som gäller efter P191 och är det gemensamma speltestet. Telefonformatet nedan gäller inte nödvändigtvis längre om etapp 12 antas.
+
 P131 är ett speltest utan kod. Det kan inte göras av en kodsession: frågan i `docs/ETAPP9_FORSLAG.md` §1
 ("Kan en produkt avgöra ett parti?") besvaras av någon som spelar. Det här dokumentet är det en
 kodsession kan leverera i stället — vad som redan är mätt i härnessen (så att du slipper gissa) och vad

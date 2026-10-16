@@ -1,27 +1,65 @@
 # THE SEVENTH FRONT
 
-Turbaserad kallakrigssimulator om ett privat vapenhus 1947–1991. Textbaserad, byggd som PWA.
-Du säljer, läcker, embargerar, mutar och iscensätter. Du befaller aldrig en enda soldat.
+Turbaserad kallakrigssimulator om ett privat vapenhus 1947–1991. Byggd som PWA med en deterministisk,
+headless kärna och ett gränssnitt som ett krigsrum från 1965: en geografisk karta med förband, mappar,
+registerkort och telexpapper. Du säljer, läcker, embargerar, mutar och iscensätter. Du befaller aldrig en
+enda soldat.
 
+## Kom igång
+
+```
+npm ci                 # installerar alla workspaces
+npm run build          # core → harness → app (i den ordningen; kärnan måste byggas först)
+npm test               # vitest, alla paket (ca 2 400 tester)
+npm run lint
+npm run typecheck
+npm run test:e2e       # Playwright mot en Vite-devserver på port 4174 (ca 400 tester, ca 12 min)
+npm run shots          # skärmdumpar av varje skärm till docs/ui/current/
+npm run harness -- --runs 100 --policy human,balanced    # botpartier och mätkolumner
+```
+
+## Paket
+
+| Paket | Innehåll |
+|---|---|
+| `packages/core` | Ren, headless simulering: `resolveTurn(state, submission)`, arton-stegs-pipeline (`resolve/index.ts`), `balance.json`, scenario- och speldata, `queries.ts`. Inga DOM-beroenden, all slump via `createRng`. |
+| `packages/harness` | Botpolicyer (`passive`, `aggressive`, `balanced`, `capacity`, `human` med många varianter), `runGame` och mätkolumner. Mäter balans; skriver aldrig tillbaka till kärnan. |
+| `packages/app` | React/Vite-gränssnittet (karta, mappar, handbok, handledning, ljud), Playwright-tester och skärmdumpsskript. |
 
 ## Dokument
 
+Läs `docs/DESIGN.md` först, sedan `CLAUDE.md` (operativ: vad som är förbjudet och projektets status), sedan specen
+för den etapp du ska arbeta i. Varje etapp har en spec eller ett förslag; allt som ändras mot specen loggas i
+`docs/ANDRINGSLOGG.md`.
+
 | Fil | Vad den är | Status |
 |---|---|---|
-| [`docs/DESIGN.md`](docs/DESIGN.md) | Designdokument v2.1 — vad spelet är, vilka pelare det vilar på, vad som är medvetet bortskuret | Levande |
-| [`docs/ETAPP1_TEKNISK_SPEC.md`](docs/ETAPP1_TEKNISK_SPEC.md) | Teknisk spec för etapp 1 — datamodell, resolve-pipeline, anbudsalgoritm, testkrav, promptsekvens | Levande, fryst under P0–P12 |
-| [`CLAUDE.md`](CLAUDE.md) | Hårda regler för kodsessioner i det här repot | Levande |
-
-Läs `docs/DESIGN.md` först, `docs/ETAPP1_TEKNISK_SPEC.md` sedan. `CLAUDE.md` är operativ, inte
-förklarande — den säger vad som är förbjudet, inte varför.
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Designdokument v2.1 — vad spelet är, pelarna, vad som är medvetet bortskuret | Levande (UI-avsnittet uppdaterat 2026-10-16) |
+| [`CLAUDE.md`](CLAUDE.md) | Hårda regler, gränssnittsregler och löpande status för kodsessioner | Levande |
+| [`docs/ANDRINGSLOGG.md`](docs/ANDRINGSLOGG.md) | En rad per ändring och ägarbeslut | Levande |
+| `docs/ETAPP1_TEKNISK_SPEC.md` … `ETAPP6_TEKNISK_SPEC.md` | Etapp 1–6: den första skivan, motståndet, kriget som marknad, två krig, näst mäktigast, kartan och menyn | Klara, historik |
+| [`docs/ETAPP7_TEKNISK_SPEC.md`](docs/ETAPP7_TEKNISK_SPEC.md) | Etapp 7, spelbordet (P73–P95): kartan, mappar, handbok, ljud | Byggd; speltestet P95 ersatt av det gemensamma speltestet |
+| `docs/ETAPP8_FORSLAG.md`, `ETAPP9_FORSLAG.md` | Etapp 8 (kassaboken, förskott, stående order) och 9 (ritbordet, konstruktion, kapplöpning, upphandling) | Byggda |
+| [`docs/ETAPP10_FORSLAG.md`](docs/ETAPP10_FORSLAG.md) | Etapp 10, världen svarar: 10A (slipningen) är körd t.o.m. P149 och P187–P191, 10B (P150–P161: historiska beslut, rivaler som motspelare) väntar | **Aktiv** |
+| [`docs/ETAPP11_FORSLAG.md`](docs/ETAPP11_FORSLAG.md) | Etapp 11, verken (anläggningar, kapacitet, arbetsstyrka, lager, utlandsverk) | Byggd (P168–P191); utfall i §9b |
+| [`docs/ETAPP12_FORSLAG.md`](docs/ETAPP12_FORSLAG.md) | Etapp 12, krigsrummet (PC-widescreen, skrivbord, levande karta; Gemini + Claude Code) | Mottagen 2026-10-16, ej antagen |
+| [`docs/SPELTEST_ETAPP10A.md`](docs/SPELTEST_ETAPP10A.md), [`SPELTEST_ETAPP11.md`](docs/SPELTEST_ETAPP11.md) | Checklistor för ägarens gemensamma speltest (P148 + P184) | **Nästa steg** |
+| `docs/SPELTEST_ETAPP9.md`, `SPELTEST_SAMLAT.md` | Äldre speltestunderlag | Ersatta av ovan |
+| `docs/RAPPORT1…4_*.md`, `docs/BALANS*.md` | Externa granskningar och balansmätningar | Referens |
+| `docs/GRAFISKA_TILLGANGAR*.md`, `docs/LJUDTILLGANGAR.md` | Bild- och ljudtillgångar, promptar och status | Referens |
+| `docs/ui/reference/`, `docs/ui/current/` | Godkända referensskisser och senaste skärmdumpar (`npm run shots`) | Referens / genereras |
 
 ## Läget just nu
 
+Etapp 1–11 är byggda. Scenariot `INDOCHINA_SLICE` är 20 turer (kvartal) med två fronter (Sydvietnam och Laos), tre
+köpare (RVN, NLF, Laos), rivalhus och ett eget femårsmål med styrelsegranskningar. Hela produktionssystemet
+(anläggningar på en tomt, byggen, linjer, kapacitet, arbetsstyrka, underleverantörer, lager, utlandsverk),
+konstruktion och forskning, kapplöpningen mellan blocken, upphandlingar med fusk och pappersspår, historiska
+förstasidor och telex samt förskott och huvudbok finns i spelet. Balansen mäts med botpolicyn `human`
+(ca 64 % vinst i 100 partier) och hålls av två vakter: ingen bot över 90 % vinst och `capacity` som fast referens.
 
-Etapp 1 är en vertikal skiva: scenariot `INDOCHINA` avkortat till 20 turer, 1 front, 3 köpare,
-3 rivalhus, 4 produktionslinjer, 1 underrättelsestation. Frågan skivan ska besvara står i
-designdokumentets avsnitt 20 och är formulerad så att den faktiskt går att besvara med det som
-byggs — inte med det som byggs i etapp 2.
+**Nästa steg är ägarens gemensamma speltest** (`docs/SPELTEST_ETAPP10A.md`), därefter etapp 10B från P150. Etapp 12
+(`docs/ETAPP12_FORSLAG.md`) är ett mottaget förslag som inte är antaget.
 
 ## Språkkonvention
 

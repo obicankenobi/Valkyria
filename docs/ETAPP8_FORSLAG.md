@@ -2,15 +2,15 @@
 
 **THE SEVENTH FRONT** · förslag · skrivet 2026-09-29 mot `c660b90` (efter P94)
 
-> **Status 2026-09-29 (uppdaterad):** etappen är **ANTAGEN och aktiv** (ägarbeslut
+> **Status 2026-09-29 (uppdaterad):** etappen är **ANTAGEN** (byggd, se Byggstatus nedan) (ägarbeslut
 > 2026-09-29, `ANDRINGSLOGG.md`). Besluten 8A–8G är fattade, samtliga enligt förslagets egna
 > rekommendationer (§2). **P95 (speltestet av etapp 7) är uppskjutet** — etapp 8 körs före det.
 > P95 kan fortfarande flytta punkter hit eller härifrån. Ordningen är etapp 8 före etapp 9
 > (forskningen). Beslut 8C gäller: golden får frysas om **bara** i P96, P98, P100 och P102,
 > var och en i egen commit. Filen behåller namnet `ETAPP8_FORSLAG.md`.
 >
-> **Byggstatus:** P96–P99 **BYGGDA 2026-09-29** (se blockquoterna under respektive prompt i §9).
-> P100 är inte påbörjad.
+> **Byggstatus (uppdaterad 2026-10-16):** P96–P104 **BYGGDA 2026-09-29/30** (se blockquoterna under respektive prompt i §9).
+> Kvar är P105, ägarens speltest, som ersatts av det gemensamma speltestet (`docs/SPELTEST_ETAPP10A.md`). Etappen är därmed klar.
 
 Etapp 7 gjorde om hur spelet ser ut. Etapp 8 gör om hur pengarna känns. Den tar de tre
 ekonomipunkter som etapp 7 sköt fram (§16), och lägger till fyra till. Tre av dem är luckor i
