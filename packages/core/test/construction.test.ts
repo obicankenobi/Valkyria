@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import facilities from '../src/data/facilities.json' with { type: 'json' }
 import { createInitialState } from '../src/state.js'
 import { resolveTurn } from '../src/resolve/index.js'
-import { allLines, assemblyWorks } from '../src/works.js'
+import { allLines, assemblyWorks, worksCategories } from '../src/works.js'
+import { hasWorksFor } from '../src/leadSupplier.js'
 import { computeFixedCostsBreakdown } from '../src/resolve/steps/economy.js'
 import { computeLineThroughput } from '../src/resolve/steps/production.js'
 import { validateStandingOrderChange } from '../src/standingOrders.js'
@@ -47,12 +48,12 @@ describe('startpaketet (§4.4, 11B)', () => {
   const state = fresh('start-package')
   const house = state.house
 
-  it('ett monteringsverk på nivå 1 med två linjer i den valda kategorin, ett gratis labb i samma kategori och ett ritkontor', () => {
+  it('ett allmänt monteringsverk på nivå 1 med två linjer (infanteri och artilleri, beslut 13A), ett gratis labb i den valda kategorin och ett ritkontor', () => {
     expect(house.works.map((w) => w.kind)).toEqual(['assembly', 'laboratory', 'design'])
     expect(house.works.every((w) => w.level === 1 && w.status === 'operating')).toBe(true)
     const [assembly, lab, design] = house.works as [Facility, Facility, Facility]
     expect(assembly.lines).toHaveLength(2)
-    expect(assembly.category).toBe(house.specialisation)
+    expect(worksCategories(assembly)).toEqual(['artillery', 'infantry']) // specialiseringen (artilleri) är huvudkategorin när den ingår
     expect(lab.category).toBe(house.specialisation)
     expect(design.category).toBeNull()
     expect(lab.invested).toBe(0) // ägarens önskemål: utan byggkostnad
@@ -66,10 +67,13 @@ describe('startpaketet (§4.4, 11B)', () => {
     expect(house.works.some((w) => w.kind === 'proving' || w.kind === 'depot')).toBe(false)
   })
 
-  it('en vald specialisering styr kategorin', () => {
+  it('en vald specialisering styr labbets kategori; monteringsverket är allmänt oavsett val (beslut 13A, speltest 2026-10-17: AVI gav ett parti där varje order var låst)', () => {
     const naval = createInitialState('indochina-slice', 'start-naval', { specialisation: 'naval' })
-    expect(naval.house.works[0]!.category).toBe('naval')
+    expect(worksCategories(naval.house.works[0]!)).toEqual(['infantry', 'artillery'])
     expect(naval.house.works[1]!.category).toBe('naval')
+    expect(hasWorksFor(naval.house, 'infantry')).toBe(true)
+    expect(hasWorksFor(naval.house, 'artillery')).toBe(true)
+    expect(hasWorksFor(naval.house, 'naval')).toBe(false)
   })
 
   it('anläggningarnas fasta kostnad läggs till lönen och linjernas upphåll', () => {

@@ -144,7 +144,7 @@ export function WorksPlan({
                 className={`works-slot is-built${alarmed(card) ? ' has-alarm' : ''}`}
                 style={slotStyle(i)}
                 onClick={() => setSheet({ type: 'facility', id: facility.id })}
-                aria-label={`${card.label}${card.category ? `, ${card.category}` : ''}, level ${card.level}, ${LAMP_TEXT[card.lamp].toLowerCase()}`}
+                aria-label={`${card.label}${card.categories ? `, ${card.categories.join(' and ')}` : ''}, level ${card.level}, ${LAMP_TEXT[card.lamp].toLowerCase()}`}
                 data-testid={`works-slot-${facility.id}`}
               >
                 <img className="works-sprite" src={`/art/works/${sprite}.svg`} alt="" aria-hidden="true" draggable={false} />
@@ -153,7 +153,7 @@ export function WorksPlan({
                   <span className="works-slot-name">{SHORT[facility.kind]}</span>
                   <span className="works-slot-sub">
                     L{card.level}
-                    {card.category ? ` · ${CATEGORY_SHORT[card.category]}` : ''}
+                    {card.categories ? ` · ${card.categories.map((c) => CATEGORY_SHORT[c]).join('+')}` : ''}
                   </span>
                 </span>
               </button>
@@ -245,7 +245,7 @@ export function WorksPlan({
 
 function facilitySubtitle(card: FacilityCardData | null): string | undefined {
   if (!card) return undefined
-  return `${card.category ? `${card.category.toUpperCase()} · ` : ''}${card.location ? `${card.location.toUpperCase()} · ` : ''}Level ${card.level} of ${card.maxLevel}`
+  return `${card.categories ? `${card.categories.join(' + ').toUpperCase()} · ` : ''}${card.location ? `${card.location.toUpperCase()} · ` : ''}Level ${card.level} of ${card.maxLevel}`
 }
 
 function LandBuy({

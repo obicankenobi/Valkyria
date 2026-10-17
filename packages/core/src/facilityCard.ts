@@ -12,7 +12,7 @@ import { round } from './money.js'
 import { stockValue } from './stock.js'
 import { TECH_CATEGORIES } from './validateAction.js'
 import { facilityWage, hasWorkforce, moraleOf, wageIndexOf, worksOnDoubleShift } from './workforce.js'
-import { lineCapacity } from './works.js'
+import { lineCapacity, worksCategories } from './works.js'
 import type { Facility, FacilityKind, FactionId, GameState, MaintenanceLevel, Money, StandingOrderChange, TechCategory } from './types.js'
 
 const BALANCE = balanceData as unknown as { designDesksPerLevel: number; provingChamberLevel: number; moraleBaseline: number; strikeMoraleThreshold: number; breakdownConditionThreshold: number; worksAlarmStrikeRiskMargin: number }
@@ -35,6 +35,8 @@ export interface FacilityCardData {
   level: 1 | 2 | 3
   maxLevel: number
   category: TechCategory | null
+  // Beslut 13A: kategorierna verket bygger (ett allmänt verk flera); null = allt.
+  categories: TechCategory[] | null
   location: FactionId | null
   status: Facility['status']
   lamp: FacilityLamp
@@ -138,6 +140,7 @@ export function facilityCard(state: GameState, facilityId: string): FacilityCard
     level: f.level,
     maxLevel: KINDS.maxLevel,
     category: f.category,
+    categories: worksCategories(f),
     location: f.location ?? null,
     status: f.status,
     lamp,

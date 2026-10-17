@@ -549,10 +549,14 @@ describe('golden — ett scriptat parti per botpolicy, seed och sluttillstånd f
   // passive 1b7ff048d49520, aggressive 1dca6cc3a2bbbc, balanced 11b0799a5f9b6e.
   // Omfryst i P191 (data, beslut 11AG): `deliveryPromiseFactor` 0.3 → 0 och `boardTarget.threshold` 7,5 → 9,0 — leveranstermen av till speltestet. Attribution (dist ombyggd): hasharna är bit-identiska med raden efter P188
   // (8043621c952e, 124d9ae3c35771, 8f30f586b617b) — verifierat, inte antaget; P189:s hasharna (1b7ff048d49520, 1dca6cc3a2bbbc, 11b0799a5f9b6e) gällde bara med termen på.
+  // Omfryst efter speltestet 2026-10-17 (regel, beslut 13A, ägarens val "allmänt startverk"): startverket bygger infanteri och artilleri oavsett specialisering (`startWorksCategories`, `Facility.extraCategories`),
+  // och den automatiska tilldelningen och "ready by" lägger inte en extrakategori på startverket när ett eget verk för den är i drift (`autoAssignable`). Botarna bjuder som före beslutet (`dedicatedOnly`, policies.ts).
+  // Attribution (dist ombyggd): med `startWorksCategories` ["artillery"] är alla tre hashar bit-identiska med förra raden (8043621c952e, 124d9ae3c35771, 8f30f586b617b) — verifierat, inte antaget. Med regeln:
+  // passive c62f22d0bbe7c, aggressive c52c2c1c00b93, balanced 7929ca5a8e643 (skillnaden är fältet extraCategories i startverket; botarnas bud och vakterna är oförändrade).
   const cases: { policyName: 'passive' | 'aggressive' | 'balanced'; seed: string; expectedHash: string }[] = [
-    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: '8043621c952e' },
-    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: '124d9ae3c35771' },
-    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '8f30f586b617b' },
+    { policyName: 'passive', seed: 'golden-passive-p22', expectedHash: 'c62f22d0bbe7c' },
+    { policyName: 'aggressive', seed: 'golden-aggressive-p22', expectedHash: 'c52c2c1c00b93' },
+    { policyName: 'balanced', seed: 'golden-balanced-p22', expectedHash: '7929ca5a8e643' },
   ]
 
   for (const { policyName, seed, expectedHash } of cases) {

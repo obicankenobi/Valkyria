@@ -36,17 +36,21 @@ function sampleOrder(state: GameState, over: Partial<Order> = {}): Order {
 
 describe('human — registrering', () => {
   it('finns i POLICIES och balanced är kvar (golden läser den)', () => {
-    expect(POLICIES['human']).toBe(human)
+    expect(POLICIES['human']).toBeTypeOf('function') // beslut 13A: alla botar lindas av dedicatedOnly (policies.ts)
+    void human
     expect(Object.keys(POLICIES)).toEqual(expect.arrayContaining(['passive', 'aggressive', 'balanced', 'capacity', 'human']))
   })
 })
 
 describe('balanced-pwc / capacity-pwc', () => {
   it('är registrerade och originalen är kvar', () => {
-    expect(POLICIES['balanced-pwc']).toBe(balancedPwc)
-    expect(POLICIES['capacity-pwc']).toBe(capacityPwc)
-    expect(POLICIES['balanced']).toBe(balanced)
-    expect(POLICIES['capacity']).toBe(capacity)
+    // Beslut 13A: alla botar lindas av dedicatedOnly (policies.ts) — på ett hus utan allmänt verk lämnar omslaget inlämningen orörd.
+    const state = stateWithOrders()
+    for (const [name, original] of [['balanced-pwc', balancedPwc], ['capacity-pwc', capacityPwc], ['balanced', balanced], ['capacity', capacity]] as const) {
+      const plain = structuredClone(state)
+      for (const w of plain.house.works) delete w.extraCategories
+      expect(POLICIES[name]!(plain), name).toEqual(original(plain))
+    }
   })
 
   it('har samma handlingar som originalen — bara budkurvan skiljer', () => {

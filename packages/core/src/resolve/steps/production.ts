@@ -14,7 +14,7 @@ import { round } from '../../money.js'
 import { recordExpense } from '../../ledger.js'
 import { plannedOnOtherLines, settleSupplyAgreements, standingLineOrder, standingPlan } from '../../standingOrders.js'
 import { SETUP_LABEL, currentTooling, setupChange, setupCost } from '../../tooling.js'
-import { autoOutsource, lineMayBuild, ownRemaining, runSubcontractors } from '../../outsourcing.js'
+import { autoAssignable, autoOutsource, lineMayBuild, ownRemaining, runSubcontractors } from '../../outsourcing.js'
 import type { ResolveStep } from '../index.js'
 import type { Commodity, Contract, House, Product, ProductionLine, Shipment } from '../../types.js'
 import { allLines } from '../../works.js'
@@ -191,7 +191,11 @@ export const production: ResolveStep = (ctx) => {
     const contract =
       planned.map((id) => draft.market.contracts.find((c) => c.id === id)).find((c) => claimable(c) || joinable(c)) ??
       draft.market.contracts.find(
-        (c) => claimable(c) && !reserved.has(c.id) && (wantedCategory === null || getProduct(c.productId).category === wantedCategory),
+        (c) =>
+          claimable(c) &&
+          !reserved.has(c.id) &&
+          (wantedCategory === null || getProduct(c.productId).category === wantedCategory) &&
+          autoAssignable(house, line.id, getProduct(c.productId)),
       )
     if (!contract) continue
 

@@ -47,7 +47,7 @@ import type {
   TechCategory,
   TurnSubmission,
 } from '@seventh-front/core'
-import { allLines, setupChange, setupCost } from '@seventh-front/core'
+import { allLines, leadSupplierRejection, setupChange, setupCost } from '@seventh-front/core'
 import { DEFAULT_WORKS, buildLineAction, fitsCapacity, promiseTurns, worksStandingOrders } from './worksPolicy.js'
 import type { WorksOptions } from './worksPolicy.js'
 
@@ -1114,11 +1114,32 @@ export function makeHuman(opts: HumanOptions): Policy {
 export const human: Policy = makeHuman(BASE_HUMAN)
 export const humanClassic: Policy = makeHuman(CLASSIC_HUMAN)
 
-export const POLICIES: Record<string, Policy> = {
-  passive,
-  aggressive,
-  balanced,
-  capacity,
+// Beslut 13A (speltest 2026-10-17): startverket är ett allmänt verk som också bygger infanteri (extraCategories), så att ett hus med en specialisering
+// köparna ännu inte beställer kan bjuda alls. Botarna utnyttjar det inte: med två artillerilinjer som ställs om för gevär (3 kvartal och £250 000 per
+// produktomställning) föll `human` från 63 till 7 % och referensbotarna till nära noll (mätt, 30 partier per bot). Alla botar bjuder därför som före
+// beslutet — bara där ett verk är byggt för kategorin, plus den mjuka spärrens små ordrar — och bygger ett eget verk för en ny kategori. Regeln är
+// spelarens väg ur låset; balansen och vakterna är oförändrade.
+function dedicatedOnly(policy: Policy): Policy {
+  return (state) => {
+    const submission = policy(state)
+    // Huset sett som före beslutet: varje verk bygger bara sin `category`. Huvudleverantörsregeln avgör sedan vad som hade fått bjudas (också den mjuka spärrens små ordrar).
+    const before = { works: state.house.works.map((w) => ({ ...w, extraCategories: undefined })) }
+    const bids = submission.bids.filter((b) => {
+      const order = state.market.openOrders.find((o) => o.id === b.orderId)
+      if (!order) return true
+      const product = getProduct(order.productId)
+      // Bara bud som det allmänna verket gjorde möjliga stryks; ett bud regeln avvisar i båda fallen skickas som förut (och avvisas av resolveTurn som förut).
+      return !(leadSupplierRejection(before, product, order.quantity) !== null && leadSupplierRejection(state.house, product, order.quantity) === null)
+    })
+    return bids.length === submission.bids.length ? submission : { ...submission, bids }
+  }
+}
+
+const ALL_POLICIES: Record<string, Policy> = {
+  passive: (passive),
+  aggressive: (aggressive),
+  balanced: (balanced),
+  capacity: (capacity),
   human,
   'human-classic': humanClassic,
   'human-robust': makeHuman({ ...BASE_HUMAN, focus: 'robust', ambition: 'timely' }),
@@ -1147,6 +1168,8 @@ export const POLICIES: Record<string, Policy> = {
   'human-grossbid': makeHuman({ ...BASE_HUMAN, netRetool: false }), // P190: som human före nettoregeln — konstruktionen bjuds utan att omställningen räknas
   'human-hawk': makeHuman({ ...BASE_HUMAN, hawk: true }), // P190 (10Ä): säljer mk-9 alltid — mäter forskningens pris
   'human-singleline': makeHuman({ ...BASE_HUMAN, works: { ...DEFAULT_WORKS, multiLine: false } }), // P187: som `human` före regeln — en linje per kontrakt
-  'balanced-pwc': balancedPwc,
-  'capacity-pwc': capacityPwc,
+  'balanced-pwc': (balancedPwc),
+  'capacity-pwc': (capacityPwc),
 }
+
+export const POLICIES: Record<string, Policy> = Object.fromEntries(Object.entries(ALL_POLICIES).map(([name, policy]) => [name, dedicatedOnly(policy)]))

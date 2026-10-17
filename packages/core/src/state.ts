@@ -491,10 +491,16 @@ export function buildWorld(scenario: ScenarioFile): { theatres: Theatre[]; front
   return { theatres, fronts }
 }
 
+const START_WORKS_CATEGORIES = facilitiesData.startWorksCategories as TechCategory[]
+
 // P170 (ETAPP11 §4.4, 11B): ett monteringsverk på nivå 1 med startlinjerna i den valda kategorin, ett laboratorium på nivå 1 i samma kategori utan byggkostnad
 // (ägarens önskemål) och ett ritkontor. Fem platser är tomma; ingen provplats, ingen depå.
 function startPackage(lines: ProductionLine[], category: TechCategory): Facility[] {
-  const assembly = { ...newAssemblyWorks('works-1', lines, category), level: 1 as const, invested: startingInvested('assembly') }
+  // Speltest 2026-10-17 (beslut 13A): startverket är allmänt (startWorksCategories) oavsett specialisering; labbet följer specialiseringen.
+  // Verkets huvudkategori är specialiseringen när den ingår (ett artillerihus har ett artilleriverk som också bygger infanteri), annars den första.
+  const primary = START_WORKS_CATEGORIES.includes(category) ? category : (START_WORKS_CATEGORIES[0] ?? category)
+  const extra = START_WORKS_CATEGORIES.filter((c) => c !== primary)
+  const assembly: Facility = { ...newAssemblyWorks('works-1', lines, primary), ...(extra.length > 0 ? { extraCategories: extra } : {}), level: 1 as const, invested: startingInvested('assembly') }
   const lab: Facility = { id: 'works-2', kind: 'laboratory', level: 1, category, condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: startingInvested('laboratory') }
   const design: Facility = { id: 'works-3', kind: 'design', level: 1, category: null, condition: 100, staffing: 100, skill: 50, status: 'operating', lines: [], invested: startingInvested('design') }
   return [assembly, lab, design]

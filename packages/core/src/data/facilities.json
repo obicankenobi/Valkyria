@@ -8,6 +8,11 @@
     4,
     6
   ],
+  "_startWorks_note": "Speltest 2026-10-17 (beslut 13A): startpaketets monteringsverk \u00e4r ett allm\u00e4nt verk som bygger startWorksCategories oavsett husets specialisering \u2014 k\u00f6parna best\u00e4ller i b\u00f6rjan bara infanteri och artilleri, s\u00e5 ett startverk i en annan kategori gav ett parti d\u00e4r varje order var l\u00e5st. Specialiseringen ger labbet, forskningsf\u00f6rspr\u00e5nget och budbonusen; ett verk i den kategorin byggs senare.",
+  "startWorksCategories": [
+    "infantry",
+    "artillery"
+  ],
   "kinds": {
     "assembly": {
       "label": "Assembly Works",

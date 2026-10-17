@@ -74,15 +74,15 @@ describe('Nytt parti visar startpaketet som en liten tomtplan (P181)', () => {
     render(<NewGameScreen onSubmit={() => {}} onBack={() => {}} />)
     expect(screen.getByTestId('newgame-site-plan').querySelectorAll('.mini-plan-building')).toHaveLength(3)
     for (const kind of ['assembly', 'laboratory', 'design']) expect(screen.getByTestId(`mini-plan-${kind}`)).toBeTruthy()
-    expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Assembly Works \(artillery\), 2 production lines/)
+    expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Assembly Works \(artillery and infantry\), 2 production lines/)
     expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Laboratory \(artillery\)/)
     expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Design Office/)
   })
 
-  it('att byta specialisering byter kategorin i startpaketet', () => {
+  it('att byta specialisering byter labbets kategori; monteringsverket är allmänt (infanteri och artilleri, beslut 13A)', () => {
     render(<NewGameScreen onSubmit={() => {}} onBack={() => {}} />)
     fireEvent.click(screen.getByTestId('newgame-specialisation').querySelectorAll('[role="radio"]')[3]!) // NAVAL
-    expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Assembly Works \(naval\)/)
+    expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Assembly Works \(infantry and artillery\)/)
     expect(screen.getByTestId('newgame-site-summary').textContent).toMatch(/Laboratory \(naval\)/)
     expect(screen.getByTestId('newgame-site-plan').getAttribute('aria-label')).toContain('naval')
   })

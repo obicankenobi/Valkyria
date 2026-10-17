@@ -11,7 +11,7 @@ import { hasWorksFor, leadSupplierActive, maxOutsourcePct, subcontractCostFactor
 import { blocOfFaction } from './race.js'
 import type { ResolveContext } from './resolve/index.js'
 import type { ActionValidation, Contract, FactionId, GameState, House, Money, Product, RivalHouse, Shipment, StandingOrderChange, TechCategory } from './types.js'
-import { worksOfLine } from './works.js'
+import { worksBuilds, worksOfLine } from './works.js'
 
 const BALANCE = balanceData as unknown as {
   subcontractUnitsFactor: number
@@ -58,7 +58,7 @@ export function subcontractRate(product: Product): number {
 
 // Kan något av husets driftsatta monteringsverk bygga produkten? Ett verk utan kategori (migrerat) bygger allt; ett verk med kategori bara den.
 export function canBuildHere(house: Pick<House, 'works'>, product: Pick<Product, 'category'>): boolean {
-  return house.works.some((w) => w.kind === 'assembly' && (w.status === 'operating' || w.status === 'strike') && (w.category === null || w.category === product.category))
+  return house.works.some((w) => w.kind === 'assembly' && (w.status === 'operating' || w.status === 'strike') && worksBuilds(w, product.category))
 }
 
 // Kostnadsfaktorn för vägen en order skulle gå: husets egna linjer (1) eller en underleverantör (subcontractCostFactor) när inget driftsatt verk kan bygga kategorin.
@@ -70,7 +70,16 @@ export function routeCostFactor(house: Pick<House, 'works'>, product: Pick<Produ
 // Får en linje (i verket den bor i) ta ett kontrakt i den här kategorin?
 export function lineMayBuild(house: Pick<House, 'works'>, lineId: string, product: Pick<Product, 'category'>): boolean {
   const works = worksOfLine(house, lineId)
-  return !!works && (works.category === null || works.category === product.category)
+  return !!works && worksBuilds(works, product.category)
+}
+
+// Beslut 13A: får den automatiska tilldelningen lägga kontraktet på linjen? Ett allmänt verk (startverket) tar en av sina extrakategorier bara när inget annat
+// monteringsverk i drift är byggt för den — annars ställs startverkets linjer om (en produktomställning, 3 kvartal) medan husets eget verk för kategorin står
+// ledigt. En produktionsplan (PLAN) går förbi regeln: spelaren kan alltid välja linjen själv.
+export function autoAssignable(house: Pick<House, 'works'>, lineId: string, product: Pick<Product, 'category'>): boolean {
+  const works = worksOfLine(house, lineId)
+  if (!works || works.category === null || works.category === product.category) return true
+  return !house.works.some((w) => w.kind === 'assembly' && w.id !== works.id && (w.status === 'operating' || w.status === 'strike') && w.category === product.category)
 }
 
 export function validateOutsourceChange(draft: Readonly<GameState>, change: Extract<StandingOrderChange, { kind: 'OUTSOURCE' }>): ActionValidation {

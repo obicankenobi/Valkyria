@@ -7,7 +7,7 @@
 // även ett namn spelaren annars skulle skrivit i ett `<input type="text">`.
 // founding_capital är INTE ett val (DESIGN.md §3: en fast £4 000 000).
 import { useMemo, useState } from 'react'
-import { createInitialState, kindLabel } from '@seventh-front/core'
+import { createInitialState, kindLabel, worksCategories } from '@seventh-front/core'
 import type { House, StartChoices, TechCategory } from '@seventh-front/core'
 import { MiniSitePlan } from './MiniSitePlan.js'
 import { Button, Card, DsPanel, Segmented } from './designSystem.js'
@@ -41,7 +41,7 @@ export function NewGameScreen({ onSubmit, onBack }: { onSubmit: (choices: StartC
   // P181 (ETAPP11 §8 punkt 7): startpaketet för den valda specialiseringen, läst ur samma state som partiet börjar med — ingen egen lista som kunde glida.
   const startingWorks = useMemo(() => createInitialState('indochina-slice', 'new-game-preview', { specialisation }).house.works, [specialisation])
   const startingSummary = startingWorks
-    .map((w) => `${kindLabel(w.kind)}${w.category ? ` (${w.category})` : ''}${w.kind === 'assembly' ? `, ${w.lines.length} production lines` : ''}`)
+    .map((w) => `${kindLabel(w.kind)}${worksCategories(w) ? ` (${worksCategories(w)!.join(' and ')})` : ''}${w.kind === 'assembly' ? `, ${w.lines.length} production lines` : ''}`)
     .join(' · ')
 
   return (
@@ -70,7 +70,7 @@ export function NewGameScreen({ onSubmit, onBack }: { onSubmit: (choices: StartC
           <div className="cf-field">
             <span className="cf-field-label">SPECIALISATION</span>
             <Segmented options={SPECIALISATION_OPTIONS} value={specialisation} onChange={setSpecialisation} testId="newgame-specialisation" />
-            <p className="cf-hint">A head start in this field's R&amp;D — and the field your first assembly works and laboratory are built for.</p>
+            <p className="cf-hint">A head start in this field's R&amp;D, a stronger bid in it and your first laboratory. Your first assembly works builds infantry and artillery, what buyers order first; build a works in your field when its orders come.</p>
             <MiniSitePlan works={startingWorks} label={`Your starting site: ${startingSummary}`} testId="newgame-site-plan" />
             <p className="cf-hint" data-testid="newgame-site-summary">
               Your starting site: {startingSummary}.

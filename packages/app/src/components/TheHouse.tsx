@@ -22,7 +22,7 @@
 // tidigare beskrev är nu den avsedda platsen. "Executive actions"-panelen
 // visar bara INTERNAL-formuläret och dess köade kort.
 import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct, projectedQuarter, researchOutlook } from '@seventh-front/core'
-import { totalFixedCosts } from '@seventh-front/core'
+import { totalFixedCosts, worksCategories } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { Fragment, useEffect, useState } from 'react'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
@@ -145,7 +145,7 @@ function BuildLoansPanel({ state }: { state: GameState }) {
           const works = state.house.works.find((w) => w.id === row.facilityId)
           return (
             <Fragment key={row.facilityId}>
-              <dt>{works ? `${works.kind} ${works.id}${works.category ? ` (${works.category})` : ''}` : row.facilityId}</dt>
+              <dt>{works ? `${works.kind} ${works.id}${worksCategories(works) ? ` (${worksCategories(works)!.join(' + ')})` : ''}` : row.facilityId}</dt>
               <dd>
                 {formatMoney(row.outstanding)} owed · {formatMoney(row.interest + row.amortisation)} next quarter
               </dd>

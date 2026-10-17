@@ -2,7 +2,7 @@
 // `house.lines` läser nu linjerna genom `allLines` (alla verk, i verkens och linjernas ordning — samma ordning som den platta listan hade, så att produktionen
 // bearbetar dem likadant). Kapaciteten per nivå och verkens form kommer ur data/facilities.json.
 import facilitiesData from './data/facilities.json' with { type: 'json' }
-import type { Facility, House, ProductionLine } from './types.js'
+import type { Facility, House, ProductionLine, TechCategory } from './types.js'
 
 const DATA = facilitiesData as unknown as {
   interimStartLevel: 1 | 2 | 3
@@ -17,6 +17,19 @@ export const FACILITY_DATA = facilitiesData as unknown as {
 }
 
 type Lines = Pick<House, 'works'>
+
+// Speltest 2026-10-17 (beslut 13A): den enda frågan om vilka kategorier ett verk bygger: sin `category` och ett allmänt verks `extraCategories`; ett verk
+// utan kategori (migrerat) bygger allt.
+export function worksBuilds(works: Pick<Facility, 'category' | 'extraCategories'>, category: TechCategory): boolean {
+  if (works.category === null) return true
+  return works.category === category || (works.extraCategories?.includes(category) ?? false)
+}
+
+// Kategorierna ett verk bygger, för visning och för botarnas "har vi ett verk i X". null = allt (migrerat verk).
+export function worksCategories(works: Pick<Facility, 'category' | 'extraCategories'>): TechCategory[] | null {
+  if (works.category === null) return null
+  return [works.category, ...(works.extraCategories ?? []).filter((c) => c !== works.category)]
+}
 
 export function allLines(house: Lines): ProductionLine[] {
   return house.works.flatMap((w) => w.lines)

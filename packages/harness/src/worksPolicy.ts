@@ -15,6 +15,7 @@ import {
   cashPartOf,
   freeLineSlots,
   getProduct,
+  leadSupplierRejection,
   lineMayBuild,
   maintenanceOf,
   planBuild,
@@ -127,9 +128,21 @@ function driftOrders(state: GameState): StandingOrderChange[] {
   return out
 }
 
+// Kategorierna husets monteringsverk är byggda för (beslut 13A): ett allmänt verk (startverket, `extraCategories`) räknas bara för sin första kategori. Det kan ta
+// order i de andra, men med två linjer som ställs om mellan produkterna (3 kvartal, en produktomställning) är det ingen ersättning för ett eget verk — botarna
+// bygger ett eget verk för en kategori de säljer i, precis som före beslutet. Ett verk utan kategori (migrerat) räknas för allt.
+function builtCategories(house: GameState['house']): Set<TechCategory> {
+  const out = new Set<TechCategory>()
+  for (const w of assemblyWorks(house)) {
+    if (w.category === null) for (const c of TECH_CATEGORIES) out.add(c)
+    else out.add(w.category)
+  }
+  return out
+}
+
 // Kategorier huset kan sälja i men saknar ett monteringsverk för: de som har en öppen order och en tekniknivå som räcker.
 function missingCategories(state: GameState): TechCategory[] {
-  const built = new Set(assemblyWorks(state.house).map((w) => w.category))
+  const built = builtCategories(state.house)
   const wanted = new Set<TechCategory>()
   for (const order of state.market.openOrders) {
     const product = getProduct(order.productId)
@@ -140,7 +153,7 @@ function missingCategories(state: GameState): TechCategory[] {
 
 // Kategorin där flest enheter just nu ligger hos en underleverantör (utlagda aktiva kontrakt), om huset saknar ett monteringsverk för den och tekniknivån räcker.
 function outsourcedCategory(state: GameState): TechCategory | null {
-  const built = new Set(assemblyWorks(state.house).map((w) => w.category))
+  const built = builtCategories(state.house)
   const units = new Map<TechCategory, number>()
   for (const c of productionBoard(state).contracts) {
     if (!(c.subcontracted || c.sharePct > 0) || c.remaining <= 0) continue
@@ -157,9 +170,11 @@ function outsourcedCategory(state: GameState): TechCategory | null {
 // referenspris vinner. null när inget är låst (regeln av, eller huset har verk överallt där det finns ordrar).
 function passedByCategory(state: GameState): TechCategory | null {
   const value = new Map<TechCategory, number>()
+  // Beslut 13A: huset sett som före beslutet (varje verk bara sin `category`) — en order startverket bara tar som allmänt verk räknas som förbigången, som när den var låst.
+  const before = { works: state.house.works.map((w) => ({ ...w, extraCategories: undefined })) }
   for (const order of state.market.openOrders) {
-    if (validateBid(state, state, { orderId: order.id }).ok) continue
     const product = getProduct(order.productId)
+    if (validateBid(state, state, { orderId: order.id }).ok && leadSupplierRejection(before, product, order.quantity) === null) continue
     if (state.house.techLevel[product.category] < product.techRequired) continue
     value.set(product.category, (value.get(product.category) ?? 0) + order.referencePrice)
   }
@@ -207,7 +222,7 @@ function buildOrders(state: GameState, opts: WorksOptions): StandingOrderChange[
     }
   }
   // 1) Ett nytt monteringsverk i en saknad kategori (breda varianter), upp till tre kategorier.
-  if (opts.categories === 'broad' && new Set(assemblyWorks(house).map((w) => w.category)).size < BROAD_CATEGORIES) {
+  if (opts.categories === 'broad' && builtCategories(house).size < BROAD_CATEGORIES) {
     const category = missingCategories(state)[0]
     if (category) {
       const change: StandingOrderChange = { kind: 'WORKS', op: 'BUILD', facilityKind: 'assembly', category }

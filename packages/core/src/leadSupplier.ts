@@ -4,6 +4,7 @@
 // This Quarter och i avgörandet (bidding.ts), eftersom alla läser den här filen.
 import balanceData from './data/balance.json' with { type: 'json' }
 import type { Facility, House, Product, TechCategory } from './types.js'
+import { worksBuilds } from './works.js'
 
 export type LeadSupplierMode = 'off' | 'hard' | 'soft'
 
@@ -28,7 +29,7 @@ type Works = Pick<House, 'works'>
 export function hasWorksFor(house: Works, category: TechCategory, opts: { anyBuild?: boolean } = {}): boolean {
   return house.works.some((w: Facility) => {
     if (w.kind !== 'assembly') return false
-    if (w.category !== null && w.category !== category) return false
+    if (!worksBuilds(w, category)) return false
     if (w.status === 'operating' || w.status === 'strike') return true
     return w.status === 'under_construction' && w.build !== undefined && (opts.anyBuild === true || w.build.turnsLeft <= B.leadSupplierBuildQuartersLeft)
   })

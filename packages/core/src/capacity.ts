@@ -3,7 +3,7 @@
 // i en giraldig fördelning som liknar produktionens: första kontraktet i kön till den linje som blir fri först. Det är en uppskattning av när tillverkningen är klar, inte ett löfte:
 // leveransen tar `deliveryDelayMinTurns`–`deliveryDelayMaxTurns` kvartal till (deliveredBetween), och slumpen (haveri, sen underleverantör) ingår inte.
 import balanceData from './data/balance.json' with { type: 'json' }
-import { canBuildHere, isActiveContract, lineMayBuild, ownRemaining, subcontractRate } from './outsourcing.js'
+import { autoAssignable, canBuildHere, isActiveContract, lineMayBuild, ownRemaining, subcontractRate } from './outsourcing.js'
 import { getProduct } from './pricing.js'
 import { computeLineThroughput } from './resolve/steps/production.js'
 import { currentTooling, setupChange, setupCost } from './tooling.js'
@@ -140,6 +140,7 @@ function project(state: GameState, waiting: Job[], spread = true): Projection {
     const cands: { sim: SimLine; setupTurns: number; start: number }[] = []
     for (const candidate of sim) {
       if (!lineMayBuild(house, candidate.id, product)) continue
+      if (plannedLines.length === 0 && !autoAssignable(house, candidate.id, product)) continue // beslut 13A: samma val som den automatiska tilldelningen
       if (plannedLines.length > 0 && !plannedLines.includes(candidate.id)) continue // P180: ett kontrakt i en linjes plan hör till den linjen (P187: eller de linjer vars planer har det)
       const setupTurns = setupCost(setupChange(house, candidate.tooling, { productId: job.productId, designId: job.designId })).turns
       cands.push({ sim: candidate, setupTurns, start: candidate.freeAt + setupTurns })

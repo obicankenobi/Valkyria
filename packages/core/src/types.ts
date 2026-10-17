@@ -417,6 +417,9 @@ export interface Facility {
   level: 1 | 2 | 3
   // Kategorin ett monteringsverk eller labb arbetar i; null = ingen bindning (verk migrerade från före etapp 11, och verken tills P171 ger kategorin en effekt).
   category: TechCategory | null
+  // Speltest 2026-10-17 (beslut 13A): ett allmänt verk bygger fler kategorier än `category`. Startpaketets monteringsverk är allmänt (startWorksCategories i
+  // data/facilities.json: `category` är den första, resten står här) oavsett specialisering. Saknas = bara `category`.
+  extraCategories?: TechCategory[]
   condition: Pct // skick 0–100 (P174 sliter på det)
   staffing: Pct // bemanning, andel av full styrka (P173)
   skill: Pct // yrkesskicklighet (P173)
