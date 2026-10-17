@@ -22,6 +22,8 @@
 // skalade något i utfallet, och gjorde UI:t ärligt om det. P102 (ETAPP8_FORSLAG.md §6.1) gav dem en kurva
 // från belopp till effekt (avtagande avkastning, ett tak, aldrig säkert): varje nivå visar nu vad den köper
 // — samma tal som resolve, via previewAction (heat, relationer, kuppodds, counterIntelligence).
+import { RubberStampTool } from './RubberStampTool.js'
+import { PaperclipPhoto } from './PaperclipPhoto.js'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import {
@@ -33,7 +35,7 @@ import {
   validateAction,
 } from '@seventh-front/core'
 import type { FactionId, GameState, Official, OfficialId, PlayerAction, Product, RivalHouse } from '@seventh-front/core'
-import { Button, Card, DsSlider, Stepper, TierPicker } from './designSystem.js'
+import { Card, DsSlider, Stepper, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
 import { ActionCard } from './ActionCard.js'
 import { Meter, Panel, Tag, formatMoney } from './ui.js'
@@ -166,6 +168,7 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                   onMouseLeave={clearYarn}
                 >
                   <div className="faction-head">
+                    <PaperclipPhoto kind="official" factionId={official.factionId} post={official.post} name={display.name} />
                     <span className="faction-name">
                       {display.name} · {display.post}
                     </span>
@@ -415,9 +418,7 @@ function OfficialPointSpendForm({
           <span className="is-amber">{formatMoney(spend)}</span>
         </div>
       </div>
-      <Button variant="primary" onClick={() => onQueue(action)} testId={`contacts-${op}-file-${official.id}`}>
-        FILE
-      </Button>
+      <RubberStampTool label="FILE" stampText="AUTHORISED" stampId={`contacts-${op}-file-${official.id}`} onStamp={() => onQueue(action)} testId={`contacts-${op}-file-${official.id}`} />
     </div>
   )
 }
@@ -461,9 +462,7 @@ function FavourForm({ state, official, onQueue }: { state: GameState; official: 
           <span className="is-amber">{formatMoney(state.house.favourMarginOwed ?? 0)}</span>
         </div>
       </div>
-      <Button variant="primary" disabled={!validation.ok} onClick={() => onQueue(action)} testId={`contacts-FAVOUR-file-${official.id}`}>
-        FILE
-      </Button>
+      <RubberStampTool label="FILE" stampText="AUTHORISED" stampId={`contacts-FAVOUR-file-${official.id}`} disabled={!validation.ok} onStamp={() => onQueue(action)} testId={`contacts-FAVOUR-file-${official.id}`} />
       {reasonHint(validation) && <p className="cf-hint is-warning">{reasonHint(validation)}</p>}
     </div>
   )
@@ -490,9 +489,7 @@ function AssassinateForm({ state, official, onQueue }: { state: GameState; offic
           testId={`contacts-ASSASSINATE-tier-${official.id}`}
         />
       </div>
-      <Button variant="primary" disabled={!validation.ok} onClick={() => onQueue(action)} testId={`contacts-ASSASSINATE-file-${official.id}`}>
-        FILE — {formatMoney(spend)}
-      </Button>
+      <RubberStampTool label={`FILE — ${formatMoney(spend)}`} stampText="AUTHORISED" stampId={`contacts-ASSASSINATE-file-${official.id}`} disabled={!validation.ok} onStamp={() => onQueue(action)} testId={`contacts-ASSASSINATE-file-${official.id}`} />
       {reasonHint(validation) && <p className="cf-hint is-warning">{reasonHint(validation)}</p>}
     </div>
   )
@@ -532,9 +529,7 @@ function FactionFlatSpendForm({
           testId={`contacts-${op}-tier-${faction.id}`}
         />
       </div>
-      <Button variant="primary" onClick={() => onQueue(action)} testId={`contacts-${op}-file-${faction.id}`}>
-        FILE — {formatMoney(spend)}
-      </Button>
+      <RubberStampTool label={`FILE — ${formatMoney(spend)}`} stampText="AUTHORISED" stampId={`contacts-${op}-file-${faction.id}`} onStamp={() => onQueue(action)} testId={`contacts-${op}-file-${faction.id}`} />
     </div>
   )
 }
@@ -624,9 +619,7 @@ function BrokerForm({ state, faction, onQueue }: { state: GameState; faction: Ga
         </div>
       </div>
 
-      <Button variant="primary" disabled={!validation.ok} onClick={() => onQueue(action)} testId={`contacts-broker-file-${faction.id}`}>
-        FILE
-      </Button>
+      <RubberStampTool label="FILE" stampText="AUTHORISED" stampId={`contacts-broker-file-${faction.id}`} disabled={!validation.ok} onStamp={() => onQueue(action)} testId={`contacts-broker-file-${faction.id}`} />
       {reasonHint(validation) && <p className="cf-hint is-warning">{reasonHint(validation)}</p>}
     </div>
   )
@@ -638,6 +631,7 @@ function RivalDossier({ rival }: { rival: RivalHouse }) {
   return (
     <div className="faction-card" data-testid={`contacts-rival-${rival.id}`}>
       <div className="faction-head">
+        <PaperclipPhoto kind="rival" rivalId={rival.id} name={rival.name} />
         <span className="faction-name">{rival.name}</span>
         <Tag tone="blue">{rival.specialisation.toUpperCase()}</Tag>
         <Tag>{rival.temperament.toUpperCase()}</Tag>

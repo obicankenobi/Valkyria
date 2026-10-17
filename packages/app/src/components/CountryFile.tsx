@@ -25,11 +25,12 @@
 // effekt alls i political.ts — se den filens applyFactionTargetedPolitical/
 // applyFundCoup) utan en godkänd skiss eller ett balanstal att utgå från
 // hade varit att uppfinna en detalj i blindo. 7C bygger resten.
+import { RubberStampTool } from './RubberStampTool.js'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { INFLUENCE_BALANCE, TECH_CATEGORIES, blocOfFaction, previewAction, validateAction } from '@seventh-front/core'
 import type { FactionId, GameState, Official, PlayerAction, RivalId } from '@seventh-front/core'
-import { BottomSheet, Button, Card, Segmented, TierPicker } from './designSystem.js'
+import { BottomSheet, Card, Segmented, TierPicker } from './designSystem.js'
 import type { Tier } from './designSystem.js'
 import { ActionCard } from './ActionCard.js'
 import { StationCard } from './StationCard.js'
@@ -449,9 +450,7 @@ function ConfirmVerb({
       </button>
       <h3 className="cf-form-title">{verb}</h3>
       <ActionCard state={state} verb={verb} action={action} />
-      <Button variant="primary" disabled={!validation.ok} onClick={() => onFile(action)} testId={`cf-file-${verb}`}>
-        FILE
-      </Button>
+      <RubberStampTool label="FILE" stampText="AUTHORISED" stampId={`cf-file-${verb}`} disabled={!validation.ok} onStamp={() => onFile(action)} testId={`cf-file-${verb}`} />
       {!validation.ok && <p className="cf-hint is-warning">{validation.reason}</p>}
     </div>
   )
@@ -640,9 +639,7 @@ function InfluenceForm({
         </div>
       </div>
 
-      <Button variant="primary" onClick={() => onFile(action)} testId="cf-influence-file">
-        FILE
-      </Button>
+      <RubberStampTool label="FILE" stampText="AUTHORISED" stampId="cf-influence-file" onStamp={() => onFile(action)} testId="cf-influence-file" />
     </div>
   )
 }

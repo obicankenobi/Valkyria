@@ -5,6 +5,7 @@
 // spelarens dolda information, hela poängen med bidEstimate/winBand
 // (avsnitt 4.3). Regel 2: aldrig <select>/input[type=number] — Segmented/
 // DsSlider/Stepper genomgående, samma mönster som CountryFile.tsx (P79).
+import { RubberStampTool } from './RubberStampTool.js'
 import { useEffect, useMemo, useState } from 'react'
 import {
   BOT_BALANCE,
@@ -326,10 +327,12 @@ export function BidForm({
       </div>
 
       <div className="form-actions">
-        <Button
-          variant="primary"
+        <RubberStampTool
+          label={existingBid ? 'Update Bid' : 'Place Bid'}
+          stampText={existingBid ? 'UPDATED BID' : 'SEALED BID'}
+          stampId={order.id}
           disabled={lockReason !== null || (useKit && kitReason !== null)}
-          onClick={() =>
+          onStamp={() =>
             onSubmit({
               orderId: order.id,
               price,
@@ -342,9 +345,7 @@ export function BidForm({
             })
           }
           testId="bid-submit"
-        >
-          {existingBid ? 'Update Bid' : 'Place Bid'}
-        </Button>
+        />
         {existingBid && (
           <Button variant="secondary" onClick={onRemove} testId="bid-remove">
             Remove Bid
