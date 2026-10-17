@@ -6,7 +6,7 @@
 // banderollen SYNS — samma disciplin som operations-intel.spec.ts.
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { biddableFolders } from './screens'
+import { biddableFolders, openQuarterBand } from './screens'
 
 function parseMoney(text: string): number {
   return Number(text.replace(/[£,−-]/g, '').trim())
@@ -106,7 +106,7 @@ test('handledningen leder alla åtta steg och avslutas av sig själv (P91a klart
   await expect(page.getByTestId('tutorial-prompt')).toHaveText(/production board/i)
 
   // Läsa ett larm: tomma linjer är ett larm i This Quarter efter första kvartalet (inget kontrakt vunnet än). Ett tryck hoppar till kortet.
-  await page.getByTestId('quarterband-toggle').click()
+  await openQuarterBand(page)
   await page.locator('[data-testid^="quarterband-item-works-"]').first().click()
   // Planen kräver ett vunnet kontrakt — det finns inte än, så steget står kvar tills handledningen löper ut av sig själv (tre kvartal).
   await expect(page.getByTestId('tutorial-prompt')).toHaveText(/production board/i)

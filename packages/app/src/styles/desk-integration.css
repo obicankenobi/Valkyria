@@ -1,0 +1,49 @@
+/* desk-integration.css — P193 (ETAPP12): limmet mellan Geminis krigsbord (desk-war-room.css, orört) och appens äldre CSS.
+   Egen fil så att Geminis leverans förblir ordagrann. */
+
+/* TheatreMap:s .map-container (styles.css) har höjd i procent men ingen bredd i en flex-rad: utan detta får kartan bredd 0. */
+.desk-map-inner > .map-container {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+/* axe color-contrast: flikarnas etiketter (#51483b på #ccb47a) gav 4,43:1 mot kravet 4,5:1. */
+.desk-manila-tab:not(.is-active) {
+  color: #3f372c;
+}
+
+/* Regel 11 (mushöjd 28 px): mini-länkarna var 12 px höga. Padding med lika stor negativ marginal ger träffyta utan visuell ändring. */
+.desk-mini-link {
+  padding: 8px 6px;
+  margin: -8px -6px;
+}
+
+/* Telexremsans rader är nowrap: utan minmax(0, …) räknade rutnätet ut kolumnbredden ur radernas fulla längd, och kvartalsblocket
+   sköt över Outbox och kalendern så att End Quarter blev oåtkomlig. */
+.desk-bottom-left {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+}
+.desk-telex-box,
+.desk-clipboard {
+  min-width: 0;
+}
+
+/* Mappens halva är smalare än den gamla fullbreddsvyn: segmenterade val (budmappens konstruktionsval) får tätare utfyllnad. */
+.desk-manila-body .ds-segmented-opt {
+  padding-left: 4px;
+  padding-right: 4px;
+  flex: 1 0 auto; /* efter innehållet, inte lika breda: "STANDARD" klipptes i en smal kolumn */
+}
+.desk-manila-body .ds-segmented {
+  flex-wrap: wrap;
+}
+
+/* Regel 18: telexraderna klipptes med ellips (nowrap) — i stället radbryts de; remsan scrollar redan lodrätt, så ingenting går förlorat. */
+.desk-telex-line {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}

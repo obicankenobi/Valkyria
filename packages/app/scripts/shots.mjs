@@ -32,6 +32,12 @@ const REFERENCE_PORT = 4187
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
 
+// P193 (ETAPP12): kvartalsblocket är utfällt som standard på krigsbordet; öppna det bara om det är hopfällt.
+async function openQuarterBand(page) {
+  const toggle = page.getByTestId('quarterband-toggle')
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+}
+
 // P126 (ETAPP9 §9): ritbordet och typbladen. Ett riktigt parti har inga konstruktioner förrän ett designprojekt gått klart
 // och ingen fångad materiel förrän ett genombrott — samma IndexedDB-injektion som "crisis". Tre konstruktioner (ej provad med
 // dold miljöbrist, beprövad, under utredning), ett pågående projekt, en öppen utredning, ett fångat system och goda relationer.
@@ -492,7 +498,7 @@ const APP_SCREENS = [
       await page.getByTestId('newgame-submit').click()
       await page.getByTestId('briefing-begin').click()
       await page.getByTestId('hud').waitFor()
-      await page.getByTestId('quarterband-toggle').click()
+      await openQuarterBand(page)
       await page.getByTestId('quarterband-body').waitFor()
     },
   },
@@ -964,7 +970,7 @@ const APP_SCREENS = [
       await page.reload()
       await page.getByTestId('menu-continue').click()
       await page.getByTestId('hud').waitFor()
-      await page.getByTestId('quarterband-toggle').click()
+      await openQuarterBand(page)
       await page.getByTestId('quarterband-item-standing-supply-steel').click()
       await page.getByTestId('standing-back-supply-steel').waitFor()
     },
@@ -1034,7 +1040,7 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await enterOperationsAndPlay(page, 0)
       await page.getByTestId('quarterband-memo-count').waitFor()
-      await page.getByTestId('quarterband-toggle').click()
+      await openQuarterBand(page)
       await page.getByTestId('quarterband-memo-drawing-board').click()
       await page.getByTestId('memo-sheet').waitFor()
     },
@@ -1133,7 +1139,7 @@ const APP_SCREENS = [
     path: '/',
     async afterGoto(page) {
       await injectWorksState(page)
-      await page.getByTestId('quarterband-toggle').click()
+      await openQuarterBand(page)
       await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
     },
   },
@@ -1190,7 +1196,7 @@ const APP_SCREENS = [
     path: '/',
     async afterGoto(page) {
       await injectLoanState(page)
-      await page.getByTestId('quarterband-toggle').click()
+      await openQuarterBand(page)
       await page.getByTestId('quarterband-item-order-order-locked-1').waitFor()
     },
   },

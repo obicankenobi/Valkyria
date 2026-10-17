@@ -44,6 +44,8 @@ for (const format of FORMATS) {
           // gav scrollWidth 4 > clientWidth 2 trots att inget klipptes). Samma fynd som P77:s frågetecken. SVG-texter prövas i stället
           // mot sin omgivande form här nedan och mot varandra i kartans egen kollisionsloop.
           if (node instanceof SVGElement) continue
+          // P193: visuellt dold skärmläsartext (1×1 px med clip, t.ex. .desk-sr-value) har per konstruktion en ruta som är smalare än sin text.
+          if (style.clip !== 'auto' && node.clientWidth <= 1) continue
           // Bara element med EGEN direkt textnod (inte bara andra elements
           // wrapper) — annars flaggas containern för sina barns skull också.
           const hasDirectText = Array.from(node.childNodes).some(
@@ -76,15 +78,19 @@ for (const format of FORMATS) {
 
 // Regel 11 (CLAUDE.md, "Spelgränssnitt — regler (etapp 7)"): "Träffytor minst
 // 44×44 px." Samma komponentlista som ovan — växer i takt med fler skärmar.
+// P193 (ETAPP12, 12A): skrivbordet är mus först. Gemini-bordets flikar och kvartalsblock är 28–30 px höga; 28 px är golvet med mus
+// (44 px gällde tummen på telefonen och återtas om telefonformatet återupptas). Bara mini-länkarna (12 px) förstorades, utan att något syns.
+const HIT_TARGET_PX = 28
+
 for (const format of FORMATS) {
   for (const screen of SCREENS) {
-    test(`alla träffytor minst 44×44 px — ${screen.name}, ${format.name} (regel 11)`, async ({ page }) => {
+    test(`alla träffytor minst ${HIT_TARGET_PX}×${HIT_TARGET_PX} px — ${screen.name}, ${format.name} (regel 11)`, async ({ page }) => {
       await page.setViewportSize({ width: format.width, height: format.height })
       await page.goto(screen.path)
       if (screen.setup) await screen.setup(page)
       await page.waitForTimeout(300)
 
-      const tooSmall = await page.evaluate(() => {
+      const tooSmall = await page.evaluate((MIN_HIT) => {
         const found: string[] = []
         const interactive = document.body.querySelectorAll(
           'button, a[href], [role="slider"], [role="switch"], [role="radio"], [role="tab"]',
@@ -94,15 +100,15 @@ for (const format of FORMATS) {
           if (window.getComputedStyle(node).display === 'none') continue
           const rect = node.getBoundingClientRect()
           if (rect.width === 0 && rect.height === 0) continue // inte renderad (t.ex. dold)
-          if (rect.width < 44 || rect.height < 44) {
+          if (rect.width < MIN_HIT || rect.height < MIN_HIT) {
             const label = (node.getAttribute('aria-label') ?? node.textContent ?? '').trim().slice(0, 40)
             found.push(`${node.tagName.toLowerCase()} "${label}": ${rect.width.toFixed(0)}×${rect.height.toFixed(0)}`)
           }
         }
         return found
-      })
+      }, HIT_TARGET_PX)
 
-      expect(tooSmall, `Träffytor under 44×44 px:\n${tooSmall.join('\n')}`).toEqual([])
+      expect(tooSmall, `Träffytor under ${HIT_TARGET_PX}×${HIT_TARGET_PX} px:\n${tooSmall.join('\n')}`).toEqual([])
     })
   }
 }

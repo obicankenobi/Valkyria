@@ -13,6 +13,7 @@ import { BidForm } from './BidForm.js'
 import { Button } from './designSystem.js'
 import { Panel, Tag, formatMoney } from './ui.js'
 import { wearClass } from '../stampWear.js'
+import { useDeskYarn, yarnTargetForOrder } from '../deskYarnContext.js'
 
 function OrderFolder({
   state,
@@ -28,6 +29,8 @@ function OrderFolder({
   onRemove: () => void
 }) {
   const [open, setOpen] = useState(false)
+  // P193 (12C): hovring på mappen spänner den röda tråden till fronten/förbandet på kartan.
+  const { connectYarn, clearYarn } = useDeskYarn()
   const product = getProduct(order.productId)
   const buyer = state.factions[order.buyerId]
   // P99: villkoren — förskottet är ett villkor i affären (alltid synligt), köparens kreditstämpel
@@ -44,7 +47,12 @@ function OrderFolder({
   const lockReason = lockValidation.ok ? null : lockValidation.reason
 
   return (
-    <div className="order-folder" data-testid="order-folder">
+    <div
+      className="order-folder"
+      data-testid="order-folder"
+      onMouseEnter={(e) => connectYarn(e.currentTarget, yarnTargetForOrder(order, state))}
+      onMouseLeave={clearYarn}
+    >
       <div className="order-folder-tab">
         <span>{buyer ? buyer.name : order.buyerId}</span>
         <span className="credit-stamp-group">

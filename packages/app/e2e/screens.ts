@@ -13,6 +13,13 @@ export const FORMATS: { name: string; width: number; height: number }[] = [
   { name: 'desktop', width: 1440, height: 900 },
 ]
 
+// P193 (ETAPP12): kvartalsblocket ("This Quarter") ligger utfällt som standard på krigsbordet (DeskWorkspace), så ett blint klick på
+// växlaren STÄNGDE det som äldre tester ville öppna. Öppna det bara om det är hopfällt.
+export async function openQuarterBand(page: Page): Promise<void> {
+  const toggle = page.getByTestId('quarterband-toggle')
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+}
+
 export async function enterOperations(page: Page): Promise<void> {
   await page.getByTestId('menu-new-game').click()
   // P88 (§5): New Game -> Briefing -> OPERATIONS, two new legs.
@@ -295,7 +302,7 @@ export async function enterContractSheet(page: Page): Promise<void> {
 // This Quarter med verkslarmen utfälld.
 export async function enterWorksAlarms(page: Page): Promise<void> {
   await injectWorksState(page)
-  await page.getByTestId('quarterband-toggle').click()
+  await openQuarterBand(page)
   await page.getByTestId('quarterband-item-works-poor-condition-works-1').waitFor()
 }
 
@@ -371,7 +378,7 @@ export async function enterBooksLoans(page: Page): Promise<void> {
 
 export async function enterQuarterLocked(page: Page): Promise<void> {
   await injectLoanState(page)
-  await page.getByTestId('quarterband-toggle').click()
+  await openQuarterBand(page)
   await page.getByTestId('quarterband-item-order-order-locked-1').waitFor()
 }
 
@@ -605,7 +612,7 @@ export async function enterStandingAlarm(page: Page): Promise<void> {
   await page.reload()
   await page.getByTestId('menu-continue').click()
   await page.getByTestId('hud').waitFor()
-  await page.getByTestId('quarterband-toggle').click()
+  await openQuarterBand(page)
   await page.getByTestId('quarterband-item-standing-supply-steel').click()
   await page.getByTestId('standing-back-supply-steel').waitFor()
 }
@@ -767,7 +774,7 @@ export async function enterBidDesign(page: Page): Promise<void> {
 export async function enterMemo(page: Page): Promise<void> {
   await enterOperations(page)
   await page.getByTestId('quarterband-memo-count').waitFor()
-  await page.getByTestId('quarterband-toggle').click()
+  await openQuarterBand(page)
   await page.getByTestId('quarterband-memo-drawing-board').click()
   await page.getByTestId('memo-sheet').waitFor()
 }

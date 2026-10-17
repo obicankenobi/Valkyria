@@ -8,6 +8,8 @@
 > speltest (`docs/SPELTEST_ETAPP10A.md`) och P150 (etapp 10B) ligger kvar före; ordningen mot etapp 12 är ett
 > ägarbeslut som inte är fattat. Filen behåller namnet `ETAPP12_FORSLAG.md` som de andra förslagen.
 >
+> **Byggstatus (2026-10-17):** P192 körd. **P193 byggd** — Paket G1+G2 (`docs/ETAPP12_BUNDLE_G1_G2.md`) uppackade ordagrant och inkopplade; fyra fel i Geminis filer rättades minimalt och limmet ligger i `styles/desk-integration.css` (se `ANDRINGSLOGG.md` 2026-10-17). P194–P198 väntar på G3–G5. Raden "Paketen G1–G5 finns ännu inte" nedan gällde vid inläggningen.
+>
 > **Premisskontroll mot koden (2026-10-16, gjord vid inläggningen, inget ändrat):** specens fyra påståenden i §0 stämmer.
 > (1) `TheatreMap.tsx` ritar frontlinjen som `<circle className="map-frontline-marker">` plus tre spårcirklar.
 > (2) `QuarterReplay.tsx` är en platt lista (`<ol className="replay-list">`).

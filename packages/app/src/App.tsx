@@ -10,7 +10,9 @@ import { MainMenu } from './components/MainMenu.js'
 import { NewGameScreen } from './components/NewGameScreen.js'
 import { BriefingScreen } from './components/BriefingScreen.js'
 import { EpilogueScreen, ENDING_LABEL } from './components/EpilogueScreen.js'
-import { ActionDock, HudBar, QuarterBand, RejectedBanner, TabBar } from './components/Shell.js'
+import { RejectedBanner } from './components/Shell.js'
+import { DeskWorkspace } from './components/DeskWorkspace.js'
+import { DeskYarnProvider } from './components/DeskYarn.js'
 import type { ShellView } from './components/Shell.js'
 import { TheatreMap } from './components/TheatreMap.js'
 import { CountryFile } from './components/CountryFile.js'
@@ -710,124 +712,94 @@ export function App() {
     <HandbookContext.Provider value={handleOpenHandbook}>
     <ArmedVerbContext.Provider value={armed}>
     <ReplayFocusContext.Provider value={replayFocus}>
-    <div className="ds-shell">
-      <HudBar state={state} onOpenMenu={() => setPaused(true)} onOpenHandbook={handleOpenHandbook} />
-      <QuarterBand
+    <DeskYarnProvider>
+    <div className="ds-shell desk-shell">
+      {/* P193 (ETAPP12, 12B/12C): skrivbordet. Kartan är en slot som ALDRIG avmonteras när `view` byter flik; mapparna ligger till höger.
+          HUD, kvartalsblock, flikar, Outbox och kalender (end-quarter-button) bor i DeskWorkspace (Paket G1), tråden i DeskYarnProvider (G2). */}
+      <DeskWorkspace
         state={state}
+        activeView={view as ShellView}
+        onSelectView={(next) => setView(next)}
+        selectedFactionId={selectedFactionId}
+        onSelectCountry={setSelectedFactionId}
+        actions={draft.actions}
+        onRemoveAction={removeAction}
+        onOpenCatalog={() => setCatalogOpen(true)}
+        onEndTurn={handleEndTurn}
+        ended={ended}
         memos={memosLoaded ? dueMemos(state, memosRead) : []}
         onOpenMemo={(id) => setMemoOpenId(id)}
-        onNavigate={(target: ThisQuarterTarget) => {
+        onNavigateQuarterItem={(target: ThisQuarterTarget) => {
           if (target.view === 'operations') setSelectedFactionId(target.factionId)
           setFocusCard(target.view === 'company' ? (target.focus ?? null) : null)
           if (target.view === 'company' && target.focus && tutorial.active) setTutorial((t) => completeTutorialStep(t, 'read-alarm'))
           setView(target.view)
         }}
+        onOpenMenu={() => setPaused(true)}
+        onOpenHandbook={handleOpenHandbook}
+        bannerSlot={
+          <>
+            {ended && state.status.kind === 'ended' && (
+              <div className="banner is-ended" data-testid="ended-banner">
+                <div>
+                  <div className="banner-title">{ENDING_LABEL[state.status.ending] ?? state.status.ending}</div>
+                  <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
+                </div>
+                <span className="tabs-spacer" />
+                {/* P89 (§5): "Front Page ──(slut)──► Epilogue ─► Title Screen" — genvägen öppnar Epilogue. */}
+                <button type="button" className="btn" onClick={() => setView('epilogue')} data-testid="ended-banner-epilogue">
+                  Epilogue
+                </button>
+              </div>
+            )}
+            <RejectedBanner rejected={lastRejected} />
+            {/* P91a (§9/§13, P81-20): synlig oavsett flik, samma princip som RejectedBanner. */}
+            <TutorialOverlay step={currentTutorialStep(tutorial, state.meta.turn, tutorialContext(state))} onDismiss={handleDismissTutorial} />
+            {armed && <ArmedVerbStrip verb={armed.verb} onClear={() => setArmed(null)} />}
+          </>
+        }
+        mapSlot={<TheatreMap state={state} selectedFactionId={selectedFactionId} onSelectCountry={setSelectedFactionId} />}
+        countryFileSlot={
+          selectedFactionId ? (
+            <CountryFile
+              state={state}
+              factionId={selectedFactionId}
+              onAddAction={addActionDisarming}
+              onClose={() => setSelectedFactionId(null)}
+              onOpenContacts={() => {
+                setSelectedFactionId(null)
+                setView('contacts')
+              }}
+            />
+          ) : null
+        }
+        folderContentSlot={
+          <>
+            {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} onAddAction={addActionDisarming} onSetStandingOrder={setStandingOrder} />}
+            {view === 'company' && (
+              <TheHouse
+                state={state}
+                draft={draft}
+                onAddAction={addActionDisarming}
+                onRemoveAction={removeAction}
+                onSetStandingOrder={setStandingOrder}
+                onRemoveStandingOrder={removeStandingOrder}
+                focusCard={focusCard}
+              />
+            )}
+            {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} />}
+            {view === 'news' && (
+              <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} report={lastTurnReport} />
+            )}
+          </>
+        }
       />
-
-      <main className="ds-shell-content">
-        {ended && state.status.kind === 'ended' && (
-          <div className="banner is-ended" data-testid="ended-banner">
-            <div>
-              <div className="banner-title">{ENDING_LABEL[state.status.ending] ?? state.status.ending}</div>
-              <div className="banner-sub">Game decided on turn {state.status.turn}.</div>
-            </div>
-            <span className="tabs-spacer" />
-            {/* P89 (§5): "Front Page ──(slut)──► Epilogue ─► Title Screen" —
-                the ended-game shortcut now opens the Epilogue (the four
-                axes, the ending card, turning points, the full chronicle)
-                instead of jumping straight to the Title Screen. Epilogue
-                itself offers the Title Screen button (which in turn offers
-                New Game → Briefing). */}
-            <button type="button" className="btn" onClick={() => setView('epilogue')} data-testid="ended-banner-epilogue">
-              Epilogue
-            </button>
-          </div>
-        )}
-
-        <RejectedBanner rejected={lastRejected} />
-
-        {/* P91a (§9/§13, P81-20): synlig oavsett flik, samma princip som
-            RejectedBanner ovan — se TutorialOverlay.tsx:s egen kommentar. */}
-        <TutorialOverlay step={currentTutorialStep(tutorial, state.meta.turn, tutorialContext(state))} onDismiss={handleDismissTutorial} />
-
-        {armed && <ArmedVerbStrip verb={armed.verb} onClear={() => setArmed(null)} />}
-
-        {/* P74/P76 (§13): OPERATIONS är kartan. P74 byggde skalet med en
-            platshållare; P76 ersätter den med TheatreMap, den riktiga
-            geografiska kartan (TopoJSON, d3-geo, d3-zoom, SECTOR_REGIONS).
-            Den gamla THE WORLD-vyn (TheWorld.tsx — Doomsday, Theatres,
-            Factions, Stations) döps inte om till OPERATIONS; dess innehåll
-            återkommer styckvis i senare prompter (landets bottenark i P79,
-            dossiererna i CONTACTS) i stället för att flyttas hit i sin
-            helhet. TheWorld.tsx rörs inte och lämnas oanvänd så länge. */}
-        {view === 'operations' && (
-          <TheatreMap state={state} selectedFactionId={selectedFactionId} onSelectCountry={setSelectedFactionId} />
-        )}
-        {view === 'operations' && selectedFactionId && (
-          <CountryFile
-            state={state}
-            factionId={selectedFactionId}
-            onAddAction={addActionDisarming}
-            onClose={() => setSelectedFactionId(null)}
-            onOpenContacts={() => {
-              setSelectedFactionId(null)
-              setView('contacts')
-            }}
-          />
-        )}
-        {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} onAddAction={addActionDisarming} onSetStandingOrder={setStandingOrder} />}
-        {view === 'company' && (
-          <TheHouse
-            state={state}
-            draft={draft}
-            onAddAction={addActionDisarming}
-            onRemoveAction={removeAction}
-            onSetStandingOrder={setStandingOrder}
-            onRemoveStandingOrder={removeStandingOrder}
-            focusCard={focusCard}
-          />
-        )}
-        {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} />}
-        {view === 'news' && (
-          <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} report={lastTurnReport} />
-        )}
-      </main>
-
-      {view === 'operations' && (
-        <ActionDock
-          state={state}
-          actions={draft.actions}
-          onRemoveAction={removeAction}
-          onEndTurn={handleEndTurn}
-          onOpenCatalog={() => setCatalogOpen(true)}
-          ended={ended}
-        />
-      )}
 
       <ActionCatalog
         open={catalogOpen}
         onClose={() => setCatalogOpen(false)}
         onNavigate={handleArmVerb}
       />
-
-      <TabBar
-        active={view}
-        onSelect={setView}
-        contractsCount={state.market.openOrders.length}
-        newsCount={undefined}
-      />
-
-      {/* End Quarter måste nås oavsett vilken flik som är aktiv (samma
-          princip som den gamla, alltid synliga navigationsraden) — §5:s
-          mockup visar den bara i OPERATIONS-läget, men att bara kunna
-          avsluta kvartalet från en enda flik hade varit en regression mot
-          appens nuvarande beteende. En liten, sekundär knapp på övriga
-          flikar, i stället för att duplicera hela handlingsdockan. */}
-      {view !== 'operations' && (
-        <button type="button" className="ds-button is-primary ds-end-quarter-fallback" onClick={handleEndTurn} disabled={ended} data-testid="end-quarter-button">
-          End Quarter
-        </button>
-      )}
 
       {replaying && (
         <QuarterReplay
@@ -908,6 +880,7 @@ export function App() {
       />
       <Handbook open={handbookOpen} focusId={handbookFocusId} onClose={() => setHandbookOpen(false)} />
     </div>
+    </DeskYarnProvider>
     </ReplayFocusContext.Provider>
     </ArmedVerbContext.Provider>
     </HandbookContext.Provider>

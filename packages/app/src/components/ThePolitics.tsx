@@ -38,6 +38,7 @@ import type { Tier } from './designSystem.js'
 import { ActionCard } from './ActionCard.js'
 import { Meter, Panel, Tag, formatMoney } from './ui.js'
 import { VerbIcon } from './VerbIcon.js'
+import { useDeskYarn } from '../deskYarnContext.js'
 
 // Poängbaserade nivåer (samma mönster som INFLUENCE, CountryFile.tsx P79) för
 // de tre officials-verb vars spend/marginCost FAKTISKT skalar en effekt —
@@ -129,6 +130,7 @@ type OpenForm = { kind: 'official'; officialId: OfficialId; op: OfficialOp } | {
 
 export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAction: (action: PlayerAction) => void }) {
   const [openForm, setOpenForm] = useState<OpenForm>(null)
+  const { connectYarn, clearYarn } = useDeskYarn() // P193 (12C): hovring på en tjänsteman spänner tråden till hens land
 
   function queue(action: PlayerAction) {
     const result = validateAction(state, state, action)
@@ -157,7 +159,12 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
               const display = officialDisplay(state, official)
               const active = official.status === 'active'
               return (
-                <div className="faction-card" key={display.id}>
+                <div
+                  className="faction-card"
+                  key={display.id}
+                  onMouseEnter={(e) => connectYarn(e.currentTarget, official.factionId)}
+                  onMouseLeave={clearYarn}
+                >
                   <div className="faction-head">
                     <span className="faction-name">
                       {display.name} · {display.post}

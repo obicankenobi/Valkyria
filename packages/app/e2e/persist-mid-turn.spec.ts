@@ -23,6 +23,8 @@ async function setSlider(page: Page, testId: string, targetValue: number): Promi
   const clamped = Math.min(max, Math.max(min, targetValue))
   const ratio = max > min ? (clamped - min) / (max - min) : 0
   const track = page.locator(`[data-testid="${testId}"] .ds-slider-track`).first()
+  // P193: mappen scrollar inuti krigsbordets högerhalva; ett reglage under bordskanten måste scrollas fram, annars träffar musklicket Outbox-dockan.
+  await track.scrollIntoViewIfNeeded()
   const box = await track.boundingBox()
   if (!box) throw new Error(`reglaget ${testId} hittades inte`)
   await page.mouse.click(box.x + box.width * ratio, box.y + box.height / 2)
@@ -34,6 +36,8 @@ async function readSlider(page: Page, testId: string): Promise<number> {
 }
 
 test('ett parti kan stängas och återupptas mitt i en tur utan förlust', async ({ page }) => {
+  // P193: skrivbordsformatet (1440×900, ETAPP12 12A). I Playwrights standardvy (1280×720) ligger budreglaget bakom Outbox-dockan.
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'THE SEVENTH FRONT' })).toBeVisible()
 

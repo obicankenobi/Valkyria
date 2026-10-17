@@ -3,6 +3,7 @@
 // gäller från nästa kvartal.
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { openQuarterBand } from './screens'
 
 async function startFreshGame(page: Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -97,13 +98,13 @@ test('ett larm hoppar från This Quarter till rätt kort på tavlan, som öppnas
   await page.getByTestId('menu-continue').click()
   await page.getByTestId('hud').waitFor()
 
-  await page.getByTestId('quarterband-toggle').click()
+  await openQuarterBand(page)
   await page.getByTestId('quarterband-item-standing-supply-steel').click()
 
   await expect(page.getByTestId('standing-card-supply-steel')).toBeVisible()
   await expect(page.getByTestId('standing-back-supply-steel')).toBeVisible()
   await expect(page.getByTestId('standing-alarm-supply-steel')).toBeVisible()
-  // Listan har stängts och kortet är faktiskt i bild (inte bara i DOM:en).
-  await expect(page.getByTestId('quarterband-body')).toHaveCount(0)
+  // Kortet är faktiskt i bild (inte bara i DOM:en). P193: på krigsbordet ligger kvartalsblocket kvar utfällt (det är ett skrivblock, inget
+  // överlägg som stängs av ett hopp), så "listan har stängts" gäller inte längre.
   await expect(page.getByTestId('standing-card-supply-steel')).toBeInViewport()
 })
