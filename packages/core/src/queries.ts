@@ -90,6 +90,8 @@ interface ThresholdBalance {
   supplyAgreementMinTurns: number
   supplyAgreementMaxTurns: number
   overtimeCapacityPct: number
+  factionLowSupportThreshold: number
+  factionLowSupportTurns: number
 }
 const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
 
@@ -128,6 +130,9 @@ export const DISPLAY_THRESHOLDS = {
   supplyAgreementMinTurns: THRESHOLD_BALANCE.supplyAgreementMinTurns,
   supplyAgreementMaxTurns: THRESHOLD_BALANCE.supplyAgreementMaxTurns,
   overtimeCapacityPct: THRESHOLD_BALANCE.overtimeCapacityPct,
+  // Etapp 13, P200 (förslag 13-5): stödmätaren och dess varning läser samma gräns och samma antal kvartal som factions.ts:s processLowSupport dömer efter.
+  lowSupportThreshold: THRESHOLD_BALANCE.factionLowSupportThreshold,
+  lowSupportTurns: THRESHOLD_BALANCE.factionLowSupportTurns,
 } as const
 
 // P81c (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten, P81-8): "utkastad tur 10

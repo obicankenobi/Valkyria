@@ -24,7 +24,9 @@
 // — samma tal som resolve, via previewAction (heat, relationer, kuppodds, counterIntelligence).
 import { RubberStampTool } from './RubberStampTool.js'
 import { PaperclipPhoto } from './PaperclipPhoto.js'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { FolderTabs } from './FolderTabs.js'
+import { supportOutlook, supportSentence } from '../supportOutlook.js'
 import type { ReactNode } from 'react'
 import {
   allProducts,
@@ -132,6 +134,8 @@ type OpenForm = { kind: 'official'; officialId: OfficialId; op: OfficialOp } | {
 
 // Speltest 2026-10-17 (punkt 24): vad posten betyder för huset — bundet till koden: bara upphandlingschefen (`findOfficial(…, 'procurement')`) rör ordrar,
 // förmedling, upphandlingar och pappersspår; alla fyra kan fatta ett policybeslut mot huset (politics.ts läser varje tjänsteman, oavsett post).
+type ContactsTab = FactionId | 'rivals'
+
 const POST_ROLE: Record<Official['post'], string> = {
   procurement: 'Runs this buyer\'s orders, tenders and brokered deals: their relation and integrity weigh on your bids.',
   defence: 'No hand in the orders. Their agenda can become a policy decision against you if they feel ignored.',
@@ -139,8 +143,23 @@ const POST_ROLE: Record<Official['post'], string> = {
   interior: 'No hand in the orders. Their agenda can become a policy decision against you if they feel ignored.',
 }
 
-export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAction: (action: PlayerAction) => void }) {
+export function ThePolitics({
+  state,
+  onAddAction,
+  focusFactionId = null,
+}: {
+  state: GameState
+  onAddAction: (action: PlayerAction) => void
+  // Etapp 13, P199: landet mappen öppnar på (från landsakten eller This Quarter); annars det första.
+  focusFactionId?: FactionId | null
+}) {
   const [openForm, setOpenForm] = useState<OpenForm>(null)
+  const groups = [...groupByFaction(state).entries()]
+  const firstTab: ContactsTab = groups[0]?.[0] ?? 'rivals'
+  const [tab, setTab] = useState<ContactsTab>(focusFactionId ?? firstTab)
+  useEffect(() => {
+    if (focusFactionId) setTab(focusFactionId)
+  }, [focusFactionId])
   const { connectYarn, clearYarn } = useDeskYarn() // P193 (12C): hovring på en tjänsteman spänner tråden till hens land
 
   function queue(action: PlayerAction) {
@@ -162,10 +181,47 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
     <>
       <h2 className="view-title">The Politics</h2>
 
-      {[...groupByFaction(state).entries()].map(([factionId, officials]) => {
+      {/* Etapp 13, P199 (förslag 13-3): ett land per flik och rivalhusen på en egen — förut en enda lång mapp. En flik är röd när landets stöd ligger under
+          gränsen där det tvingas söka fred (P200). */}
+      <FolderTabs
+        tabs={[
+          ...groups.map(([factionId]) => {
+            const outlook = supportOutlook(state, factionId)
+            return { id: factionId as ContactsTab, label: state.factions[factionId]?.name ?? factionId, alert: !!outlook && outlook.below && outlook.quartersToPeace !== null }
+          }),
+          { id: 'rivals' as ContactsTab, label: 'Rival houses', count: Object.keys(state.rivals).length },
+        ]}
+        value={tab}
+        onChange={setTab}
+        label="Contacts by country"
+        testId="contacts-tabs"
+      />
+
+      {groups.filter(([factionId]) => factionId === tab).map(([factionId, officials]) => {
         const faction = state.factions[factionId]
+        const support = supportOutlook(state, factionId)
         return (
           <Panel info="The country's officials and what you can do about them and about the country itself." infoTopic="politics" title={faction ? faction.name : factionId} key={factionId} flush>
+            {/* Etapp 13, P200 (förslag 13-5): stödmätaren, med gränsen där landet tvingas söka fred markerad. */}
+            {support && (
+              <div
+                className="faction-card support-card"
+                data-testid={`contacts-support-${factionId}`}
+                onMouseEnter={(e) => connectYarn(e.currentTarget, factionId)}
+                onMouseLeave={clearYarn}
+              >
+                <Meter
+                  label="Public support"
+                  value={support.support}
+                  display={`${Math.round(support.support)}`}
+                  tone={support.below ? 'red' : support.near ? 'amber' : 'green'}
+                  marks={[{ at: support.threshold, label: 'peace' }]}
+                />
+                <p className={support.below || support.near ? 'cf-hint is-warning' : 'cf-hint'} data-testid={`contacts-support-note-${factionId}`}>
+                  {supportSentence(support)}
+                </p>
+              </div>
+            )}
             {officials.map((official) => {
               const display = officialDisplay(state, official)
               const active = official.status === 'active'
@@ -366,11 +422,13 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
         )
       })}
 
-      <Panel info="The other arms houses you compete with for the same contracts." infoTopic="procurement" title="Rival houses" flush>
-        {Object.values(state.rivals).map((rival) => (
-          <RivalDossier key={rival.id} rival={rival} />
-        ))}
-      </Panel>
+      {tab === 'rivals' && (
+        <Panel info="The other arms houses you compete with for the same contracts." infoTopic="procurement" title="Rival houses" flush>
+          {Object.values(state.rivals).map((rival) => (
+            <RivalDossier key={rival.id} rival={rival} />
+          ))}
+        </Panel>
+      )}
     </>
   )
 }

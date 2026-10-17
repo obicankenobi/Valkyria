@@ -57,6 +57,18 @@ export async function enterContacts(page: Page): Promise<void> {
   await page.getByTestId('contacts-verb-BROKER-rvn').waitFor()
 }
 
+// Etapp 13 (P199/P200): CONTACTS på Laos flik (stödmätaren med fredsgränsen) och på rivalhusens flik.
+export async function enterContactsLaos(page: Page): Promise<void> {
+  await enterContacts(page)
+  await page.getByTestId('contacts-tabs-laos').click()
+  await page.getByTestId('contacts-support-laos').waitFor()
+}
+
+export async function enterContactsRivals(page: Page): Promise<void> {
+  await enterContacts(page)
+  await page.getByTestId('contacts-tabs-rivals').click()
+}
+
 // P87: krisens helskärmskort (§7.6) — sannolikhetsstyrd i ett riktigt parti
 // (samma skäl play-20-turns.spec.ts har en adaptiv väntloop), så samma
 // IndexedDB-injektion som scripts/shots.mjs:s "crisis"-skärm används här:
@@ -758,6 +770,7 @@ export async function enterLicence(page: Page): Promise<void> {
 export async function enterRaceBoard(page: Page): Promise<void> {
   await injectDesigns(page)
   await page.getByTestId('tab-contracts').click()
+  await page.getByTestId('contracts-tabs-race').click() // etapp 13, P199: kapplöpningen har en egen flik
   await page.getByTestId('race-board').waitFor()
 }
 
@@ -783,6 +796,7 @@ export async function enterMemo(page: Page): Promise<void> {
 export async function enterProgramme(page: Page): Promise<void> {
   await injectDesigns(page)
   await page.getByTestId('tab-contracts').click()
+  await page.getByTestId('contracts-tabs-tenders').click() // etapp 13, P199: upphandlingarna har en egen flik
   await page.getByTestId('programme-tricks-toggle-programme-1').click()
   await page.getByTestId('programme-tricks-programme-1').waitFor()
 }
@@ -931,6 +945,8 @@ export const SCREENS: { name: string; path: string; setup?: (page: Page) => Prom
   { name: 'news', path: '/', setup: enterNews },
   { name: 'news-front-page', path: '/', setup: enterNewsFrontPage },
   { name: 'contacts', path: '/', setup: enterContacts },
+  { name: 'contacts-laos', path: '/', setup: enterContactsLaos },
+  { name: 'contacts-rivals', path: '/', setup: enterContactsRivals },
   { name: 'crisis', path: '/', setup: enterCrisis },
   { name: 'epilogue', path: '/', setup: enterEpilogue },
   { name: 'epilogue-history', path: '/', setup: enterEpilogueHistory },

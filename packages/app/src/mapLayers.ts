@@ -10,6 +10,7 @@ import type { MapSelection } from './mapInfo.js'
 import { SECTOR_REGIONS } from './sectorRegions.js'
 import { lockedOrders } from './orderLocks.js'
 import { STATION_BAND_PCT } from './stationOutlook.js'
+import { supportOutlook } from './supportOutlook.js'
 
 export type MapLayerId = 'orders' | 'supply' | 'rivals' | 'intelligence' | 'politics'
 
@@ -19,7 +20,7 @@ export const MAP_LAYERS: readonly { id: MapLayerId; label: string; short: string
   { id: 'supply', label: 'Supply', short: 'SUP', explains: 'Per front: your units in transit, and how much the rival houses have delivered.' },
   { id: 'rivals', label: 'Rivals', short: 'RIV', explains: 'Per buyer: your contracts against the rival houses\' contracts, and your share.' },
   { id: 'intelligence', label: 'Intelligence', short: 'INT', explains: 'Per country: your station\'s depth and exposure, and how wide your estimates of it are.' },
-  { id: 'politics', label: 'Politics', short: 'POL', explains: 'Per country: its relation to you, public support for its government, embargoes and open tenders.' },
+  { id: 'politics', label: 'Politics', short: 'POL', explains: 'Per country: its relation to you, public support for its government (▼ 1/3: quarters below the line where it must sue for peace), embargoes and open tenders.' },
 ]
 
 export interface LayerTag {
@@ -108,7 +109,10 @@ function linesFor(state: GameState, layer: MapLayerId, buyer: Buyer): string[] {
       return [station ? `depth ${station.depth} · exp ${Math.round(station.exposure)}%` : 'no station', `bands ±${STATION_BAND_PCT[effectiveDepth(state, id)]}%`]
     }
     case 'politics': {
-      const lines = [`relation ${Math.round(faction?.relationToPlayer ?? 0)}`, `support ${Math.round(faction?.publicSupport ?? 0)}%`]
+      // Etapp 13, P200: under fredsgränsen visar raden hur många av de kvartal i rad som tvingar fram fred som redan gått.
+      const support = supportOutlook(state, id)
+      const supportLine = support?.quartersToPeace != null ? `support ${Math.round(support.support)} ▼ ${support.turnsBelow}/${support.turnsNeeded}` : `support ${Math.round(faction?.publicSupport ?? 0)}%`
+      const lines = [`relation ${Math.round(faction?.relationToPlayer ?? 0)}`, supportLine]
       if (faction?.embargoed) lines.push('EMBARGO')
       const tenders = (state.programmes ?? []).filter((p) => p.buyerId === id && p.phase !== 'cancelled' && p.phase !== 'awarded').length
       if (tenders > 0) lines.push(`${tenders} ${tenders === 1 ? 'tender' : 'tenders'}`)

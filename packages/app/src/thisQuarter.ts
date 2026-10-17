@@ -13,13 +13,14 @@ import type { FactionId, GameState } from '@seventh-front/core'
 import { DISPLAY_THRESHOLDS, getProduct, worksAlarms } from '@seventh-front/core'
 import { lockedOrders } from './orderLocks.js'
 import { standingOrderAlarms } from './standingOrderBoard.js'
+import { supportOutlook } from './supportOutlook.js'
 
-export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing' | 'inquiry' | 'works'
+export type ThisQuarterKind = 'order' | 'station' | 'official' | 'contract' | 'credit' | 'crisis' | 'standing' | 'inquiry' | 'works' | 'support'
 
 export type ThisQuarterTarget =
   | { view: 'contracts' }
   | { view: 'operations'; factionId: FactionId }
-  | { view: 'contacts' }
+  | { view: 'contacts'; factionId?: FactionId }
   // focus (P101): id på ett kort på anslagstavlan som ska öppnas och rullas fram när vyn visas.
   | { view: 'company'; focus?: string }
   | { view: 'news' }
@@ -81,7 +82,25 @@ export function deriveThisQuarter(state: GameState): ThisQuarterItem[] {
       kind: 'official',
       icon: '☒',
       label: `${official.name} (${official.post}) may lose their post`,
-      target: { view: 'contacts' },
+      target: { view: 'contacts', factionId: official.factionId },
+    })
+  }
+
+  // Etapp 13, P200 (förslag 13-5): ett land vars stöd ligger under, eller nära, gränsen där det tvingas söka fred — bara för länder i krig, där fred betyder att ordrarna upphör.
+  for (const factionId of Object.keys(state.factions)) {
+    const outlook = supportOutlook(state, factionId)
+    if (!outlook || !outlook.atWar) continue
+    if (outlook.quartersToPeace === null && !outlook.near) continue
+    const name = state.factions[factionId]?.name ?? factionId
+    items.push({
+      id: `support-${factionId}`,
+      kind: 'support',
+      icon: '▼',
+      label:
+        outlook.quartersToPeace !== null
+          ? `${name}: support ${Math.round(outlook.support)} — ${outlook.quartersToPeace === 1 ? 'peace next quarter' : `peace in ${outlook.quartersToPeace} quarters`} unless it rises`
+          : `${name}: support ${Math.round(outlook.support)}, close to ${outlook.threshold}`,
+      target: { view: 'contacts', factionId },
     })
   }
 

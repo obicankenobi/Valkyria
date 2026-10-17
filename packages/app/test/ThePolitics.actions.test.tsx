@@ -139,6 +139,7 @@ describe('ThePolitics — rivalhusens akter (P86, §7.1: "inga verb där")', () 
   it('listar varje rivalhus utan att erbjuda någon handling', () => {
     const state = createInitialState('indochina-slice', 'contacts-actions-seed')
     render(<ThePolitics state={state} onAddAction={() => {}} />)
+    fireEvent.click(screen.getByTestId('contacts-tabs-rivals')) // etapp 13, P199: rivalhusen har en egen flik
 
     const rivalIds = Object.keys(state.rivals)
     expect(rivalIds.length).toBeGreaterThan(0)

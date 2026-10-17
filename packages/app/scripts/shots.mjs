@@ -774,6 +774,27 @@ const APP_SCREENS = [
     },
   },
   {
+    // Etapp 13 (P199/P200): CONTACTS på Laos flik — stödmätaren med fredsgränsen.
+    name: 'contacts-laos',
+    path: '/',
+    async afterGoto(page) {
+      await page.getByTestId('menu-new-game').click()
+      const confirmYes = page.getByTestId('new-game-confirm-yes')
+      try {
+        await confirmYes.waitFor({ state: 'visible', timeout: 1500 })
+        await confirmYes.click()
+      } catch {
+        // Inget sparat parti.
+      }
+      await page.getByTestId('newgame-submit').click()
+      await page.getByTestId('briefing-begin').click()
+      await page.getByTestId('hud').waitFor()
+      await page.getByTestId('tab-contacts').click()
+      await page.getByTestId('contacts-tabs-laos').click()
+      await page.getByTestId('contacts-support-laos').waitFor()
+    },
+  },
+  {
     // P86: BROKER-formuläret, ThePolitics.tsx:s mest komplexa (produktlista,
     // kvantitet, prisreglage) — ingen egen referensskiss.
     name: 'contacts-broker',
@@ -1018,7 +1039,8 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await injectDesigns(page)
       await page.getByTestId('tab-contracts').click()
-      await page.getByTestId('race-board').waitFor()
+      await page.getByTestId('contracts-tabs-race').click() // etapp 13, P199: kapplöpningen har en egen flik
+  await page.getByTestId('race-board').waitFor()
     },
   },
   {
@@ -1052,7 +1074,8 @@ const APP_SCREENS = [
     async afterGoto(page) {
       await injectDesigns(page)
       await page.getByTestId('tab-contracts').click()
-      await page.getByTestId('programme-tricks-toggle-programme-1').click()
+      await page.getByTestId('contracts-tabs-tenders').click() // etapp 13, P199: upphandlingarna har en egen flik
+  await page.getByTestId('programme-tricks-toggle-programme-1').click()
       await page.getByTestId('programme-tricks-programme-1').waitFor()
     },
   },

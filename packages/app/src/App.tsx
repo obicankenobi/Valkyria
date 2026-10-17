@@ -199,6 +199,8 @@ export function App() {
   const [handbookOpen, setHandbookOpen] = useState(false)
   const [handbookFocusId, setHandbookFocusId] = useState<HandbookTopicId | null>(null)
   const [wireArchiveRequest, setWireArchiveRequest] = useState(0)
+  // Etapp 13, P199: landet CONTACTS öppnar på (landsakten, This Quarter).
+  const [contactsFocus, setContactsFocus] = useState<FactionId | null>(null)
 
   function fileMemo(id: string | null) {
     if (!id) return
@@ -736,6 +738,7 @@ export function App() {
         onOpenMemo={(id) => setMemoOpenId(id)}
         onNavigateQuarterItem={(target: ThisQuarterTarget) => {
           if (target.view === 'operations') setSelectedFactionId(target.factionId)
+          if (target.view === 'contacts') setContactsFocus(target.factionId ?? null)
           setFocusCard(target.view === 'company' ? (target.focus ?? null) : null)
           if (target.view === 'company' && target.focus && tutorial.active) setTutorial((t) => completeTutorialStep(t, 'read-alarm'))
           setView(target.view)
@@ -772,6 +775,7 @@ export function App() {
               onAddAction={addActionDisarming}
               onClose={() => setSelectedFactionId(null)}
               onOpenContacts={() => {
+                setContactsFocus(selectedFactionId)
                 setSelectedFactionId(null)
                 setView('contacts')
               }}
@@ -792,7 +796,7 @@ export function App() {
                 focusCard={focusCard}
               />
             )}
-            {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} />}
+            {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} focusFactionId={contactsFocus} />}
             {view === 'news' && (
               <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} report={lastTurnReport} archiveRequest={wireArchiveRequest} />
             )}

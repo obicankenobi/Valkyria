@@ -24,6 +24,7 @@
 import { DISPLAY_THRESHOLDS, computeUnitCostNow, getProduct, projectedQuarter, researchOutlook } from '@seventh-front/core'
 import { totalFixedCosts, worksCategories } from '@seventh-front/core'
 import type { Commodity, Contract, GameState, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
+import { FolderTabs } from './FolderTabs.js'
 import { Fragment, useEffect, useState } from 'react'
 import { InternalActionsForm, RawMaterialsPanel } from './CompanyActions.js'
 import { DrawingBoard } from './DrawingBoard.js'
@@ -246,21 +247,19 @@ export function TheHouse({
     <>
       <h2 className="view-title">The Company</h2>
 
-      <div className="drawer-tabs" role="tablist" aria-label="The Company drawers" data-testid="company-drawers">
-        {DRAWERS.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            role="tab"
-            aria-selected={drawer === d.id}
-            className={drawer === d.id ? 'drawer-tab is-active' : 'drawer-tab'}
-            onClick={() => setDrawer(d.id)}
-            data-testid={`company-drawer-${d.id}`}
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
+      {/* Etapp 13, P199: samma registerflikar som CONTRACTS och CONTACTS (FolderTabs). Legal är röd när ett utredningskort väntar på svar. */}
+      <FolderTabs
+        tabs={DRAWERS.map((d) => ({
+          id: d.id,
+          label: d.label,
+          alert: d.id === 'legal' && (state.traces ?? []).some((t) => t.houseId === 'player' && t.status === 'surfaced' && t.choice === undefined),
+        }))}
+        value={drawer}
+        onChange={setDrawer}
+        label="The Company drawers"
+        testId="company-drawers"
+        tabTestId={(id) => `company-drawer-${id}`}
+      />
 
       {drawer === 'works' && (
         <>

@@ -6,7 +6,8 @@
 // själva reglaget, den här filen äger bara mappen den öppnas ur.
 import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { FolderTabs } from './FolderTabs.js'
 import { buyerPreferenceDisplay, getProduct, orderTerms, validateBid } from '@seventh-front/core'
 import type { Bid, GameState, Order, PlayerAction, StandingOrderChange, TurnSubmission } from '@seventh-front/core'
 import { BidForm } from './BidForm.js'
@@ -130,6 +131,8 @@ function PreferenceMix({ state, order }: { state: GameState; order: Order }) {
   )
 }
 
+export type ContractsTab = 'orders' | 'tenders' | 'race'
+
 export function TheFloor({
   state,
   draft,
@@ -137,6 +140,7 @@ export function TheFloor({
   onRemoveBid,
   onAddAction = () => {},
   onSetStandingOrder = () => {},
+  initialTab = 'orders',
 }: {
   state: GameState
   draft: TurnSubmission
@@ -145,7 +149,12 @@ export function TheFloor({
   // P128: upphandlingsmappen köar stående order (anmälan, prototyp) och handlingar (knepen). Valfria så att äldre renderingar fungerar.
   onAddAction?: (action: PlayerAction) => void
   onSetStandingOrder?: (change: StandingOrderChange) => void
+  // Etapp 13, P199: vilken flik mappen öppnar på (t.ex. Tenders när This Quarter hoppar till en upphandling).
+  initialTab?: ContractsTab
 }) {
+  const [tab, setTab] = useState<ContractsTab>(initialTab)
+  useEffect(() => setTab(initialTab), [initialTab])
+  const openTenders = (state.programmes ?? []).filter((p) => p.phase !== 'cancelled' && p.phase !== 'awarded').length
   const activeContracts = state.market.contracts.filter((c) => c.status === 'active' || c.status === 'late')
   const inTransit = state.market.shipments.reduce((sum, s) => sum + s.units, 0)
 
@@ -153,12 +162,27 @@ export function TheFloor({
     <>
       <h2 className="view-title">Contracts</h2>
 
+      {/* Etapp 13, P199 (förslag 13-3): tre flikar i stället för en lång mapp. Ordrar och kontrakt först — det är mappens huvudsak. */}
+      <FolderTabs
+        tabs={[
+          { id: 'orders', label: 'Orders', count: state.market.openOrders.length },
+          { id: 'tenders', label: 'Tenders', count: openTenders },
+          { id: 'race', label: 'Arms race' },
+        ]}
+        value={tab}
+        onChange={setTab}
+        label="Contracts sections"
+        testId="contracts-tabs"
+      />
+
       {/* P127 (ETAPP9 §7.1/§9): kapplöpningstavlan och kravkorten. */}
-      <RaceBoard state={state} />
+      {tab === 'race' && <RaceBoard state={state} />}
 
       {/* P128 (ETAPP9 §8.1/§8.2/§9): upphandlingsmappen, knepen och utvärderingsprotokollet. */}
-      <ProgrammeFolders state={state} draft={draft} onSet={onSetStandingOrder} onAddAction={onAddAction} />
+      {tab === 'tenders' && <ProgrammeFolders state={state} draft={draft} onSet={onSetStandingOrder} onAddAction={onAddAction} />}
 
+      {tab === 'orders' && (
+        <>
       <Panel
         title="Open Orders"
         info="Contracts buyers want filled. Open a folder and place a bid; the best score wins, not only the lowest price." infoTopic="procurement"
@@ -220,6 +244,8 @@ export function TheFloor({
           </table>
         )}
       </Panel>
+        </>
+      )}
     </>
   )
 }

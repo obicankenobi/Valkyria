@@ -186,3 +186,34 @@
   max-width: 960px;
   max-height: 80vh;
 }
+
+/* Etapp 13, P199: registerflikarna (FolderTabs) står kvar överst när mappen scrollas, med ett tal och en röd markering för det som väntar. */
+.folder-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: inherit;
+}
+.folder-tabs .drawer-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.folder-tab-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--ink, #241f18);
+  color: #fbf7ec;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.drawer-tab.is-alert {
+  border-bottom-color: var(--red, #b3302a);
+  color: var(--red, #8f2620);
+}
+.support-card .meter {
+  margin-bottom: 6px;
+}
