@@ -47,3 +47,16 @@
   text-overflow: clip;
   overflow-wrap: anywhere;
 }
+
+/* P196: replay dock along the map edge (desktop). The overlay itself never blocks the map. */
+.modal-overlay.desk-map-replay-dock {
+  padding-left: 0;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+.desk-map-replay-dock .desk-replay-card {
+  width: min(520px, 46vw);
+  max-height: 34dvh;
+  margin: 0 0 12px 12px;
+  pointer-events: auto;
+}

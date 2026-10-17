@@ -31,12 +31,13 @@ import { zoom, zoomIdentity } from 'd3-zoom'
 import type { ZoomTransform } from 'd3-zoom'
 import * as topojsonClient from 'topojson-client'
 import { DISPLAY_THRESHOLDS, deriveSectorControl, effectiveDepth, facilityCard, foreignSite, foreignWorks, formationDisplay } from '@seventh-front/core'
-import type { Doctrine, FactionId, FormationDisplay, GameState } from '@seventh-front/core'
+import type { FactionId, FormationDisplay, GameState } from '@seventh-front/core'
 import { interpolateFrontGeoPosition, tokenOffset } from '../geoMath.js'
 import { SECTOR_REGIONS } from '../sectorRegions.js'
 import type { SectorRegion } from '../sectorRegions.js'
 import { CAPITALS } from '../capitals.js'
 import { playerSupplyLines, rivalSupplyLines, snapshotAttribution } from '../supplyLines.js'
+import { DynamicWorldOverlays, FrontlineGreasePolyline, MilitaryBaseMapLayer, WargameChit } from './RichTheatreMap.js'
 import { ACTION_CATALOG } from '../actionCatalog.js'
 import { COUNTRY_TO_FACTION, deriveMapInfo } from '../mapInfo.js'
 import type { MapSelection } from '../mapInfo.js'
@@ -161,25 +162,7 @@ export function routeHolderLabel(side: 'a' | 'b' | 'contested' | 'empty' | undef
   }
 }
 
-// P77 (§6.4, ordagrant): "Inre tecken per doktrin." Ritat i kod (ingen
-// bildtillgång), enkla APP-6-inspirerade glyfer — kors för infanteri, oval
-// (öppen/fylld) för mekaniserat/pansar, prick för artilleri, sicksack för
-// irreguljärt (ingen officiell APP-6-motsvarighet för gerillaförband, en
-// egen, tydligt skild markering).
-function DoctrineGlyph({ doctrine }: { doctrine: Doctrine }) {
-  switch (doctrine) {
-    case 'infantry':
-      return <path d="M-3,-3L3,3M3,-3L-3,3" className="map-token-glyph" />
-    case 'mechanised':
-      return <ellipse cx={0} cy={0} rx={3.2} ry={2} className="map-token-glyph map-token-glyph-outline" />
-    case 'armoured':
-      return <ellipse cx={0} cy={0} rx={3.2} ry={2} className="map-token-glyph map-token-glyph-filled" />
-    case 'artillery':
-      return <circle cx={0} cy={0} r={1.8} className="map-token-glyph map-token-glyph-filled" />
-    case 'irregular':
-      return <path d="M-3,2L-1,-2L1,2L3,-2" className="map-token-glyph" />
-  }
-}
+// P194 (ETAPP12): DoctrineGlyph ersatt av ChitDoctrineGlyph i RichTheatreMap.tsx (WargameChit).
 
 // P77 (§6.4, ordagrant): "ramens form visar sida (rektangel för vänligt
 // sinnad, romb för fientlig, kvadrat för neutral), inte bara färgen, så
@@ -208,67 +191,7 @@ function DoctrineGlyph({ doctrine }: { doctrine: Doctrine }) {
 // (regel 13). `onExplain` väljer legend-entryn utifrån brickans faktiska
 // tillstånd — okänd/sargad/känd, samma tre lägen §7.2:s teckenförklaring
 // beskriver.
-function FormationToken({
-  display,
-  x,
-  y,
-  onExplain,
-  selected = false,
-}: {
-  display: FormationDisplay
-  x: number
-  y: number
-  onExplain?: () => void
-  selected?: boolean
-}) {
-  const dotCount = display.strengthBand === 'stark' ? 3 : display.strengthBand === 'medel' ? 2 : 1
-  const frameClass = [
-    'map-token-frame',
-    display.status === 'mauled' ? 'is-mauled' : '',
-    display.status === 'refitting' ? 'is-refitting' : '',
-    !display.known ? 'is-unknown' : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-
-  return (
-    <g
-      transform={`translate(${x},${y})`}
-      data-testid={`map-formation-${display.id}`}
-      className={selected ? `map-formation-${display.side} is-selected` : `map-formation-${display.side}`}
-      onClick={onExplain}
-    >
-      {/* Ett tryckmål som är större än brickan själv (regel 11), och en ring när brickan är vald (regel 9). */}
-      <circle r={12} className="map-token-tap" />
-      {selected && <circle r={11} className="map-selected-ring" />}
-      {display.side === 'a' ? (
-        <rect x={-5} y={-5} width={10} height={10} className={frameClass} />
-      ) : (
-        <polygon points="0,-6.5 6.5,0 0,6.5 -6.5,0" className={frameClass} />
-      )}
-      {display.status === 'mauled' && <path d="M-4,-5L0,0L-2,5M4,-5L0,0L2,5" className="map-token-crack" />}
-      {display.known ? (
-        <DoctrineGlyph doctrine={display.doctrine} />
-      ) : (
-        // Frågetecknet ritas som en bana, inte ett <text>-element: SVG:s
-        // scrollWidth/clientWidth för ett enda, oplacerat textAnchor="middle"-
-        // tecken visade sig ge olika avrundning på skrivbordsformatet (4 vs 2)
-        // och trippade regel 18:s klippningstest, trots att inget faktiskt
-        // klipps visuellt — samma "ren form, ingen textmätning"-princip som
-        // DoctrineGlyph redan använder för alla kända doktriner.
-        <g className="map-token-unknown-mark">
-          <path d="M-1.6,-2.4C-1.6,-3.6,1.8,-3.6,1.8,-2.1C1.8,-0.7,0,-0.6,0,0.8" className="map-token-glyph" />
-          <circle cx={0} cy={3} r={0.7} className="map-token-glyph map-token-glyph-filled" />
-        </g>
-      )}
-      <g className="map-token-dots">
-        {Array.from({ length: dotCount }, (_, i) => (
-          <circle key={i} cx={-3 + i * 3} cy={7.5} r={0.8} className="map-token-dot" />
-        ))}
-      </g>
-    </g>
-  )
-}
+// P194 (ETAPP12): FormationToken ersatt av WargameChit (RichTheatreMap.tsx) — samma `formationDisplay`-data, samma data-testid.
 
 // Regel 18: etiketter som kolliderar döljs (efter prioritet — ursprunglig
 // listordning), krymps aldrig. getBBox saknas i jsdom (samma miljölucka som
@@ -620,6 +543,9 @@ export function TheatreMap({
               ))}
           </g>
 
+          {/* P194 (ETAPP12, 12D): Geminis militära baskarta 1965 — höjdkurvor, floder, Route 1/9/13, baser och kartusch (RichTheatreMap.tsx, mapMilitaryOverlay.ts). */}
+          <MilitaryBaseMapLayer project={project} />
+
           <g className="map-sectors">
             {allRegions.map((region) => {
               const side = sectorControlBySector.get(region.sectorId)
@@ -633,6 +559,7 @@ export function TheatreMap({
                       d={d}
                       className={`map-route ${sectorFillClass(side)}${isSelected({ kind: 'sector', sectorId: region.sectorId }) ? ' is-selected' : ''}`}
                       data-testid={`map-sector-${region.sectorId}`}
+                      data-map-node={region.sectorId}
                     />
                     <path
                       d={d}
@@ -649,6 +576,7 @@ export function TheatreMap({
                   d={regionPathD(region, project)}
                   className={`map-sector-fill ${sectorFillClass(side)}${isSelected({ kind: 'sector', sectorId: region.sectorId }) ? ' is-selected' : ''}`}
                   data-testid={`map-sector-${region.sectorId}`}
+                  data-map-node={region.sectorId}
                   // P81a: sektorfyllningen ligger ovanpå landmassan i
                   // ritordning och har ingen pointer-events:none — ett tryck
                   // här nådde tidigare varken landklicket eller något annat
@@ -681,6 +609,8 @@ export function TheatreMap({
 
               return (
                 <g key={front.id} data-testid={`map-frontline-${front.id}`}>
+                  {/* P194: Geminis taggiga fettkrits-frontlinje med spökspår; markörerna och spårpunkterna nedan är kvar (tester, tryckyta, vald-ring). */}
+                  <FrontlineGreasePolyline front={front} regions={regions} project={project} />
                   {tracePositions.map((tracePosition, i) => {
                     const [lat, lng] = interpolateFrontGeoPosition(regions, tracePosition)
                     const xy = project([lng, lat])
@@ -774,11 +704,21 @@ export function TheatreMap({
             })}
           </g>
 
+          {/* P195 (ETAPP12, 12D): Geminis dynamiska världsspår ur GameState — fartyg, stridsärr/TF-77, embargostämplar, historiekort, redeploy-pilar. */}
+          <DynamicWorldOverlays
+            state={state}
+            project={project}
+            playerLines={playerLines}
+            rivalLines={rivalLines}
+            onSelectCountry={onSelectCountry}
+            onSelectNode={setSelection}
+          />
+
           {/* P77 (§6.3 lager 7, §6.9): förbandsbrickor — synliga från
               zoomnivå 2 (§6.9:s tabell: "2 · Teater ... plus förbandsbrickor"),
               namn+styrka i klartext bara från nivå 3 ("Sektor ... plus
               förbandsnamn och styrka i klartext"). */}
-          {zoomLevel >= 2 && (
+          {zoomLevel >= 1 && (
             <g className="map-formations">
               {[...formationGroups.values()].map(({ region, formations }) =>
                 formations.map((display, i) => {
@@ -786,7 +726,7 @@ export function TheatreMap({
                   const [dx, dy] = tokenOffset(i, formations.length)
                   const sel: MapSelection = { kind: 'formation', formationId: display.id }
                   return (
-                    <FormationToken
+                    <WargameChit
                       key={display.id}
                       display={display}
                       x={x + dx}
@@ -835,7 +775,7 @@ export function TheatreMap({
               const stations = stationsByFaction.get(capital.factionId) ?? []
               const maxExposure = stations.reduce((max, s) => Math.max(max, s.exposure), 0)
               return (
-                <g key={capital.factionId} data-testid={`map-capital-${capital.factionId}`}>
+                <g key={capital.factionId} data-testid={`map-capital-${capital.factionId}`} data-map-node={capital.factionId}>
                   {/* P165: stationens tryckyta ritas FÖRE huvudstadsmarkören, så markören alltid ligger överst där de två möts. */}
                   {stations.length > 0 && (
                     <g transform={`translate(${x - 8},${y + 8})`} data-testid={`map-capital-station-${capital.factionId}`}>

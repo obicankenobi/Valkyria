@@ -1,0 +1,367 @@
+/* desk-map-and-tools.css — Paket G3, G4 & G5 (ETAPP 12):
+ * Militärkarta 1965, topografiska höjdkurvor, floder, vägar, 3D-pappbrickor
+ * (Wargame Chits), fettkrits-frontlinjer, fartygsbrickor, stridsärr,
+ * trästämpelverktyg och fastgemade porträttfoton.
+ */
+
+/* ── MILITÄR BAS-KARTA 1965 ── */
+.map-topo-outer {
+  fill: rgba(138, 114, 76, 0.11);
+  stroke: #8c7653;
+  stroke-width: 0.7;
+  stroke-dasharray: 4 2;
+}
+
+.map-topo-inner {
+  fill: rgba(120, 96, 60, 0.14);
+  stroke: #7a6442;
+  stroke-width: 0.6;
+}
+
+.map-topo-label {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  fill: #6e5b3e;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.map-river-path {
+  fill: none;
+  stroke: #7fa09a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.map-highway-line {
+  fill: none;
+  stroke: #9c5930;
+  stroke-width: 1.2;
+  stroke-dasharray: 6 2;
+  opacity: 0.75;
+}
+
+.map-highway-shield {
+  fill: #f6f1e3;
+  stroke: #5d4b35;
+  stroke-width: 0.8;
+}
+
+.map-highway-code {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  fill: #5d4b35;
+}
+
+.map-base-glyph {
+  stroke: #4d4335;
+  stroke-width: 1.2;
+}
+
+.map-base-glyph-naval {
+  fill: none;
+  stroke: #2d5a8c;
+  stroke-width: 1.3;
+}
+
+.map-base-label {
+  font-family: var(--font-ui);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  fill: #4d4335;
+  stroke: #ebe1c7;
+  stroke-width: 2.2;
+  paint-order: stroke;
+}
+
+.map-cartouche-box {
+  fill: rgba(246, 241, 227, 0.88);
+  stroke: #3b3226;
+  stroke-width: 1.5;
+}
+
+.map-cartouche-inner {
+  fill: none;
+  stroke: #5d4b35;
+  stroke-width: 0.6;
+}
+
+.map-cartouche-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  fill: #241f18;
+}
+
+.map-cartouche-sub {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  fill: #51483b;
+}
+
+/* ── FETTKRITS-FRONTLINJER & 3D-CHITS ── */
+.map-grease-trace-line {
+  fill: none;
+  stroke: #241f18;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-grease-active-line {
+  fill: none;
+  stroke: #241f18;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-grease-active-line.is-war {
+  stroke: #8f1d18;
+}
+
+.map-chit-depth {
+  fill: #1b1610;
+  opacity: 0.82;
+}
+
+.map-chit-mauled-tag {
+  fill: var(--red, #b3302a);
+}
+
+/* ── DYNAMISKA VÄRLDSSPÅR PÅ KARTAN ── */
+.map-ship-chit {
+  cursor: pointer;
+}
+
+.map-ship-hull {
+  fill: var(--amber, #b0700f);
+  stroke: #241f18;
+  stroke-width: 1;
+}
+
+.map-ship-hull.is-rival {
+  fill: var(--rival, #6b4f9e);
+}
+
+.map-ship-tag {
+  fill: #f6f1e3;
+  stroke: #241f18;
+  stroke-width: 0.8;
+}
+
+.map-ship-tag-text {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  fill: #241f18;
+}
+
+.map-carrier-silhouette {
+  fill: #353b33;
+  stroke: #11140e;
+  stroke-width: 1;
+}
+
+.map-carrier-label {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  fill: #241f18;
+}
+
+.map-embargo-box {
+  fill: rgba(246, 241, 227, 0.85);
+  stroke: var(--red, #b3302a);
+  stroke-width: 2;
+}
+
+.map-embargo-text {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  fill: var(--red, #b3302a);
+}
+
+.map-redeploy-line {
+  stroke: var(--red, #b3302a);
+  stroke-width: 2.8;
+  stroke-dasharray: 5 3;
+}
+
+.map-redeploy-head {
+  fill: var(--red, #b3302a);
+}
+
+.map-history-card {
+  fill: #fbf6e8;
+  stroke: #51483b;
+  stroke-width: 1;
+}
+
+.map-history-pinhead {
+  fill: var(--red, #b3302a);
+}
+
+.map-history-text {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  fill: #241f18;
+}
+
+/* ── FYSISKT STÄMPELVERKTYG (RubberStampTool) ── */
+.desk-stamp-pad {
+  position: relative;
+  min-height: 54px;
+  width: 100%;
+  background: #fbf7ec;
+  color: var(--ink, #241f18);
+  border: 1.5px dashed #7a6b53;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  cursor: crosshair;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desk-stamp-pad:hover:not(:disabled) {
+  background: #fffdf6;
+  border-color: var(--red, #b3302a);
+}
+
+.desk-stamp-pad-frame {
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  pointer-events: none;
+}
+
+.desk-stamp-sig-line {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim, #51483b);
+}
+
+.desk-stamp-btn-label {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--ink, #241f18);
+  z-index: 2;
+}
+
+.desk-stamp-impression {
+  position: absolute;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  padding: 2px 10px;
+  border: 2.5px solid var(--red, #b3302a);
+  color: var(--red, #b3302a);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+  z-index: 4;
+  background: rgba(246, 241, 227, 0.78);
+}
+
+.desk-stamp-impression.is-green {
+  border-color: var(--green, #4d7a3e);
+  color: var(--green, #4d7a3e);
+}
+
+.desk-wooden-stamp-cursor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.desk-wooden-handle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #8c532b, #3d1f0a);
+  border: 1.5px solid #1c0d04;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+}
+
+.desk-wooden-base {
+  margin-top: -4px;
+  padding: 1px 8px;
+  background: rgba(42, 34, 26, 0.88);
+  border: 1px solid #000;
+  color: #f6ead4;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+}
+
+/* ── FASTGEMADE PORTRÄTTFOTON (PaperclipPhoto) ── */
+.desk-mugshot-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.desk-metal-paperclip {
+  position: absolute;
+  top: -6px;
+  left: 8px;
+  width: 10px;
+  height: 20px;
+  border: 2px solid #5a6058;
+  border-radius: 5px;
+  z-index: 3;
+}
+
+.desk-mugshot-polaroid {
+  position: relative;
+  width: 46px;
+  height: 54px;
+  background: #e8dec6;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  transform: rotate(-2deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.desk-mugshot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.desk-mugshot-seal {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 18px;
+  height: 18px;
+}
+
+/* ── KOMPAKT KARTUPPSPELNING (MapQuarterReplay) ── */
+.desk-replay-movements {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+  padding: 6px 8px;
+  background: rgba(179, 48, 42, 0.1);
+  border-left: 3px solid var(--red, #b3302a);
+}

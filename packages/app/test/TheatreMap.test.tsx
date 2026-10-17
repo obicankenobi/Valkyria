@@ -837,3 +837,30 @@ describe('TheatreMap — kvartalsuppspelningens ring (P158)', () => {
     expect(document.querySelector('[data-testid="map-replay-focus"]')).toBeNull()
   })
 })
+
+describe('TheatreMap (P194–P195) — krigsbordets kartlager', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => JSON.parse(TOPOLOGY_JSON) }) as Response),
+    )
+  })
+
+  it('ritar den militära baslagret, en fettkritslinje per front och data-map-node på förbanden', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-rich-seed')
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+
+    expect(document.querySelector('[data-testid="map-military-base"]')).toBeTruthy()
+    for (const front of Object.values(state.fronts)) {
+      if (front.status === 'dormant') continue
+      expect(document.querySelector(`[data-testid="map-grease-line-${front.id}"]`), front.id).toBeTruthy()
+    }
+    const chit = document.querySelector('[data-testid^="map-formation-"][data-map-node]')
+    expect(chit).toBeTruthy()
+    expect(document.querySelector('[data-map-node]')).toBeTruthy()
+    expect(errors).not.toHaveBeenCalled()
+    errors.mockRestore()
+  })
+})

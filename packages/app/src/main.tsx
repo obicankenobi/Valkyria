@@ -16,6 +16,7 @@ import '@fontsource/libre-baskerville/400.css'
 import '@fontsource/libre-baskerville/400-italic.css'
 import './styles.css'
 import './styles/desk-war-room.css'
+import './styles/desk-map-and-tools.css'
 import './styles/desk-integration.css'
 
 const rootElement = document.getElementById('root')
