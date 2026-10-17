@@ -93,6 +93,18 @@ interface ThresholdBalance {
 }
 const THRESHOLD_BALANCE = balanceData as unknown as ThresholdBalance
 
+// Speltest 2026-10-17 (punkt 20): kostnader gränssnittet visar i klartext, lästa ur balance.json (samma skäl som DISPLAY_THRESHOLDS ovan).
+export const DISPLAY_COSTS = {
+  legalCounselPerQuarter: (balanceData as unknown as { legalCounselCostPerTurn: number }).legalCounselCostPerTurn,
+}
+
+// Speltest 2026-10-17 (punkt 27): vad en klass (grade) gör — byggkostnad, vad köparen räknar som rimligt pris och skandalrisken per leverans, ur balance.json.
+export const GRADE_TERMS = balanceData as unknown as {
+  gradeCostFactor: Record<'A' | 'B' | 'C', number>
+  gradePriceFactor: Record<'A' | 'B' | 'C', number>
+  gradeScandalChance: Record<'A' | 'B' | 'C', number>
+}
+
 export const DISPLAY_THRESHOLDS = {
   doomsdayCrisisWatch: THRESHOLD_BALANCE.doomsdayCrisisWatchThreshold,
   doomsdayCrisisEvent: THRESHOLD_BALANCE.doomsdayCrisisEventThreshold,

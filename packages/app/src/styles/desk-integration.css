@@ -136,3 +136,53 @@
 .desk-war-room.is-low-lamp .desk-lamp-vignette {
   background: radial-gradient(circle 700px at 34% 46%, rgba(255, 218, 125, 0.18) 0%, rgba(10, 6, 2, 0.32) 60%, rgba(4, 2, 1, 0.6) 100%);
 }
+
+/* Speltest 2026-10-17 (punkt 18): vad det aktiva kartlagret visar, på en lapp bredvid knapparna. */
+.map-layer-bar {
+  position: absolute;
+}
+.map-layer-caption {
+  position: absolute;
+  left: 54px;
+  top: 0;
+  width: 260px;
+  margin: 0;
+  padding: 8px 10px;
+  background: #fbf7ec;
+  border: 1px solid #b9a77f;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink, #241f18);
+  pointer-events: none;
+}
+
+/* Speltest 2026-10-17 (punkt 28, budet): stämpelverktyget (P197) satt i budpanelens rutnät bredvid ett högt element och sträcktes till 180–200 px, med nedre
+   halvan bakom Outbox-dockan; .ds-button.is-primary gjorde den dessutom orange i stället för Geminis pappersyta. Knappraden tar hela bredden och sin egen höjd. */
+.bid-panel > .form-actions {
+  grid-column: 1 / -1;
+  align-self: start;
+}
+.form-actions > .desk-stamp-pad {
+  flex: 1 1 auto;
+}
+.ds-button.desk-stamp-pad,
+.ds-button.is-primary.desk-stamp-pad {
+  background: #fbf7ec;
+  color: var(--ink, #241f18);
+  height: auto;
+  min-height: 54px;
+}
+.ds-button.desk-stamp-pad:hover:not(:disabled) {
+  background: #fffdf6;
+}
+.ds-button.desk-stamp-pad:disabled {
+  opacity: 0.55;
+}
+
+/* Handboken (speltest 2026-10-17, punkt 15): förteckning + uppslag behöver bredd — arket blir 960 px brett och högre på skrivbordet. */
+.ds-sheet[data-testid='handbook'] {
+  max-width: 960px;
+  max-height: 80vh;
+}

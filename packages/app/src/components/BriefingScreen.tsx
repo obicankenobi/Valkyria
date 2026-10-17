@@ -10,7 +10,7 @@ import { formatMoney } from './ui.js'
 import { wearClass } from '../stampWear.js'
 import { Button, DsPanel } from './designSystem.js'
 import { TheatreMap } from './TheatreMap.js'
-import { HISTORY_PROLOGUE } from '@seventh-front/core'
+import { HISTORY_PROLOGUE, boardReviewRequirement } from '@seventh-front/core'
 import { historyDateLabel } from '../historyText.js'
 import type { GameState } from '@seventh-front/core'
 
@@ -44,19 +44,27 @@ export function BriefingScreen({ state, onBegin, onBack }: { state: GameState; o
           </p>
 
           <div className="cf-preview" data-testid="briefing-target">
+            {/* Speltest 2026-10-17 (punkt 4): förut bara etiketten ("Doubling", som inte ens stämde med talet). Nu målet i pengar och granskningarna. */}
             <div className="cf-preview-row">
               <span>BOARD TARGET</span>
-              <span>{target.label}</span>
+              <span data-testid="briefing-target-amount">{formatMoney(Math.round(target.threshold * house.foundingCapital))} in sales by turn {target.dueTurn}</span>
             </div>
             <div className="cf-preview-row">
-              <span>DUE</span>
-              <span>Turn {target.dueTurn}</span>
+              <span>REVIEWS</span>
+              <span data-testid="briefing-target-reviews">
+                Turns {target.reviewTurns.join(', ')} · first: {formatMoney(Math.round(boardReviewRequirement(target, target.reviewTurns[0] ?? target.dueTurn) * house.foundingCapital))}
+              </span>
             </div>
             <div className="cf-preview-row">
               <span>TREASURY</span>
               <span className="is-amber">{formatMoney(house.treasury)}</span>
             </div>
           </div>
+
+          <p className="cf-hint" data-testid="briefing-target-explained">
+            Sales = money booked from deliveries plus the value of contracts you have signed. The board checks it at every review against a rising curve; fail two
+            reviews in a row and the house is bought out.
+          </p>
 
           <div className="cf-field">
             <span className="cf-field-label">THEATRE</span>

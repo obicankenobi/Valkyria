@@ -19,7 +19,7 @@ describe('InternalActionsForm (P85) — TAKE_LOAN/REPAY', () => {
     const onAddAction = vi.fn()
     render(<InternalActionsForm state={state} onAddAction={onAddAction} />)
 
-    fireEvent.click(within(screen.getByTestId('company-credit-tier')).getByText('LAVISH'))
+    fireEvent.click(within(screen.getByTestId('company-credit-tier')).getByText('100%'))
     fireEvent.click(screen.getByTestId('company-credit-file'))
 
     expect(onAddAction).toHaveBeenCalledWith({ type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount: 4_000_000 } })
@@ -33,7 +33,7 @@ describe('InternalActionsForm (P85) — TAKE_LOAN/REPAY', () => {
     render(<InternalActionsForm state={state} onAddAction={onAddAction} />)
 
     fireEvent.click(within(screen.getByTestId('company-credit-mode')).getByText('REPAY'))
-    fireEvent.click(within(screen.getByTestId('company-credit-tier')).getByText('LAVISH'))
+    fireEvent.click(within(screen.getByTestId('company-credit-tier')).getByText('100%'))
     fireEvent.click(screen.getByTestId('company-credit-file'))
 
     expect(onAddAction).toHaveBeenCalledWith({ type: 'INTERNAL', op: 'REPAY', payload: { amount: 1_200_000 } })
@@ -69,7 +69,7 @@ describe('RawMaterialsPanel (P85) — BUY_FORWARD/RELEASE', () => {
     render(<RawMaterialsPanel state={state} onAddAction={onAddAction} />)
 
     fireEvent.click(within(screen.getByTestId('company-commodity-op')).getByText('RELEASE'))
-    fireEvent.click(within(screen.getByTestId('company-commodity-tier')).getByText('LAVISH'))
+    fireEvent.click(within(screen.getByTestId('company-commodity-tier')).getByText('100%'))
     fireEvent.click(screen.getByTestId('company-commodity-file'))
 
     expect(onAddAction).toHaveBeenCalledWith({ type: 'MARKET', op: 'RELEASE', commodity: 'oil', spend: 300_000 })
@@ -81,7 +81,7 @@ describe('RawMaterialsPanel (P85) — BUY_FORWARD/RELEASE', () => {
     const onAddAction = vi.fn()
     render(<RawMaterialsPanel state={state} onAddAction={onAddAction} />)
 
-    fireEvent.click(within(screen.getByTestId('company-commodity-tier')).getByText('LAVISH'))
+    fireEvent.click(within(screen.getByTestId('company-commodity-tier')).getByText('35%'))
     fireEvent.click(screen.getByTestId('company-commodity-file'))
 
     const [action] = onAddAction.mock.calls[0]!

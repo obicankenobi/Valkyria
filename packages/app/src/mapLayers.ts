@@ -13,12 +13,13 @@ import { STATION_BAND_PCT } from './stationOutlook.js'
 
 export type MapLayerId = 'orders' | 'supply' | 'rivals' | 'intelligence' | 'politics'
 
-export const MAP_LAYERS: readonly { id: MapLayerId; label: string; short: string }[] = [
-  { id: 'orders', label: 'Orders', short: 'ORD' },
-  { id: 'supply', label: 'Supply', short: 'SUP' },
-  { id: 'rivals', label: 'Rivals', short: 'RIV' },
-  { id: 'intelligence', label: 'Intelligence', short: 'INT' },
-  { id: 'politics', label: 'Politics', short: 'POL' },
+// Speltest 2026-10-17 (punkt 18): förkortningarna ensamma sa inte vad lagret visar. `explains` står under knapparna när lagret är på, och i knappens tooltip.
+export const MAP_LAYERS: readonly { id: MapLayerId; label: string; short: string; explains: string }[] = [
+  { id: 'orders', label: 'Orders', short: 'ORD', explains: 'Per buyer: open orders (and how many are locked to you), your contracts, and its materiel need.' },
+  { id: 'supply', label: 'Supply', short: 'SUP', explains: 'Per front: your units in transit, and how much the rival houses have delivered.' },
+  { id: 'rivals', label: 'Rivals', short: 'RIV', explains: 'Per buyer: your contracts against the rival houses\' contracts, and your share.' },
+  { id: 'intelligence', label: 'Intelligence', short: 'INT', explains: 'Per country: your station\'s depth and exposure, and how wide your estimates of it are.' },
+  { id: 'politics', label: 'Politics', short: 'POL', explains: 'Per country: its relation to you, public support for its government, embargoes and open tenders.' },
 ]
 
 export interface LayerTag {

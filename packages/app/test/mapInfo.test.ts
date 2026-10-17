@@ -79,9 +79,12 @@ describe('deriveMapInfo — sektor och förband', () => {
     const front = Object.values(s.fronts).find((f) => f.formations.length > 0)!
     const control = deriveSectorControl(s, front).find((c) => c.formations.length > 0)!
     const info = deriveMapInfo(s, { kind: 'sector', sectorId: control.sectorId })!
-    const expected = { a: 'Friendly', b: 'Hostile', contested: 'Contested', empty: 'No forces' }[control.side]
+    // Speltest 2026-10-17 (punkt 3/30): sidorna heter efter länderna, inte "friendly"/"hostile".
+    const name = (id: string) => s.factions[id]!.name
+    const expected = { a: name(front.sideA), b: name(front.sideB), contested: 'Contested', empty: 'No forces' }[control.side]
     expect(row(info, 'Held by')).toBe(expected)
-    expect(info.rows.some((r) => r.label === 'Friendly forces' || r.label === 'Hostile forces')).toBe(true)
+    expect(info.rows.some((r) => r.label === `${name(front.sideA)} forces` || r.label === `${name(front.sideB)} forces`)).toBe(true)
+    expect(JSON.stringify(info)).not.toMatch(/Friendly|Hostile/)
   })
 
   it('Ho Chi Minh-leden säger att den är en led och inte en plats', () => {
@@ -120,7 +123,7 @@ describe('deriveMapInfo — frontlinje, station, försörjningslinje, heat', () 
     front.trace = [-10, -25, -40]
     const info = deriveMapInfo(s, { kind: 'frontline', frontId: front.id })!
     expect(row(info, 'Status')).toMatch(/War/i)
-    expect(row(info, 'Ahead')).toMatch(/Friendly/)
+    expect(row(info, 'Ahead')).toBe(`${s.factions[front.sideA]!.name} by 40`) // speltest 2026-10-17: landets namn, inte "friendly"
     expect(row(info, 'Last quarters')).toMatch(/-10.*-25.*-40/)
     expect(info.topic).toBe('fronts')
   })

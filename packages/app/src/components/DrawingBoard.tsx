@@ -108,6 +108,12 @@ function CategoryEditor({
 
   return (
     <div className="cf-body">
+      {/* Speltest 2026-10-17 (punkt 26): vad de två sakerna på ritbordet är och varför — bundet till kärnan: tekniknivån avgör vad du får bjuda på (stockBidRejection),
+          en konstruktion lägger en egen term på budet (designBidTerm) när den är bra. */}
+      <p className="cf-hint drawing-intro" data-testid={`drawing-intro-${category}`}>
+        Research raises your tech level here — it decides which products you may bid, and buyers stop taking products a generation behind. A design is your own version of a
+        product: its quality is hidden until you test or field it, and a good one wins bids.
+      </p>
       <h4 className="drawing-section">DESIGN PROJECT</h4>
       {running ? (
         <>

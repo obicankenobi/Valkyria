@@ -41,16 +41,16 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
   {
     id: 'sector-a',
     icon: 'sector-a',
-    title: 'Sector you control',
-    whatItIs: "A sector's colour fill, decided by which side has the most strength in it.",
-    whatItMeans: "Your side's forces hold this ground. Deliveries and orders in this area go more easily.",
+    title: 'Sector held by the government side',
+    whatItIs: "A sector's colour fill (blue), decided by which side of the front has the most strength in it.",
+    whatItMeans: 'The front\'s first side holds this ground: the Republic of Vietnam, or the Kingdom of Laos on the Laos front. You sell to either side; the colour is theirs, not yours.',
   },
   {
     id: 'sector-b',
     icon: 'sector-b',
-    title: 'Sector the opposition controls',
-    whatItIs: 'The same colour fill as above, but for the opposing side.',
-    whatItMeans: 'Hostile-held ground: the opposition has more strength in this sector than you do.',
+    title: 'Sector held by the insurgent side',
+    whatItIs: 'The same colour fill (red), for the front\'s second side.',
+    whatItMeans: 'The National Liberation Front holds this ground: it has more strength in the sector than the government side. You sell to either side; the colour is theirs, not yours.',
   },
   {
     id: 'sector-contested',
@@ -64,7 +64,7 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
     icon: 'sector-empty',
     title: 'Empty sector',
     whatItIs: 'No formations in the sector right now.',
-    whatItMeans: 'Neither you nor the opposition has forces here.',
+    whatItMeans: 'Neither side of the front has forces here.',
   },
   {
     id: 'route',
@@ -119,7 +119,7 @@ export const MAP_LEGEND: readonly MapLegendEntry[] = [
     id: 'formation-known',
     icon: 'formation-known',
     title: 'Formation token',
-    whatItIs: 'A frame (rectangle for friendly, diamond for hostile) with a doctrine symbol and dots for strength.',
+    whatItIs: 'A frame (rectangle for the government side, diamond for the insurgent side) with a doctrine symbol and dots for strength.',
     whatItMeans: 'A named formation in the sector. More dots mean a stronger formation.',
   },
   {

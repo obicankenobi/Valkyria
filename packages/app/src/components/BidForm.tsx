@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   BOT_BALANCE,
   CUSTOMISE_TERMS,
+  GRADE_TERMS,
   deliveryPromiseTerm,
   advanceAmount,
   bidDesignRejection,
@@ -29,6 +30,15 @@ import { Button, DsSlider, DsToggle, Segmented, Stepper } from './designSystem.j
 import { playSound } from '../sound.js'
 
 const GRADES: Grade[] = ['A', 'B', 'C']
+
+function gradeExplained(grade: Grade): string {
+  const pct = (n: number) => `${Math.round(n * 100)}%`
+  const cost = GRADE_TERMS.gradeCostFactor[grade]
+  const price = GRADE_TERMS.gradePriceFactor[grade]
+  const scandal = GRADE_TERMS.gradeScandalChance[grade]
+  const reputation = grade === 'A' ? 'Raises your quality reputation in the category.' : grade === 'C' ? 'Lowers your quality reputation in the category.' : 'Leaves your quality reputation as it is.'
+  return `Grade ${grade}: costs you ${pct(cost)} of full quality to build; the buyer judges your price against ${pct(price)} of the reference price; ${scandal > 0 ? `${scandal}% risk of a quality scandal per delivery` : 'no risk of a quality scandal'}. ${reputation}`
+}
 
 // P81c (ETAPP7_TEKNISK_SPEC.md §13, P81-blockquoten, P81-7): winBand samplar
 // bara FEM diskreta punkter mellan rivalPriceLow/rivalPriceHigh — spelarens
@@ -173,6 +183,8 @@ export function BidForm({
       <div className="cf-field">
         <span className="cf-field-label">GRADE</span>
         <Segmented options={GRADES.map((g) => ({ value: g, label: g }))} value={grade} onChange={setGrade} testId="bid-grade" />
+        {/* Speltest 2026-10-17 (punkt 27): vad klassen gör, ur GRADE_TERMS (balance.json). */}
+        <p className="cf-hint" data-testid="bid-grade-explained">{gradeExplained(grade)}</p>
       </div>
 
       {eligibleDesigns.length > 0 && (
@@ -303,6 +315,9 @@ export function BidForm({
 
       <div className="cf-field">
         <DsSlider label="Bribe" value={bribe} min={0} max={bribeMax} step={bribeStep} onChange={setBribe} format={formatMoney} testId="bid-bribe" />
+        <p className="cf-hint" data-testid="bid-bribe-explained">
+          Paid only if you win. It lifts your score more the less honest the buyer&apos;s procurement official is — and leaves a paper trail that can come to light.
+        </p>
       </div>
 
       <div className="cf-preview" data-testid="bid-preview">

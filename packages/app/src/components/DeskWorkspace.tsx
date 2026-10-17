@@ -290,8 +290,9 @@ export function DeskWorkspace({
                 <span
                   className={outlook.isLastTurnBeforeReview ? 'ds-hud-label is-danger' : 'ds-hud-label'}
                   data-testid="hud-board-outlook"
+                  title={`Board target: ${progressPct.toFixed(0)}% of the sales the board wants by turn ${target.dueTurn}${outlook.turnsUntil !== null ? `; next review in ${outlook.turnsUntil} quarter${outlook.turnsUntil === 1 ? '' : 's'}` : ''}`}
                 >
-                  Bd {progressPct.toFixed(0)}% {outlook.turnsUntil !== null ? `· ${outlook.turnsUntil}t` : ''}
+                  Board {progressPct.toFixed(0)}% {outlook.turnsUntil !== null ? `· ${outlook.turnsUntil}Q` : ''}
                 </span>
               </span>
 
@@ -318,16 +319,19 @@ export function DeskWorkspace({
             <button
               type="button"
               className={state.pendingCrisis ? 'desk-gadget-btn is-ringing' : 'desk-gadget-btn'}
-              onClick={() => onSelectView(state.pendingCrisis ? 'news' : 'contacts')}
-              aria-label="Red Line Telephone"
-              title="Direct Red Line — Opens Crisis or Dossiers"
+              // Speltest 2026-10-17 (punkt 16): luren ledde till CONTACTS utan förklaring. Den ringer bara vid en kris (då öppnar den krisen); tyst öppnar
+              // den handbokens uppslag om doomsday och kriser, så att spelaren vet vad den väntar på.
+              onClick={() => (state.pendingCrisis ? onSelectView('news') : onOpenHandbook('doomsday'))}
+              aria-label={state.pendingCrisis ? 'Red line: a crisis needs your answer' : 'Red line: quiet — rings when a crisis needs your answer'}
+              title={state.pendingCrisis ? 'A crisis needs your answer — opens it' : 'The red line rings when a crisis needs your answer. Quiet now: opens the handbook on crises.'}
+              data-testid="red-line"
             >
               <svg width="26" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M4 6c2-2 14-2 16 0l1 3-4 1-1-2h-8l-1 2-4-1 1-3z" />
                 <path d="M6 12h12l2 8H4l2-8z" />
                 <circle cx="12" cy="16" r="2.2" />
               </svg>
-              <span className="desk-dymo">{state.pendingCrisis ? 'CRISIS LINE' : 'RED LINE'}</span>
+              <span className="desk-dymo">{state.pendingCrisis ? 'CRISIS!' : 'LINE QUIET'}</span>
             </button>
 
             <button

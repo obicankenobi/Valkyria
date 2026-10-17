@@ -18,7 +18,7 @@ import { HANDBOOK, type HandbookEntry, type HandbookTopicId } from '../handbook.
 
 // Avdelningarna i innehållsförteckningen. Varje uppslag i HANDBOOK står i exakt en (bevakat av Handbook.test.tsx).
 export const HANDBOOK_SECTIONS: readonly { label: string; ids: readonly HandbookTopicId[] }[] = [
-  { label: 'The trade', ids: ['procurement', 'production', 'works', 'design', 'programmes', 'race'] },
+  { label: 'The trade', ids: ['procurement', 'production', 'works', 'materials', 'design', 'programmes', 'race'] },
   { label: 'The house', ids: ['board', 'state', 'trail'] },
   { label: 'The world', ids: ['fronts', 'heat', 'doomsday', 'intelligence', 'politics'] },
 ]

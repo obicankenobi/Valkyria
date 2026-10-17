@@ -25,6 +25,7 @@ export function MapLayerBar({ active, onChange }: { active: MapLayerId | null; o
             className={on ? 'map-layer-button is-on' : 'map-layer-button'}
             aria-pressed={on}
             aria-label={`${layer.label} layer`}
+            title={`${layer.label}: ${layer.explains}`}
             onClick={() => onChange(on ? null : layer.id)}
             data-testid={`map-layer-${layer.id}`}
           >
@@ -35,6 +36,11 @@ export function MapLayerBar({ active, onChange }: { active: MapLayerId | null; o
           </button>
         )
       })}
+      {active && (
+        <p className="map-layer-caption" data-testid="map-layer-caption">
+          <strong>{MAP_LAYERS.find((l) => l.id === active)?.label}</strong> — {MAP_LAYERS.find((l) => l.id === active)?.explains}
+        </p>
+      )}
     </div>
   )
 }

@@ -22,10 +22,10 @@ describe('handbook — täckning (P91b klart-när)', () => {
     }
   })
 
-  it('täcker samtliga åtta mekaniker specen namnger plus etapp 9:s ritbord (P126), etapp 11:s verk (P181) och P146:s kapplöpning och pappersspår', () => {
+  it('täcker samtliga åtta mekaniker specen namnger plus etapp 9:s ritbord (P126), etapp 11:s verk (P181) , P146:s kapplöpning och pappersspår och råvarorna (speltest 2026-10-17)', () => {
     const ids = HANDBOOK.map((entry) => entry.id).sort()
     expect(ids).toEqual(
-      ['procurement', 'production', 'board', 'doomsday', 'heat', 'intelligence', 'politics', 'fronts', 'design', 'programmes', 'state', 'works', 'race', 'trail'].sort(),
+      ['procurement', 'production', 'board', 'doomsday', 'heat', 'intelligence', 'politics', 'fronts', 'design', 'programmes', 'state', 'works', 'race', 'trail', 'materials'].sort(),
     )
   })
 

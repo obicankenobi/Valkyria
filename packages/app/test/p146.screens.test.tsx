@@ -39,9 +39,10 @@ describe('kapplöpningstavlan: motmedelskedjan och först på plats (P146)', () 
     const state = createInitialState('indochina-slice', 'p146-seed')
     render(<RaceBoard state={state} />)
     const text = screen.getByTestId('race-chain').textContent!.toLowerCase()
-    expect(text).toContain('armour pulls infantry')
-    expect(text).toContain('aviation pulls artillery')
-    expect(text).toContain('artillery pulls electronics')
+    // Speltest 2026-10-17 (punkt 7): med skälet i klartext.
+    expect(text).toContain('armour → infantry (anti-tank weapons)')
+    expect(text).toContain('aviation → artillery (anti-aircraft guns)')
+    expect(text).toContain('artillery → electronics (counter-battery radar)')
   })
 
   it('ett gällande anspråk visas med vem som är först hos vilket block; ett förbrukat (blocket har kliver vidare) visas inte', () => {

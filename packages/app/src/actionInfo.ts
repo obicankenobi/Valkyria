@@ -11,6 +11,8 @@ export interface ActionInfo {
   risk: string // vad du riskerar
   certain?: string // sätts bara när verbet inte är slumpavgjort: raden "Chance" visar den texten i stället för en procent
   costNote?: string // sätts när previewAction ger cost = null men verbet ändå har ett pris eller en följd: visas på "Cost"-raden
+  // Speltest 2026-10-17 (punkt 9): varför man gör det — vad effekten betyder för husets affärer. Bunden mot koden i kommentaren vid varje post.
+  why?: string
 }
 
 export const ACTION_INFO: Readonly<Record<string, ActionInfo>> = {
@@ -19,6 +21,7 @@ export const ACTION_INFO: Readonly<Record<string, ActionInfo>> = {
     gain: 'Narrower price bands and clearer formations in that country.',
     risk: 'Every expansion raises the station\'s exposure. A station that is exposed too much is burned and lost.',
     certain: 'Always works',
+    why: 'Your price estimates for this country\'s orders get narrower, so you can bid closer to what wins; deeper stations also see its officials and military.',
   },
   WITHDRAW: {
     does: 'Puts one of your stations to sleep.',
@@ -26,6 +29,7 @@ export const ACTION_INFO: Readonly<Record<string, ActionInfo>> = {
     risk: 'A dormant station gives no insight, still counts toward your limit of five and still costs upkeep. Reopening it costs money.',
     certain: 'Always works',
     costNote: 'No cost',
+    why: 'To cool a station that is close to being burned, without losing what it has built.',
   },
   REOPEN: {
     does: 'Wakes a dormant station.',
@@ -38,21 +42,25 @@ export const ACTION_INFO: Readonly<Record<string, ActionInfo>> = {
     gain: 'A station at depth 0 that you can build up with EXPAND. You can hold five stations at most.',
     risk: 'At depth 0 formations are still unknown, and the station adds to your running costs.',
     certain: 'Always works',
+    why: 'Without a station you bid blind in this country: wide price estimates, unknown formations and unknown officials.',
   },
   LEAK: {
     does: 'Leaks damaging information about a rival house.',
     gain: 'The rival\'s relations with that country fall.',
     risk: 'If you are traced, the country\'s counter-intelligence sharpens and your station becomes more exposed.',
+    why: 'A rival with worse relations scores lower on this country\'s orders, so you win more of them.',
   },
   SABOTAGE: {
     does: 'Sabotages a rival house\'s operations.',
     gain: 'The rival cannot bid for a few quarters.',
     risk: 'If you are traced, the country\'s counter-intelligence sharpens and your station becomes more exposed.',
+    why: 'A sabotaged rival places no bids at all while it lasts — one competitor fewer on every order.',
   },
   TURN: {
     does: 'Tries to turn one official in the country to your side.',
     gain: 'The official\'s relation to you rises.',
     risk: 'If it fails, the official\'s standing falls, counter-intelligence sharpens and your station becomes more exposed.',
+    why: 'An official who likes you does not turn their agenda into a policy decision against you; a procurement official also gives better advances and brokered deals.',
   },
   INFLUENCE: {
     does: 'Pays to move a country\'s public support, or its relations with another country.',

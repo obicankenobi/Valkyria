@@ -67,6 +67,12 @@ export function ActionCard({
             )}
           </dd>
         </div>
+        {info.why && (
+          <div className="action-card-row">
+            <dt>Why</dt>
+            <dd data-testid="action-card-why">{info.why}</dd>
+          </div>
+        )}
         <div className="action-card-row">
           <dt>You risk</dt>
           <dd data-testid="action-card-risk">{info.risk}</dd>

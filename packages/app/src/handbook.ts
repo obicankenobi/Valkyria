@@ -25,7 +25,7 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works' | 'race' | 'trail'
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works' | 'race' | 'trail' | 'materials'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -66,7 +66,7 @@ export const HANDBOOK: readonly HandbookEntry[] = [
     title: 'The Board',
     summary: 'The board reviews your booked and projected revenue at fixed turns. Two failed reviews in a row — or unpaid debt for too long — and the house is sold or liquidated.',
     body: [
-      'The board target (shown in the HUD as "Bd") measures your revenue (booked and projected, from orders already placed) against a threshold. The target is tested at fixed turns during the game — the HUD shows how many turns remain until the next review.',
+      'The board target measures your sales — money booked from deliveries plus the value of contracts already signed — against a sum set when the house was founded (the briefing names it in pounds). The HUD shows it as "Board 40% · 3Q": how far you are towards the final sum, and how many quarters (Q) remain to the next review. At each review you must be on a rising curve, not at the final sum.',
       'Two failed reviews in a row give BUYOUT: the house is sold, the game ends. Three insolvent turns in a row (debt exceeds what the house can pay) give INSOLVENCY instead.',
       'Treasury (cash on hand), Debt, and Credit limit belong here: TAKE_LOAN raises debt against interest, REPAY lowers it. High debt eats into the credit limit and makes the next loan more expensive.',
       'Action points (the house\'s staff) cap how many executive actions — both INTERNAL (production/economy) and POLITICAL (intelligence and politics) — you can queue in a given quarter.',
@@ -86,7 +86,7 @@ export const HANDBOOK: readonly HandbookEntry[] = [
   {
     id: 'heat',
     title: 'Heat',
-    summary: 'How hot a conflict is in a theatre right now — more heat means more demand for weapons, but also a higher risk of escalation. Cools when nobody delivers into active fighting.',
+    summary: 'How hot a conflict is in a theatre right now — more heat means more demand for weapons, but also a higher risk of escalation. Cools in quarters when no arms are delivered to a front that is still at war.',
     body: [
       'Each theatre (Indochina, Laos) has its own heat value. It rises when materiel is delivered into a front still at war, and cools slowly during turns without such deliveries.',
       'On the map, heat shows as a glow around the theatre — a stronger glow means a hotter conflict. High heat drives up demand (more and larger orders) but also raises the risk that a crisis triggers in that theatre.',
@@ -113,6 +113,8 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'Each buying faction has named officials with their own agenda, standing, and relation to you. BRIBE and FUND_CAMPAIGN buy improved relations directly; FAVOUR costs margin, not cash — the price becomes a debt deducted from what your next deliveries pay; ASSASSINATE removes an official permanently (a successor is appointed, always with relation to you reset to zero).',
       'Against whole nations: INFLUENCE shifts public support or relations in a direction; STAGE_INCIDENT and BACK_CHANNEL target a front opponent (lowering or raising relations between the two countries respectively); FUND_COUP attempts to change a faction\'s regime; for STAGE_INCIDENT, BACK_CHANNEL, FUND_COUP and ASSASSINATE the amount you spend buys a better result (bigger heat rise, bigger relations gain, better odds, softer fallout) with diminishing returns and never a sure thing; BROKER strikes a direct contract past normal bidding, decided by the official\'s relation and integrity.',
       'An official\'s agenda can trigger a PolicyDecision if it is ignored for too long — anything from trade tariffs to an embargo against you. See a country\'s file to read an official\'s current agenda.',
+      // Speltest 2026-10-17 (punkt 17): vad folkligt stöd gör — bundet till fronts.ts (förluster sänker det) och factions.ts (processLowSupport → fred).
+      'Public support is how much the country\'s people back its government and its war (0–100). It falls with every casualty at the front, moves with world events, and INFLUENCE can push it. If it stays below 25 for three quarters in a row the country is forced to sue for peace: its front goes to ceasefire, the fighting stops and so does its need for materiel — its orders dry up. Raising a client\'s support keeps a war (and a market) going; lowering it can end one.',
     ],
   },
   {
@@ -190,9 +192,22 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'The plot has eight places, one building each — a building under construction takes its place at once. More land costs £2,400,000 once and adds four places. Tap a free place to build: choose a kind, a category for assembly works and laboratories, and a pace. A forced build takes half the time and costs double. Building is a standing order: it costs no action, starts next quarter, and the cost is paid in instalments.',
       'A building\'s card says what it does, its level, condition, staff, fixed cost and what the next level gives. An assembly works holds two production lines on level 1, four on level 2 and six on level 3, and wears with use; maintenance low saves money and wears the machines, high builds the condition back, and a modernisation fits new machine tools. Staffing is 25, 50, 75 or 100 percent of full strength: hiring takes a quarter and dilutes skill, laying off saves wages but costs skill and morale. Below 35 morale a strike can break out — give in, or break it.',
       'The production board shows one track per line over the next six quarters: the contracts being built, retooling (hatched) and free time. Tap a contract to put it on one line or several — a planned contract is built first, in the order of the plan, and a contract on several lines is built on all of them at once, each retooled for it on its own (the run-in is counted per line) — or to give a share of it (25, 50, 75 or 100 percent) to a subcontractor. In the bid folder, "Ready by" shows when an order could be finished with today\'s plan and the lines that are free (the others join a quarter later), and which waiting contracts it would push past their deadline.',
+      'Your first assembly works is a general works: it builds infantry and artillery, whatever your specialisation, because those are what buyers order first. Build a works of its own for any other category — and once you have one, contracts in that category go to it, not to the general works (whose lines would lose three quarters retooling).',
       'You may only bid in a category where you have an assembly works — one in operation, or one that opens within a quarter (a works abroad counts). Without one a bid is locked, and the folder says so ("Requires an Assembly Works for armour"). Small orders are an exception: you may take one without a works, but a subcontractor builds all of it, at a dearer price. With a works, at most half of a contract may go to a subcontractor; the rest your own lines build. A tender also needs a works in the category, or one being built.',
       'A building can be paid for in cash or with a building loan. The bank lends a share of each instalment, outside your credit limit, at its own interest; the loan is repaid in equal parts once the works opens, and the works is the security — miss a payment and the bank seizes it, with its lines and its workforce. Selling a works pays the loan off first. The loan shows on the building\'s card and under Books.',
       'An assembly works can be built in a buyer\'s country: lower wages, quicker deliveries and a better score with that buyer, and a counter-purchase pledge becomes real. The works shows on the map in its sector. The risks are the war (a sector that changes sides takes the works with it), nationalisation after a coup, and the country learning what your workers know.',
+    ],
+  },
+  {
+    // Speltest 2026-10-17 (punkt 10): råvarorna hade inget eget uppslag.
+    id: 'materials',
+    title: 'Raw Materials',
+    summary: 'Five raw materials — oil, steel, uranium, titanium and rare earths — set what your products cost to build. Their prices move every quarter; you can reserve money against them or lock a price with a supplier.',
+    body: [
+      'Every product has a recipe: a rifle is mostly steel and labour, a tank steel and titanium, electronics rare earths, the nuclear shell uranium. Your unit cost is the product\'s base cost weighted by today\'s price index of the materials in its recipe (100 = the price at the start). The bid folder\'s unit cost is always today\'s figure.',
+      'Prices move a few points a quarter: war demand for a material raises it, heat in a theatre raises all of them, an embargo on a buyer pushes up what it needs, and the rival houses play the market. No single material can move more than a few points in one quarter.',
+      'RESERVE (in Raw materials, THE COMPANY) pays cash now into a reserve for one material. The reserve is spent, pound for pound, on that material\'s share of your future production costs. It does not lock a price — it moves money from today\'s cash to tomorrow\'s costs. RELEASE turns the reserve back into cash and pushes the material\'s price down, which also helps your rivals.',
+      'A supplier agreement (a standing order) is the way to lock a price: for a number of quarters it pays a fixed sum each quarter, credited to your reserve at the price index of the day it was signed. When prices have risen since, each payment puts more into the reserve than it cost; when they have fallen, less.',
     ],
   },
 ] as const

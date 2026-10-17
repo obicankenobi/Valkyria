@@ -362,11 +362,16 @@ export function TheHouse({
                   tone={supplyIndex > 100 ? 'red' : 'blue'}
                   marks={[{ at: 100, label: 'baseline' }]}
                 />
+                {/* Speltest 2026-10-17 (punkt 21): vad talen gör — bundet till computeScore (repTerm) och bidding.ts (reliabilityBidFloor). */}
+                <p className="cf-hint" data-testid="reputation-explained">
+                  Reliability (deliveries on time) and quality reputation add to the score of every bid, reliability twice as much; at 50 they add nothing, below it they
+                  subtract. Very low reliability shuts you out of bidding. The supply cost index is what your materials cost against the start (100).
+                </p>
               </div>
             </Panel>
 
             <Panel
-              title={`Board target: ${target.label}`}
+              title={`Board target: ${formatMoney(Math.round(target.threshold * house.foundingCapital))} by T${target.dueTurn}`}
               info="What the board demands, and when it checks. Two failed reviews in a row end your game."
               infoTopic="board"
               right={target.reviewsFailed > 0 ? <Tag tone="red">{target.reviewsFailed}/2 failed</Tag> : <Tag tone="green">No remarks</Tag>}

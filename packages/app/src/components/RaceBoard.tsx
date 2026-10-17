@@ -31,6 +31,13 @@ function GenerationScale({ low, high, own, scaleMax, bloc }: { low: number; high
   )
 }
 
+// Speltest 2026-10-17 (punkt 7): kedjan (balance.json counterCategory) läste "Artillery pulls Electronics" utan skäl. Svaret på varje system, i klartext.
+const COUNTER_REASON: Record<string, string> = {
+  'armour>infantry': 'anti-tank weapons',
+  'aviation>artillery': 'anti-aircraft guns',
+  'artillery>electronics': 'counter-battery radar',
+}
+
 export function RaceBoard({ state }: { state: GameState }) {
   const cards = requirementCards(state)
   const assessments = BLOCS.flatMap((bloc) => TECH_CATEGORIES.map((category) => raceAssessment(state, bloc, category)))
@@ -83,7 +90,7 @@ export function RaceBoard({ state }: { state: GameState }) {
 
         <h3 className="race-cards-title">Countermeasure chain</h3>
         <p className="cf-hint race-chain" data-testid="race-chain">
-          {chain.map(([from, to]) => `${CATEGORY_NAME[from]} pulls ${CATEGORY_NAME[to]}`).join(' · ')}. A strong system in the first category makes the other bloc ask for the second — and arming both sides speeds the chain up.
+          {chain.map(([from, to]) => `${CATEGORY_NAME[from]} → ${CATEGORY_NAME[to]}${COUNTER_REASON[`${from}>${to}`] ? ` (${COUNTER_REASON[`${from}>${to}`]})` : ''}`).join(' · ')}. When one bloc fields a strong system, the other bloc orders its answer — and arming both sides speeds the chain up.
         </p>
         {claims.length > 0 && (
           <div className="race-claims" data-testid="race-claims">

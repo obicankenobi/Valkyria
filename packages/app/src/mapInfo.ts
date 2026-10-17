@@ -53,7 +53,12 @@ export interface MapInfo {
   topic: HandbookTopicId | null
 }
 
-const SIDE_LABEL = { a: 'Friendly', b: 'Hostile', contested: 'Contested', empty: 'No forces' } as const
+// Speltest 2026-10-17 (punkt 3 och 30): huset står inte på någon sida i kriget — sidorna heter efter länderna i fronten, aldrig "friendly"/"hostile".
+function sideName(state: GameState, front: { sideA: string; sideB: string } | undefined, side: 'a' | 'b' | 'contested' | 'empty'): string {
+  if (side === 'contested') return 'Contested'
+  if (side === 'empty' || !front) return 'No forces'
+  return factionName(state, side === 'a' ? front.sideA : front.sideB)
+}
 const BAND_WORD = { svag: 'weak', medel: 'medium', stark: 'strong' } as const
 
 function factionName(state: GameState, id: string): string {
@@ -168,14 +173,14 @@ function sectorInfo(state: GameState, sectorId: string): MapInfo | null {
     const front = Object.values(state.fronts).find((f) => f.theatreId === theatreId)
     const control = front ? deriveSectorControl(state, front).find((c) => c.sectorId === sectorId) : undefined
     const rows: MapInfoRow[] = [
-      { label: 'Held by', value: SIDE_LABEL[control?.side ?? 'empty'] },
+      { label: 'Held by', value: sideName(state, front, control?.side ?? 'empty') },
       { label: 'Theatre', value: theatreName(state, theatreId) },
     ]
     const forces = control?.formations ?? []
     const friendly = forces.filter((f) => f.side === 'a')
     const hostile = forces.filter((f) => f.side === 'b')
-    if (friendly.length) rows.push({ label: 'Friendly forces', value: strengthText(friendly) })
-    if (hostile.length) rows.push({ label: 'Hostile forces', value: strengthText(hostile) })
+    if (friendly.length) rows.push({ label: `${sideName(state, front, 'a')} forces`, value: strengthText(friendly) })
+    if (hostile.length) rows.push({ label: `${sideName(state, front, 'b')} forces`, value: strengthText(hostile) })
     if (!forces.length) rows.push({ label: 'Forces', value: 'None' })
     return {
       kicker: region.route ? 'ROUTE' : 'SECTOR',
@@ -196,7 +201,7 @@ function formationInfo(state: GameState, formationId: string): MapInfo | null {
     const d = formationDisplay(state, formation)
     const region = (SECTOR_REGIONS[front.theatreId] ?? []).find((r) => r.sectorId === d.sectorId)
     const rows: MapInfoRow[] = [
-      { label: 'Side', value: d.side === 'a' ? 'Friendly' : 'Hostile' },
+      { label: 'Side', value: sideName(state, front, d.side) },
       { label: 'Country', value: factionName(state, d.factionId) },
       { label: 'Sector', value: region?.label ?? d.sectorId },
       { label: 'Doctrine', value: d.doctrine },
@@ -222,7 +227,7 @@ function frontlineInfo(state: GameState, frontId: string): MapInfo | null {
   const a = factionName(state, front.sideA)
   const b = factionName(state, front.sideB)
   const p = Math.round(front.position)
-  const ahead = Math.abs(p) < 5 ? 'Neither side — even' : p < 0 ? `Friendly side (${a}) by ${-p}` : `Hostile side (${b}) by ${p}`
+  const ahead = Math.abs(p) < 5 ? 'Neither side — even' : p < 0 ? `${a} by ${-p}` : `${b} by ${p}`
   const ceasefire = front.status !== 'war'
   return {
     kicker: 'FRONT LINE',

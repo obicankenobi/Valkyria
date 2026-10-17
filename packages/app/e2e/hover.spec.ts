@@ -77,7 +77,7 @@ const TARGETS: Target[] = [
     open: async (p) => {
       await p.getByTestId('tab-company').click()
     },
-    locator: (p) => p.getByTestId('company-credit-tier').getByRole('radio', { name: /SERIOUS/ }),
+    locator: (p) => p.getByTestId('company-credit-tier').getByRole('radio', { name: /50%/ }),
   },
   {
     name: 'Segmented (ovalt alternativ)',

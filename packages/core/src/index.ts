@@ -46,6 +46,8 @@ export {
   boardMemo,
   orderTerms,
   DISPLAY_THRESHOLDS,
+  DISPLAY_COSTS,
+  GRADE_TERMS,
   BOT_BALANCE,
   INFLUENCE_BALANCE,
   effectiveDepth,

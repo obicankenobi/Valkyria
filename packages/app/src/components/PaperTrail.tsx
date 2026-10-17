@@ -6,12 +6,12 @@
 // Allt valideras av validateStandingOrderChange (samma regler som applyActions). Spåren som ännu inte kommit fram visas bara som ett antal —
 // husets egna handlingar är kända för huset, men inte vilka som kommer att komma fram och när (skyddsräcke 5).
 import { useState } from 'react'
-import { validateStandingOrderChange } from '@seventh-front/core'
+import { DISPLAY_COSTS, validateStandingOrderChange } from '@seventh-front/core'
 import type { GameState, PaperTrace, StandingOrderChange, TraceChoice, TurnSubmission } from '@seventh-front/core'
 import { Button, DsToggle, Segmented } from './designSystem.js'
 import { DecisionDots } from './DecisionDots.js'
 import type { DecisionGauge } from './DecisionDots.js'
-import { Meter, Panel, Tag } from './ui.js'
+import { Meter, Panel, Tag, formatMoney } from './ui.js'
 import { standingOrderKey } from '../standingOrderBoard.js'
 
 const KIND_TEXT: Record<PaperTrace['kind'], string> = {
@@ -151,7 +151,7 @@ export function PaperTrail({
             testId="legal-toggle"
           />
           <p className="cf-hint">
-            Lowers the chance that a file comes to light — and leaves a small file of its own. Costs money every quarter, from next quarter. Key: {standingOrderKey(legalChange)}.
+            Lowers the chance that a file comes to light — and leaves a small file of its own. Costs {formatMoney(DISPLAY_COSTS.legalCounselPerQuarter)} every quarter, from next quarter. Key: {standingOrderKey(legalChange)}.
           </p>
           <DecisionDots gauges={['cash', 'reputation']} />
           {!legalValid.ok && <p className="cf-hint is-warning">{legalValid.reason}</p>}

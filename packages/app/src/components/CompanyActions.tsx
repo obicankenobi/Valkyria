@@ -85,10 +85,12 @@ function LoanRepaySection({ state, onFile }: { state: GameState; onFile: (action
       ? { type: 'INTERNAL', op: 'TAKE_LOAN', payload: { amount } }
       : { type: 'INTERNAL', op: 'REPAY', payload: { amount } }
   const validation = validateAction(state, state, action)
+  // Speltest 2026-10-17 (punkt 11): "MODEST/SERIOUS/LAVISH" sa inte vad nivån är. Nu andelen och vad den är en andel av.
   const tiers: Tier[] = (['modest', 'serious', 'lavish'] as const).map((key) => ({
     key,
-    label: key.toUpperCase(),
+    label: `${Math.round(TIER_FRACTIONS[key] * 100)}%`,
     amount: formatMoney(Math.round(cap * TIER_FRACTIONS[key])),
+    effect: mode === 'loan' ? 'of your credit limit' : 'of what you can repay',
   }))
 
   return (
@@ -106,7 +108,7 @@ function LoanRepaySection({ state, onFile }: { state: GameState; onFile: (action
       <ActionCard state={state} verb={mode === 'loan' ? 'TAKE_LOAN' : 'REPAY'} action={action} />
       <p className="cf-hint">
         {mode === 'loan'
-          ? `Credit limit ${formatMoney(state.house.creditLimit)}`
+          ? `A loan adds to your debt and costs interest every quarter. Credit limit ${formatMoney(state.house.creditLimit)}, debt now ${formatMoney(state.house.debt)}.`
           : `Owed ${formatMoney(state.house.debt)}, available cash ${formatMoney(state.house.treasury)}`}
       </p>
       <TierPicker tiers={tiers} value={tier} onChange={setTier} testId="company-credit-tier" />
@@ -232,12 +234,13 @@ function CommoditySection({ state, onFile }: { state: GameState; onFile: (action
   const validation = validateAction(state, state, action)
   const tiers: Tier[] = (['modest', 'serious', 'lavish'] as const).map((key) => ({
     key,
-    label: key.toUpperCase(),
+    label: `${Math.round(fractions[key] * 100)}%`,
     amount: formatMoney(Math.round(cap * fractions[key])),
+    effect: op === 'BUY_FORWARD' ? 'of your cash' : 'of what you hold',
   }))
 
   return (
-    <Panel info="Raw materials you can reserve at today's price to discount your future material costs, or release back into cash." infoTopic="production" title="Raw materials">
+    <Panel info="Raw materials set your unit cost. Reserve pays cash now against future material costs (it does not lock a price); release turns it back into cash." infoTopic="materials" title="Raw materials">
       <div className="cf-field" data-verb="BUY_FORWARD RELEASE">
         <span className="cf-field-label">COMMODITY</span>
         <Segmented

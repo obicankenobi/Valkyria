@@ -49,6 +49,9 @@ async function startGenuinelyFreshGame(page: Page): Promise<void> {
 }
 
 test('handledningen leder alla åtta steg och avslutas av sig själv (P91a klart-när)', async ({ page }) => {
+  // Speltest 2026-10-17: skrivbordsformatet (1440×900, ETAPP12 12A). I Playwrights standardvy (1280×720) sticker budmappens stämpel ut till höger om fönstret,
+  // nu när infanteriordern (allmänt startverk, beslut 13A) är den första olåsta mappen — samma åtgärd som persist-mid-turn i P193.
+  await page.setViewportSize({ width: 1440, height: 900 })
   await startGenuinelyFreshGame(page)
 
   await expect(page.getByTestId('tutorial-banner')).toBeVisible()

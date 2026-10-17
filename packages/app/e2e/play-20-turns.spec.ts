@@ -216,7 +216,7 @@ async function playUntilCrisisOrTurnLimit(page: Page): Promise<boolean> {
     const creditLimit = parseMoney(await page.getByTestId('credit-limit').innerText())
     await page.getByTestId('company-drawer-works').click()
     if (treasury < 6000000 && creditLimit > 0) {
-      await page.locator('[data-testid="company-credit-tier"]').getByRole('radio', { name: 'LAVISH' }).click()
+      await page.locator('[data-testid="company-credit-tier"]').getByRole('radio', { name: /^100%/ }).click()
       await page.getByRole('button', { name: /Take Loan/ }).click()
     }
 

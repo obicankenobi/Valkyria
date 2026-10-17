@@ -130,6 +130,15 @@ type OfficialOp = 'BRIBE' | 'FUND_CAMPAIGN' | 'FAVOUR' | 'ASSASSINATE'
 type FactionOp = 'STAGE_INCIDENT' | 'BACK_CHANNEL' | 'FUND_COUP' | 'BROKER'
 type OpenForm = { kind: 'official'; officialId: OfficialId; op: OfficialOp } | { kind: 'faction'; factionId: FactionId; op: FactionOp } | null
 
+// Speltest 2026-10-17 (punkt 24): vad posten betyder för huset — bundet till koden: bara upphandlingschefen (`findOfficial(…, 'procurement')`) rör ordrar,
+// förmedling, upphandlingar och pappersspår; alla fyra kan fatta ett policybeslut mot huset (politics.ts läser varje tjänsteman, oavsett post).
+const POST_ROLE: Record<Official['post'], string> = {
+  procurement: 'Runs this buyer\'s orders, tenders and brokered deals: their relation and integrity weigh on your bids.',
+  defence: 'No hand in the orders. Their agenda can become a policy decision against you if they feel ignored.',
+  finance: 'No hand in the orders. Their agenda can become a policy decision against you if they feel ignored.',
+  interior: 'No hand in the orders. Their agenda can become a policy decision against you if they feel ignored.',
+}
+
 export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAction: (action: PlayerAction) => void }) {
   const [openForm, setOpenForm] = useState<OpenForm>(null)
   const { connectYarn, clearYarn } = useDeskYarn() // P193 (12C): hovring på en tjänsteman spänner tråden till hens land
@@ -176,6 +185,9 @@ export function ThePolitics({ state, onAddAction }: { state: GameState; onAddAct
                     {!display.cabinetCoverage && <Tag>No cabinet coverage</Tag>}
                   </div>
 
+                  <p className="cf-hint official-post-role" data-testid={`official-post-role-${official.id}`}>
+                    {POST_ROLE[official.post]}
+                  </p>
                   <div className="faction-meters">
                     <Meter label="Standing" value={display.standing} display={display.standing.toFixed(0)} tone="blue" />
                     <Meter
