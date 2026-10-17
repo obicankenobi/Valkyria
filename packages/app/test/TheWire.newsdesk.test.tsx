@@ -197,3 +197,31 @@ describe('TheWire — NEWS DESK i tre nivåer (P81d)', () => {
     expect(screen.getByText(/No events match this filter/)).toBeTruthy()
   })
 })
+
+describe('TheWire — speltest 2026-10-17', () => {
+  it('punkt 5: kvartalets rapporter och telex står kvar på förstasidan (förut bara rubriker — en enda rubrik gav en tom sida)', () => {
+    mockMatchMedia(true)
+    const state: GameState = createInitialState('indochina-slice', 'newsdesk-reports-seed')
+    const wire = [
+      makeEvent({ id: 'h', headline: 'THE ONE HEADLINE', turn: 5, severity: 'headline', subjectId: null }),
+      makeEvent({ id: 'r', headline: 'A REPORT THIS QUARTER', turn: 5, severity: 'report', subjectId: null }),
+      makeEvent({ id: 't', headline: 'A TICKER THIS QUARTER', turn: 5, severity: 'ticker', subjectId: null }),
+      makeEvent({ id: 'old', headline: 'LAST QUARTER REPORT', turn: 4, severity: 'report', subjectId: null }),
+    ]
+    render(<TheWire wire={wire} state={state} draft={EMPTY_DRAFT} onChooseCrisis={() => {}} />)
+    const front = screen.getByTestId('news-front-page').textContent ?? ''
+    expect(front).toContain('A REPORT THIS QUARTER')
+    expect(front).toContain('A TICKER THIS QUARTER')
+    expect(front).not.toContain('LAST QUARTER REPORT') // förra kvartalet ligger i arkivet
+  })
+
+  it('punkt 6: en arkivbegäran (OPEN WIRE DESK) slår upp arkivet', () => {
+    mockMatchMedia(true)
+    const state: GameState = createInitialState('indochina-slice', 'newsdesk-archive-seed')
+    const wire = [makeEvent({ id: 'h', headline: 'SOMETHING', turn: 5 })]
+    const { rerender } = render(<TheWire wire={wire} state={state} draft={EMPTY_DRAFT} onChooseCrisis={() => {}} archiveRequest={0} />)
+    expect(screen.queryByTestId('archive-list')).toBeNull()
+    rerender(<TheWire wire={wire} state={state} draft={EMPTY_DRAFT} onChooseCrisis={() => {}} archiveRequest={1} />)
+    expect(screen.getByTestId('archive-list')).toBeTruthy()
+  })
+})

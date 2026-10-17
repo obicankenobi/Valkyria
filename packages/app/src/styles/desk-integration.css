@@ -60,3 +60,79 @@
   margin: 0 0 12px 12px;
   pointer-events: auto;
 }
+
+/* Speltest 2026-10-17 (punkt 14–15): handboken som innehållsförteckning + uppslag. */
+.handbook-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.handbook-index {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+}
+.handbook-index-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.handbook-index-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+}
+.handbook-index-item {
+  min-height: 30px;
+  padding: 4px 10px;
+  text-align: left;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+.handbook-index-item:hover {
+  background: var(--amber-soft);
+}
+.handbook-index-item.is-selected {
+  border-left-color: var(--amber, #a8651c);
+  background: var(--amber-soft);
+  font-weight: 700;
+}
+.handbook-entry .handbook-title {
+  font-size: 20px;
+}
+
+/* Speltest 2026-10-17 (punkt 1): titeln på startskärmen använde bläckfärgen (mörk) mot den mörka bakgrunden och smälte in. Krämvitt med en mörk skugga. */
+.menu-title {
+  color: #f3e8cc;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6), 0 0 28px rgba(0, 0, 0, 0.8);
+}
+.menu-subtitle {
+  color: #d8c9a6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.menu-mute,
+.menu-handbook {
+  color: #e6d7b2;
+  border-color: #c9a35a;
+}
+
+/* Speltest 2026-10-17 (punkt 2): lampans skugga över högra halvan var för mörk även på HI (kanten 58 % svart). HI ger nu bara en svag ram;
+   LOW behåller stämningen men släpper igenom mapparna. */
+.desk-lamp-vignette {
+  background: radial-gradient(circle 900px at 40% 46%, rgba(255, 236, 179, 0.06) 0%, rgba(20, 12, 5, 0.04) 60%, rgba(6, 4, 2, 0.22) 100%);
+}
+.desk-war-room.is-low-lamp .desk-lamp-vignette {
+  background: radial-gradient(circle 700px at 34% 46%, rgba(255, 218, 125, 0.18) 0%, rgba(10, 6, 2, 0.32) 60%, rgba(4, 2, 1, 0.6) 100%);
+}

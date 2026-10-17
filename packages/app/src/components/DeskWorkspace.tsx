@@ -188,12 +188,15 @@ export interface DeskWorkspaceProps {
   countryFileSlot: ReactNode | null
   folderContentSlot: ReactNode
   bannerSlot?: ReactNode
+  // Speltest 2026-10-17 (punkt 6): OPEN WIRE DESK öppnar telexarkivet (byter bara flik om den saknas).
+  onOpenWireDesk?: () => void
 }
 
 export function DeskWorkspace({
   state,
   activeView,
   onSelectView,
+  onOpenWireDesk,
   onSelectCountry,
   actions,
   onRemoveAction,
@@ -427,7 +430,7 @@ export function DeskWorkspace({
           <div className="desk-telex-box" data-testid="telex-ticker">
             <div className="desk-telex-header">
               <span className="desk-dymo">TELEX FEED · WIRE</span>
-              <button type="button" className="desk-mini-link" onClick={() => onSelectView('news')}>
+              <button type="button" className="desk-mini-link" onClick={() => (onOpenWireDesk ? onOpenWireDesk() : onSelectView('news'))} data-testid="open-wire-desk">
                 OPEN WIRE DESK ▸
               </button>
             </div>

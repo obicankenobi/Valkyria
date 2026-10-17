@@ -173,6 +173,11 @@ function getGraph(ctx: AudioContext): Graph {
 }
 
 let duck = 1
+// Speltest 2026-10-17 (punkt 22): musiken tystnar medan ett längre ljud spelar (en vinjett, telefonen, ett tröskelljud) och kommer tillbaka efteråt.
+// Räknaren tål flera överlappande ljud; korta klick och hovring rör inte musiken.
+const DUCKING_EFFECTS: ReadonlySet<SoundEffect> = new Set<SoundEffect>(['newsreel-sting', 'crisis-phone', 'doomsday-threshold', 'turn-end', 'static-burst', 'stamp'])
+export const EFFECT_MUSIC_DUCK = 0.12
+let effectDucks = 0
 
 function applyChannelGains(): void {
   if (!graph || !audioContext) return
@@ -180,7 +185,7 @@ function applyChannelGains(): void {
   const set = (node: GainNode, value: number) => node.gain.setTargetAtTime(value, now, 0.05)
   set(graph.master, muted ? 0 : channelVolume.master)
   set(graph.sfx, channelVolume.sfx)
-  set(graph.music, channelVolume.music * duck)
+  set(graph.music, channelVolume.music * duck * (effectDucks > 0 ? EFFECT_MUSIC_DUCK : 1))
   set(graph.ambience, channelVolume.ambience)
 }
 
@@ -221,6 +226,14 @@ export async function playSound(effect: SoundEffect): Promise<void> {
     level.gain.value = EFFECT_GAIN[effect] ?? 1
     source.connect(level)
     level.connect(getGraph(ctx).sfx)
+    if (DUCKING_EFFECTS.has(effect)) {
+      effectDucks += 1
+      applyChannelGains()
+      source.onended = () => {
+        effectDucks = Math.max(0, effectDucks - 1)
+        applyChannelGains()
+      }
+    }
     source.start()
   } catch {
     // En AudioContext som stängts eller avbrutits — tystnad, inte ett fel.
@@ -234,6 +247,9 @@ interface AmbienceNode {
   gain: GainNode
 }
 const ambienceNodes = new Map<AmbienceName, AmbienceNode>()
+// Speltest 2026-10-17 (punkt 23): ett lager vars start väntar på bufferten. Förut kollades bara ambienceNodes, som sätts först EFTER await — två
+// syncAmbience i rad (flikbyte och uppspelningens slut) startade då samma loop två gånger, och telexloopen "staplades" på NEWS DESK.
+const ambienceStarting = new Set<AmbienceName>()
 let desiredAmbience: readonly AmbienceName[] = []
 
 export function setAmbience(layers: readonly AmbienceName[]): void {
@@ -256,8 +272,9 @@ function syncAmbience(): void {
     }
   }
   for (const name of want) {
-    if (ambienceNodes.has(name)) continue
-    void startAmbience(ctx, name)
+    if (ambienceNodes.has(name) || ambienceStarting.has(name)) continue
+    ambienceStarting.add(name)
+    void startAmbience(ctx, name).finally(() => ambienceStarting.delete(name))
   }
 }
 

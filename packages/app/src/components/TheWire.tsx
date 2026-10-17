@@ -355,6 +355,7 @@ export function TheWire({
   draft,
   onChooseCrisis,
   report = null,
+  archiveRequest,
 }: {
   wire: readonly WireEvent[]
   state: GameState
@@ -362,8 +363,15 @@ export function TheWire({
   onChooseCrisis: (choice: 'PUSH' | 'BACK_DOWN' | 'SELL_THE_FILE') => void
   // P164: senaste kvartalets handlingar och vad som hände med dem ("Your actions"). Utelämnad = ingen rapport (t.ex. direkt efter en inläsning).
   report?: ActionReportInput | null
+  // Speltest 2026-10-17 (punkt 6): räknas upp av OPEN WIRE DESK — varje ny begäran slår upp arkivet med alla avdelningar.
+  archiveRequest?: number
 }) {
   const [newsView, setNewsView] = useState<NewsView>('front')
+  useEffect(() => {
+    if (!archiveRequest) return
+    setDepartment('all')
+    setNewsView('archive')
+  }, [archiveRequest])
   const [department, setDepartment] = useState<NewsDepartment | 'all'>('all')
   const [onlyMine, setOnlyMine] = useState(false)
 
@@ -391,9 +399,12 @@ export function TheWire({
   // heroEvent utesluts — den redan visas stort i news-hero ovan, en dubblett
   // i avdelningslistan direkt under vore bara brus (genuint fynd, fångat av
   // TheWire.reveal.test.tsx när fixturerna blev rubrikhändelser).
-  const thisQuarterHeadlines = visible.filter(
-    (e) => e.severity === 'headline' && e.turn === latestTurn && e.id !== heroEvent?.id,
-  )
+  // Speltest 2026-10-17 (punkt 5): förut bara kvartalets RUBRIKER — ett kvartal har ofta en enda, så förstasidan var tom så fort uppspelningen tagit slut
+  // och allt annat "flyttade till arkivet". Nu står hela kvartalets händelser kvar här tills nästa kvartal: rubriker först, sedan rapporter, sedan telex.
+  const SEVERITY_ORDER: Record<string, number> = { headline: 0, report: 1, ticker: 2 }
+  const thisQuarterHeadlines = visible
+    .filter((e) => e.turn === latestTurn && e.id !== heroEvent?.id && !Object.keys(e.delta).some((k) => k.startsWith('history.')))
+    .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3))
   // P149 (ETAPP10 §9.1/§9.5): kvartalets förstasida ur historien visas som en tidningssida överst, och avdelningen World listar kvartalets historiska rader — också telexraderna,
   // som är ticker-händelser och annars aldrig skulle nå förstasidan.
   const historyOfLatest = visible.filter((e) => e.turn === latestTurn && Object.keys(e.delta).some((k) => k.startsWith('history.')))

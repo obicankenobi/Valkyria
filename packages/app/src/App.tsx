@@ -198,6 +198,7 @@ export function App() {
 
   const [handbookOpen, setHandbookOpen] = useState(false)
   const [handbookFocusId, setHandbookFocusId] = useState<HandbookTopicId | null>(null)
+  const [wireArchiveRequest, setWireArchiveRequest] = useState(0)
 
   function fileMemo(id: string | null) {
     if (!id) return
@@ -720,6 +721,10 @@ export function App() {
         state={state}
         activeView={view as ShellView}
         onSelectView={(next) => setView(next)}
+        onOpenWireDesk={() => {
+          setView('news')
+          setWireArchiveRequest((n) => n + 1)
+        }}
         selectedFactionId={selectedFactionId}
         onSelectCountry={setSelectedFactionId}
         actions={draft.actions}
@@ -789,7 +794,7 @@ export function App() {
             )}
             {view === 'contacts' && <ThePolitics state={state} onAddAction={addActionDisarming} />}
             {view === 'news' && (
-              <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} report={lastTurnReport} />
+              <TheWire wire={state.wire} state={state} draft={draft} onChooseCrisis={setCrisisChoice} report={lastTurnReport} archiveRequest={wireArchiveRequest} />
             )}
           </>
         }
