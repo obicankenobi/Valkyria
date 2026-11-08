@@ -4,6 +4,7 @@
 // Båda är valfria — en komponent som renderas utan provider (de flesta enhetstester) får `null` och döljer då bara handboks-länken respektive markeringen.
 import { createContext, useContext } from 'react'
 import type { HandbookTopicId } from './handbook.js'
+import type { MapSelection } from './mapInfo.js'
 
 export const HandbookContext = createContext<((topic: HandbookTopicId) => void) | null>(null)
 export function useOpenHandbook(): ((topic: HandbookTopicId) => void) | null {
@@ -29,4 +30,15 @@ export interface ReplayFocus {
 export const ReplayFocusContext = createContext<ReplayFocus | null>(null)
 export function useReplayFocus(): ReplayFocus | null {
   return useContext(ReplayFocusContext)
+}
+
+// Etapp 14, P204 (förslaget §6.3): mappen ber kartan visa ett föremål — kartan panorerar dit och väljer det (ett verk utomlands, ett
+// förband, ett land). `nonce` ökar vid varje begäran, så att samma föremål begärt två gånger ändå panorerar igen.
+export interface MapFocusRequest {
+  target: MapSelection
+  nonce: number
+}
+export const MapFocusContext = createContext<((target: MapSelection) => void) | null>(null)
+export function useMapFocus(): ((target: MapSelection) => void) | null {
+  return useContext(MapFocusContext)
 }

@@ -3,6 +3,7 @@
 // ur `facilityCard`/`worksBuildOptions` (kärnan) — inget räknas om här. Ändringar är stående order: de köas i draften, gäller från nästa kvartal och kostar ingen handling.
 // Lampor, namn och nivå är riktig text och form ovanpå ritningen (ingen text i konsten).
 import { useEffect, useState } from 'react'
+import { useMapFocus } from '../uiContext.js'
 import {
   MAINTENANCE_LEVELS,
   STAFFING_STEPS,
@@ -96,6 +97,7 @@ export function WorksPlan({
   focusId?: string | null
 }) {
   const [sheet, setSheet] = useState<Sheet>(focusId && state.house.works.some((w) => w.id === focusId) ? { type: 'facility', id: focusId } : null)
+  const focusOnMap = useMapFocus()
   useEffect(() => {
     if (focusId && state.house.works.some((w) => w.id === focusId)) setSheet({ type: 'facility', id: focusId })
   }, [focusId])
@@ -213,12 +215,20 @@ export function WorksPlan({
           {site.abroad.map((f) => {
             const card = facilityCard(state, f.id)!
             return (
-              <button key={f.id} type="button" className="works-abroad-row" onClick={() => setSheet({ type: 'facility', id: f.id })} data-testid={`works-slot-${f.id}`}>
-                <span className={`works-lamp is-${card.lamp}`} aria-hidden="true" />
-                <span>
-                  {card.label} · {(f.location ?? '').toUpperCase()} · L{card.level}
-                </span>
-              </button>
+              <div key={f.id} className="works-abroad-item">
+                <button type="button" className="works-abroad-row" onClick={() => setSheet({ type: 'facility', id: f.id })} data-testid={`works-slot-${f.id}`}>
+                  <span className={`works-lamp is-${card.lamp}`} aria-hidden="true" />
+                  <span>
+                    {card.label} · {(f.location ?? '').toUpperCase()} · L{card.level}
+                  </span>
+                </button>
+                {/* Etapp 14, P204: verket utomlands på kartan — kartan panorerar dit och väljer det. */}
+                {focusOnMap && (
+                  <button type="button" className="desk-mini-link works-abroad-map" onClick={() => focusOnMap({ kind: 'works', facilityId: f.id })} data-testid={`works-show-on-map-${f.id}`}>
+                    SHOW ON MAP ▸
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>

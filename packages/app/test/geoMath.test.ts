@@ -95,6 +95,18 @@ describe('tokenOffset (P77 — förbandsbrickornas rutnätsplacering inom en sek
     expect(offsets[3]![0]).toBeCloseTo(0, 6)
   })
 
+  it('P206: grannbrickor överlappar inte (en bricka är 25 enheter bred och hög)', () => {
+    for (const total of [2, 3, 4, 5, 6]) {
+      const offsets = Array.from({ length: total }, (_, i) => tokenOffset(i, total))
+      for (let a = 0; a < total; a++)
+        for (let b = a + 1; b < total; b++) {
+          const dx = Math.abs(offsets[a]![0] - offsets[b]![0])
+          const dy = Math.abs(offsets[a]![1] - offsets[b]![1])
+          expect(dx >= 26 || dy >= 26, `${total}: ${a} och ${b}`).toBe(true)
+        }
+    }
+  })
+
   it('är deterministiskt: samma index/total ger alltid samma förskjutning', () => {
     expect(tokenOffset(2, 5)).toEqual(tokenOffset(2, 5))
   })

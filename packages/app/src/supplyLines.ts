@@ -19,7 +19,8 @@
 // approximation än att uppfinna ett nytt core-fält för en ren
 // presentationsdetalj.
 import type { GameState } from '@seventh-front/core'
-import { PLAYER_ATTRIBUTION_KEY } from '@seventh-front/core'
+import { PLAYER_ATTRIBUTION_KEY, getProduct } from '@seventh-front/core'
+import { quarterOfTurn } from './displayNames.js'
 import type { SectorRegion } from './sectorRegions.js'
 
 // Verkliga, historiska ingångspunkter för materiel in i teatrarna — samma
@@ -108,4 +109,60 @@ export function snapshotAttribution(state: GameState): Record<string, Record<str
     snapshot[front.id] = { ...front.attribution }
   }
   return snapshot
+}
+
+// ── Etapp 14, P206 (förslaget §6.1) ─────────────────────────────────────────────────────────────────────────────────────────────
+// Konvojlinjer för ÖPPNA ersättningsordrar: från teaterns ingångspunkt till sektorn där förbandet som förlorat materielen står
+// (Order.reason.formationId → Formation.sectorId). Ett vunnet kontrakt har inget sectorId (se avsteget överst), så dess linje går
+// fortfarande till frontens ankare; den linjen får i stället en etikett med antal och ankomstkvartal ur Shipment.arrivalTurn.
+export interface OrderConvoy {
+  id: string
+  orderId: string
+  formationId: string
+  formationName: string
+  fromAnchor: [number, number] // [lat, lng]
+  toAnchor: [number, number]
+  label: string
+}
+
+function productShortName(name: string): string {
+  return name.split(',')[0]!.trim()
+}
+
+export function orderConvoys(state: GameState, regionsByTheatre: Record<string, SectorRegion[]>): OrderConvoy[] {
+  const convoys: OrderConvoy[] = []
+  for (const order of state.market.openOrders) {
+    if (order.reason.kind !== 'REPLACE_FORMATION_LOSSES') continue
+    const formationId = order.reason.formationId
+    const front = Object.values(state.fronts).find((f) => f.formations.some((fm) => fm.id === formationId))
+    const formation = front?.formations.find((fm) => fm.id === formationId)
+    if (!front || !formation) continue
+    const port = THEATRE_ENTRY_POINTS[front.theatreId]
+    const region = regionsByTheatre[front.theatreId]?.find((r) => r.sectorId === formation.sectorId)
+    if (!port || !region) continue
+    convoys.push({
+      id: `order-${order.id}`,
+      orderId: order.id,
+      formationId,
+      formationName: formation.name,
+      fromAnchor: port.anchor,
+      toAnchor: region.anchor,
+      label: `WANTED · ${order.quantity}× ${productShortName(getProduct(order.productId).name).toUpperCase()}`,
+    })
+  }
+  return convoys
+}
+
+// Etiketten på spelarens leveranslinje till en front: hur mycket som är på väg och när det första anländer.
+export function playerSupplyLabel(state: GameState, frontId: string): string | null {
+  let units = 0
+  let firstArrival = Infinity
+  for (const shipment of state.market.shipments) {
+    const contract = state.market.contracts.find((c) => c.id === shipment.contractId)
+    if (contract?.frontId !== frontId) continue
+    units += shipment.units
+    firstArrival = Math.min(firstArrival, shipment.arrivalTurn)
+  }
+  if (units === 0 || !Number.isFinite(firstArrival)) return null
+  return `YOU · ${units} UNITS · ARRIVES ${quarterOfTurn(firstArrival).toUpperCase()}`
 }

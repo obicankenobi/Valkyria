@@ -1,8 +1,8 @@
 # Etapp 14 — "Krigsrumsbordet" (P201–P207)
 
-**Status: antagen 2026-11-08** (ägarens order: "Bygg hälften av de punkter du kan göra självständigt nu, schemalägg de resterande
-du klarar själv till att påbörjas 23:00 svensk tid"). **Första halvan (P201–P203, punkt 1–6) byggd 2026-11-08. Andra halvan
-(P204–P207, punkt 7–13) schemalagd till 2026-11-08 kl. 23:00.**
+**Status: antagen och BYGGD 2026-11-08** (ägarens order: "Bygg hälften av de punkter du kan göra självständigt nu, schemalägg de
+resterande du klarar själv till att påbörjas 23:00 svensk tid"). Första halvan (P201–P203, punkt 1–6) byggd 2026-11-08 (commit
+`5b76d62`); andra halvan (P204–P207, punkt 7–13) byggd samma natt av den schemalagda körningen.
 
 Underlaget är ägarens förslag "Etapp 12 — Krigsrumsbordet (PC)" (2026-11-04, skrivet mot koden efter P191). Förslaget hade inte sett
 att etapp 12 "Krigsrummet" (P192–P198) och etapp 13 (P199–P200) redan var byggda: kartan avmonteras inte längre, Outbox och telexet
@@ -68,12 +68,38 @@ och varje fältnamn som syns.
 
 **Klart när:** landsakten öppnas från kartan utan bottenark, de tre flikarna fungerar och regel 11/18 och axe är gröna på landsaktens skärmar.
 
-## P204–P207 — andra halvan (punkt 7–13), schemalagd 2026-11-08 23:00
+## P204 — kartpjäser och synk mellan karta och mapp (punkt 7–8) — BYGGD 2026-11-08
 
-- **P204 (punkt 7–8):** klickbara orderbrickor och stationsnålar vid huvudstäderna (öppnar CONTRACTS filtrerat på landet respektive
-  landsakten); kopplingen karta↔mapp åt båda hållen (förband → dess ersättningsordrar, verk utomlands → kartan panorerar dit).
-- **P205 (punkt 9):** EXPAND FOLIO för tomtplanen, ritbordet och kapplöpningstavlan; Esc fäller tillbaka.
-- **P206 (punkt 10–11):** brickor läsbara vid standardzoom och hoverkort med de fält som finns (styrka, beredskap, utrustning, status;
-  dolda utan station); konvojlinjer för öppna ordrar till förbandets sektor, med etiketter.
-- **P207 (punkt 12–13):** kvartalsuppspelningen i tre faser på kartan (leveranser, strid och frontflytt, politik och nya ordrar), byggd
-  på P196; `npm run shots` och e2e även i 1920×1080.
+- Orderbrickan vid en huvudstad är en pjäs: ett tryck öppnar CONTRACTS med just den köparens ordrar (`mapFocus.ts`: `OrdersFilter`,
+  `ordersMatching`; filtret visas överst i mappen med SHOW ALL och släpps när spelaren lämnar CONTRACTS).
+- Stationsnålen öppnar landsakten direkt (utan landsakt, i ett enhetstest, visar den stationens kort som förut).
+- Ett förbands kort (och ett köparlands) har knappen *Replacement orders (n)* / *Open orders (n)* som öppnar CONTRACTS filtrerat.
+- Mappen ber kartan visa ett föremål (`MapFocusContext`): ett verk utomlands har *SHOW ON MAP* i THE COMPANY; kartan panorerar dit
+  (350 ms, direkt vid reducerad rörelse) och väljer verket.
+
+## P205 — EXPAND FOLIO (punkt 9) — BYGGD 2026-11-08
+
+- En bakelitknapp överst i CONTRACTS och THE COMPANY fäller ut mappen åt vänster över kartan (85 % av bredden; kartan står kvar
+  monterad under, Outbox och kalendern där de är). Esc fäller tillbaka först; nästa Esc pausar som förut (regel 16 oförändrad).
+
+## P206 — läsbara brickor, hoverkort och konvojer (punkt 10–11) — BYGGD 2026-11-08
+
+- Brickorna i samma sektor låg ovanpå varandra (12 enheter mellan, brickan 25 bred) och den översta stal hovring och klick — nu
+  28 × 34 enheter (`geoMath.ts`, test att grannar inte överlappar).
+- Vid standardzoomen står en kort beteckning vid varje känt förband ("1st Inf Div", `shortDesignation`); namn och styrka i klartext
+  som förut från zoomnivå 3. Okända förband får ingen etikett förrän nivå 3.
+- Hovring visar förbandets kort: land, status, styrka, beredskap och utrustning ur `formationDisplay`; utan station bara status och
+  styrkebandet ("No station: details unknown").
+- Konvojlinjer för öppna ersättningsordrar (`orderConvoys`): en streckad blyertsbåge från teaterns ingångspunkt till förbandets
+  sektor, etikett *WANTED · 80× 105MM FIELD GUN*, ett tryck öppnar förbandets ersättningsordrar. Spelarens leveranslinjer fick
+  etiketten *YOU · 9 UNITS · ARRIVES Q3 1964* (ur `Shipment.arrivalTurn`). Etiketterna ingår i kollisionsdöljningen och regel 18:s test.
+
+## P207 — uppspelningen i tre faser och 1920×1080 (punkt 12–13) — BYGGD 2026-11-08
+
+- Kvartalsuppspelningen (P196:s kartdocka) spelar händelserna i tre faser — *1 · Convoys arrive*, *2 · The guns*, *3 · Telegrams*
+  (`replayPhases.ts`: leveransrubrikerna, sedan `newsDepartment` = front, sedan resten) — med en fasremsa och en rubrik där varje fas
+  börjar; kartans ring följer händelserna som förut.
+- **Fynd:** rubriker från core innehåller kontraktets interna id (`CONTRACT contract-order-12 LATE …`). Core rörs inte; `cleanHeadline`
+  byter id:t mot kontraktets löpnummer överallt där rubriker visas (NEWS DESK, telexremsan, uppspelningen, This Quarter).
+- `e2e/screens.ts` `FORMATS` har 1920×1080 (`wide`): regel 11/18 och axe körs i båda formaten. `npm run shots` tar de viktigaste
+  skärmarna även i 1920×1080 (`*-wide.png`).

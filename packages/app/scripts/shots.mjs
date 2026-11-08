@@ -31,6 +31,10 @@ const REFERENCE_PORT = 4187
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
+// Etapp 14 (P207): regel 10 säger 1440×900 "och skalas upp till 1920×1080". De viktigaste skärmarna fotograferas också i det formatet
+// (filnamnen slutar på -wide.png); hela listan bara i 1440×900, för att hålla körtiden nere.
+const WIDE = { width: 1920, height: 1080 }
+const WIDE_SCREENS = new Set(['operations', 'contracts', 'company', 'contacts', 'news-desk', 'country-file', 'quarter-replay', 'map-info-formation', 'bid-locked'])
 
 // P193 (ETAPP12): kvartalsblocket är utfällt som standard på krigsbordet; öppna det bara om det är hopfällt.
 async function openQuarterBand(page) {
@@ -1488,12 +1492,13 @@ async function main() {
       existsSync(SANDBOX_CHROMIUM) ? { executablePath: SANDBOX_CHROMIUM } : {},
     )
 
-    for (const format of ['desktop']) {
-      const context = await browser.newContext({ viewport: DESKTOP })
+    for (const format of ['desktop', 'wide']) {
+      const context = await browser.newContext({ viewport: format === 'wide' ? WIDE : DESKTOP })
       const page = await context.newPage()
 
       for (const screen of APP_SCREENS) {
         if (process.env.SHOTS_ONLY && !process.env.SHOTS_ONLY.split(',').includes(screen.name)) continue
+        if (format === 'wide' && !WIDE_SCREENS.has(screen.name)) continue
         await page.goto(`http://localhost:${APP_PORT}${screen.path}`)
         if (screen.afterGoto) await screen.afterGoto(page)
         await page.waitForTimeout(300)

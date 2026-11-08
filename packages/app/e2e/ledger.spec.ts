@@ -93,6 +93,14 @@ test('utan reducerad rörelse spelas listan först och PM:et kommer efter, med C
       const skip = page.getByTestId('replay-skip')
       // Uppspelningen kan stänga sig själv mellan count() och click() — då finns knappen inte längre och ett klick utan tidsgräns hängde i hela testtiden.
       if (await skip.count()) await skip.click({ timeout: 2000 }).catch(() => {})
+      // Etapp 14: med fler än åtta rubriker (700 ms var) hinner listan inte spelas klart inom väntetiden, och Skip visar då PM:et direkt.
+      // Förut klickade slingan nedan bort PM:et innan det kontrollerades, och testet föll beroende på hur många rubriker kvartalet hade.
+      if (await memo.isVisible().catch(() => false)) {
+        await expect(page.getByTestId('replay-skip')).toHaveText('Continue')
+        await page.getByTestId('replay-skip').click()
+        await expect(memo).toBeHidden()
+        return
+      }
       // P192: ett uteblivet Skip-klick (uppspelningen byter ruta mitt i klicket) lämnade överlägget kvar och nästa End Quarter hängde i 280 s.
       // Stäng tills överlägget är borta innan nästa kvartal.
       for (let tries = 0; tries < 6 && (await page.getByTestId('quarter-replay').count()) > 0; tries++) {

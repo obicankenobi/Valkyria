@@ -4,7 +4,7 @@
 // (TheFloor.tsx m.fl.) rörs INTE av namnbytet — bara det spelaren ser här i
 // skalet. Se ETAPP1_TEKNISK_SPEC.md avsnitt 8, 10 för den ursprungliga
 // arkitekturen detta bygger vidare på.
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ComponentLibrary } from './components/ComponentLibrary.js'
 import { MainMenu } from './components/MainMenu.js'
 import { NewGameScreen } from './components/NewGameScreen.js'
@@ -28,8 +28,10 @@ import { SettingsOverlay } from './components/SettingsOverlay.js'
 import { ActionCatalog } from './components/ActionCatalog.js'
 import { ArmedVerbStrip } from './components/ArmedVerbStrip.js'
 import { actionVerb } from './actionInfo.js'
-import { ArmedVerbContext, HandbookContext, ReplayFocusContext } from './uiContext.js'
-import type { ArmedVerb, ReplayFocus } from './uiContext.js'
+import { ArmedVerbContext, HandbookContext, MapFocusContext, ReplayFocusContext } from './uiContext.js'
+import type { ArmedVerb, MapFocusRequest, ReplayFocus } from './uiContext.js'
+import type { OrdersFilter } from './mapFocus.js'
+import type { MapSelection } from './mapInfo.js'
 import { replayKind } from './replayFocus.js'
 import { wireAnchor } from './wireAnchor.js'
 import type { ActionCatalogEntry } from './actionCatalog.js'
@@ -201,6 +203,23 @@ export function App() {
   const [wireArchiveRequest, setWireArchiveRequest] = useState(0)
   // Etapp 13, P199: landet CONTACTS öppnar på (landsakten, This Quarter).
   const [contactsFocus, setContactsFocus] = useState<FactionId | null>(null)
+  // Etapp 14, P204: kartan öppnar CONTRACTS filtrerad (orderbrickan, ett förbands ersättningsordrar) och mappen ber kartan visa ett föremål.
+  const [ordersFilter, setOrdersFilter] = useState<OrdersFilter | null>(null)
+  const [mapFocusRequest, setMapFocusRequest] = useState<MapFocusRequest | null>(null)
+  // Etapp 14, P205: EXPAND FOLIO. Esc-lyssnaren läser värdet ur en ref, så den behöver inte sättas upp på nytt.
+  const [folioExpanded, setFolioExpanded] = useState(false)
+  const folioExpandedRef = useRef(false)
+  folioExpandedRef.current = folioExpanded && (view === 'contracts' || view === 'company')
+  const requestMapFocus = useCallback((target: MapSelection) => setMapFocusRequest((prev) => ({ target, nonce: (prev?.nonce ?? 0) + 1 })), [])
+  // Filtret gäller bara den öppning det kom med: lämnar spelaren CONTRACTS visar mappen alla ordrar nästa gång.
+  useEffect(() => {
+    if (view !== 'contracts') setOrdersFilter(null)
+  }, [view])
+  const openOrdersFiltered = useCallback((filter: OrdersFilter) => {
+    setOrdersFilter(filter)
+    setSelectedFactionId(null)
+    setView('contracts')
+  }, [])
 
   function fileMemo(id: string | null) {
     if (!id) return
@@ -567,6 +586,11 @@ export function App() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       if (view === 'menu' || replaying) return
+      // P205 (etapp 14): en utfälld mapp fälls tillbaka först; nästa Esc pausar som förut.
+      if (folioExpandedRef.current) {
+        setFolioExpanded(false)
+        return
+      }
       if (settingsOpen) {
         setSettingsOpen(false)
         return
@@ -715,6 +739,7 @@ export function App() {
     <HandbookContext.Provider value={handleOpenHandbook}>
     <ArmedVerbContext.Provider value={armed}>
     <ReplayFocusContext.Provider value={replayFocus}>
+    <MapFocusContext.Provider value={requestMapFocus}>
     <DeskYarnProvider>
     <div className="ds-shell desk-shell">
       {/* P193 (ETAPP12, 12B/12C): skrivbordet. Kartan är en slot som ALDRIG avmonteras när `view` byter flik; mapparna ligger till höger.
@@ -766,7 +791,17 @@ export function App() {
             {armed && <ArmedVerbStrip verb={armed.verb} onClear={() => setArmed(null)} />}
           </>
         }
-        mapSlot={<TheatreMap state={state} selectedFactionId={selectedFactionId} onSelectCountry={setSelectedFactionId} />}
+        mapSlot={
+          <TheatreMap
+            state={state}
+            selectedFactionId={selectedFactionId}
+            onSelectCountry={setSelectedFactionId}
+            onOpenOrders={openOrdersFiltered}
+            focusRequest={mapFocusRequest}
+          />
+        }
+        folioExpanded={folioExpanded}
+        onToggleFolio={() => setFolioExpanded((v) => !v)}
         countryFileSlot={
           selectedFactionId ? (
             <CountryFile
@@ -788,7 +823,18 @@ export function App() {
         }
         folderContentSlot={
           <>
-            {view === 'contracts' && <TheFloor state={state} draft={draft} onSubmitBid={setBid} onRemoveBid={removeBid} onAddAction={addActionDisarming} onSetStandingOrder={setStandingOrder} />}
+            {view === 'contracts' && (
+              <TheFloor
+                state={state}
+                draft={draft}
+                onSubmitBid={setBid}
+                onRemoveBid={removeBid}
+                onAddAction={addActionDisarming}
+                onSetStandingOrder={setStandingOrder}
+                ordersFilter={ordersFilter}
+                onClearOrdersFilter={() => setOrdersFilter(null)}
+              />
+            )}
             {view === 'company' && (
               <TheHouse
                 state={state}
@@ -898,6 +944,7 @@ export function App() {
       <Handbook open={handbookOpen} focusId={handbookFocusId} onClose={() => setHandbookOpen(false)} />
     </div>
     </DeskYarnProvider>
+    </MapFocusContext.Provider>
     </ReplayFocusContext.Provider>
     </ArmedVerbContext.Provider>
     </HandbookContext.Provider>

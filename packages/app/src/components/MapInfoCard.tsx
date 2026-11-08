@@ -3,7 +3,14 @@
 import type { MapInfo } from '../mapInfo.js'
 import { useOpenHandbook } from '../uiContext.js'
 
-export function MapInfoCard({ info, onClose, onOpenFile }: { info: MapInfo; onClose: () => void; onOpenFile?: () => void }) {
+// P204 (etapp 14): kortet kan bära fler vägar in i mapparna, t.ex. "Replacement orders (2)" för ett förband.
+export interface MapInfoAction {
+  label: string
+  onClick: () => void
+  testId: string
+}
+
+export function MapInfoCard({ info, onClose, onOpenFile, actions = [] }: { info: MapInfo; onClose: () => void; onOpenFile?: () => void; actions?: MapInfoAction[] }) {
   const openHandbook = useOpenHandbook()
   return (
     <aside className="map-info-card" data-testid="map-info-card" aria-label={`${info.kicker}: ${info.title}`}>
@@ -25,6 +32,11 @@ export function MapInfoCard({ info, onClose, onOpenFile }: { info: MapInfo; onCl
           Open country file
         </button>
       )}
+      {actions.map((action) => (
+        <button key={action.testId} type="button" className="ds-button map-info-open" onClick={action.onClick} data-testid={action.testId}>
+          {action.label}
+        </button>
+      ))}
       <dl className="map-info-rows">
         {info.rows.map((row) => (
           <div key={row.label} className="map-info-row" data-testid={`map-info-row-${row.label}`}>

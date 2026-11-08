@@ -371,3 +371,206 @@
   font-size: 12px;
   color: var(--ink-faint);
 }
+
+/* Etapp 14 (P204): kartpjäser och synk mellan karta och mapp. */
+.map-capital-orders.is-clickable {
+  cursor: pointer;
+}
+.map-capital-orders.is-clickable:hover .map-capital-badge,
+.map-capital-orders.is-clickable:focus-visible .map-capital-badge {
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+.orders-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px dashed rgba(58, 70, 86, 0.4);
+  background: rgba(244, 236, 214, 0.6);
+}
+.orders-filter-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.orders-filter-clear,
+.works-abroad-map {
+  min-height: 28px;
+  min-width: 28px;
+}
+.works-abroad-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.works-abroad-item .works-abroad-row {
+  flex: 1;
+}
+.orders-filter-clear,
+.works-abroad-map {
+  color: #6b3f0a;
+  font-size: 11px;
+}
+
+/* Etapp 14 (P205): EXPAND FOLIO — mappen fälls ut åt vänster över kartan (kartan står kvar monterad under, en remsa syns), Outbox och
+   kalendern ligger kvar där de är. Negativ vänstermarginal i den kolumnvisa flexen gör mappen bredare utan att ta den ur flödet. */
+.desk-right-column.is-folio-expanded .desk-dossier-stack {
+  margin-left: calc(100% - (85vw - 40px));
+  z-index: 40;
+  transition: margin-left 200ms ease;
+}
+.desk-right-column .desk-dossier-stack {
+  transition: margin-left 200ms ease;
+}
+.desk-folio-expand {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 6;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 4px 10px;
+  margin: 0 0 4px 8px;
+  background: linear-gradient(180deg, #3b2a1c, #22170e);
+  color: #f3e6c4;
+  border: 1px solid #120b06;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #0b0704, inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.desk-folio-expand:hover {
+  background: linear-gradient(180deg, #4a3523, #2b1d11);
+}
+.desk-folio-expand:active,
+.desk-folio-expand[aria-pressed='true'] {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #0b0704;
+}
+
+/* Etapp 14 (P206): konvojer för öppna ordrar (streckad blyerts — en beställning, ingen leverans än), deras etiketter (Dymo-lik
+   skrivmaskinstext) och förbandets hoverkort (ett maskinskrivet registerkort, inga glödeffekter). */
+.map-order-convoy {
+  fill: none;
+  stroke: #5b4630;
+  stroke-width: 1.4;
+  stroke-dasharray: 2 4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+path.map-supply-tap {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+.map-convoy-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  fill: #3a2c1c;
+  paint-order: stroke;
+  stroke: rgba(244, 236, 214, 0.92);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.map-convoy-label.is-player {
+  fill: #6b3f0a;
+}
+.map-formation-hover {
+  position: absolute;
+  z-index: 5;
+  min-width: 190px;
+  max-width: 280px;
+  padding: 8px 10px;
+  background: #f6efdb;
+  border: 1px solid #3a4656;
+  box-shadow: 0 4px 10px rgba(20, 12, 5, 0.35);
+  pointer-events: none;
+}
+.map-formation-hover-kicker {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+.map-formation-hover-title {
+  display: block;
+  margin: 2px 0 6px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink);
+}
+.map-formation-hover-rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.map-formation-hover-rows > div {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 6px;
+}
+.map-formation-hover-rows dt {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+}
+.map-formation-hover-rows dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* Etapp 14 (P207): uppspelningens tre faser — en remsa med tre stämplar och en rubrik i listan där en ny fas börjar. */
+.replay-phases {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.replay-phase {
+  padding: 4px 6px;
+  border: 1px dashed rgba(58, 70, 86, 0.5);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #4a4438;
+  text-align: center;
+  line-height: 1.25;
+}
+.replay-phase.is-active {
+  border-style: solid;
+  border-color: #8f1d17;
+  color: #8f1d17;
+  background: rgba(143, 29, 23, 0.06);
+}
+.replay-phase.is-empty {
+  text-decoration: line-through;
+  border-color: rgba(58, 70, 86, 0.25);
+}
+.replay-phase-head {
+  list-style: none;
+  margin: 8px 0 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8f1d17;
+  border-bottom: 1px solid rgba(143, 29, 23, 0.35);
+}

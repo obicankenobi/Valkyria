@@ -5,6 +5,8 @@
 // inspectorIntegrity/weights visas ALDRIG (avsnitt 4.3) — BidForm.tsx äger
 // själva reglaget, den här filen äger bara mappen den öppnas ur.
 import { frontName, officialLine, orderCause, orderPlace, quarterOfTurn } from '../displayNames.js'
+import { ordersFilterLabel, ordersMatching } from '../mapFocus.js'
+import type { OrdersFilter } from '../mapFocus.js'
 import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
 import { useEffect, useState } from 'react'
@@ -154,6 +156,8 @@ export function TheFloor({
   onAddAction = () => {},
   onSetStandingOrder = () => {},
   initialTab = 'orders',
+  ordersFilter = null,
+  onClearOrdersFilter,
 }: {
   state: GameState
   draft: TurnSubmission
@@ -164,9 +168,16 @@ export function TheFloor({
   onSetStandingOrder?: (change: StandingOrderChange) => void
   // Etapp 13, P199: vilken flik mappen öppnar på (t.ex. Tenders när This Quarter hoppar till en upphandling).
   initialTab?: ContractsTab
+  // Etapp 14, P204: kartan öppnar mappen filtrerad på en köpare (orderbrickan) eller ett förbands ersättningsordrar.
+  ordersFilter?: OrdersFilter | null
+  onClearOrdersFilter?: () => void
 }) {
   const [tab, setTab] = useState<ContractsTab>(initialTab)
   useEffect(() => setTab(initialTab), [initialTab])
+  useEffect(() => {
+    if (ordersFilter) setTab('orders')
+  }, [ordersFilter])
+  const shownOrders = ordersMatching(state, ordersFilter)
   const openTenders = (state.programmes ?? []).filter((p) => p.phase !== 'cancelled' && p.phase !== 'awarded').length
   const activeContracts = state.market.contracts.filter((c) => c.status === 'active' || c.status === 'late')
   const inTransit = state.market.shipments.reduce((sum, s) => sum + s.units, 0)
@@ -202,12 +213,24 @@ export function TheFloor({
         flush
         right={<span className="meter-label">{draft.bids.length} bids placed this turn</span>}
       >
-        {state.market.openOrders.length === 0 ? (
+        {ordersFilter && (
+          <div className="orders-filter" data-testid="orders-filter">
+            <span className="orders-filter-label">
+              {ordersFilterLabel(state, ordersFilter)} · {shownOrders.length} of {state.market.openOrders.length}
+            </span>
+            {onClearOrdersFilter && (
+              <button type="button" className="desk-mini-link orders-filter-clear" onClick={onClearOrdersFilter} data-testid="orders-filter-clear">
+                SHOW ALL ▸
+              </button>
+            )}
+          </div>
+        )}
+        {shownOrders.length === 0 ? (
           <p className="empty" style={{ padding: '14px 16px' }}>
-            No open orders. Buyers will return.
+            {ordersFilter ? 'No open orders match.' : 'No open orders. Buyers will return.'}
           </p>
         ) : (
-          state.market.openOrders.map((order) => (
+          shownOrders.map((order) => (
             <OrderFolder
               key={order.id}
               state={state}

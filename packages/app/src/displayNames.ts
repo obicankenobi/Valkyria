@@ -149,3 +149,36 @@ const AGENDA_LABEL: Record<Agenda, string> = {
 export function agendaLabel(agenda: Agenda | null): string {
   return agenda === null ? 'Unknown' : AGENDA_LABEL[agenda]
 }
+
+// Förbandets beteckning i kort form för brickan vid standardzoom (förslaget §5.3: "1st Cav", "324B") — förkortad ur namnet, aldrig ur id:t.
+const SHORT_WORDS: [RegExp, string][] = [
+  [/\bInfantry\b/g, 'Inf'],
+  [/\bDivision\b/g, 'Div'],
+  [/\bRegiment\b/g, 'Rgt'],
+  [/\bBattalion\b/g, 'Bn'],
+  [/\bArtillery\b/g, 'Arty'],
+  [/\bArmoured\b/g, 'Armd'],
+  [/\bCavalry\b/g, 'Cav'],
+  [/\bGroup\b/g, 'Gp'],
+  [/\bMechanised\b/g, 'Mech'],
+  [/\bTransportation\b/g, 'Trans'],
+  [/\bBattery\b/g, 'Bty'],
+  [/\bMain Force\b/g, 'MF'],
+  [/\bRoyal Lao\b/g, 'RL'],
+  [/\bLao\b/g, 'Lao'],
+]
+export function shortDesignation(name: string): string {
+  let short = name
+  for (const [pattern, replacement] of SHORT_WORDS) short = short.replace(pattern, replacement)
+  return short
+}
+
+// Telexrubriker från core kan innehålla ett kontrakts interna id ("CONTRACT contract-order-12 LATE …"). Core rörs inte, så visningen
+// byter id:t mot kontraktets löpnummer — samma "No. n" som kontraktstabellen (kontrakt tas aldrig bort ur listan, så numret står kvar).
+export function cleanHeadline(state: GameState, headline: string): string {
+  if (!headline.includes('contract-')) return headline
+  return headline.replace(/contract-[A-Za-z0-9-]+/g, (id) => {
+    const index = state.market.contracts.findIndex((c) => c.id === id)
+    return index >= 0 ? `No. ${index + 1}` : 'No. —'
+  })
+}

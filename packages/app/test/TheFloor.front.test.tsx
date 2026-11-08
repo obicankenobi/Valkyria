@@ -99,3 +99,20 @@ describe('TheFloor — P46 klart-når: fronten synlig på order- och kontraktsra
     expect(container.textContent).toContain('—')
   })
 })
+
+describe('TheFloor — P204: filtret kartan öppnar mappen med', () => {
+  it('visar bara köparens ordrar, säger det, och SHOW ALL tar bort filtret', () => {
+    const state = createInitialState('indochina-slice', 'floor-filter-seed')
+    const rvn = { ...makeOrder(state, 'front-1'), id: 'order-rvn', buyerId: 'rvn' as const }
+    const laos = { ...makeOrder(state, 'front-laos'), id: 'order-laos', buyerId: 'laos' as const }
+    state.market.openOrders = [rvn, laos]
+    let cleared = false
+    const { container, getByTestId } = render(
+      <TheFloor state={state} draft={EMPTY_DRAFT} onSubmitBid={() => {}} onRemoveBid={() => {}} ordersFilter={{ kind: 'buyer', factionId: 'laos' }} onClearOrdersFilter={() => { cleared = true }} />,
+    )
+    expect(container.querySelectorAll('[data-testid="order-folder"]')).toHaveLength(1)
+    expect(getByTestId('orders-filter').textContent).toContain('Orders from Kingdom of Laos · 1 of 2')
+    getByTestId('orders-filter-clear').click()
+    expect(cleared).toBe(true)
+  })
+})

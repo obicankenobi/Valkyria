@@ -12,6 +12,8 @@ import type { Page } from '@playwright/test'
 // Listan har kvar sin form (och loopar i testerna) så att ett framtida andra format, t.ex. 1920×1080, bara läggs till här.
 export const FORMATS: { name: string; width: number; height: number }[] = [
   { name: 'desktop', width: 1440, height: 900 },
+  // Etapp 14 (P207): regel 10 — "och skalas upp till 1920×1080". Regel 11/18 och axe körs nu i båda formaten.
+  { name: 'wide', width: 1920, height: 1080 },
 ]
 
 // P193 (ETAPP12): kvartalsblocket ("This Quarter") ligger utfällt som standard på krigsbordet (DeskWorkspace), så ett blint klick på

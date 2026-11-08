@@ -3,7 +3,7 @@
 // mahognyskrivbord där kartan alltid ligger fastnålad på vänstra bordshalvan
 // och arbetsmapparna (Contracts, Company/Works, Contacts/Dossiers, News/Wire
 // samt CountryFile) ligger som fysiska manillamappar på den högra bordshalvan.
-import { quarterOfTurn } from '../displayNames.js'
+import { cleanHeadline, quarterOfTurn } from '../displayNames.js'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { boardReviewOutlook, DISPLAY_THRESHOLDS, getProduct } from '@seventh-front/core'
@@ -187,6 +187,9 @@ export interface DeskWorkspaceProps {
   onOpenHandbook: (topic: HandbookTopicId) => void
   mapSlot: ReactNode
   countryFileSlot: ReactNode | null
+  // Etapp 14, P205 (förslaget §4.2): EXPAND FOLIO — mappen fälls ut över kartan för tomtplanen, ritbordet och kapplöpningstavlan.
+  folioExpanded?: boolean
+  onToggleFolio?: () => void
   folderContentSlot: ReactNode
   bannerSlot?: ReactNode
   // Speltest 2026-10-17 (punkt 6): OPEN WIRE DESK öppnar telexarkivet (byter bara flik om den saknas).
@@ -211,9 +214,13 @@ export function DeskWorkspace({
   onOpenHandbook,
   mapSlot,
   countryFileSlot,
+  folioExpanded = false,
+  onToggleFolio,
   folderContentSlot,
   bannerSlot,
 }: DeskWorkspaceProps) {
+  // P205: bara mapparna med breda arbetsytor (CONTRACTS: kapplöpningstavlan; THE COMPANY: tomtplanen och ritbordet) kan fällas ut.
+  const folioExpandable = activeView === 'contracts' || activeView === 'company'
   const [hudExpanded, setHudExpanded] = useState(false)
   const [quarterExpanded, setQuarterExpanded] = useState(true)
   const [lowLamp, setLowLamp] = useState(false)
@@ -445,7 +452,7 @@ export function DeskWorkspace({
               ) : (
                 headlines.map((ev) => (
                   <div key={ev.id} className="desk-telex-line">
-                    <strong>[{quarterOfTurn(ev.turn)}]</strong> {ev.headline}
+                    <strong>[{quarterOfTurn(ev.turn)}]</strong> {cleanHeadline(state, ev.headline)}
                   </div>
                 ))
               )}
@@ -546,7 +553,7 @@ export function DeskWorkspace({
         </div>
       </section>
 
-      <section className="desk-right-column">
+      <section className={folioExpandable && folioExpanded ? 'desk-right-column is-folio-expanded' : 'desk-right-column'} data-testid="desk-right-column">
         <div className="desk-dossier-stack">
           <nav className="desk-manila-tabs ds-tabbar" data-testid="tabbar" aria-label="Dossier folders">
             {TABS.map((tab) => {
@@ -575,6 +582,18 @@ export function DeskWorkspace({
           </nav>
 
           <main className="desk-manila-body ds-shell-content">
+            {folioExpandable && onToggleFolio && (
+              <button
+                type="button"
+                className="desk-folio-expand"
+                onClick={onToggleFolio}
+                aria-pressed={folioExpanded}
+                aria-label={folioExpanded ? 'Fold the folder back (Esc)' : 'Expand the folder over the map'}
+                data-testid="folio-expand"
+              >
+                <span aria-hidden="true">⇔</span> {folioExpanded ? 'FOLD' : 'EXPAND'}
+              </button>
+            )}
             {bannerSlot}
             {activeView === 'operations' ? (
               countryFileSlot ? (

@@ -21,7 +21,7 @@
 // att spelaren byter flik eller avslutar turen ändå — 9.3 dokumenterar
 // uttryckligen att en utebliven CRISIS-handling bara ger automatiskt
 // BACK_DOWN, inte ett fel.
-import { causeToggleLabel, deltaLabel, quarterOfTurn } from '../displayNames.js'
+import { causeToggleLabel, cleanHeadline, deltaLabel, quarterOfTurn } from '../displayNames.js'
 import { useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS, historyEventOf } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
@@ -106,7 +106,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
         <span className={`wire-stamp ${wearClass(event.id)}`}>{quarterOfTurn(event.turn)}</span>
         <span className={`wire-glyph is-${event.severity}`} aria-hidden="true" />
         {historyAnnouncement && <span className="wire-date" data-testid="wire-history-date">{historyDateLabel(historyAnnouncement.date)}</span>}
-        <span className="wire-text">{event.headline}</span>
+        <span className="wire-text">{cleanHeadline(state, event.headline)}</span>
         {anchor && <span className="wire-anchor">{anchor}</span>}
         {event.actorIsPlayer && <Tag tone="amber">YOU</Tag>}
         {chain.length > 0 && (
@@ -130,7 +130,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
         <ol className="wire-chain">
           {chain.map((cause) => (
             <li key={cause.id}>
-              <span className="mono">{quarterOfTurn(cause.turn)}</span> — {cause.headline}
+              <span className="mono">{quarterOfTurn(cause.turn)}</span> — {cleanHeadline(state, cause.headline)}
             </li>
           ))}
         </ol>
@@ -154,7 +154,7 @@ function TickerGroupRow({ group, state }: { group: TickerGroup; state: GameState
       <div className="wire-row">
         <span className={`wire-stamp ${wearClass(`group-${latest.id}`)}`}>×{group.events.length}</span>
         <span className="wire-glyph is-ticker" aria-hidden="true" />
-        <span className="wire-text">{latest.headline}</span>
+        <span className="wire-text">{cleanHeadline(state, latest.headline)}</span>
         {anchor && <span className="wire-anchor">{anchor}</span>}
         <button type="button" className="btn btn-ghost" onClick={() => setExpanded((v) => !v)}>
           {expanded ? 'hide' : `all ${group.events.length}`}
@@ -164,7 +164,7 @@ function TickerGroupRow({ group, state }: { group: TickerGroup; state: GameState
         <ol className="wire-chain">
           {[...group.events].reverse().map((event) => (
             <li key={event.id}>
-              <span className="mono">{quarterOfTurn(event.turn)}</span> — {event.headline}
+              <span className="mono">{quarterOfTurn(event.turn)}</span> — {cleanHeadline(state, event.headline)}
             </li>
           ))}
         </ol>
@@ -413,7 +413,7 @@ export function TheWire({
       {heroEvent && (
         <div className="news-hero" data-testid="news-hero">
           <span className="news-hero-kicker">Today&apos;s Headline · {quarterOfTurn(heroEvent.turn)}</span>
-          <p className="news-hero-text">{heroEvent.headline}</p>
+          <p className="news-hero-text">{cleanHeadline(state, heroEvent.headline)}</p>
           {heroAnchor && <span className="wire-anchor">{heroAnchor}</span>}
         </div>
       )}

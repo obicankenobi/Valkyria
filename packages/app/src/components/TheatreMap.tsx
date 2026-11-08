@@ -23,20 +23,20 @@
 // hamnar/ordermarkörer (lager 8, P79), markering av valt föremål (lager 10,
 // P79) — samma "bygg inte runt en lucka" som P76 höll fast vid.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, KeyboardEvent } from 'react'
+import type { CSSProperties, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { geoGraticule, geoMercator, geoPath } from 'd3-geo'
 import type { GeoPermissibleObjects } from 'd3-geo'
 import { select } from 'd3-selection'
-import { zoom, zoomIdentity } from 'd3-zoom'
-import type { ZoomTransform } from 'd3-zoom'
+import { zoom, zoomIdentity, zoomTransform } from 'd3-zoom'
+import type { ZoomBehavior, ZoomTransform } from 'd3-zoom'
 import * as topojsonClient from 'topojson-client'
 import { DISPLAY_THRESHOLDS, deriveSectorControl, effectiveDepth, facilityCard, foreignSite, foreignWorks, formationDisplay } from '@seventh-front/core'
-import type { FactionId, FormationDisplay, GameState } from '@seventh-front/core'
+import type { FactionId, FormationDisplay, GameState, TechCategory } from '@seventh-front/core'
 import { interpolateFrontGeoPosition, tokenOffset } from '../geoMath.js'
 import { SECTOR_REGIONS } from '../sectorRegions.js'
 import type { SectorRegion } from '../sectorRegions.js'
 import { CAPITALS } from '../capitals.js'
-import { playerSupplyLines, rivalSupplyLines, snapshotAttribution } from '../supplyLines.js'
+import { orderConvoys, playerSupplyLabel, playerSupplyLines, rivalSupplyLines, snapshotAttribution } from '../supplyLines.js'
 import { DynamicWorldOverlays, FrontlineGreasePolyline, MilitaryBaseMapLayer, WargameChit } from './RichTheatreMap.js'
 import { ACTION_CATALOG } from '../actionCatalog.js'
 import { COUNTRY_TO_FACTION, deriveMapInfo } from '../mapInfo.js'
@@ -49,6 +49,12 @@ import { MapInfoCard } from './MapInfoCard.js'
 import { MapLayerBar } from './MapLayerBar.js'
 import { landlessFactions, layerTags } from '../mapLayers.js'
 import type { MapLayerId } from '../mapLayers.js'
+import { ordersMatching, selectionGeoAnchor } from '../mapFocus.js'
+import type { OrdersFilter } from '../mapFocus.js'
+import type { MapFocusRequest } from '../uiContext.js'
+import type { MapInfoAction } from './MapInfoCard.js'
+import { shortDesignation } from '../displayNames.js'
+import { CATEGORY_NAME } from '../designSheet.js'
 import { FOCUS_BOUNDS, FOCUS_PADDING, GRATICULE_EXTENT, GRATICULE_STEP, PRINT_LABELS, VIEW_HEIGHT, scaleBarFor, viewWidthFor } from '../mapFrame.js'
 
 // §6.5: ett lands koppling till en FactionId (COUNTRY_TO_FACTION) bor i mapInfo.ts, som kartans informationskort delar den med.
@@ -72,6 +78,24 @@ type ZoomLevel = 1 | 2 | 3
 // P94: prickens färdvektor (--dx/--dy, läses av @keyframes map-supply-flow) och en
 // hastighet som är ungefär konstant över kartan: ~45 kartenheter per sekund, aldrig
 // snabbare än 1,6 s eller långsammare än 4 s per överfart.
+// Etapp 14, P206: konvojens båge — en kvadratisk Bézier böjd åt sidan (en tiondel av sträckan), så att den inte ligger ovanpå spelarens
+// raka leveranslinje från samma hamn.
+function arcControl(from: [number, number], to: [number, number]): [number, number] {
+  const mx = (from[0] + to[0]) / 2
+  const my = (from[1] + to[1]) / 2
+  const dx = to[0] - from[0]
+  const dy = to[1] - from[1]
+  return [mx - dy * 0.18, my + dx * 0.18]
+}
+export function convoyArc(from: [number, number], to: [number, number]): string {
+  const [cx, cy] = arcControl(from, to)
+  return `M${from[0].toFixed(1)},${from[1].toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${to[0].toFixed(1)},${to[1].toFixed(1)}`
+}
+export function arcMidpoint(from: [number, number], to: [number, number]): [number, number] {
+  const [cx, cy] = arcControl(from, to)
+  return [0.25 * from[0] + 0.5 * cx + 0.25 * to[0], 0.25 * from[1] + 0.5 * cy + 0.25 * to[1]]
+}
+
 export function supplyDotStyle(dx: number, dy: number): CSSProperties {
   const seconds = Math.min(4, Math.max(1.6, Math.hypot(dx, dy) / 45))
   return { '--dx': `${dx}px`, '--dy': `${dy}px`, animationDuration: `${seconds}s` } as CSSProperties
@@ -242,6 +266,61 @@ function useLabelCollisionHiding(labelRefs: React.RefObject<Map<string, SVGTextE
   return hidden
 }
 
+// P206: förbandets hoverkort. Placeras vid pekaren, inom kartans yta (vänds åt vänster/uppåt nära kanten).
+function FormationHoverCard({ state, hover }: { state: GameState; hover: { display: FormationDisplay; left: number; top: number } }) {
+  const { display } = hover
+  const faction = state.factions[display.factionId]
+  const statusText = display.status === 'mauled' ? 'Mauled' : display.status === 'refitting' ? 'Refitting' : display.status === 'destroyed' ? 'Destroyed' : 'In the line'
+  const equipment = display.equipment
+    ? (Object.entries(display.equipment) as [TechCategory, number][])
+        .filter(([, n]) => n > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+    : null
+  const style: CSSProperties = {
+    left: hover.left > 380 ? undefined : hover.left + 16,
+    right: hover.left > 380 ? `calc(100% - ${hover.left - 16}px)` : undefined,
+    top: Math.max(8, hover.top - 20),
+  }
+  return (
+    <div className="map-formation-hover" style={style} data-testid="map-formation-hover" role="tooltip">
+      <span className="map-formation-hover-kicker">{faction ? faction.name.toUpperCase() : 'FORMATION'}</span>
+      <strong className="map-formation-hover-title">{display.known ? display.name : 'Unknown formation'}</strong>
+      <dl className="map-formation-hover-rows">
+        <div>
+          <dt>STATUS</dt>
+          <dd>{statusText}</dd>
+        </div>
+        {display.known && display.strength !== null ? (
+          <>
+            <div>
+              <dt>STRENGTH</dt>
+              <dd>{display.strength}</dd>
+            </div>
+            {display.readiness !== null && (
+              <div>
+                <dt>READINESS</dt>
+                <dd>{Math.round(display.readiness)}%</dd>
+              </div>
+            )}
+            {equipment && equipment.length > 0 && (
+              <div>
+                <dt>EQUIPMENT</dt>
+                <dd>{equipment.map(([category, n]) => `${CATEGORY_NAME[category]} ${Math.round(n)}`).join(' · ')}</dd>
+              </div>
+            )}
+          </>
+        ) : (
+          <div>
+            <dt>STRENGTH</dt>
+            <dd>Roughly {display.strengthBand === 'stark' ? 'strong' : display.strengthBand === 'medel' ? 'average' : 'weak'}. No station: details unknown.</dd>
+          </div>
+        )}
+      </dl>
+    </div>
+  )
+}
+
 // P201: kompassros och skalstock i kartans nedre vänstra hörn — fasta på bordet, inte med i zoomen (skalstocken räknas om när man zoomar).
 function CompassAndScale({ projectionScale, zoom, pxPerUnit }: { projectionScale: number; zoom: number; pxPerUnit: number }) {
   if (!(projectionScale > 0)) return null
@@ -271,10 +350,16 @@ export function TheatreMap({
   state,
   selectedFactionId = null,
   onSelectCountry,
+  onOpenOrders,
+  focusRequest = null,
 }: {
   state: GameState
   selectedFactionId?: FactionId | null
   onSelectCountry?: (factionId: FactionId) => void
+  // P204 (etapp 14): orderbrickan vid en huvudstad och förbandets kort öppnar CONTRACTS filtrerat på köparen respektive förbandet.
+  onOpenOrders?: (filter: OrdersFilter) => void
+  // P204: mappen ber kartan visa ett föremål (panorera dit och välja det).
+  focusRequest?: MapFocusRequest | null
 }) {
   const geo = useGeoData()
   const svgRef = useRef<SVGSVGElement>(null)
@@ -360,6 +445,42 @@ export function TheatreMap({
     )
   }, [geo, viewWidth])
 
+  // P204: mappen ber kartan visa ett föremål — panorera så att det hamnar mitt i kartan (behåll zoomen, men minst teaterzoomen) och välj
+  // det. Rörelsen går över 350 ms med requestAnimationFrame; reducerad rörelse hoppar direkt.
+  const zoomBehaviourRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+  useEffect(() => {
+    if (!focusRequest || !projection || !svgRef.current || !zoomBehaviourRef.current) return
+    const geoPoint = selectionGeoAnchor(state, focusRequest.target)
+    setSelection(focusRequest.target)
+    if (!geoPoint) return
+    const xy = projection([geoPoint[1], geoPoint[0]])
+    if (!xy) return
+    const svgSelection = select(svgRef.current)
+    const behaviour = zoomBehaviourRef.current
+    const from = zoomTransform(svgRef.current)
+    const k = Math.max(from.k, 1)
+    const to = zoomIdentity.translate(viewWidth / 2 - xy[0] * k, VIEW_HEIGHT / 2 - xy[1] * k).scale(k)
+    const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduced || typeof requestAnimationFrame === 'undefined') {
+      behaviour.transform(svgSelection, to)
+      return
+    }
+    const start = performance.now()
+    let frame = 0
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 350)
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+      behaviour.transform(
+        svgSelection,
+        zoomIdentity.translate(from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e).scale(from.k + (to.k - from.k) * e),
+      )
+      if (t < 1) frame = requestAnimationFrame(step)
+    }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+    // Bara en ny begäran (nonce) ska panorera — inte varje ny state.
+  }, [focusRequest?.nonce, projection])
+
   const graticulePath = useMemo(() => {
     if (!projection) return ''
     return geoPath(projection)(geoGraticule().extent(GRATICULE_EXTENT).step(GRATICULE_STEP)()) ?? ''
@@ -383,6 +504,7 @@ export function TheatreMap({
       .scaleExtent([ZOOM_MIN, ZOOM_MAX])
       .on('zoom', (event) => setTransform(event.transform))
     selection.call(behaviour)
+    zoomBehaviourRef.current = behaviour
     return () => {
       selection.on('.zoom', null)
     }
@@ -480,6 +602,16 @@ export function TheatreMap({
   // resonemanget).
   const prevAttributionRef = useRef(snapshotAttribution(state))
   const playerLines = useMemo(() => playerSupplyLines(state, SECTOR_REGIONS), [state])
+  const convoys = useMemo(() => orderConvoys(state, SECTOR_REGIONS), [state])
+
+  // Etapp 14, P206 (förslaget §5.3): hovring över en bricka visar förbandets kort direkt (PC), med de fält formationDisplay ger —
+  // utan station i landet är styrka, beredskap och utrustning dolda, precis som på brickan.
+  const [formationHover, setFormationHover] = useState<{ display: FormationDisplay; left: number; top: number } | null>(null)
+  const showFormationHover = (display: FormationDisplay, event: ReactMouseEvent<SVGGElement>) => {
+    const stage = svgRef.current?.getBoundingClientRect()
+    if (!stage) return
+    setFormationHover({ display, left: event.clientX - stage.left, top: event.clientY - stage.top })
+  }
   const rivalLines = useMemo(() => rivalSupplyLines(state, prevAttributionRef.current, SECTOR_REGIONS), [state])
   useEffect(() => {
     prevAttributionRef.current = snapshotAttribution(state)
@@ -501,6 +633,26 @@ export function TheatreMap({
     tags.length,
     layer,
   ])
+
+  // P204 (etapp 14): kortet för ett förband eller ett köparland bär en väg till de öppna ordrar det står bakom.
+  const infoActions: MapInfoAction[] = []
+  if (selection && onOpenOrders) {
+    if (selection.kind === 'formation') {
+      const formation = Object.values(state.fronts)
+        .flatMap((f) => f.formations)
+        .find((f) => f.id === selection.formationId)
+      const filter: OrdersFilter | null = formation ? { kind: 'formation', formationId: formation.id, formationName: formation.name } : null
+      const count = filter ? ordersMatching(state, filter).length : 0
+      if (filter && count > 0)
+        infoActions.push({ label: `Replacement orders (${count})`, onClick: () => onOpenOrders(filter), testId: 'map-info-open-orders' })
+    }
+    if (selection.kind === 'country') {
+      const factionId = COUNTRY_TO_FACTION[selection.countryId]
+      const filter: OrdersFilter | null = factionId ? { kind: 'buyer', factionId } : null
+      const count = filter ? ordersMatching(state, filter).length : 0
+      if (filter && count > 0) infoActions.push({ label: `Open orders (${count})`, onClick: () => onOpenOrders(filter), testId: 'map-info-open-orders' })
+    }
+  }
 
   if (geo === 'error') {
     return <MapPlaceholder theatreName={Object.values(state.theatres)[0]?.name ?? 'Indochina'} />
@@ -768,6 +920,31 @@ export function TheatreMap({
             })}
           </g>
 
+          {/* Etapp 14, P206 (förslaget §6.1): konvojlinjer för öppna ersättningsordrar — från teaterns ingångspunkt till sektorn där förbandet
+              som förlorat materielen står. Streckad blyertslinje (en beställning, ännu ingen leverans); ett tryck öppnar CONTRACTS med förbandets
+              ersättningsordrar. Etiketterna ritas längre ned, bland de etiketter som viker först. */}
+          <g className="map-order-convoys">
+            {convoys.map((convoy) => {
+              const from = project([convoy.fromAnchor[1], convoy.fromAnchor[0]])
+              const to = project([convoy.toAnchor[1], convoy.toAnchor[0]])
+              if (!from || !to) return null
+              const open = () => onOpenOrders?.({ kind: 'formation', formationId: convoy.formationId, formationName: convoy.formationName })
+              return (
+                <g key={convoy.id}>
+                  <path d={convoyArc(from, to)} className="map-order-convoy" data-testid={`map-convoy-${convoy.orderId}`} />
+                  {onOpenOrders && (
+                    <path
+                      d={convoyArc(from, to)}
+                      className="map-supply-tap"
+                      onClick={open}
+                      data-testid={`map-convoy-tap-${convoy.orderId}`}
+                    />
+                  )}
+                </g>
+              )
+            })}
+          </g>
+
           {/* P195 (ETAPP12, 12D): Geminis dynamiska världsspår ur GameState — fartyg, stridsärr/TF-77, embargostämplar, historiekort, redeploy-pilar. */}
           <DynamicWorldOverlays
             state={state}
@@ -797,6 +974,8 @@ export function TheatreMap({
                       y={y + dy}
                       onExplain={() => setSelection(sel)}
                       selected={isSelected(sel)}
+                      onHoverStart={(event) => showFormationHover(display, event)}
+                      onHoverEnd={() => setFormationHover(null)}
                     />
                   )
                 }),
@@ -851,7 +1030,13 @@ export function TheatreMap({
                       <circle
                         r={9}
                         className="map-station-tap"
-                        onClick={() => setSelection({ kind: 'station', factionId: capital.factionId })}
+                        // P204 (etapp 14, förslaget §6.2): stationsnålen öppnar landsakten direkt när det finns en; annars stationens kort.
+                        onClick={() => {
+                          if (onSelectCountry) {
+                            onSelectCountry(capital.factionId)
+                            setSelection(null)
+                          } else setSelection({ kind: 'station', factionId: capital.factionId })
+                        }}
                         data-testid={`map-station-tap-${capital.factionId}`}
                       />
                     </g>
@@ -881,7 +1066,29 @@ export function TheatreMap({
                       : {})}
                   />
                   {openOrders > 0 && (
-                    <g transform={`translate(${x + 7},${y - 7})`} data-testid={`map-capital-orders-${capital.factionId}`}>
+                    // P204 (etapp 14): orderbrickan är en pjäs — ett tryck öppnar CONTRACTS med just den här köparens ordrar.
+                    // Brickans tryckyta (r 7) får inte nå huvudstadsmarkörens mitt — förr satt brickan på (+7, −7) och en större yta hade stulit
+                    // klicket på huvudstaden. Nu (+10, −10): avståndet 14 är större än tryckytans radie.
+                    <g
+                      transform={`translate(${x + 10},${y - 10})`}
+                      data-testid={`map-capital-orders-${capital.factionId}`}
+                      className={onOpenOrders ? 'map-capital-orders is-clickable' : 'map-capital-orders'}
+                      {...(onOpenOrders
+                        ? {
+                            role: 'button',
+                            tabIndex: 0,
+                            'aria-label': `${openOrders} open order${openOrders === 1 ? '' : 's'} from ${state.factions[capital.factionId]?.name ?? capital.name}: open CONTRACTS`,
+                            onClick: () => onOpenOrders({ kind: 'buyer', factionId: capital.factionId }),
+                            onKeyDown: (event: KeyboardEvent<SVGGElement>) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                onOpenOrders({ kind: 'buyer', factionId: capital.factionId })
+                              }
+                            },
+                          }
+                        : {})}
+                    >
+                      {onOpenOrders && <circle r={7} className="map-token-tap" />}
                       <circle r={5} className="map-capital-badge" />
                       <text className="map-capital-badge-text" textAnchor="middle" dominantBaseline="central">
                         {openOrders}
@@ -1097,14 +1304,17 @@ export function TheatreMap({
 
           {/* P77 (§6.9): förbandsnamn "i klartext" bara från zoomnivå 3
               ("Sektor"), absolutpositionerade (samma kommentar som
-              FormationToken:s egen om getBBox och transform-rymder). */}
-          {zoomLevel >= 3 && (
+              FormationToken:s egen om getBBox och transform-rymder).
+              Etapp 14 (P206, förslaget §5.3): från standardzoomen (nivå 2) står en kort beteckning ("1st Inf Div") vid varje känt förband;
+              namn och styrka i klartext som förut från nivå 3. Ett okänt förband får ingen etikett förrän nivå 3. */}
+          {zoomLevel >= 2 && (
             <g className="map-formation-labels">
               {[...formationGroups.values()].map(({ region, formations }) =>
                 formations.map((display, i) => {
                   const [x, y] = project([region.anchor[1], region.anchor[0]]) ?? [0, 0]
                   const [dx, dy] = tokenOffset(i, formations.length)
                   const labelId = `formation-${display.id}`
+                  if (zoomLevel < 3 && !display.known) return null
                   return (
                     <text
                       key={display.id}
@@ -1118,7 +1328,7 @@ export function TheatreMap({
                       textAnchor="middle"
                       data-testid={`map-formation-label-${display.id}`}
                     >
-                      {display.known ? `${display.name} (${display.strength})` : 'UNKNOWN FORMATION'}
+                      {zoomLevel < 3 ? shortDesignation(display.name) : display.known ? `${display.name} (${display.strength})` : 'UNKNOWN FORMATION'}
                     </text>
                   )
                 }),
@@ -1151,6 +1361,58 @@ export function TheatreMap({
               )
             })}
           </g>
+          {/* Etapp 14, P206: etiketter på konvojerna (WANTED · antal × produkt) och på spelarens leveranslinjer (YOU · antal · ankomstkvartal),
+              vid linjens mitt. Bland de sista etiketterna, så att de viker för huvudstäder, sektorer och förband. */}
+          {zoomLevel >= 2 && (
+            <g className="map-convoy-labels" aria-hidden="true">
+              {convoys.map((convoy) => {
+                const from = project([convoy.fromAnchor[1], convoy.fromAnchor[0]])
+                const to = project([convoy.toAnchor[1], convoy.toAnchor[0]])
+                if (!from || !to) return null
+                const [mx, my] = arcMidpoint(from, to)
+                const id = `convoy-${convoy.orderId}`
+                return (
+                  <text
+                    key={id}
+                    ref={(el) => {
+                      if (el) labelRefs.current.set(id, el)
+                      else labelRefs.current.delete(id)
+                    }}
+                    x={mx}
+                    y={my - 4}
+                    textAnchor="middle"
+                    className={`map-convoy-label${hiddenLabels.has(id) ? ' map-label-hidden' : ''}`}
+                    data-testid={`map-convoy-label-${convoy.orderId}`}
+                  >
+                    {convoy.label}
+                  </text>
+                )
+              })}
+              {playerLines.map((line) => {
+                const text = playerSupplyLabel(state, line.frontId)
+                const from = project([line.fromAnchor[1], line.fromAnchor[0]])
+                const to = project([line.toAnchor[1], line.toAnchor[0]])
+                if (!text || !from || !to) return null
+                const id = `supply-label-${line.id}`
+                return (
+                  <text
+                    key={id}
+                    ref={(el) => {
+                      if (el) labelRefs.current.set(id, el)
+                      else labelRefs.current.delete(id)
+                    }}
+                    x={(from[0] + to[0]) / 2}
+                    y={(from[1] + to[1]) / 2 + 12}
+                    textAnchor="middle"
+                    className={`map-convoy-label is-player${hiddenLabels.has(id) ? ' map-label-hidden' : ''}`}
+                    data-testid={`map-supply-label-${line.id}`}
+                  >
+                    {text}
+                  </text>
+                )
+              })}
+            </g>
+          )}
           {/* P201: tryckta namn på kartpapperet (länder och hav, serif i dämpat bläck) och stämpeln NO RECONNAISSANCE över ett köparland där
               huset saknar underrättelse. Ritade SIST av alla etiketter, så att kollisionsdöljningen (som går i dokumentordning) offrar dem
               först: ett tryckt namn får aldrig skymma en huvudstad, en sektor eller ett förband. Ingen tryckyta. */}
@@ -1223,6 +1485,7 @@ export function TheatreMap({
             })()}
         </g>
       </svg>
+      {formationHover && <FormationHoverCard state={state} hover={formationHover} />}
       <MapLayerBar active={layer} onChange={setLayer} />
       <CompassAndScale projectionScale={projection?.scale() ?? 0} zoom={transform.k} pxPerUnit={pxPerUnit} />
 
@@ -1244,6 +1507,7 @@ export function TheatreMap({
       {mapInfo && (
         <MapInfoCard
           info={mapInfo}
+          actions={infoActions}
           onClose={() => setSelection(null)}
           onOpenFile={
             mapInfo.openFile && onSelectCountry

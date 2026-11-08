@@ -35,7 +35,11 @@ export function interpolateFrontGeoPosition(regions: SectorRegion[], position: n
 // ingen geografi). Deterministiskt (index/total → samma förskjutning varje
 // gång), samma "ren funktion, ingen rng" som resten av filen.
 const TOKENS_PER_ROW = 3
-const TOKEN_SPACING = 12
+// Etapp 14 (P206, förslaget §5.3): förr 12 enheter mellan brickorna, men en bricka (WargameChit, P194) är 25 bred och 25 hög med
+// prickarna — grannarna låg ovanpå varandra och den översta stal hovring och klick. Nu en brickbredd plus luft i sidled, och plats för
+// etiketten ovanför i höjdled.
+const TOKEN_SPACING_X = 28
+const TOKEN_SPACING_Y = 34
 
 export function tokenOffset(index: number, total: number): [number, number] {
   const row = Math.floor(index / TOKENS_PER_ROW)
@@ -43,8 +47,8 @@ export function tokenOffset(index: number, total: number): [number, number] {
   const rowCount = Math.ceil(total / TOKENS_PER_ROW)
   const colsInRow = Math.min(TOKENS_PER_ROW, total - row * TOKENS_PER_ROW)
 
-  const rowWidth = (colsInRow - 1) * TOKEN_SPACING
-  const colsHeight = (rowCount - 1) * TOKEN_SPACING
+  const rowWidth = (colsInRow - 1) * TOKEN_SPACING_X
+  const colsHeight = (rowCount - 1) * TOKEN_SPACING_Y
 
-  return [col * TOKEN_SPACING - rowWidth / 2, row * TOKEN_SPACING - colsHeight / 2]
+  return [col * TOKEN_SPACING_X - rowWidth / 2, row * TOKEN_SPACING_Y - colsHeight / 2]
 }

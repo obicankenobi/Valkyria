@@ -3,6 +3,7 @@
 // kartusch), taggiga fettkrits-frontlinjer, 3D-pappbrickor (WargameChit) och
 // dynamiska världsspår (fraktfartyg till havs, stridsärr vid hög heat,
 // embargostämplar, fastnålade historiska händelsekort och redeploy-pilar).
+import type React from 'react'
 import { DISPLAY_THRESHOLDS } from '@seventh-front/core'
 import type { Doctrine, FactionId, FormationDisplay, Front, GameState } from '@seventh-front/core'
 import { interpolateFrontGeoPosition } from '../geoMath.js'
@@ -190,12 +191,17 @@ export function WargameChit({
   y,
   onExplain,
   selected = false,
+  onHoverStart,
+  onHoverEnd,
 }: {
   display: FormationDisplay
   x: number
   y: number
   onExplain?: () => void
   selected?: boolean
+  // Etapp 14, P206: hovring visar förbandets kort (TheatreMap ritar det).
+  onHoverStart?: (event: React.MouseEvent<SVGGElement>) => void
+  onHoverEnd?: () => void
 }) {
   const dotCount = display.strengthBand === 'stark' ? 3 : display.strengthBand === 'medel' ? 2 : 1
   const frameClass = [
@@ -214,6 +220,8 @@ export function WargameChit({
       data-map-node={display.id}
       className={selected ? `map-formation-${display.side} map-wargame-chit is-selected` : `map-formation-${display.side} map-wargame-chit`}
       onClick={onExplain}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
     >
       <circle r={15} className="map-token-tap" />
       {selected && <circle r={16} className="map-selected-ring" />}

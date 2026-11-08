@@ -11,10 +11,32 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createInitialState, DISPLAY_THRESHOLDS } from '@seventh-front/core'
+import type { GameState, Order } from '@seventh-front/core'
 import { TheatreMap, capitalLabel, supplyDotStyle } from '../src/components/TheatreMap.js'
 import { ArmedVerbContext, ReplayFocusContext } from '../src/uiContext.js'
+
+// P204: en öppen order att lägga på marknaden (fälten som kartan läser).
+function makeOpenOrder(state: GameState): Order {
+  return {
+    id: `order-map-${state.market.openOrders.length}`,
+    buyerId: 'rvn',
+    productId: 'm1_rifle',
+    quantity: 10,
+    statedBudget: 1000,
+    trueBudget: 1000,
+    referencePrice: 1000,
+    requiredDeliveryTurns: 4,
+    expiresTurn: 4,
+    competingRivals: [],
+    weights: { price: 0.5, delivery: 0.3, relationship: 0.2 },
+    officialId: 'official-rvn-procurement',
+    reason: { kind: 'SCRIPTED' },
+    frontId: null,
+    advancePct: 0,
+  }
+}
 
 afterEach(cleanup)
 
@@ -176,14 +198,43 @@ describe('TheatreMap (P77) — förbandsbrickor', () => {
     }
   })
 
-  it('förbandsnamn visas inte förrän zoomnivå 3 (§6.9) — vid standardzoomen (nivå 2, k=1) syns bara brickan', async () => {
+  it('P206 (etapp 14): vid standardzoomen (nivå 2, k=1) står förbandets korta beteckning vid brickan; namn och styrka i klartext först på nivå 3', async () => {
     const state = createInitialState('indochina-slice', 'theatre-map-zoomgate-seed')
     render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
 
     expect(document.querySelector('[data-testid="theatre-map-svg"]')?.getAttribute('data-zoom-level')).toBe('2')
     expect(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')).toBeTruthy()
+    // Sydvietnam har en station vid start, så förbandet är känt: "1st Infantry Division" → "1st Inf Div", utan styrka.
+    expect(document.querySelector('[data-testid="map-formation-label-rvn-1st-infantry"]')?.textContent).toBe('1st Inf Div')
+  })
+
+  it('P206: ett okänt förband (ingen station) får ingen etikett vid standardzoomen', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-zoomgate-seed')
+    state.house.stations = []
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
     expect(document.querySelector('[data-testid="map-formation-label-rvn-1st-infantry"]')).toBeNull()
+  })
+
+  it('P206: hovring över en bricka visar förbandets kort; utan station är detaljerna dolda', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-hover-seed')
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.mouseEnter(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
+    const card = screen.getByTestId('map-formation-hover')
+    expect(card.textContent).toContain('1st Infantry Division')
+    expect(card.textContent).toContain('READINESS')
+    fireEvent.mouseLeave(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
+    expect(screen.queryByTestId('map-formation-hover')).toBeNull()
+
+    cleanup()
+    state.house.stations = []
+    render(<TheatreMap state={state} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.mouseEnter(document.querySelector('[data-testid="map-formation-rvn-1st-infantry"]')!)
+    expect(screen.getByTestId('map-formation-hover').textContent).toContain('details unknown')
+    expect(screen.getByTestId('map-formation-hover').textContent).not.toContain('READINESS')
   })
 })
 
@@ -570,14 +621,50 @@ describe('TheatreMap (P81a) — teckenförklaringen', () => {
     noLegend()
   })
 
-  it('tryck på en station visar stationens kort med en väg in i landsakten', async () => {
+  it('tryck på en station utan landsakt visar stationens kort', async () => {
     const state = createInitialState('indochina-slice', 'theatre-map-card-station-seed')
-    render(<TheatreMap state={state} onSelectCountry={() => {}} />)
+    render(<TheatreMap state={state} />)
     await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
     const station = state.house.stations[0]!
     fireEvent.click(document.querySelector(`[data-testid="map-station-tap-${station.nation}"]`)!)
     expect(kicker()).toBe('STATION')
-    expect(document.querySelector('[data-testid="map-info-open-file"]')).toBeTruthy()
+  })
+
+  it('P204: stationsnålen öppnar landsakten direkt när appen har en', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-card-station-seed')
+    const onSelectCountry = vi.fn()
+    render(<TheatreMap state={state} onSelectCountry={onSelectCountry} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    const station = state.house.stations[0]!
+    fireEvent.click(document.querySelector(`[data-testid="map-station-tap-${station.nation}"]`)!)
+    expect(onSelectCountry).toHaveBeenCalledWith(station.nation)
+    expect(document.querySelector('[data-testid="map-info-card"]')).toBeNull()
+  })
+
+  it('P204: orderbrickan vid huvudstaden öppnar CONTRACTS filtrerat på köparen', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-orders-badge-seed')
+    state.market.openOrders.push({ ...makeOpenOrder(state), buyerId: 'rvn' })
+    const onOpenOrders = vi.fn()
+    render(<TheatreMap state={state} onOpenOrders={onOpenOrders} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.click(document.querySelector('[data-testid="map-capital-orders-rvn"]')!)
+    expect(onOpenOrders).toHaveBeenCalledWith({ kind: 'buyer', factionId: 'rvn' })
+  })
+
+  it('P204: ett förbands kort har en väg till dess ersättningsordrar', async () => {
+    const state = createInitialState('indochina-slice', 'theatre-map-formation-orders-seed')
+    const formation = state.fronts['front-1']!.formations[0]!
+    state.market.openOrders.push({
+      ...makeOpenOrder(state),
+      buyerId: formation.factionId,
+      reason: { kind: 'REPLACE_FORMATION_LOSSES', formationId: formation.id, formationName: formation.name, engagementWireId: 'x' },
+    })
+    const onOpenOrders = vi.fn()
+    render(<TheatreMap state={state} onOpenOrders={onOpenOrders} />)
+    await waitFor(() => expect(document.querySelector('[data-testid="theatre-map-svg"]')).toBeTruthy())
+    fireEvent.click(document.querySelector(`[data-testid="map-formation-${formation.id}"]`)!)
+    fireEvent.click(screen.getByTestId('map-info-open-orders'))
+    expect(onOpenOrders).toHaveBeenCalledWith({ kind: 'formation', formationId: formation.id, formationName: formation.name })
   })
 
   it('tryck på en försörjningslinje visar linjens kort', async () => {

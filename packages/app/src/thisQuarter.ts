@@ -12,6 +12,7 @@
 import type { FactionId, GameState } from '@seventh-front/core'
 import { DISPLAY_THRESHOLDS, getProduct, worksAlarms } from '@seventh-front/core'
 import { lockedOrders } from './orderLocks.js'
+import { cleanHeadline } from './displayNames.js'
 import { standingOrderAlarms } from './standingOrderBoard.js'
 import { supportOutlook } from './supportOutlook.js'
 
@@ -205,13 +206,13 @@ export function deriveQuarterlyNotice(state: GameState): QuarterlyNoticeItem[] {
   for (const event of state.wire) {
     if (event.turn !== latestTurn || event.scope !== 'market') continue
     if (event.actorIsPlayer && /WINS CONTRACT/.test(event.headline)) {
-      items.push({ id: event.id, icon: '✓', text: event.headline })
+      items.push({ id: event.id, icon: '✓', text: cleanHeadline(state, event.headline) })
     } else if (!event.actorIsPlayer && /WINS CONTRACT/.test(event.headline)) {
-      items.push({ id: event.id, icon: '✗', text: event.headline })
+      items.push({ id: event.id, icon: '✗', text: cleanHeadline(state, event.headline) })
     } else if (/^DELIVERED /.test(event.headline)) {
-      items.push({ id: event.id, icon: '£', text: event.headline })
+      items.push({ id: event.id, icon: '£', text: cleanHeadline(state, event.headline) })
     } else if (/^CONTRACT .+ FULFILLED:/.test(event.headline)) {
-      items.push({ id: event.id, icon: '✓', text: event.headline })
+      items.push({ id: event.id, icon: '✓', text: cleanHeadline(state, event.headline) })
     }
   }
   return items
