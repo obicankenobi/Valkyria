@@ -31,6 +31,7 @@ function polyPathFromLatLng(points: readonly LatLng[], project: ProjectFn, close
 
 // 1. MILITÄR BAS-KARTA (Topografi, Mekongfloden, Huvudvägar, Baser & Kartusch)
 export function MilitaryBaseMapLayer({ project }: { project: ProjectFn }) {
+  const cartoucheXY = project([110.9, 9.3])
   return (
     <g className="map-military-base" data-testid="map-military-base" pointerEvents="none">
       {/* Topografiska höjdkurvor */}
@@ -107,8 +108,10 @@ export function MilitaryBaseMapLayer({ project }: { project: ProjectFn }) {
         })}
       </g>
 
-      {/* Militär Kartusch (US Army Map Service 1965-stil) i Sydkinesiska sjön */}
-      <g transform="translate(475, 690)" className="map-cartouche">
+      {/* Militär Kartusch (US Army Map Service 1965-stil) i Sydkinesiska sjön. Etapp 14 (P201): placerad geografiskt (förr fast på
+          (475, 690) i den gamla 600×800-vyn), så att den ligger i havet oavsett kartytans bredd. */}
+      {cartoucheXY && (
+      <g transform={`translate(${cartoucheXY[0].toFixed(1)}, ${cartoucheXY[1].toFixed(1)})`} className="map-cartouche">
         <rect x={-96} y={-28} width={192} height={54} className="map-cartouche-box" />
         <rect x={-93} y={-25} width={186} height={48} className="map-cartouche-inner" />
         <text y={-11} textAnchor="middle" className="map-cartouche-title">
@@ -121,6 +124,7 @@ export function MilitaryBaseMapLayer({ project }: { project: ProjectFn }) {
           TOPOGRAPHIC &amp; LOGISTICS COMPILATION · 1965
         </text>
       </g>
+      )}
     </g>
   )
 }

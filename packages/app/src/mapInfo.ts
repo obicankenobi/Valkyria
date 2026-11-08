@@ -12,7 +12,7 @@ import { SECTOR_REGIONS } from './sectorRegions.js'
 import { stationOutlook } from './stationOutlook.js'
 import { THEATRE_ENTRY_POINTS } from './supplyLines.js'
 
-// §6.5: bara de två länder som kan ha en station i det här scenariot har en FactionId; de fyra övriga (north-vietnam, kambodja, thailand, kina) är sammanhang.
+// §6.5: bara de två länder som kan ha en station i det här scenariot har en FactionId; de sex övriga (north-vietnam, kambodja, thailand, kina, burma, malaysia) är sammanhang.
 export const COUNTRY_TO_FACTION: Record<string, FactionId> = {
   'south-vietnam': 'rvn',
   laos: 'laos',
@@ -26,6 +26,9 @@ export const COUNTRY_LABEL: Record<string, string> = {
   cambodia: 'Cambodia',
   thailand: 'Thailand',
   china: 'China',
+  // Etapp 14 (P201): sammanhang i den breddade kartfilen.
+  burma: 'Burma',
+  malaysia: 'Malaysia',
 }
 
 export type MapSelection =

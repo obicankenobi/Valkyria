@@ -24,7 +24,7 @@
 // P79) — samma "bygg inte runt en lucka" som P76 höll fast vid.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent } from 'react'
-import { geoMercator, geoPath } from 'd3-geo'
+import { geoGraticule, geoMercator, geoPath } from 'd3-geo'
 import type { GeoPermissibleObjects } from 'd3-geo'
 import { select } from 'd3-selection'
 import { zoom, zoomIdentity } from 'd3-zoom'
@@ -49,14 +49,12 @@ import { MapInfoCard } from './MapInfoCard.js'
 import { MapLayerBar } from './MapLayerBar.js'
 import { landlessFactions, layerTags } from '../mapLayers.js'
 import type { MapLayerId } from '../mapLayers.js'
+import { FOCUS_BOUNDS, FOCUS_PADDING, GRATICULE_EXTENT, GRATICULE_STEP, PRINT_LABELS, VIEW_HEIGHT, scaleBarFor, viewWidthFor } from '../mapFrame.js'
 
 // §6.5: ett lands koppling till en FactionId (COUNTRY_TO_FACTION) bor i mapInfo.ts, som kartans informationskort delar den med.
 
-// §5:s mockup är stående, kartan fyller höjden — designrymden matchar
-// Indokinas verkliga proportion (region-bboxen i build-geo.mjs, 15° bred,
-// 15° hög, men Mercator sträcker höjden vid dessa breddgrader).
-const VIEW_WIDTH = 600
-const VIEW_HEIGHT = 800
+// Etapp 14 (P201): vyboxen var fast 600×800 (stående telefon, §5:s mockup). Nu följer bredden kartytans proportion och höjden står kvar
+// på VIEW_HEIGHT (800), se mapFrame.ts.
 const GEO_URL = '/geo/indochina.topo.json'
 
 // §6.9: tre zoomnivåer, avgjorda av d3-zoom:s skala k. k=1 är den
@@ -244,6 +242,31 @@ function useLabelCollisionHiding(labelRefs: React.RefObject<Map<string, SVGTextE
   return hidden
 }
 
+// P201: kompassros och skalstock i kartans nedre vänstra hörn — fasta på bordet, inte med i zoomen (skalstocken räknas om när man zoomar).
+function CompassAndScale({ projectionScale, zoom, pxPerUnit }: { projectionScale: number; zoom: number; pxPerUnit: number }) {
+  if (!(projectionScale > 0)) return null
+  const bar = scaleBarFor(projectionScale, (FOCUS_BOUNDS[0][1] + FOCUS_BOUNDS[1][1]) / 2, zoom)
+  const lengthPx = Math.round(bar.length * pxPerUnit)
+  return (
+    <div className="map-compass-scale" aria-hidden="true" data-testid="map-compass-scale">
+      <svg className="map-compass" viewBox="-20 -24 40 44" width={40} height={44}>
+        <circle r={13} className="map-compass-ring" />
+        <path d="M0,-14 L3,0 L0,3 L-3,0 Z" className="map-compass-north" />
+        <path d="M0,14 L3,0 L0,-3 L-3,0 Z M-14,0 L0,2.4 L3,0 L0,-2.4 Z M14,0 L0,2.4 L-3,0 L0,-2.4 Z" className="map-compass-south" />
+        <text y={-16} textAnchor="middle" className="map-compass-n">
+          N
+        </text>
+      </svg>
+      <div className="map-scale">
+        <div className="map-scale-bar" style={{ width: `${lengthPx}px` }} data-testid="map-scale-bar" data-km={bar.km} />
+        <span className="map-scale-text">
+          {bar.km} KM · {bar.nauticalMiles} NM
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function TheatreMap({
   state,
   selectedFactionId = null,
@@ -301,10 +324,46 @@ export function TheatreMap({
   // sig, se den kommentaren nedan för den första incidensen.
   const geoLoaded = geo !== 'loading' && geo !== 'error'
 
+  // Etapp 14 (P201): kartytans storlek avgör vyboxens bredd. Mäts på .map-container (inte på svg:n), så att informationskortet, som
+  // krymper kartan på höjden när det öppnas, inte flyttar om projektionen; svg:n beskär i stället (preserveAspectRatio slice).
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [viewWidth, setViewWidth] = useState(() => viewWidthFor(0, 0))
+  // Px per vyboxenhet i svg:n (slice: den större av de två skalorna) — skalstocken utanför zoomgruppen ritas i px.
+  const [pxPerUnit, setPxPerUnit] = useState(1)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const rect = el.getBoundingClientRect()
+      const width = viewWidthFor(rect.width, rect.height)
+      setViewWidth(width)
+      const svgRect = svgRef.current?.getBoundingClientRect()
+      if (svgRect && svgRect.width > 0 && svgRect.height > 0) setPxPerUnit(Math.max(svgRect.width / width, svgRect.height / VIEW_HEIGHT))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    if (svgRef.current) observer.observe(svgRef.current)
+    return () => observer.disconnect()
+  }, [geoLoaded])
+
+  // Projektionen anpassas till Indokina (FOCUS_BOUNDS), inte till hela kartfilen — det som ligger utanför fokus på en bred skärm är
+  // grannländer och hav ur den breddade kartfilen.
   const projection = useMemo(() => {
     if (geo === 'loading' || geo === 'error') return null
-    return geoMercator().fitSize([VIEW_WIDTH, VIEW_HEIGHT], geo.countries)
-  }, [geo])
+    return geoMercator().fitExtent(
+      [
+        [FOCUS_PADDING, FOCUS_PADDING],
+        [viewWidth - FOCUS_PADDING, VIEW_HEIGHT - FOCUS_PADDING],
+      ],
+      { type: 'MultiPoint', coordinates: FOCUS_BOUNDS.map(([lng, lat]) => [lng, lat]) },
+    )
+  }, [geo, viewWidth])
+
+  const graticulePath = useMemo(() => {
+    if (!projection) return ''
+    return geoPath(projection)(geoGraticule().extent(GRATICULE_EXTENT).step(GRATICULE_STEP)()) ?? ''
+  }, [projection])
 
   const path = useMemo(() => (projection ? geoPath(projection) : null), [projection])
 
@@ -455,12 +514,14 @@ export function TheatreMap({
   }
 
   return (
-    <div className="map-container" data-testid="theatre-map">
+    <div className="map-container" data-testid="theatre-map" ref={containerRef}>
       <div className="map-stage">
       <svg
         ref={svgRef}
         className="map-svg"
-        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        viewBox={`0 0 ${viewWidth} ${VIEW_HEIGHT}`}
+        preserveAspectRatio="xMidYMid slice"
+        data-view-width={viewWidth}
         // P94 (axe, nested-interactive): role="img" förbjuder fokuserbara barn,
         // men kartans huvudstadsmarkörer är nu knappar (tangentbord/skärmläsare).
         // "group" är en behållare som får ha interaktiva barn.
@@ -490,6 +551,9 @@ export function TheatreMap({
               )
             })}
           </g>
+
+          {/* P201: gradnätet, var annan grad, tunt bläck på papperet — under konturer, dimma och allt annat. */}
+          <path d={graticulePath} className="map-graticule" data-testid="map-graticule" aria-hidden="true" />
 
           {/* P79 (§6.3 lager 10): valt föremål på kartan har en tydlig
               kontur (regel 9) — samma landpath, ritad en gång till ovanpå
@@ -1087,6 +1151,57 @@ export function TheatreMap({
               )
             })}
           </g>
+          {/* P201: tryckta namn på kartpapperet (länder och hav, serif i dämpat bläck) och stämpeln NO RECONNAISSANCE över ett köparland där
+              huset saknar underrättelse. Ritade SIST av alla etiketter, så att kollisionsdöljningen (som går i dokumentordning) offrar dem
+              först: ett tryckt namn får aldrig skymma en huvudstad, en sektor eller ett förband. Ingen tryckyta. */}
+          <g className="map-print" aria-hidden="true">
+            {PRINT_LABELS.map((label) => {
+              const xy = project(label.lngLat)
+              if (!xy) return null
+              const id = `print-${label.id}`
+              return (
+                <text
+                  key={id}
+                  ref={(el) => {
+                    if (el) labelRefs.current.set(id, el)
+                    else labelRefs.current.delete(id)
+                  }}
+                  x={xy[0]}
+                  y={xy[1]}
+                  textAnchor="middle"
+                  className={`map-print-label is-${label.kind}${hiddenLabels.has(id) ? ' map-label-hidden' : ''}`}
+                  data-testid={`map-print-${label.id}`}
+                >
+                  {label.text}
+                </text>
+              )
+            })}
+            {PRINT_LABELS.filter((label) => {
+              const factionId = COUNTRY_TO_FACTION[label.id]
+              return label.stampLngLat !== undefined && factionId !== undefined && effectiveDepth(state, factionId) === 0
+            }).map((label) => {
+              const xy = project(label.stampLngLat!)
+              if (!xy) return null
+              const id = `stamp-${label.id}`
+              return (
+                <text
+                  key={id}
+                  ref={(el) => {
+                    if (el) labelRefs.current.set(id, el)
+                    else labelRefs.current.delete(id)
+                  }}
+                  x={xy[0]}
+                  y={xy[1]}
+                  textAnchor="middle"
+                  transform={`rotate(-7 ${xy[0]} ${xy[1]})`}
+                  className={`map-recon-stamp${hiddenLabels.has(id) ? ' map-label-hidden' : ''}`}
+                  data-testid={`map-no-recon-${label.id}`}
+                >
+                  NO RECONNAISSANCE
+                </text>
+              )
+            })}
+          </g>
           {/* P158: kvartalsuppspelningen pekar ut var händelsen hör hemma — en ring som växer och bleknar (bara transform och opacity). Ingen tryckyta, ingen etikett. */}
           {replayFocus &&
             (() => {
@@ -1109,6 +1224,7 @@ export function TheatreMap({
         </g>
       </svg>
       <MapLayerBar active={layer} onChange={setLayer} />
+      <CompassAndScale projectionScale={projection?.scale() ?? 0} zoom={transform.k} pxPerUnit={pxPerUnit} />
 
       {/* P81a (§13, P81-2/P81-3): en ikonknapp, alltid nåbar, öppnar hela
           teckenförklaringen — samma tryck-i-stället-för-hovring-princip
@@ -1129,7 +1245,15 @@ export function TheatreMap({
         <MapInfoCard
           info={mapInfo}
           onClose={() => setSelection(null)}
-          onOpenFile={mapInfo.openFile && onSelectCountry ? () => onSelectCountry(mapInfo.openFile!) : undefined}
+          onOpenFile={
+            mapInfo.openFile && onSelectCountry
+              ? () => {
+                  // P203: landsakten öppnas i mappen; kartkortet stängs så att kartan får tillbaka sin höjd och inte visar samma land två gånger.
+                  onSelectCountry(mapInfo.openFile!)
+                  setSelection(null)
+                }
+              : undefined
+          }
         />
       )}
 

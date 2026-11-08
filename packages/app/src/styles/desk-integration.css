@@ -217,3 +217,157 @@
 .support-card .meter {
   margin-bottom: 6px;
 }
+
+/* Etapp 14 (P201): kartografin på kartpapperet — gradnät, tryckta namn, stämpeln NO RECONNAISSANCE, kompassros och skalstock.
+   Tryckt bläck i dämpat blått/antracit (art-director: papper, blyerts, fettkrita; inga glödeffekter). */
+.map-graticule {
+  fill: none;
+  stroke: #3d4f63;
+  stroke-opacity: 0.18;
+  stroke-width: 0.6;
+  pointer-events: none;
+}
+.map-print {
+  pointer-events: none;
+}
+.map-print-label {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  fill: #3a4656;
+  fill-opacity: 0.62;
+  letter-spacing: 0.22em;
+  font-size: 13px;
+}
+.map-print-label.is-sea {
+  font-style: italic;
+  fill: #2e5470;
+  fill-opacity: 0.55;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+}
+.map-recon-stamp {
+  font-family: 'Stardos Stencil', 'Courier Prime', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  fill: #8f1d17;
+  fill-opacity: 0.55;
+}
+.map-compass-scale {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  background: rgba(244, 236, 214, 0.82);
+  border: 1px solid rgba(58, 70, 86, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+.map-compass-ring {
+  fill: none;
+  stroke: #3a4656;
+  stroke-width: 1;
+}
+.map-compass-north {
+  fill: #8f1d17;
+}
+.map-compass-south {
+  fill: #3a4656;
+  fill-opacity: 0.7;
+}
+.map-compass-n {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 7px;
+  font-weight: 700;
+  fill: #3a4656;
+}
+.map-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.map-scale-bar {
+  height: 5px;
+  border: 1px solid #3a4656;
+  background: repeating-linear-gradient(90deg, #3a4656 0 25%, transparent 25% 50%);
+}
+.map-scale-text {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #3a4656;
+}
+
+/* Etapp 14 (P202): varför ordern lagts och vem som handlägger den — skrivmaskinstext på mappen, högst två rader (regel 7). */
+.order-cause {
+  margin: 4px 0 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.order-cause-handler {
+  color: var(--ink-faint);
+}
+
+/* Etapp 14 (P203): landsakten i mappen — rubrik, registerflikar och kropp; inget draghandtag, ingen bottenarksram. */
+.country-dossier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.country-dossier-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 6px;
+}
+.country-dossier-title {
+  margin: 2px 0 0;
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.country-dossier-close {
+  position: static;
+  min-width: 32px;
+  min-height: 32px;
+}
+.country-dossier .folder-tabs {
+  position: static;
+}
+.dossier-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dossier-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(250, 244, 228, 0.7);
+  border-left: 3px solid #b89b58;
+}
+.dossier-row-main {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.dossier-row-sub {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-faint);
+}

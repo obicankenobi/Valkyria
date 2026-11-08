@@ -63,6 +63,8 @@ describe('NEWS DESK (P164) — "Your actions" efter ett riktigt kvartal', () => 
     fireEvent.click(screen.getByTestId('company-hire-file'))
     fireEvent.click(screen.getByTestId('end-quarter-button'))
     fireEvent.click(await screen.findByTestId('replay-skip'))
+    // P202 (etapp 14): appen hoppar inte längre till NEWS DESK efter kvartalet — spelaren öppnar nyheterna själv.
+    fireEvent.click(await screen.findByTestId('tab-news'))
     const list = await screen.findByTestId('your-actions-list')
     expect(list.textContent).toMatch(/Hire staff/)
     expect(list.textContent).toMatch(/HIRES A NEW CHIEF/)
@@ -76,6 +78,8 @@ describe('NEWS DESK (P164) — "Your actions" efter ett riktigt kvartal', () => 
     for (let i = 0; i < 4; i++) fireEvent.click(screen.getByTestId('company-hire-file'))
     fireEvent.click(screen.getByTestId('end-quarter-button'))
     fireEvent.click(await screen.findByTestId('replay-skip'))
+    // P202 (etapp 14): appen hoppar inte längre till NEWS DESK efter kvartalet — spelaren öppnar nyheterna själv.
+    fireEvent.click(await screen.findByTestId('tab-news'))
     const list = await screen.findByTestId('your-actions-list')
     expect(list.textContent).toMatch(/REJECTED/)
     expect(list.textContent).toMatch(/Not carried out: no executive actions remaining/)
@@ -86,6 +90,8 @@ describe('NEWS DESK (P164) — "Your actions" efter ett riktigt kvartal', () => 
     await enterGame()
     fireEvent.click(screen.getByTestId('end-quarter-button'))
     fireEvent.click(await screen.findByTestId('replay-skip'))
+    // P202 (etapp 14): appen hoppar inte längre till NEWS DESK efter kvartalet — spelaren öppnar nyheterna själv.
+    fireEvent.click(await screen.findByTestId('tab-news'))
     await screen.findByTestId('news-front-page')
     expect(screen.queryByTestId('your-actions-list')).toBeNull()
   })

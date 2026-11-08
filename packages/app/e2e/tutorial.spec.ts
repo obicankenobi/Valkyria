@@ -86,8 +86,10 @@ test('handledningen leder alla åtta steg och avslutas av sig själv (P91a klart
   // samtidigt turens första ordrar.
   await page.getByTestId('end-quarter-button').click()
 
-  // Steg 5 (läs förstasidan) är automatiskt — NEWS DESK är standardvyn efter
-  // en tur (§8). Bara steg 2 (lägg ett bud) återstår nu.
+  // Steg 5 (läs förstasidan): P202 (etapp 14) — appen hoppar inte längre till NEWS DESK efter kvartalet; spelaren
+  // stannar på kartan och öppnar nyheterna själv. Bara steg 2 (lägg ett bud) återstår sedan.
+  await expect(page.getByTestId('tab-operations')).toHaveAttribute('aria-current', 'page')
+  await page.getByTestId('tab-news').click()
   await expect(page.getByTestId('tab-news')).toHaveAttribute('aria-current', 'page')
   await expect(page.getByTestId('tutorial-prompt')).toHaveText(/bid/i)
 

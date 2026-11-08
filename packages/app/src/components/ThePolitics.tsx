@@ -22,6 +22,7 @@
 // skalade något i utfallet, och gjorde UI:t ärligt om det. P102 (ETAPP8_FORSLAG.md §6.1) gav dem en kurva
 // från belopp till effekt (avtagande avkastning, ett tak, aldrig säkert): varje nivå visar nu vad den köper
 // — samma tal som resolve, via previewAction (heat, relationer, kuppodds, counterIntelligence).
+import { agendaLabel } from '../displayNames.js'
 import { RubberStampTool } from './RubberStampTool.js'
 import { PaperclipPhoto } from './PaperclipPhoto.js'
 import { useEffect, useState } from 'react'
@@ -147,19 +148,23 @@ export function ThePolitics({
   state,
   onAddAction,
   focusFactionId = null,
+  onlyFaction = null,
 }: {
   state: GameState
   onAddAction: (action: PlayerAction) => void
   // Etapp 13, P199: landet mappen öppnar på (från landsakten eller This Quarter); annars det första.
   focusFactionId?: FactionId | null
+  // Etapp 14, P203: landsaktens flik "Cabinet" visar bara det här landet — utan rubrik, landsflikar och rivalhus.
+  onlyFaction?: FactionId | null
 }) {
   const [openForm, setOpenForm] = useState<OpenForm>(null)
   const groups = [...groupByFaction(state).entries()]
   const firstTab: ContactsTab = groups[0]?.[0] ?? 'rivals'
-  const [tab, setTab] = useState<ContactsTab>(focusFactionId ?? firstTab)
+  const [chosenTab, setTab] = useState<ContactsTab>(focusFactionId ?? firstTab)
   useEffect(() => {
     if (focusFactionId) setTab(focusFactionId)
   }, [focusFactionId])
+  const tab: ContactsTab = onlyFaction ?? chosenTab
   const { connectYarn, clearYarn } = useDeskYarn() // P193 (12C): hovring på en tjänsteman spänner tråden till hens land
 
   function queue(action: PlayerAction) {
@@ -179,11 +184,11 @@ export function ThePolitics({
 
   return (
     <>
-      <h2 className="view-title">The Politics</h2>
+      {!onlyFaction && <h2 className="view-title">The Politics</h2>}
 
       {/* Etapp 13, P199 (förslag 13-3): ett land per flik och rivalhusen på en egen — förut en enda lång mapp. En flik är röd när landets stöd ligger under
           gränsen där det tvingas söka fred (P200). */}
-      <FolderTabs
+      {!onlyFaction && <FolderTabs
         tabs={[
           ...groups.map(([factionId]) => {
             const outlook = supportOutlook(state, factionId)
@@ -195,7 +200,7 @@ export function ThePolitics({
         onChange={setTab}
         label="Contacts by country"
         testId="contacts-tabs"
-      />
+      />}
 
       {groups.filter(([factionId]) => factionId === tab).map(([factionId, officials]) => {
         const faction = state.factions[factionId]
@@ -260,10 +265,10 @@ export function ThePolitics({
                     />
                   </div>
 
-                  <p className="banner-sub">Agenda: {display.agenda ?? 'UNKNOWN'}</p>
+                  <p className="banner-sub">Agenda: {agendaLabel(display.agenda)}</p>
                   <p className="cf-hint">
                     Relation lifts your score on this official's orders and keeps them off their own agenda (low standing + low relation
-                    triggers a PolicyDecision against you). Low integrity means BRIBE buys more relation per pound.
+                    triggers a cabinet decree against you). Low integrity means BRIBE buys more relation per pound.
                   </p>
 
                   {active && (

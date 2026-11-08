@@ -109,14 +109,29 @@ describe('CountryFile — COVERT (P79 klart-när: alla sex underrättelseverb k�
     expect(onAddAction).not.toHaveBeenCalled()
   })
 
-  it('OFFICIALS-länken visar antal tjänstemän och navigerar till CONTACTS', () => {
+  it('OFFICIALS-länken visar antal tjänstemän och öppnar landsaktens flik Cabinet (P203: i akten, inte i CONTACTS)', () => {
     const state = createInitialState('indochina-slice', 'cf-seed')
     const onOpenContacts = vi.fn()
     render(<CountryFile state={state} factionId="rvn" onAddAction={() => {}} onClose={() => {}} onOpenContacts={onOpenContacts} />)
 
     expect(screen.getByTestId('cf-officials-link').textContent).toContain('4 ON FILE')
     fireEvent.click(screen.getByTestId('cf-officials-link'))
-    expect(onOpenContacts).toHaveBeenCalled()
+    expect(onOpenContacts).not.toHaveBeenCalled()
+    expect(screen.getByTestId('dossier-tabs-cabinet').getAttribute('aria-selected')).toBe('true')
+    const official = Object.values(state.officials).find((o) => o.factionId === 'rvn')!
+    expect(screen.getByTestId('country-file').textContent).toContain(official.name)
+  })
+
+  it('P203: landsakten är en akt i mappen med tre flikar, inget bottenark, och fliken Orders öppnar CONTRACTS', () => {
+    const state = createInitialState('indochina-slice', 'cf-seed')
+    const onOpenContracts = vi.fn()
+    const { container } = render(<CountryFile state={state} factionId="rvn" onAddAction={() => {}} onClose={() => {}} onOpenContracts={onOpenContracts} />)
+    expect(container.querySelector('.ds-sheet-overlay, .ds-sheet-handle')).toBeNull()
+    expect(screen.getByTestId('dossier-tabs-intel').getAttribute('aria-selected')).toBe('true')
+    fireEvent.click(screen.getByTestId('dossier-tabs-orders'))
+    expect(screen.getByTestId('dossier-orders')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('dossier-open-contracts'))
+    expect(onOpenContracts).toHaveBeenCalled()
   })
 })
 

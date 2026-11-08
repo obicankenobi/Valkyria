@@ -42,7 +42,9 @@ describe('TheFloor — P46 klart-når: fronten synlig på order- och kontraktsra
 
     const { container } = render(<TheFloor state={state} draft={EMPTY_DRAFT} onSubmitBid={() => {}} onRemoveBid={() => {}} />)
 
-    expect(container.textContent).toContain('front-laos')
+    // P202 (etapp 14): frontens namn, inte front-id:t.
+    expect(container.textContent).toContain('Laos front')
+    expect(container.textContent).not.toContain('front-laos')
   })
 
   it('en order utan frontId (null) kraschar inte vyn — visas som "No front" i stället', () => {
@@ -57,7 +59,7 @@ describe('TheFloor — P46 klart-når: fronten synlig på order- och kontraktsra
     expect(container.textContent).toContain('No front')
   })
 
-  it('kontraktstabellen visar frontId, eller "—" när den är null', () => {
+  it('kontraktstabellen visar frontens namn, eller "—" när den är null', () => {
     const state = createInitialState('indochina-slice', 'contract-front-seed')
     state.market.contracts = [
       {
@@ -92,7 +94,8 @@ describe('TheFloor — P46 klart-når: fronten synlig på order- och kontraktsra
 
     const { container } = render(<TheFloor state={state} draft={EMPTY_DRAFT} onSubmitBid={() => {}} onRemoveBid={() => {}} />)
 
-    expect(container.textContent).toContain('front-1')
+    expect(container.textContent).toContain('Indochina front')
+    expect(container.textContent).not.toContain('front-1')
     expect(container.textContent).toContain('—')
   })
 })

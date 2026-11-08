@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { createInitialState } from '@seventh-front/core'
 import { ThePolitics } from '../src/components/ThePolitics.js'
+import { agendaLabel } from '../src/displayNames.js'
 
 afterEach(cleanup)
 
@@ -40,7 +41,8 @@ describe('ThePolitics — rummet blir synligt (P63 klart-när)', () => {
 
     const { container } = render(<ThePolitics state={state} onAddAction={() => {}} />)
 
-    expect(container.textContent).toContain(official.agenda)
+    // P202 (etapp 14): agendan står i ord, inte som enum-namnet.
+    expect(container.textContent).toContain(agendaLabel(official.agenda))
     expect(container.textContent).toContain(official.integrity.toFixed(0))
   })
 

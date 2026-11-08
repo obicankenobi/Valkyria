@@ -431,7 +431,10 @@ const APP_SCREENS = [
       // går rakt till NEWS DESK, precis som en riktig spelare med den
       // systeminställningen skulle uppleva det.
       await page.getByTestId('end-quarter-button').click()
-      await page.getByTestId('tab-news').waitFor()
+      // P202 (etapp 14): appen hoppar inte längre till NEWS DESK efter kvartalet — öppna fliken.
+      await page.waitForTimeout(300)
+      await page.getByTestId('tab-news').click()
+      await page.getByTestId('news-front-page').waitFor()
     },
   },
   {
@@ -453,8 +456,10 @@ const APP_SCREENS = [
       await page.getByTestId('hud').waitFor()
       for (let i = 0; i < 2; i++) {
         await page.getByTestId('end-quarter-button').click()
-        await page.locator('[data-testid="tab-news"][aria-current="page"]').waitFor()
+        await page.waitForTimeout(300)
       }
+      // P202 (etapp 14): ingen automatisk övergång till NEWS DESK.
+      await page.getByTestId('tab-news').click()
       await page.getByTestId('news-history-front-page').waitFor()
     },
   },
@@ -558,7 +563,7 @@ const APP_SCREENS = [
       await page.getByTestId('cf-file-WITHDRAW').click()
       await page.getByTestId('end-quarter-button').click()
       await page.waitForTimeout(150)
-      await page.getByTestId('tab-operations').click() // End Quarter öppnar NEWS DESK
+      await page.getByTestId('tab-operations').click() // P202: kvar för säkerhets skull (förr öppnade End Quarter NEWS DESK)
       await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
       await page.getByTestId('map-info-card').waitFor()
       await page.getByTestId('map-info-open-file').click()
@@ -620,6 +625,7 @@ const APP_SCREENS = [
       } catch {
         // Uppspelningen stängde sig själv.
       }
+      await page.getByTestId('tab-news').click() // P202: ingen automatisk övergång till NEWS DESK
       await page.getByTestId('your-actions-list').waitFor()
     },
   },

@@ -147,7 +147,7 @@ async function findMapCollisions(page: Page): Promise<string[]> {
     // aldrig räknas som en kollision, spelaren ser den aldrig.
     const elements = [
       ...document.querySelectorAll(
-        '.map-sector-label, .map-capital-label, .map-formation-label, .map-frontline-marker, .map-frontline-marker-trace, .map-layer-tag, .map-front-status-label, .map-landless-label, .map-works-marker',
+        '.map-sector-label, .map-capital-label, .map-formation-label, .map-frontline-marker, .map-frontline-marker-trace, .map-layer-tag, .map-front-status-label, .map-landless-label, .map-works-marker, .map-print-label, .map-recon-stamp',
       ),
     ].filter((el) => window.getComputedStyle(el).visibility !== 'hidden') as SVGGraphicsElement[]
     const boxes = elements.map((el) => ({ el, rect: el.getBoundingClientRect() }))

@@ -693,7 +693,9 @@ td.is-key {
   color: var(--ink-faint);
   letter-spacing: 0.04em;
   flex-shrink: 0;
-  width: 34px;
+  /* P202: kvartalet ("Q1 1964") i stället för den interna turräknaren ("T00"). */
+  width: 62px;
+  white-space: nowrap;
 }
 
 .wire-glyph {

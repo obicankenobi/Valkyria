@@ -40,10 +40,14 @@ const COUNTRY_IDS = {
   china: '156',
   thailand: '764',
   cambodia: '116',
+  // Etapp 14 (P201): Burma och Malaysia som sammanhang, så att bredbildsutsnittet inte visar hav där det är land.
+  burma: '104',
+  malaysia: '458',
 }
 
 // Indokina-regionen plus "sammanhang" (Thailand, södra Kina) — [minLng, minLat, maxLng, maxLat].
-const REGION_BBOX = [95, 8, 110, 23]
+// Etapp 14 (P201): breddad från [95, 8, 110, 23] så att kartan fyller en bred skärm (1440×900 och 1920×1080) utan tomma kanter.
+const REGION_BBOX = [91, 3, 118, 26]
 // 17:e breddgraden — den historiska DMZ:n mellan Nord- och Sydvietnam 1964.
 const DMZ_LAT = 17
 
@@ -73,6 +77,8 @@ function main() {
   const china = findCountry(countries, COUNTRY_IDS.china)
   const thailand = findCountry(countries, COUNTRY_IDS.thailand)
   const cambodia = findCountry(countries, COUNTRY_IDS.cambodia)
+  const burma = findCountry(countries, COUNTRY_IDS.burma)
+  const malaysia = findCountry(countries, COUNTRY_IDS.malaysia)
 
   // Vietnam delat vid DMZ_LAT — "tillagd för hand" (§6.1), Natural Earth har
   // ingen 1964-gräns att läsa. Två separata bbox-klipp av SAMMA polygon.
@@ -95,6 +101,12 @@ function main() {
   const clippedCambodia = clipToBbox(cambodia, REGION_BBOX)
   clippedCambodia.id = 'cambodia'
   clippedCambodia.properties = { name: 'Cambodia' }
+  const clippedBurma = clipToBbox(burma, REGION_BBOX)
+  clippedBurma.id = 'burma'
+  clippedBurma.properties = { name: 'Burma' }
+  const clippedMalaysia = clipToBbox(malaysia, REGION_BBOX)
+  clippedMalaysia.id = 'malaysia'
+  clippedMalaysia.properties = { name: 'Malaysia' }
 
   // DMZ:n som en egen linje (inte bara Vietnam-delningens gräns) — en
   // synlig, avsiktlig markering, samma bredd som Vietnams del av boxen.
@@ -105,15 +117,16 @@ function main() {
     geometry: {
       type: 'LineString',
       coordinates: [
-        [REGION_BBOX[0] + 3, DMZ_LAT],
-        [REGION_BBOX[2] - 3, DMZ_LAT],
+        // Fasta ändpunkter (förr REGION_BBOX ± 3, samma 98–107°E), så att linjen inte växer med den breddade boxen.
+        [98, DMZ_LAT],
+        [107, DMZ_LAT],
       ],
     },
   }
 
   const regionCountries = {
     type: 'FeatureCollection',
-    features: [northVietnam, southVietnam, clippedLaos, clippedCambodia, clippedThailand, clippedChina],
+    features: [northVietnam, southVietnam, clippedLaos, clippedCambodia, clippedThailand, clippedChina, clippedBurma, clippedMalaysia],
   }
 
   // topojson-server delar gemensamma bågar mellan features i SAMMA anrop —

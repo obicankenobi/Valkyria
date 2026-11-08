@@ -30,7 +30,12 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { INFLUENCE_BALANCE, TECH_CATEGORIES, blocOfFaction, previewAction, validateAction } from '@seventh-front/core'
 import type { FactionId, GameState, Official, PlayerAction, RivalId } from '@seventh-front/core'
-import { BottomSheet, Card, Segmented, TierPicker } from './designSystem.js'
+import { Card, Segmented, TierPicker } from './designSystem.js'
+import { FolderTabs } from './FolderTabs.js'
+import { ThePolitics } from './ThePolitics.js'
+import { getProduct } from '@seventh-front/core'
+import { frontName, orderPlace, quarterOfTurn } from '../displayNames.js'
+import { playSound } from '../sound.js'
 import type { Tier } from './designSystem.js'
 import { ActionCard } from './ActionCard.js'
 import { StationCard } from './StationCard.js'
@@ -39,6 +44,7 @@ import { VerbIcon } from './VerbIcon.js'
 import { useArmedVerb } from '../uiContext.js'
 import { CATEGORY_NAME } from '../designSheet.js'
 
+type DossierTab = 'intel' | 'cabinet' | 'orders'
 type DirectVerb = 'EXPAND' | 'WITHDRAW' | 'RECRUIT' | 'REOPEN'
 // P163: EXPAND/WITHDRAW/RECRUIT köades förut direkt vid ett tryck. De går nu via ett kort som säger vad verbet gör, kostar och riskerar, och köas först med FILE.
 type SubView = { kind: 'overview' } | { kind: 'confirm'; verb: DirectVerb } | { kind: 'target'; op: 'LEAK' | 'SABOTAGE' | 'TURN' } | { kind: 'influence' }
@@ -95,14 +101,17 @@ export function CountryFile({
   factionId,
   onAddAction,
   onClose,
-  onOpenContacts,
+  onOpenContracts,
   testId = 'country-file',
 }: {
   state: GameState
   factionId: FactionId
   onAddAction: (action: PlayerAction) => void
   onClose: () => void
-  onOpenContacts: () => void
+  // Etapp 14, P203: används inte längre av OFFICIALS-länken (den byter till fliken Cabinet); kvar för anropare och tester.
+  onOpenContacts?: () => void
+  // Etapp 14, P203: fliken Orders har en knapp som öppnar CONTRACTS.
+  onOpenContracts?: () => void
   testId?: string
 }) {
   const faction = state.factions[factionId]
@@ -111,10 +120,17 @@ export function CountryFile({
   const dormant = station ? undefined : state.house.stations.find((s) => s.nation === factionId && s.status === 'dormant')
   const armed = useArmedVerb()
   const [view, setView] = useState<SubView>(() => initialView(armed?.verb, station !== undefined, dormant !== undefined))
+  // Etapp 14, P203 (förslaget §7.1): landsakten har tre registerflikar — underrättelse och handlingar, kabinettet, ordrarna.
+  const [dossierTab, setDossierTab] = useState<DossierTab>('intel')
   // Ett nytt delläge (kort, målväljare, formulär) börjar överst — annars ärver det rullningen från knappen som öppnade det.
   useEffect(() => {
-    document.querySelector('[data-testid="country-file"] .ds-sheet-body')?.scrollTo?.(0, 0)
-  }, [view.kind])
+    document.querySelector('[data-testid="country-file"]')?.closest('.desk-manila-body')?.scrollTo?.(0, 0)
+  }, [view.kind, dossierTab])
+  // P93: "Manillamapp dras över bordet" — ljudet BottomSheet spelade när akten öppnades och stängdes.
+  useEffect(() => {
+    void playSound('sheet-open')
+    return () => void playSound('sheet-close')
+  }, [])
   const front = Object.values(state.fronts).find((f) => f.sideA === factionId || f.sideB === factionId)
   const officials = Object.values(state.officials).filter((o) => o.factionId === factionId && o.status === 'active')
   const rivals = Object.values(state.rivals)
@@ -142,11 +158,92 @@ export function CountryFile({
     return null
   }
 
-  const title = `COUNTRY FILE · ${factionId.toUpperCase()}`
+  const buyerOrders = state.market.openOrders.filter((o) => o.buyerId === factionId)
+  const buyerContracts = state.market.contracts.filter((c) => c.buyerId === factionId && (c.status === 'active' || c.status === 'late'))
 
   return (
-    <BottomSheet open title={faction.name} subtitle={title} onClose={onClose} testId={testId}>
-      {view.kind === 'overview' && (
+    // Etapp 14, P203 (förslaget §7.1, beslut 12E i förslaget): en landsakt i mappen, inte ett mobilt bottenark med draghandtag.
+    <section className="country-dossier" data-testid={testId} aria-label={`${faction.name} country dossier`}>
+      <header className="country-dossier-head">
+        <div>
+          <span className="desk-kicker">COUNTRY DOSSIER · {alignmentTag()}</span>
+          <h2 className="country-dossier-title">{faction.name}</h2>
+        </div>
+        <button type="button" className="ds-sheet-close country-dossier-close" onClick={onClose} aria-label="Close dossier" data-testid="country-file-close">
+          ×
+        </button>
+      </header>
+      <FolderTabs
+        tabs={[
+          { id: 'intel' as DossierTab, label: 'Intelligence' },
+          { id: 'cabinet' as DossierTab, label: 'Cabinet', count: officials.length },
+          { id: 'orders' as DossierTab, label: 'Orders', count: buyerOrders.length + buyerContracts.length },
+        ]}
+        value={dossierTab}
+        onChange={setDossierTab}
+        label={`${faction.name} dossier`}
+        testId="dossier-tabs"
+      />
+      <div className="country-dossier-body">
+      {dossierTab === 'cabinet' && <ThePolitics state={state} onAddAction={onAddAction} onlyFaction={factionId} />}
+
+      {dossierTab === 'orders' && (
+        <div className="cf-body" data-testid="dossier-orders">
+          {buyerOrders.length === 0 && buyerContracts.length === 0 && <p className="cf-hint">No open orders and no contracts with {faction.name} right now.</p>}
+          {buyerOrders.length > 0 && (
+            <>
+              <div className="cf-section-head">
+                <span>OPEN ORDERS</span>
+                <span className="cf-section-rule" />
+              </div>
+              <ul className="dossier-list">
+                {buyerOrders.map((order) => (
+                  <li key={order.id} className="dossier-row">
+                    <span className="dossier-row-main">
+                      {getProduct(order.productId).name} × {order.quantity}
+                    </span>
+                    <span className="dossier-row-sub">
+                      {orderPlace(state, order)} · closes {quarterOfTurn(order.expiresTurn)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {buyerContracts.length > 0 && (
+            <>
+              <div className="cf-section-head">
+                <span>YOUR CONTRACTS</span>
+                <span className="cf-section-rule" />
+              </div>
+              <ul className="dossier-list">
+                {buyerContracts.map((contract) => (
+                  <li key={contract.id} className="dossier-row">
+                    <span className="dossier-row-main">
+                      {getProduct(contract.productId).name} · {contract.unitsDelivered}/{contract.quantity} delivered
+                    </span>
+                    <span className="dossier-row-sub">
+                      {frontName(state, contract.frontId)} · due {quarterOfTurn(contract.dueTurn)}
+                      {contract.status === 'late' ? ' · LATE' : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {onOpenContracts && (
+            <button type="button" className="cf-officials" onClick={onOpenContracts} data-testid="dossier-open-contracts">
+              <span className="cf-officials-text">
+                <span className="cf-officials-title">OPEN CONTRACTS</span>
+                <span className="cf-officials-count">BID IN THE ORDER FOLDERS</span>
+              </span>
+              <span aria-hidden="true">›</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {dossierTab === 'intel' && view.kind === 'overview' && (
         <div className="cf-body">
           <div className="cf-tags">
             <span className="cf-tag is-blue">{alignmentTag()}</span>
@@ -193,7 +290,7 @@ export function CountryFile({
             <RecruitSection state={state} factionId={factionId} setView={setView} />
           )}
 
-          <button type="button" className="cf-officials" onClick={onOpenContacts} data-testid="cf-officials-link">
+          <button type="button" className="cf-officials" onClick={() => setDossierTab('cabinet')} data-testid="cf-officials-link">
             <span className="cf-officials-text">
               <span className="cf-officials-title">OFFICIALS</span>
               <span className="cf-officials-count">{officials.length} ON FILE</span>
@@ -218,7 +315,7 @@ export function CountryFile({
         </div>
       )}
 
-      {view.kind === 'confirm' && (
+      {dossierTab === 'intel' && view.kind === 'confirm' && (
         <ConfirmVerb
           state={state}
           verb={view.verb}
@@ -229,7 +326,7 @@ export function CountryFile({
         />
       )}
 
-      {view.kind === 'target' && (
+      {dossierTab === 'intel' && view.kind === 'target' && (
         <TargetPicker
           state={state}
           op={view.op}
@@ -242,7 +339,7 @@ export function CountryFile({
         />
       )}
 
-      {view.kind === 'influence' && (
+      {dossierTab === 'intel' && view.kind === 'influence' && (
         <InfluenceForm
           state={state}
           factionId={factionId}
@@ -250,7 +347,8 @@ export function CountryFile({
           onFile={queue}
         />
       )}
-    </BottomSheet>
+      </div>
+    </section>
   )
 }
 

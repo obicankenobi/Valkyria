@@ -21,6 +21,7 @@
 // att spelaren byter flik eller avslutar turen ändå — 9.3 dokumenterar
 // uttryckligen att en utebliven CRISIS-handling bara ger automatiskt
 // BACK_DOWN, inte ett fel.
+import { causeToggleLabel, deltaLabel, quarterOfTurn } from '../displayNames.js'
 import { useEffect, useState } from 'react'
 import { DISPLAY_THRESHOLDS, historyEventOf } from '@seventh-front/core'
 import type { GameState, TurnSubmission, WireEvent } from '@seventh-front/core'
@@ -80,24 +81,13 @@ function useRevealedCount(itemCount: number, resetKey: unknown): number {
   return revealed
 }
 
-// delta bär modelländringar (spec 2.6). Pengar visas som pengar, allt annat som
-// råa tal — nyckelnamnet avgör, inte en gissning på storleken.
-const MONEY_KEYS = new Set(['treasury', 'debt', 'price', 'capital', 'creditLimit'])
-
-function formatDelta(key: string, value: number): string {
-  const sign = value >= 0 ? '+' : '−'
-  const magnitude = Math.abs(value)
-  if (MONEY_KEYS.has(key)) {
-    return `${key} ${sign}£${Math.round(magnitude).toLocaleString('sv-SE')}`
-  }
-  const rounded = Number.isInteger(magnitude) ? magnitude : Number(magnitude.toFixed(1))
-  return `${key} ${sign}${rounded}`
-}
-
 function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly WireEvent[]; state: GameState }) {
   const [expanded, setExpanded] = useState(false)
   const chain = causeChain(wire, event)
+  // P202 (etapp 14): bara modelländringar som säger något om läget, med ord (displayNames.ts) — inga fältnamn.
   const deltas = Object.entries(event.delta)
+    .map(([key, value]) => ({ key, value, label: deltaLabel(state, key, value) }))
+    .filter((d): d is { key: string; value: number; label: string } => d.label !== null)
   const anchor = anchorLabel(state, wireAnchor(state, event))
   // P149: en historisk händelse (förstasida eller telex) bär sitt verkliga datum; effekterna under den gör det inte.
   const historyAnnouncement = Object.keys(event.delta).some((k) => k.startsWith('history.')) ? historyEventOf(event.causeId, event.delta) : null
@@ -113,7 +103,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
   return (
     <li className={classes.join(' ')}>
       <div className="wire-row">
-        <span className={`wire-stamp ${wearClass(event.id)}`}>T{String(event.turn).padStart(2, '0')}</span>
+        <span className={`wire-stamp ${wearClass(event.id)}`}>{quarterOfTurn(event.turn)}</span>
         <span className={`wire-glyph is-${event.severity}`} aria-hidden="true" />
         {historyAnnouncement && <span className="wire-date" data-testid="wire-history-date">{historyDateLabel(historyAnnouncement.date)}</span>}
         <span className="wire-text">{event.headline}</span>
@@ -121,16 +111,16 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
         {event.actorIsPlayer && <Tag tone="amber">YOU</Tag>}
         {chain.length > 0 && (
           <button type="button" className="btn btn-ghost wire-cause-toggle" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? 'hide cause' : `cause ×${chain.length}`}
+            {causeToggleLabel(chain.length, expanded)}
           </button>
         )}
       </div>
 
       {deltas.length > 0 && (
         <div className="wire-deltas">
-          {deltas.map(([key, value]) => (
+          {deltas.map(({ key, value, label }) => (
             <span key={key} className={value >= 0 ? 'delta is-up' : 'delta is-down'}>
-              {formatDelta(key, value)}
+              {label}
             </span>
           ))}
         </div>
@@ -140,7 +130,7 @@ function EventRow({ event, wire, state }: { event: WireEvent; wire: readonly Wir
         <ol className="wire-chain">
           {chain.map((cause) => (
             <li key={cause.id}>
-              <span className="mono">T{String(cause.turn).padStart(2, '0')}</span> — {cause.headline}
+              <span className="mono">{quarterOfTurn(cause.turn)}</span> — {cause.headline}
             </li>
           ))}
         </ol>
@@ -174,7 +164,7 @@ function TickerGroupRow({ group, state }: { group: TickerGroup; state: GameState
         <ol className="wire-chain">
           {[...group.events].reverse().map((event) => (
             <li key={event.id}>
-              <span className="mono">T{String(event.turn).padStart(2, '0')}</span> — {event.headline}
+              <span className="mono">{quarterOfTurn(event.turn)}</span> — {event.headline}
             </li>
           ))}
         </ol>
@@ -422,7 +412,7 @@ export function TheWire({
       {frontPageEvent && <FrontPageCard event={frontPageEvent} testId="news-history-front-page" />}
       {heroEvent && (
         <div className="news-hero" data-testid="news-hero">
-          <span className="news-hero-kicker">Today&apos;s Headline · T{String(heroEvent.turn).padStart(2, '0')}</span>
+          <span className="news-hero-kicker">Today&apos;s Headline · {quarterOfTurn(heroEvent.turn)}</span>
           <p className="news-hero-text">{heroEvent.headline}</p>
           {heroAnchor && <span className="wire-anchor">{heroAnchor}</span>}
         </div>

@@ -4,6 +4,7 @@
 // Inga dolda fält (trueBudget, weights, integrity)." Order.trueBudget/
 // inspectorIntegrity/weights visas ALDRIG (avsnitt 4.3) — BidForm.tsx äger
 // själva reglaget, den här filen äger bara mappen den öppnas ur.
+import { frontName, officialLine, orderCause, orderPlace, quarterOfTurn } from '../displayNames.js'
 import { ProgrammeFolders } from './ProgrammeFolder.js'
 import { RaceBoard } from './RaceBoard.js'
 import { useEffect, useState } from 'react'
@@ -40,7 +41,10 @@ function OrderFolder({
   const turnsLeft = order.expiresTurn - state.meta.turn
   // P46 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2/8): "en order utan frontId ska
   // inte krascha vyn" — SCRIPTED-ordrar och krisköp har frontId: null.
-  const frontLabel = order.frontId ?? 'No front'
+  // P202 (etapp 14): frontens och sektorns namn, aldrig front-id:t (förr "front-1"); orsaken och handläggaren ur Order.reason/officialId.
+  const frontLabel = orderPlace(state, order)
+  const cause = orderCause(state, order)
+  const handler = officialLine(state, order.officialId)
   const deadlineLabel = turnsLeft <= 0 ? 'Decided this turn' : `${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} left`
   // P185 (11O): en order huset inte får bjuda på (inget monteringsverk i kategorin) har en LOCKED-stämpel; skälet står i mappen.
   // P188 (10X): också en standardprodukt som ligger en generation för långt efter köparens block (validateBid är den enda källan).
@@ -101,6 +105,15 @@ function OrderFolder({
           </Button>
         </span>
       </div>
+
+      <p className="order-cause" data-testid="order-cause">
+        <span className="order-cause-why">{cause}</span>
+        {handler && (
+          <span className="order-cause-handler" data-testid="order-handler">
+            {' '}Handled by {handler.name}, {handler.title.toLowerCase()} · relation {handler.relation}/100.
+          </span>
+        )}
+      </p>
 
       <PreferenceMix state={state} order={order} />
 
@@ -224,18 +237,19 @@ export function TheFloor({
               </tr>
             </thead>
             <tbody>
-              {activeContracts.map((contract) => {
+              {activeContracts.map((contract, index) => {
                 const buyer = state.factions[contract.buyerId]
                 return (
                   <tr key={contract.id}>
-                    <td className="is-key">{contract.id}</td>
+                    {/* P202: ett löpnummer i stället för det interna kontrakts-id:t. */}
+                    <td className="is-key">No. {index + 1}</td>
                     <td>{buyer ? buyer.name : contract.buyerId}</td>
                     <td>{getProduct(contract.productId).name}</td>
-                    <td>{contract.frontId ?? '—'}</td>
+                    <td>{contract.frontId ? frontName(state, contract.frontId) : '—'}</td>
                     <td>
                       {contract.unitsDelivered}/{contract.quantity}
                     </td>
-                    <td>T{contract.dueTurn}</td>
+                    <td>{quarterOfTurn(contract.dueTurn)}</td>
                     <td>{contract.status === 'late' ? <Tag tone="red">Late</Tag> : <Tag tone="green">Active</Tag>}</td>
                   </tr>
                 )

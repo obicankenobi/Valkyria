@@ -3,6 +3,7 @@
 // mahognyskrivbord där kartan alltid ligger fastnålad på vänstra bordshalvan
 // och arbetsmapparna (Contracts, Company/Works, Contacts/Dossiers, News/Wire
 // samt CountryFile) ligger som fysiska manillamappar på den högra bordshalvan.
+import { quarterOfTurn } from '../displayNames.js'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { boardReviewOutlook, DISPLAY_THRESHOLDS, getProduct } from '@seventh-front/core'
@@ -444,7 +445,7 @@ export function DeskWorkspace({
               ) : (
                 headlines.map((ev) => (
                   <div key={ev.id} className="desk-telex-line">
-                    <strong>[T{String(ev.turn).padStart(2, '0')}]</strong> {ev.headline}
+                    <strong>[{quarterOfTurn(ev.turn)}]</strong> {ev.headline}
                   </div>
                 ))
               )}

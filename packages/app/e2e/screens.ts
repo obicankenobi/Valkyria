@@ -5,6 +5,7 @@
 // Varje Playwright-test får en egen, tom browserkontext, så `setup` klickar
 // igenom "New Game" utan att någonsin möta bekräftelsedialogen för att skriva
 // över ett sparat parti.
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 // P192 (ETAPP12, beslut 12A): PC-widescreen först — telefonformatet (390×844) är borttaget och mobilversionen på is.
@@ -444,9 +445,12 @@ export async function enterNewsFrontPage(page: Page): Promise<void> {
   await enterOperations(page)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   for (let i = 0; i < 2; i++) {
+    const turn = await page.getByTestId('end-quarter-button').textContent()
     await page.getByTestId('end-quarter-button').click()
-    await page.locator('[data-testid="tab-news"][aria-current="page"]').waitFor()
+    // P202: appen hoppar inte längre till NEWS DESK efter kvartalet — vänta på att kalendern bläddrat.
+    await expect(page.getByTestId('end-quarter-button')).not.toHaveText(turn ?? '')
   }
+  await page.getByTestId('tab-news').click()
   await page.getByTestId('news-history-front-page').waitFor()
 }
 
@@ -567,8 +571,10 @@ export async function enterPolicyWarning(page: Page): Promise<void> {
   await page.reload()
   await page.getByTestId('menu-continue').click()
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  const turn = await page.getByTestId('end-quarter-button').textContent()
   await page.getByTestId('end-quarter-button').click()
-  await page.getByText('IS PREPARING').first().waitFor({ state: 'attached', timeout: 5000 })
+  // P202 (etapp 14): ingen automatisk övergång till NEWS DESK — vänta på att kalendern bläddrat och öppna nyheterna.
+  await expect(page.getByTestId('end-quarter-button')).not.toHaveText(turn ?? '')
   await page.getByTestId('tab-news').click()
   await page.getByText('IS PREPARING').first().waitFor()
 }
@@ -859,6 +865,8 @@ export async function enterYourActions(page: Page): Promise<void> {
   } catch {
     // Reducerad rörelse eller ett tyst kvartal: uppspelningen stängde sig själv.
   }
+  // P202 (etapp 14): appen hoppar inte längre till NEWS DESK efter kvartalet.
+  await page.getByTestId('tab-news').click()
   await page.getByTestId('your-actions-list').waitFor()
 }
 

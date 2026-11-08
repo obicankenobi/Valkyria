@@ -61,10 +61,10 @@ describe('deriveMapInfo — land', () => {
     expect(info.note).toMatch(/not a buyer/i)
   })
 
-  it('alla sex länder i kartfilen har ett namn och ett kort (alla länder är tryckbara)', () => {
+  it('alla åtta länder i kartfilen har ett namn och ett kort (alla länder är tryckbara)', () => {
     const topo = JSON.parse(readFileSync(join(import.meta.dirname, '../public/geo/indochina.topo.json'), 'utf8'))
     const ids = topo.objects.countries.geometries.map((g: { id: string; properties: { name: string } }) => ({ id: g.id, name: g.properties.name }))
-    expect(ids).toHaveLength(6)
+    expect(ids).toHaveLength(8)
     for (const { id, name } of ids) {
       expect(COUNTRY_LABEL[id], id).toBe(name)
       expect(deriveMapInfo(state(), { kind: 'country', countryId: id }), id).not.toBeNull()

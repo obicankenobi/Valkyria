@@ -779,6 +779,10 @@ export function App() {
                 setSelectedFactionId(null)
                 setView('contacts')
               }}
+              onOpenContracts={() => {
+                setSelectedFactionId(null)
+                setView('contracts')
+              }}
             />
           ) : null
         }
@@ -819,8 +823,12 @@ export function App() {
           onFocus={setReplayEvent}
           memo={boardMemo(state, state.meta.turn - 1)}
           onDone={() => {
+            // Etapp 14 (P202, förslaget §8.1): spelaren stannar där hen var. Förr hoppade appen till NEWS DESK efter varje kvartal
+            // (etapp 7 §8), vilket drog bort blicken från kartan; uppspelningen har redan visat kvartalet på kartan (P196), och
+            // nyheterna finns en flik bort (handledningens steg "read-news" klaras när spelaren öppnar dem).
+            // Undantag: en väntande kris. Kriskortet bor på NEWS DESK och kräver ett svar, så då öppnas den.
             setReplaying(false)
-            setView('news') // NEWS DESK (f.d. THE WIRE) är startvyn varje tur (avsnitt 8)
+            if (state.pendingCrisis !== null) setView('news')
           }}
         />
       )}
