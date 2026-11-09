@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from '@seventh-front/core'
 import type { Order } from '@seventh-front/core'
-import { orderConvoys, playerSupplyLabel, THEATRE_ENTRY_POINTS } from '../src/supplyLines.js'
+import { orderConvoys, playerSupplyLabel, playerSupplyLines, THEATRE_ENTRY_POINTS } from '../src/supplyLines.js'
 import { SECTOR_REGIONS } from '../src/sectorRegions.js'
 import { shortDesignation } from '../src/displayNames.js'
 
@@ -43,8 +43,8 @@ describe('playerSupplyLabel', () => {
       status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0,
     })
     state.market.shipments.push({ id: 's1', contractId: 'c1', units: 5, arrivalTurn: 3 }, { id: 's2', contractId: 'c1', units: 4, arrivalTurn: 2 })
-    expect(playerSupplyLabel(state, 'front-1')).toBe('YOU · 9 UNITS · ARRIVES Q3 1964')
-    expect(playerSupplyLabel(state, 'front-laos')).toBeNull()
+    expect(playerSupplyLabel(state, 'player-front-1')).toBe('YOU · 9 UNITS · ARRIVES Q3 1964')
+    expect(playerSupplyLabel(state, 'player-front-laos')).toBeNull()
   })
 })
 
@@ -53,5 +53,38 @@ describe('shortDesignation', () => {
     expect(shortDesignation('1st Infantry Division')).toBe('1st Inf Div')
     expect(shortDesignation('1st Armoured Cavalry Regiment')).toBe('1st Armd Cav Rgt')
     expect(shortDesignation('559th Transportation Group')).toBe('559th Trans Gp')
+  })
+})
+
+describe('playerSupplyLines — etapp 14 (Contract.formationId)', () => {
+  it('ett kontrakt som ersätter ett förbands förluster får en egen linje till förbandets sektor, med egen etikett', () => {
+    const state = createInitialState('indochina-slice', 'supply-formation-seed')
+    const front = state.fronts['front-1']!
+    const formation = front.formations[0]!
+    state.market.contracts.push(
+      { id: 'c1', buyerId: 'rvn', productId: 'm1_rifle', quantity: 10, unitsDelivered: 0, price: 1000, unitCostAtSigning: 500, grade: 'B', dueTurn: 5,
+        status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0, formationId: formation.id },
+      { id: 'c2', buyerId: 'rvn', productId: 'm1_rifle', quantity: 10, unitsDelivered: 0, price: 1000, unitCostAtSigning: 500, grade: 'B', dueTurn: 5,
+        status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0 },
+    )
+    state.market.shipments.push({ id: 's1', contractId: 'c1', units: 6, arrivalTurn: 2 }, { id: 's2', contractId: 'c2', units: 3, arrivalTurn: 3 })
+    const lines = playerSupplyLines(state, SECTOR_REGIONS)
+    const toFormation = lines.find((l) => l.formationId === formation.id)!
+    const toFront = lines.find((l) => l.formationId === undefined)!
+    expect(toFormation.toAnchor).toEqual(SECTOR_REGIONS[front.theatreId]!.find((r) => r.sectorId === formation.sectorId)!.anchor)
+    expect(toFront.toAnchor).not.toEqual(toFormation.toAnchor)
+    expect(playerSupplyLabel(state, toFormation.id)).toBe('YOU · 6 UNITS · ARRIVES Q3 1964')
+    expect(playerSupplyLabel(state, toFront.id)).toBe('YOU · 3 UNITS · ARRIVES Q4 1964')
+  })
+  it('linjen följer förbandet när det omgrupperas till en annan sektor', () => {
+    const state = createInitialState('indochina-slice', 'supply-formation-seed')
+    const front = state.fronts['front-1']!
+    const formation = front.formations[0]!
+    state.market.contracts.push({ id: 'c1', buyerId: 'rvn', productId: 'm1_rifle', quantity: 10, unitsDelivered: 0, price: 1000, unitCostAtSigning: 500,
+      grade: 'B', dueTurn: 5, status: 'active', lateEventId: null, frontId: 'front-1', advancePct: 0, advancePaid: 0, formationId: formation.id })
+    state.market.shipments.push({ id: 's1', contractId: 'c1', units: 6, arrivalTurn: 2 })
+    const other = SECTOR_REGIONS[front.theatreId]!.find((r) => r.sectorId !== formation.sectorId)!
+    formation.sectorId = other.sectorId
+    expect(playerSupplyLines(state, SECTOR_REGIONS)[0]!.toAnchor).toEqual(other.anchor)
   })
 })

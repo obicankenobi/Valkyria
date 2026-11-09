@@ -47,7 +47,7 @@ import { MapPlaceholder } from './Shell.js'
 import { MapLegend } from './MapLegend.js'
 import { MapInfoCard } from './MapInfoCard.js'
 import { MapLayerBar } from './MapLayerBar.js'
-import { landlessFactions, layerTags } from '../mapLayers.js'
+import { MAP_LAYERS, landlessFactions, layerTags } from '../mapLayers.js'
 import type { MapLayerId } from '../mapLayers.js'
 import { ordersMatching, selectionGeoAnchor } from '../mapFocus.js'
 import type { OrdersFilter } from '../mapFocus.js'
@@ -55,6 +55,8 @@ import type { MapFocusRequest } from '../uiContext.js'
 import type { MapInfoAction } from './MapInfoCard.js'
 import { shortDesignation } from '../displayNames.js'
 import { CATEGORY_NAME } from '../designSheet.js'
+import { MAP_COMMAND_EVENT } from '../mapFrame.js'
+import type { MapCommand } from '../mapFrame.js'
 import { FOCUS_BOUNDS, FOCUS_PADDING, GRATICULE_EXTENT, GRATICULE_STEP, PRINT_LABELS, VIEW_HEIGHT, scaleBarFor, viewWidthFor } from '../mapFrame.js'
 
 // §6.5: ett lands koppling till en FactionId (COUNTRY_TO_FACTION) bor i mapInfo.ts, som kartans informationskort delar den med.
@@ -480,6 +482,29 @@ export function TheatreMap({
     return () => cancelAnimationFrame(frame)
     // Bara en ny begäran (nonce) ska panorera — inte varje ny state.
   }, [focusRequest?.nonce, projection])
+
+  // Etapp 14 (kortkommandon): + − zoomar kring kartans mitt, 0 visar hela Indokina igen, L byter till nästa kartlager.
+  useEffect(() => {
+    function onCommand(event: Event) {
+      const command = (event as CustomEvent<MapCommand>).detail
+      if ('layer' in command) {
+        setLayer((current) => {
+          const index = current === null ? -1 : MAP_LAYERS.findIndex((l) => l.id === current)
+          const next = MAP_LAYERS[index + 1]
+          return next ? next.id : null
+        })
+        return
+      }
+      const svg = svgRef.current
+      const behaviour = zoomBehaviourRef.current
+      if (!svg || !behaviour) return
+      const selection = select(svg)
+      if (command.zoom === 'reset') behaviour.transform(selection, zoomIdentity)
+      else behaviour.scaleBy(selection, command.zoom === 'in' ? 1.25 : 0.8, [viewWidth / 2, VIEW_HEIGHT / 2])
+    }
+    window.addEventListener(MAP_COMMAND_EVENT, onCommand)
+    return () => window.removeEventListener(MAP_COMMAND_EVENT, onCommand)
+  }, [viewWidth])
 
   const graticulePath = useMemo(() => {
     if (!projection) return ''
@@ -1389,7 +1414,7 @@ export function TheatreMap({
                 )
               })}
               {playerLines.map((line) => {
-                const text = playerSupplyLabel(state, line.frontId)
+                const text = playerSupplyLabel(state, line.id)
                 const from = project([line.fromAnchor[1], line.fromAnchor[0]])
                 const to = project([line.toAnchor[1], line.toAnchor[0]])
                 if (!text || !from || !to) return null

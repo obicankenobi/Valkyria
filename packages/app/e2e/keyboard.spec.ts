@@ -153,3 +153,69 @@ test('fokus syns: en solid 3 px-ring på fliken, HUD-knappen och kartmarkören v
   const onPaper = await outline('[data-testid="tab-contracts"]')
   expect(onHud.color).not.toBe(onPaper.color)
 })
+
+// Etapp 14 (ägarbeslut 2026-11-09): layouten för krigsbordet — se shortcuts.ts.
+async function blurFocus(page: Page): Promise<void> {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+}
+
+test('etapp 14: [ och ] byter registerflik i den öppna mappen', async ({ page }) => {
+  await enterGame(page)
+  await page.keyboard.press('2')
+  await expect(page.getByTestId('contracts-tabs-orders')).toHaveAttribute('aria-selected', 'true')
+  await blurFocus(page)
+  await page.keyboard.press(']')
+  await expect(page.getByTestId('contracts-tabs-tenders')).toHaveAttribute('aria-selected', 'true')
+  await blurFocus(page)
+  await page.keyboard.press('[')
+  await page.keyboard.press('[')
+  await expect(page.getByTestId('contracts-tabs-race')).toHaveAttribute('aria-selected', 'true')
+})
+
+test('etapp 14: L byter kartlager, 0 återställer zoomen efter +, ? öppnar tangentkartan', async ({ page }) => {
+  await enterGame(page)
+  await blurFocus(page)
+  await page.keyboard.press('l')
+  await expect(page.locator('.map-layer-bar [aria-pressed="true"]')).toHaveCount(1)
+  await page.keyboard.press('+')
+  await page.keyboard.press('+')
+  await page.keyboard.press('+')
+  await page.keyboard.press('+')
+  await page.keyboard.press('+')
+  await expect(page.getByTestId('theatre-map-svg')).toHaveAttribute('data-zoom-level', '3')
+  await page.keyboard.press('0')
+  await expect(page.getByTestId('theatre-map-svg')).toHaveAttribute('data-zoom-level', '2')
+  await page.keyboard.press('?')
+  await expect(page.getByTestId('handbook-entry-keyboard')).toBeVisible()
+})
+
+test('etapp 14: Esc stänger landsakten, sedan den utfällda mappen, och pausar först sist', async ({ page }) => {
+  await enterGame(page)
+  await page.getByTestId('map-capital-rvn').locator('.map-capital-marker').click()
+  await page.getByTestId('map-info-open-file').click()
+  await expect(page.getByTestId('country-file')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('country-file')).toHaveCount(0)
+  await expect(page.getByTestId('pause-overlay')).toHaveCount(0)
+
+  await page.keyboard.press('3')
+  await blurFocus(page)
+  await page.keyboard.press('f')
+  await expect(page.getByTestId('desk-right-column')).toHaveClass(/is-folio-expanded/)
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('desk-right-column')).not.toHaveClass(/is-folio-expanded/)
+  await expect(page.getByTestId('pause-overlay')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('pause-overlay')).toBeVisible()
+})
+
+test('etapp 14: Space hoppar över kvartalsuppspelningen', async ({ page }) => {
+  await enterGame(page)
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await blurFocus(page)
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('quarter-replay')).toBeVisible()
+  await blurFocus(page)
+  await page.keyboard.press(' ')
+  await expect(page.getByTestId('quarter-replay')).toHaveCount(0)
+})

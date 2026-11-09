@@ -2,7 +2,8 @@
 // (skrivbord): 1–5 för skärmarna, Enter för End Quarter, Esc för paus.").
 // Esc fanns sedan P81b; 1–5 och Enter fanns inte förrän nu. Ren funktion.
 import { describe, expect, it } from 'vitest'
-import { shortcutFor, type ShortcutContext, type ShortcutKey } from '../src/shortcuts.js'
+import { SHORTCUT_GROUPS, shortcutFor, type ShortcutContext, type ShortcutKey } from '../src/shortcuts.js'
+import { findHandbookEntry } from '../src/handbook.js'
 
 const ctx: ShortcutContext = { inGame: true, blocked: false }
 const key = (k: string, extra: Partial<ShortcutKey> = {}): ShortcutKey => ({
@@ -26,8 +27,8 @@ describe('shortcutFor — 1–5 byter skärm i flikordning', () => {
   })
 
   it('andra siffror och tecken ger inget', () => {
-    for (const k of ['0', '6', '9', 'a', ' ', 'Tab', 'ArrowRight']) {
-      expect(shortcutFor(key(k), ctx)).toBeNull()
+    for (const k of ['6', '9', 'b', 'z', ' ', 'Tab', 'ArrowRight']) {
+      expect(shortcutFor(key(k), ctx), k).toBeNull()
     }
   })
 })
@@ -84,5 +85,51 @@ describe('shortcutFor — bara i spelet, aldrig bakom ett överlagg', () => {
     for (const k of ['1', '5', 'Enter']) {
       expect(shortcutFor(key(k), { inGame: true, blocked: true }), k).toBeNull()
     }
+  })
+})
+
+describe('shortcutFor — etapp 14: layouten för krigsbordet (ägarbeslut 2026-11-09)', () => {
+  it('bokstäverna trycker på rätt knapp eller öppnar rätt sak, versal eller gemen', () => {
+    expect(shortcutFor(key('q'), ctx)).toEqual({ kind: 'press', target: 'quarterband-toggle' })
+    expect(shortcutFor(key('W'), ctx)).toEqual({ kind: 'press', target: 'open-wire-desk' })
+    expect(shortcutFor(key('a'), ctx)).toEqual({ kind: 'press', target: 'open-action-catalog' })
+    expect(shortcutFor(key('f'), ctx)).toEqual({ kind: 'press', target: 'folio-expand' })
+    expect(shortcutFor(key('k'), ctx)).toEqual({ kind: 'press', target: 'map-legend-button' })
+    expect(shortcutFor(key('l'), ctx)).toEqual({ kind: 'map-layer' })
+    expect(shortcutFor(key('h'), ctx)).toEqual({ kind: 'handbook', topic: 'index' })
+    expect(shortcutFor(key('?'), ctx)).toEqual({ kind: 'handbook', topic: 'keyboard' })
+  })
+
+  it('[ och ] byter registerflik, 0 återställer kartan, + och − zoomar och får upprepas', () => {
+    expect(shortcutFor(key('['), ctx)).toEqual({ kind: 'folder-tab', step: -1 })
+    expect(shortcutFor(key(']'), ctx)).toEqual({ kind: 'folder-tab', step: 1 })
+    expect(shortcutFor(key('0'), ctx)).toEqual({ kind: 'map-zoom', direction: 'reset' })
+    expect(shortcutFor(key('+', { repeat: true }), ctx)).toEqual({ kind: 'map-zoom', direction: 'in' })
+    expect(shortcutFor(key('='), ctx)).toEqual({ kind: 'map-zoom', direction: 'in' })
+    expect(shortcutFor(key('-', { repeat: true }), ctx)).toEqual({ kind: 'map-zoom', direction: 'out' })
+    expect(shortcutFor(key('f', { repeat: true }), ctx)).toBeNull()
+  })
+
+  it('under kvartalsuppspelningen gäller bara Space (Skip/Continue), inte på en fokuserad knapp', () => {
+    const replay: ShortcutContext = { inGame: true, blocked: true, replaying: true }
+    expect(shortcutFor(key(' '), replay)).toEqual({ kind: 'press', target: 'replay-skip' })
+    expect(shortcutFor(key(' ', { targetTag: 'button' }), replay)).toBeNull()
+    for (const k of ['1', 'Enter', 'q', '+']) expect(shortcutFor(key(k), replay), k).toBeNull()
+    expect(shortcutFor(key(' '), ctx)).toBeNull()
+  })
+
+  it('handbokens uppslag Keyboard listar varje tangent ur samma lista', () => {
+    const entry = findHandbookEntry('keyboard')!
+    const text = entry.body.join(' ')
+    for (const group of SHORTCUT_GROUPS) for (const k of group.keys) expect(text, k.keys).toContain(`${k.keys} — ${k.does}`)
+  })
+
+  it('varje tangent i listan gör något i shortcutFor (Esc och Space hanteras utanför)', () => {
+    const probe: Record<string, string[]> = { '1–5': ['1', '5'], '[ ]': ['[', ']'], '+ −': ['+', '-'], Enter: ['Enter'] }
+    for (const group of SHORTCUT_GROUPS)
+      for (const k of group.keys) {
+        if (k.keys === 'Esc' || k.keys === 'Space') continue
+        for (const pressed of probe[k.keys] ?? [k.keys.toLowerCase()]) expect(shortcutFor(key(pressed), ctx), k.keys).not.toBeNull()
+      }
   })
 })

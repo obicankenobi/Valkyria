@@ -66,6 +66,7 @@ import { SAVE_SLOT } from './game.js'
 import { isInGameView, musicMode } from './musicDirector.js'
 import { createFrameRateGuard } from './frameRateGuard.js'
 import { shortcutFor, shortcutKeyFromEvent } from './shortcuts.js'
+import { MAP_COMMAND_EVENT } from './mapFrame.js'
 import {
   initAudioLifecycle,
   playSound,
@@ -232,10 +233,13 @@ export function App() {
     })
   }
 
-  function handleOpenHandbook(topic: HandbookTopicId) {
+  function handleOpenHandbook(topic: HandbookTopicId | null) {
     setHandbookFocusId(topic)
     setHandbookOpen(true)
   }
+  // Kortkommandolyssnaren sätts upp en gång; den når den aktuella funktionen genom en ref.
+  const handleOpenHandbookRef = useRef(handleOpenHandbook)
+  handleOpenHandbookRef.current = handleOpenHandbook
 
   // Läses en gång, oberoende av useGame.ts:s egen loadGame-koll — samma
   // SAVE_SLOT, men bara FRÅGAR om ett parti finns i stället för att ladda det.
@@ -586,10 +590,23 @@ export function App() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       if (view === 'menu' || replaying) return
-      // P205 (etapp 14): en utfälld mapp fälls tillbaka först; nästa Esc pausar som förut.
-      if (folioExpandedRef.current) {
-        setFolioExpanded(false)
-        return
+      // Etapp 14: Esc stänger det översta först — landsakten, sedan en utfälld mapp (P205), sedan kartans informationskort — och pausar
+      // först när inget av dem är öppet (regel 16).
+      if (!paused && !settingsOpen) {
+        const dossierClose = document.querySelector<HTMLButtonElement>('[data-testid="country-file-close"]')
+        if (dossierClose) {
+          dossierClose.click()
+          return
+        }
+        if (folioExpandedRef.current) {
+          setFolioExpanded(false)
+          return
+        }
+        const mapCardClose = document.querySelector<HTMLButtonElement>('[data-testid="map-info-close"]')
+        if (mapCardClose) {
+          mapCardClose.click()
+          return
+        }
       }
       if (settingsOpen) {
         setSettingsOpen(false)
@@ -599,18 +616,19 @@ export function App() {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [view, replaying, settingsOpen])
+  }, [view, replaying, settingsOpen, paused])
 
   // P94 (regel 16): "1–5 för skärmarna, Enter för End Quarter." Beslutet tas av
   // den rena shortcuts.ts; utförandet är ett klick på den riktiga fliken/knappen,
   // så att handledningssteg, ljud och spellogik går exakt som vid ett tryck (och
   // en avstängd knapp — partiet slut — gör ingenting). Spelläget läses ur en ref
   // så lyssnaren bara sätts upp en gång.
-  const shortcutState = useRef({ inGame: false, blocked: true })
+  const shortcutState = useRef({ inGame: false, blocked: true, replaying: false })
   useEffect(() => {
     shortcutState.current = {
       inGame: isInGameView(view),
       blocked: paused || settingsOpen || handbookOpen || catalogOpen || replaying || crisisPending,
+      replaying,
     }
   })
   useEffect(() => {
@@ -621,9 +639,35 @@ export function App() {
       const action = shortcutFor(shortcutKeyFromEvent(event), {
         inGame: shortcutState.current.inGame,
         blocked: shortcutState.current.blocked || sheetOpen,
+        replaying: shortcutState.current.replaying,
       })
       if (!action) return
-      const selector = action.kind === 'view' ? `[data-testid="tab-${action.view}"]` : '[data-testid="end-quarter-button"]'
+      // Etapp 14: kartans zoom och lager ägs av TheatreMap — de skickas som en händelse den lyssnar på.
+      if (action.kind === 'map-zoom' || action.kind === 'map-layer') {
+        event.preventDefault()
+        window.dispatchEvent(new CustomEvent(MAP_COMMAND_EVENT, { detail: action.kind === 'map-zoom' ? { zoom: action.direction } : { layer: 'next' } }))
+        return
+      }
+      if (action.kind === 'handbook') {
+        event.preventDefault()
+        if (action.topic === 'keyboard') handleOpenHandbookRef.current('keyboard')
+        else handleOpenHandbookRef.current(null)
+        return
+      }
+      if (action.kind === 'folder-tab') {
+        // Registerflikarna i den öppna mappen (FolderTabs: CONTRACTS, THE COMPANY:s lådor, CONTACTS, landsakten).
+        const tablist = document.querySelector('.desk-manila-body [role="tablist"]')
+        const tabs = tablist ? [...tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]')] : []
+        if (tabs.length === 0) return
+        const current = Math.max(0, tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true'))
+        event.preventDefault()
+        const next = tabs[(current + action.step + tabs.length) % tabs.length]!
+        next.click()
+        next.focus()
+        return
+      }
+      const selector =
+        action.kind === 'view' ? `[data-testid="tab-${action.view}"]` : action.kind === 'press' ? `[data-testid="${action.target}"]` : '[data-testid="end-quarter-button"]'
       const button = document.querySelector<HTMLButtonElement>(selector)
       if (!button || button.disabled) return
       event.preventDefault()

@@ -25,7 +25,9 @@
 // - TAKE_LOAN/REPAY mappade till 'board' av samma skäl; BUILD_LINE/HIRE/
 //   REPRIORITISE_RND/BUY_FORWARD/RELEASE mappade till 'production'
 //   (kapacitet, personal, R&D och de råvaror som föder linjerna).
-export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works' | 'race' | 'trail' | 'materials'
+import { SHORTCUT_GROUPS } from './shortcutList.js'
+
+export type HandbookTopicId = 'procurement' | 'production' | 'board' | 'doomsday' | 'heat' | 'intelligence' | 'politics' | 'fronts' | 'design' | 'programmes' | 'state' | 'works' | 'race' | 'trail' | 'materials' | 'keyboard'
 
 export interface HandbookEntry {
   id: HandbookTopicId
@@ -209,6 +211,13 @@ export const HANDBOOK: readonly HandbookEntry[] = [
       'RESERVE (in Raw materials, THE COMPANY) pays cash now into a reserve for one material. The reserve is spent, pound for pound, on that material\'s share of your future production costs. It does not lock a price — it moves money from today\'s cash to tomorrow\'s costs. RELEASE turns the reserve back into cash and pushes the material\'s price down, which also helps your rivals.',
       'A supplier agreement (a standing order) is the way to lock a price: for a number of quarters it pays a fixed sum each quarter, credited to your reserve at the price index of the day it was signed. When prices have risen since, each payment puts more into the reserve than it cost; when they have fallen, less.',
     ],
+  },
+  {
+    // Etapp 14 (ägarbeslut 2026-11-09): kortkommandona, utskrivna ur samma lista som shortcutFor följer (shortcutList.ts).
+    id: 'keyboard',
+    title: 'Keyboard',
+    summary: 'The desk is built for a hand on the mouse and a hand on the keys: 1–5 open the folders, Enter ends the quarter, Esc closes what is on top. Press ? for this list at any time.',
+    body: SHORTCUT_GROUPS.map((group) => `${group.label}: ${group.keys.map((k) => `${k.keys} — ${k.does}`).join('; ')}.`),
   },
 ] as const
 

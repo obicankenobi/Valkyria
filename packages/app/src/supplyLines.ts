@@ -7,6 +7,9 @@
 // Ren, testbar — precis som wireAnchor.ts/newsClassification.ts, rör aldrig
 // packages/core.
 //
+// Etapp 14 (ägarbeslut 2026-11-09): avsteget nedan gäller inte längre för kontrakt som ersätter ett förbands förluster — de bär
+// Contract.formationId, och linjen går till förbandets sektor (playerSupplyLines). För övriga kontrakt gäller det fortfarande.
+//
 // AVSTEG, dokumenterat (samma "stanna, beskriv, föreslå"-princip som
 // resten av projektet): §6.7 säger "till sektor", men varken Contract eller
 // Shipment har ett sectorId-fält (bara Contract.frontId, en HEL front, som
@@ -39,6 +42,8 @@ export interface SupplyLine {
   id: string
   kind: 'player' | 'rival'
   frontId: string
+  // Etapp 14: förbandet linjen går till (spelarens kontrakt som ersätter förluster); utelämnat = frontens ankare.
+  formationId?: string
   fromAnchor: [number, number] // [lat, lng]
   toAnchor: [number, number]
 }
@@ -54,26 +59,53 @@ function frontAnchor(theatreId: string, regionsByTheatre: Record<string, SectorR
 // Varje Shipment KVARSTÅR i state.market.shipments ända till den anländer
 // (deliveries.ts tar bort den då, types.ts:s egen kommentar) — närvaro i
 // listan ÄR alltså "under transport", inget ytterligare arrivalTurn-filter
-// behövs. En linje per FRONT (inte per shipment) — flera samtidiga
-// leveranser till samma front hade annars ritat identiskt överlappande
-// linjer, ren visuell brus utan extra information.
+// behövs. En linje per front OCH förband: flera samtidiga leveranser till samma
+// mål hade annars ritat identiskt överlappande linjer.
+// Etapp 14 (ägarbeslut 2026-11-09): ett kontrakt som ersätter ett förbands förluster bär förbandets id (Contract.formationId, core) —
+// dess linje går till sektorn där förbandet står NU (följer en omgruppering), inte till frontens ankare. Övriga kontrakt som förut.
+const FORMATION_SEPARATOR = '--'
+
+function formationSector(state: GameState, formationId: string): string | null {
+  for (const front of Object.values(state.fronts)) {
+    const formation = front.formations.find((f) => f.id === formationId)
+    if (formation) return formation.sectorId
+  }
+  return null
+}
+
 export function playerSupplyLines(state: GameState, regionsByTheatre: Record<string, SectorRegion[]>): SupplyLine[] {
-  const frontIdsInTransit = new Set<string>()
+  const targets = new Map<string, { frontId: string; formationId: string | null }>()
   for (const shipment of state.market.shipments) {
     const contract = state.market.contracts.find((c) => c.id === shipment.contractId)
-    if (contract?.frontId) frontIdsInTransit.add(contract.frontId)
+    if (!contract?.frontId) continue
+    const formationId = contract.formationId && formationSector(state, contract.formationId) ? contract.formationId : null
+    const id = formationId ? `player-${contract.frontId}${FORMATION_SEPARATOR}${formationId}` : `player-${contract.frontId}`
+    targets.set(id, { frontId: contract.frontId, formationId })
   }
 
   const lines: SupplyLine[] = []
-  for (const frontId of frontIdsInTransit) {
+  for (const [id, { frontId, formationId }] of targets) {
     const front = state.fronts[frontId]
     if (!front) continue
     const port = THEATRE_ENTRY_POINTS[front.theatreId]
-    const anchor = frontAnchor(front.theatreId, regionsByTheatre)
+    const sectorId = formationId ? formationSector(state, formationId) : null
+    const region = sectorId ? regionsByTheatre[front.theatreId]?.find((r) => r.sectorId === sectorId) : undefined
+    const anchor = region ? region.anchor : frontAnchor(front.theatreId, regionsByTheatre)
     if (!port || !anchor) continue
-    lines.push({ id: `player-${frontId}`, kind: 'player', frontId, fromAnchor: port.anchor, toAnchor: anchor })
+    lines.push({ id, kind: 'player', frontId, ...(formationId ? { formationId } : {}), fromAnchor: port.anchor, toAnchor: anchor })
   }
   return lines
+}
+
+// Försändelserna på en av spelarens linjer (samma gruppering som playerSupplyLines).
+export function playerLineShipments(state: GameState, lineId: string): GameState['market']['shipments'] {
+  return state.market.shipments.filter((shipment) => {
+    const contract = state.market.contracts.find((c) => c.id === shipment.contractId)
+    if (!contract?.frontId) return false
+    const formationId = contract.formationId && formationSector(state, contract.formationId) ? contract.formationId : null
+    const id = formationId ? `player-${contract.frontId}${FORMATION_SEPARATOR}${formationId}` : `player-${contract.frontId}`
+    return id === lineId
+  })
 }
 
 // Front.attribution['spelaren'] hanteras ALDRIG här (PLAYER_ATTRIBUTION_KEY
@@ -153,16 +185,11 @@ export function orderConvoys(state: GameState, regionsByTheatre: Record<string, 
   return convoys
 }
 
-// Etiketten på spelarens leveranslinje till en front: hur mycket som är på väg och när det första anländer.
-export function playerSupplyLabel(state: GameState, frontId: string): string | null {
-  let units = 0
-  let firstArrival = Infinity
-  for (const shipment of state.market.shipments) {
-    const contract = state.market.contracts.find((c) => c.id === shipment.contractId)
-    if (contract?.frontId !== frontId) continue
-    units += shipment.units
-    firstArrival = Math.min(firstArrival, shipment.arrivalTurn)
-  }
-  if (units === 0 || !Number.isFinite(firstArrival)) return null
+// Etiketten på spelarens leveranslinje: hur mycket som är på väg och när det första anländer.
+export function playerSupplyLabel(state: GameState, lineId: string): string | null {
+  const shipments = playerLineShipments(state, lineId)
+  const units = shipments.reduce((sum, s) => sum + s.units, 0)
+  if (units === 0) return null
+  const firstArrival = Math.min(...shipments.map((s) => s.arrivalTurn))
   return `YOU · ${units} UNITS · ARRIVES ${quarterOfTurn(firstArrival).toUpperCase()}`
 }

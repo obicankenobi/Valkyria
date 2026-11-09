@@ -717,6 +717,10 @@ export interface Contract {
   // P109: konstruktionen kontraktet bjöds med (Bid.designId). Styckkostnaden vid signering och produktionen
   // räknas med dess unitCostFactor. Utelämnat = basprodukten.
   designId?: string
+  // Etapp 14 (ägarbeslut 2026-11-09): förbandet kontraktet ersätter förluster för, ärvt av Order.reason (REPLACE_FORMATION_LOSSES) vid
+  // signering. Ren uppgift för kartan — leveranslinjen går till förbandets sektor i stället för frontens ankare — ingen regel läser den.
+  // Utelämnat för andra kontrakt (fredstida ersättning, skriptade, BROKER, krisköp).
+  formationId?: string
   // P177 (ETAPP11 §7): ett motköp i upphandlingen blev ett löfte om lokal tillverkning — ett verk i köparens land i drift före dueTurn. open → met | breached.
   counterPurchase?: { dueTurn: number; status: 'open' | 'met' | 'breached' }
   // P172 (ETAPP11 §5.5, 11E): hela kontraktet eller en del av det läggs ut på en underleverantör. sharePct = andel av kvantiteten; built = enheter underleverantören

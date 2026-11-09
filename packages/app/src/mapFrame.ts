@@ -62,3 +62,8 @@ export const GRATICULE_EXTENT: [[number, number], [number, number]] = [
   [120, 28],
 ]
 export const GRATICULE_STEP: [number, number] = [2, 2]
+
+// Etapp 14 (kortkommandon): App skickar kartans kommandon (+ − 0 och L) som en händelse på window; TheatreMap, som äger zoomen och
+// lagret, lyssnar. detail: { zoom: 'in' | 'out' | 'reset' } eller { layer: 'next' }.
+export const MAP_COMMAND_EVENT = 'seventh-front:map-command'
+export type MapCommand = { zoom: 'in' | 'out' | 'reset' } | { layer: 'next' }

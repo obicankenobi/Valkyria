@@ -117,6 +117,27 @@ describe('bidding (isolerat steg, spec avsnitt 4.2, 4.4)', () => {
     expect(emitted.some((e) => e.headline.includes('WINS CONTRACT'))).toBe(true)
   })
 
+  it('etapp 14: ett kontrakt som ersätter ett förbands förluster bär förbandets id; andra kontrakt bär inget', () => {
+    for (const reason of [
+      { kind: 'REPLACE_FORMATION_LOSSES' as const, formationId: 'rvn-1st-infantry', formationName: '1st Infantry Division', engagementWireId: 'w' },
+      { kind: 'PEACETIME_REPLACEMENT' as const },
+    ]) {
+      const state = createInitialState('indochina-slice', 'seed')
+      const order = dueOrder({ trueBudget: 3000000, referencePrice: 2000000, expiresTurn: 0, reason })
+      state.market.openOrders = [order]
+      const submission: TurnSubmission = {
+        standingOrders: [],
+        bids: [{ orderId: order.id, price: 1500000, deliveryTurns: 2, grade: 'A', bribe: 0 }],
+        actions: [],
+      }
+      const { ctx } = makeCtx(state, submission, 'bidding-seed-win')
+      bidding(ctx)
+      const contract = state.market.contracts[0]!
+      if (reason.kind === 'REPLACE_FORMATION_LOSSES') expect(contract.formationId).toBe('rvn-1st-infantry')
+      else expect('formationId' in contract).toBe(false)
+    }
+  })
+
   it('skapar Contract med unitCostAtSigning när spelaren vinner, höjer relationToPlayer, minskar militaryBudget', () => {
     const state = createInitialState('indochina-slice', 'seed')
     const order = dueOrder({ trueBudget: 3000000, referencePrice: 2000000, expiresTurn: 0 })

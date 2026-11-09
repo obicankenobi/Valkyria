@@ -10,7 +10,7 @@ import type { HandbookTopicId } from './handbook.js'
 import { lockedOrders } from './orderLocks.js'
 import { SECTOR_REGIONS } from './sectorRegions.js'
 import { stationOutlook } from './stationOutlook.js'
-import { THEATRE_ENTRY_POINTS } from './supplyLines.js'
+import { THEATRE_ENTRY_POINTS, playerLineShipments } from './supplyLines.js'
 
 // §6.5: bara de två länder som kan ha en station i det här scenariot har en FactionId; de sex övriga (north-vietnam, kambodja, thailand, kina, burma, malaysia) är sammanhang.
 export const COUNTRY_TO_FACTION: Record<string, FactionId> = {
@@ -279,10 +279,12 @@ function supplyInfo(state: GameState, lineId: string): MapInfo | null {
   for (const front of Object.values(state.fronts)) {
     const to = theatreName(state, front.theatreId)
     const from = THEATRE_ENTRY_POINTS[front.theatreId]?.label ?? 'the entry port'
-    if (lineId === `player-${front.id}`) {
-      const contractIds = new Set(state.market.contracts.filter((c) => c.frontId === front.id).map((c) => c.id))
-      const shipments = state.market.shipments.filter((s) => contractIds.has(s.contractId))
+    if (lineId === `player-${front.id}` || lineId.startsWith(`player-${front.id}--`)) {
+      // Etapp 14: en linje kan gå till ett förband (Contract.formationId) — "To" namnger då förbandet och sektorn.
+      const shipments = playerLineShipments(state, lineId)
       if (shipments.length === 0) return null
+      const formationId = lineId.startsWith(`player-${front.id}--`) ? lineId.slice(`player-${front.id}--`.length) : null
+      const formation = formationId ? front.formations.find((f) => f.id === formationId) : undefined
       const units = shipments.reduce((sum, s) => sum + s.units, 0)
       const next = Math.max(0, Math.min(...shipments.map((s) => s.arrivalTurn)) - state.meta.turn)
       return {
@@ -290,7 +292,7 @@ function supplyInfo(state: GameState, lineId: string): MapInfo | null {
         title: 'Your supply line',
         rows: [
           { label: 'From', value: from },
-          { label: 'To', value: `${to} front` },
+          { label: 'To', value: formation ? `${formation.name}, ${to} front` : `${to} front` },
           { label: 'In transit', value: `${units} units in ${shipments.length} ${shipments.length === 1 ? 'shipment' : 'shipments'}` },
           { label: 'Next arrival', value: next === 0 ? 'At the end of this quarter' : `In ${next} ${next === 1 ? 'quarter' : 'quarters'}` },
         ],

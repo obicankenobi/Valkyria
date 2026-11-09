@@ -21,6 +21,7 @@ export const HANDBOOK_SECTIONS: readonly { label: string; ids: readonly Handbook
   { label: 'The trade', ids: ['procurement', 'production', 'works', 'materials', 'design', 'programmes', 'race'] },
   { label: 'The house', ids: ['board', 'state', 'trail'] },
   { label: 'The world', ids: ['fronts', 'heat', 'doomsday', 'intelligence', 'politics'] },
+  { label: 'The desk', ids: ['keyboard'] },
 ]
 
 function HandbookEntryView({ entry }: { entry: HandbookEntry }) {

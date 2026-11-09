@@ -615,7 +615,7 @@ export function DeskWorkspace({
           <div className="desk-outbox-tray">
             <div className="desk-outbox-head">
               <span className="desk-dymo">DISPATCH OUTBOX · {state.house.actionPoints} EXECUTIVE SLOTS</span>
-              <button type="button" className="desk-mini-link" onClick={onOpenCatalog}>
+              <button type="button" className="desk-mini-link" onClick={onOpenCatalog} data-testid="open-action-catalog">
                 ACTION CATALOG ▸
               </button>
             </div>

@@ -103,3 +103,32 @@ och varje fältnamn som syns.
   byter id:t mot kontraktets löpnummer överallt där rubriker visas (NEWS DESK, telexremsan, uppspelningen, This Quarter).
 - `e2e/screens.ts` `FORMATS` har 1920×1080 (`wide`): regel 11/18 och axe körs i båda formaten. `npm run shots` tar de viktigaste
   skärmarna även i 1920×1080 (`*-wide.png`).
+
+## Ägarbeslut 2026-11-09 — de två öppna frågorna
+
+**14A. Leveranslinjer för vunna kontrakt till rätt sektor.** Ägaren: "Du kan göra ett nytt fält i Core för detta även om du behöver
+ändra golden." Byggt: `Contract.formationId?` (`types.ts`), ärvt av `Order.reason.formationId` när ordern ersätter ett förbands förluster
+(`bidding.ts`); BROKER, krisköp och fredstida ersättning får inget. Ingen regel läser fältet. Kartan (`supplyLines.ts`) ritar en egen
+linje per front och förband till sektorn där förbandet står nu — en omgruppering flyttar linjens slutpunkt; kartkortet säger "To: 1st
+Infantry Division, Indochina front". **Golden-hasharna är oförändrade** (verifierat: hashen tar med hela tillståndet, men inget av de
+skriptade golden-partierna vinner ett ersättningskontrakt), så ingen omfrysning behövdes. Test: `bidding.test.ts`, `convoys.test.ts`.
+
+**14B. Kortkommandona.** Ägaren: "se över vilka keyboard shortcuts som behövs … och besluta själv". Beslut: en layout för en spelare med
+höger hand på musen och vänster på tangenterna, allt inom räckhåll från 1–5. Regel 16 behålls och utökas; förslagets 1–4 för mappflikarna
+byggs inte (registerflikarna inuti en mapp ligger på `[` `]` i stället, så 1–5 kan fortsätta betyda samma sak överallt).
+
+| Tangent | Gör |
+|---|---|
+| 1–5 | Operations, Contracts, The Company, Contacts, News Desk |
+| `[` `]` | föregående / nästa registerflik i den öppna mappen |
+| F | fäll ut / fäll in mappen (Contracts, The Company) |
+| Enter | avsluta kvartalet |
+| Space | hoppa över kvartalsuppspelningen / kvittera styrelsens PM |
+| Q / W / A | This Quarter / telexarkivet / handlingskatalogen |
+| + − / 0 | zooma kartan (håll ned) / hela Indokina igen |
+| L / K | nästa kartlager / teckenförklaringen |
+| H / ? | handboken / tangentkartan (handboksuppslaget *Keyboard*) |
+| Esc | stänger landsakten, sedan den utfällda mappen, sedan kartkortet; pausar först när inget av dem är öppet |
+
+`shortcuts.ts` (beslutet, rent), `shortcutList.ts` (listan — handbokens uppslag skrivs ut ur den, testet binder dem), `App.tsx` (utförandet:
+ett klick på den riktiga knappen; kartans zoom och lager via händelsen `MAP_COMMAND_EVENT`). Tester: `shortcuts.test.ts`, `keyboard.spec.ts`.

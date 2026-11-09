@@ -332,6 +332,8 @@ export const bidding: ResolveStep = (ctx) => {
         lateEventId: null,
         // P44 (ETAPP4_TEKNISK_SPEC.md avsnitt 3.2): ärvt rakt av vid signering.
         frontId: order.frontId,
+        // Etapp 14: förbandet ordern ersätter förluster för (kartans leveranslinje går till dess sektor).
+        ...(order.reason.kind === 'REPLACE_FORMATION_LOSSES' ? { formationId: order.reason.formationId } : {}),
         // P98 (ETAPP8_FORSLAG.md §4.1): förskottet, fryst på ordern och betalt vid tilldelning.
         advancePct: order.advancePct,
         advancePaid: advanceAmount(contractPrice, order.advancePct),
